@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 80" width="64" height="80">
+  <ellipse cx="32" cy="74" rx="18" ry="6" fill="rgba(0,0,0,0.25)"/>
+  <!-- Trunk -->
+  <rect x="28" y="46" width="8" height="28" rx="2" fill="#78350f"/>
+  <path d="M28 58 L22 52 L28 50 Z" fill="#78350f"/>
+  <path d="M36 60 L42 54 L36 52 Z" fill="#78350f"/>
+  <!-- Leaves layers -->
+  <polygon points="32,8 10,40 54,40" fill="#047857"/>
+  <polygon points="32,18 14,48 50,48" fill="#059669"/>
+  <polygon points="32,28 16,56 48,56" fill="#10b981"/>
+</svg>

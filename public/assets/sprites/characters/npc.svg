@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48">
+  <ellipse cx="24" cy="44" rx="13" ry="4" fill="rgba(0,0,0,0.3)"/>
+  <!-- Robe -->
+  <path d="M16 18 L12 42 L36 42 L32 18 Z" fill="#7c3aed"/>
+  <path d="M22 18 L22 42 L26 42 L26 18 Z" fill="#fbbf24"/>
+  <!-- Head -->
+  <circle cx="24" cy="14" r="7" fill="#fed7aa"/>
+  <!-- Sage Beard -->
+  <polygon points="19,16 29,16 24,28" fill="#f1f5f9"/>
+  <!-- Eyes -->
+  <circle cx="21" cy="13" r="1.2" fill="#1e1b4b"/>
+  <circle cx="27" cy="13" r="1.2" fill="#1e1b4b"/>
+  <!-- Wizard Hat -->
+  <polygon points="24,2 14,14 34,14" fill="#6d28d9"/>
+  <ellipse cx="24" cy="14" rx="12" ry="2.5" fill="#4c1d95"/>
+  <circle cx="24" cy="3" r="2" fill="#fbbf24"/>
+</svg>

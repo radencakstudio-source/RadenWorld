@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36" width="36" height="36">
+  <ellipse cx="18" cy="32" rx="14" ry="4" fill="rgba(0,0,0,0.3)"/>
+  <!-- Chest Box -->
+  <rect x="4" y="14" width="28" height="16" rx="2" fill="#b45309" stroke="#78350f" stroke-width="2"/>
+  <rect x="4" y="8" width="28" height="8" rx="3" fill="#d97706" stroke="#78350f" stroke-width="2"/>
+  <!-- Metal bands -->
+  <rect x="8" y="8" width="4" height="22" fill="#f59e0b"/>
+  <rect x="24" y="8" width="4" height="22" fill="#f59e0b"/>
+  <!-- Lock -->
+  <circle cx="18" cy="18" r="3" fill="#fbbf24" stroke="#78350f" stroke-width="1"/>
+  <rect x="17" y="18" width="2" height="4" fill="#78350f"/>
+</svg>

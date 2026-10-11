@@ -228,8 +228,12 @@ export class WorldScene extends Phaser.Scene {
     EventBus.on('server-switched', onServerSwitched);
 
     const onJoinGame = (userData: { name: string; avatar: IAvatarCustomization }) => {
+      if (userData?.name) this.pendingPlayerName = userData.name;
       if (this.player) {
         this.player.setAvatar(userData.avatar);
+        if (userData?.name) {
+          this.player.setEntityName(userData.name);
+        }
       } else {
         this.spawnLocalPlayer(userData.name, userData.avatar);
       }
@@ -251,6 +255,11 @@ export class WorldScene extends Phaser.Scene {
     };
     EventBus.on('trigger-expression', onTriggerExpression);
 
+    const onTriggerInteraction = () => {
+      this.triggerCurrentInteraction();
+    };
+    EventBus.on('trigger-interaction', onTriggerInteraction);
+
     // Dengar ekspresi dari pemain lain di Open World
     this.networkManager.onPlayerExpression((data) => {
       const remote = this.remotePlayers.get(data.id);
@@ -258,11 +267,6 @@ export class WorldScene extends Phaser.Scene {
         remote.triggerExpression(data.type);
       }
     });
-
-    const onTriggerInteraction = () => {
-      this.triggerCurrentInteraction();
-    };
-    EventBus.on('trigger-interaction', onTriggerInteraction);
 
     // Indikator visual Proximity Voice Chat
     const onSpeakingStatus = (data: { senderId: string; isSpeaking: boolean }) => {
@@ -732,6 +736,9 @@ export class WorldScene extends Phaser.Scene {
     // Jika pemain sudah aktif ada di scene dan masih valid
     if (this.player && this.player.active && this.player.scene === this) {
       this.player.setAvatar(avatar);
+      if (name) {
+        this.player.setEntityName(name);
+      }
       this.cameras.main.setRoundPixels(true);
       this.cameras.main.startFollow(this.player, false, 0.18, 0.18);
       this.cameras.main.centerOn(this.player.x, this.player.y);
@@ -774,10 +781,19 @@ export class WorldScene extends Phaser.Scene {
     this.cameras.main.startFollow(this.player, false, 0.18, 0.18);
     this.smoothZoomTo(0.9);
 
-    // Buka koneksi multiplayer dan daftarkan pemain
+    // Buka koneksi multiplayer dan daftarkan pemain dengan koordinat spawn sebenarnya
     this.networkManager.connect();
     const isSuperAdmin = name.toUpperCase() === 'RADEN';
-    this.networkManager.joinGame(name, avatar, isSuperAdmin ? 'super_admin' : 'player', isSuperAdmin);
+    this.networkManager.joinGame(
+      name,
+      avatar,
+      isSuperAdmin ? 'super_admin' : 'player',
+      isSuperAdmin,
+      spawnX,
+      spawnY,
+      'down'
+    );
+    this.networkManager.sendMovement(spawnX, spawnY, 'down', false);
 
     this.time.delayedCall(600, () => {
       this.player?.showSpeechBubble(isSuperAdmin ? '👑 Salam damai, RadenWorld!' : 'Halo dunia terbuka!');
@@ -870,7 +886,16 @@ export class WorldScene extends Phaser.Scene {
     // Jangan spawn diri sendiri sebagai remote player!
     if (p.id === myId) return;
     if (myName && p.name && p.name.trim().toLowerCase() === myName) return;
-    if (this.remotePlayers.has(p.id)) return;
+
+    // Jika remote player dengan ID ini sudah ada, update posisi & arahnya
+    if (this.remotePlayers.has(p.id)) {
+      const existing = this.remotePlayers.get(p.id);
+      if (existing && existing.active) {
+        existing.setNetworkState(p.x, p.y, p.direction || 'down', false);
+        existing.setPosition(p.x, p.y);
+      }
+      return;
+    }
 
     // Bersihkan duplicate jika ada remote player lama dengan nama yang sama persis
     for (const [existingId, existingRemote] of this.remotePlayers.entries()) {

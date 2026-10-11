@@ -569,20 +569,34 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 </button>
               </div>
 
-              {/* Cheatsheet Bantuan Tombol */}
-              <div className="p-3.5 rounded-md bg-[#0e0e0e] border border-neutral-800 text-xs space-y-2">
-                <span className="font-bold text-amber-400 uppercase tracking-wider text-[11px]">
-                  Daftar Tombol Pintas PC:
-                </span>
-                <div className="grid grid-cols-2 gap-2 text-neutral-300 font-mono text-[11px]">
-                  <div>WASD / Panah : Bergerak</div>
-                  <div>Klik Kiri : Point & Move</div>
-                  <div>E : Interaksi Objek / Pintu</div>
-                  <div>/ (Slash) : Buka Chat Box</div>
-                  <div>Scroll Mouse : Zoom Kamera</div>
-                  <div>+ / - : Zoom In / Out</div>
+              {/* Cheatsheet Bantuan Tombol (Sesuai Mode Kontrol yang Dipilih) */}
+              {settings.controlMode === 'pc' ? (
+                <div className="p-3.5 rounded-md bg-[#0e0e0e] border border-neutral-800 text-xs space-y-2">
+                  <span className="font-bold text-amber-400 uppercase tracking-wider text-[11px]">
+                    Daftar Tombol Pintas PC:
+                  </span>
+                  <div className="grid grid-cols-2 gap-2 text-neutral-300 font-mono text-[11px]">
+                    <div>WASD / Panah : Bergerak</div>
+                    <div>Klik Kiri : Point & Move</div>
+                    <div>E : Interaksi Objek / Pintu</div>
+                    <div>/ (Slash) : Buka Chat Box</div>
+                    <div>Scroll Mouse : Zoom Kamera</div>
+                    <div>+ / - : Zoom In / Out</div>
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div className="p-3.5 rounded-md bg-[#0e0e0e] border border-neutral-800 text-xs space-y-2">
+                  <span className="font-bold text-amber-400 uppercase tracking-wider text-[11px]">
+                    Panduan Kontrol Layar Sentuh (Mobile):
+                  </span>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-neutral-300 text-[11px]">
+                    <div>• Analog Kiri : Gerak 360° Mulus</div>
+                    <div>• Tap Lantai : Navigasi Otomatis</div>
+                    <div>• Tombol Bulat AKSI : Bicara & Pintu</div>
+                    <div>• Ikon Chat Profil : Buka Obrolan</div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 

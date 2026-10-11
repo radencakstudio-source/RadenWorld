@@ -3,25 +3,38 @@
  * FILE: resources/js/game/ui/AuthModal.tsx
  * ============================================================================
  * FUNGSI UTAMA:
- * Modal Autentikasi yang membedakan alur MASUK vs DAFTAR:
- * 1. TAB MASUK (Bagi yang sudah punya akun):
- *    - Hanya input Akun (Email/Username) & Kata Sandi.
- *    - Opsi "Lupa kata sandi?" berada di dalam tab Masuk (bukan tab terpisah).
- *    - Tombol Masuk via Google & Facebook.
- *    - TANPA pemilihan avatar (avatar dimuat dari akun yang tersimpan).
+ * Modal Autentikasi Modern, Bersih, dan Flat Pure Black:
+ * 1. TAB MASUK:
+ *    - Login via Email / Username & Password
+ *    - Opsi "Lupa kata sandi?" terintegrasi
+ *    - Masuk cepat via Google & Facebook
  * 
- * 2. TAB DAFTAR (Pemain baru):
- *    - Step 1: Daftar data akun (Nama Karakter, Email, Password, Konfirmasi).
- *    - Step 2: Memilih & mengkustomisasi avatar (Gender, Kulit, Baju, Celana, Topi).
- *    - Selesaikan pendaftaran dan langsung masuk ke Open World.
+ * 2. TAB DAFTAR:
+ *    - Step 1: Input Data Akun + TANGGAL LAHIR (Otomatis hitung umur)
+ *    - Step 2: Pemilihan Avatar SIMPEL (Khusus MALE atau FEMALE saja,
+ *              tanpa pilihan warna kulit, rambut, atasan, dan bawahan)
+ *    - Selesaikan pendaftaran dan langsung terhubung ke Open World
  * ============================================================================
  */
 
-import React, { useState, useEffect } from 'react';
-import { IAvatarCustomization, Gender, HatType } from '../types';
+import React, { useState } from 'react';
+import { IAvatarCustomization, Gender } from '../types';
 import { AvatarPreview } from './AvatarPreview';
 import { SoundManager } from '../core/SoundManager';
-import { X, Check, ArrowRight, ArrowLeft } from 'lucide-react';
+import {
+  X,
+  Check,
+  ArrowRight,
+  ArrowLeft,
+  Calendar,
+  User,
+  Mail,
+  Lock,
+  AlertCircle,
+  LogIn,
+  UserPlus,
+  Sparkles,
+} from 'lucide-react';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -31,22 +44,52 @@ interface AuthModalProps {
 
 type AuthTab = 'login' | 'register';
 
+/**
+ * Fungsi utilitas untuk menghitung umur secara akurat dari tanggal lahir (YYYY-MM-DD)
+ */
+export function calculateAgeFromBirthDate(birthDateString: string): number {
+  if (!birthDateString) return 21;
+  const birth = new Date(birthDateString);
+  if (isNaN(birth.getTime())) return 21;
+  const today = new Date();
+  let age = today.getFullYear() - birth.getFullYear();
+  const m = today.getMonth() - birth.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
+    age--;
+  }
+  return Math.max(0, age);
+}
+
 export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess }) => {
   const [activeTab, setActiveTab] = useState<AuthTab>('login');
 
-  // Login & Register Form State
+  // Login Form State
   const [loginIdentifier, setLoginIdentifier] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
 
+  // Register Form State (Termasuk Tanggal Lahir)
   const [registerUsername, setRegisterUsername] = useState('');
   const [registerEmail, setRegisterEmail] = useState('');
+  const [registerBirthDate, setRegisterBirthDate] = useState('2003-01-01');
   const [registerPassword, setRegisterPassword] = useState('');
   const [registerConfirmPassword, setRegisterConfirmPassword] = useState('');
 
-  // Register Wizard Step: 1 = Form Akun, 2 = Pilih Avatar
+  // Register Wizard Step: 1 = Form Akun & Tanggal Lahir, 2 = Pilih Gender Avatar (Male / Female)
   const [registerStep, setRegisterStep] = useState<1 | 2>(1);
 
-  // Forgot Password View State (Hanya di dalam Tab Masuk)
+  // Gender Avatar Terpilih (Hanya Male / Female)
+  const [selectedGender, setSelectedGender] = useState<Gender>(() => {
+    try {
+      const saved = localStorage.getItem('raden_player_avatar');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed?.gender === 'female') return 'female';
+      }
+    } catch (e) {}
+    return 'male';
+  });
+
+  // Forgot Password View State
   const [isForgotView, setIsForgotView] = useState(false);
   const [forgotEmail, setForgotEmail] = useState('');
   const [forgotSent, setForgotSent] = useState(false);
@@ -55,69 +98,24 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
   const [authError, setAuthError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Avatar Customization State (Khusus Pendaftaran)
-  const [avatar, setAvatar] = useState<IAvatarCustomization>(() => {
-    // Ambil avatar terakhir yang tersimpan di localStorage jika ada
-    try {
-      const saved = localStorage.getItem('raden_player_avatar');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (parsed && typeof parsed === 'object' && parsed.gender) {
-          return {
-            gender: parsed.gender || 'male',
-            skinColor: parsed.skinColor || '#fed7aa',
-            shirtColor: parsed.shirtColor || '#2563eb',
-            pantsColor: parsed.pantsColor || '#1e293b',
-            hatType: parsed.hatType || 'none',
-          };
-        }
-      }
-    } catch (e) {}
-    return {
-      gender: 'male',
-      skinColor: '#fed7aa',
-      shirtColor: '#2563eb',
-      pantsColor: '#1e293b',
-      hatType: 'none',
-    };
-  });
-
   const sound = SoundManager.getInstance();
 
   if (!isOpen) return null;
 
-  const skinPalette = [
-    { name: 'Cerah', color: '#fed7aa' },
-    { name: 'Kuning Langsat', color: '#fde047' },
-    { name: 'Sawo Matang', color: '#d97706' },
-    { name: 'Gelap Eksotis', color: '#78350f' },
-    { name: 'Pucat', color: '#fecdd3' },
-  ];
+  // Tanggal hari ini untuk batasan input max tanggal lahir
+  const todayDate = new Date().toISOString().split('T')[0];
+  const calculatedAge = calculateAgeFromBirthDate(registerBirthDate);
 
-  const shirtPalette = [
-    { name: 'Biru', color: '#2563eb' },
-    { name: 'Merah', color: '#dc2626' },
-    { name: 'Hijau', color: '#16a34a' },
-    { name: 'Hitam', color: '#1e293b' },
-    { name: 'Emas', color: '#f59e0b' },
-    { name: 'Ungu', color: '#7c3aed' },
-  ];
-
-  const pantsPalette = [
-    { name: 'Hitam', color: '#0f172a' },
-    { name: 'Abu-abu', color: '#475569' },
-    { name: 'Jeans', color: '#1d4ed8' },
-    { name: 'Cokelat', color: '#78350f' },
-    { name: 'Putih', color: '#e2e8f0' },
-  ];
-
-  const hatOptions: { id: HatType; label: string }[] = [
-    { id: 'none', label: 'Tanpa Topi' },
-    { id: 'adventurer', label: 'Petualang' },
-    { id: 'knight', label: 'Helm Baja' },
-    { id: 'bandana', label: 'Bandana' },
-    { id: 'wizard', label: 'Penyihir' },
-  ];
+  // Template Avatar Sesuai Gender Pilihan
+  const getAvatarForGender = (gender: Gender): IAvatarCustomization => {
+    return {
+      gender,
+      skinColor: '#fed7aa',
+      shirtColor: gender === 'female' ? '#ec4899' : '#2563eb',
+      pantsColor: '#1e293b',
+      hatType: 'none',
+    };
+  };
 
   const handleTabChange = (tab: AuthTab) => {
     sound.playClick();
@@ -128,11 +126,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
     setRegisterStep(1);
   };
 
-  // Submit Tab Masuk (Database SQLite Nyata)
+  // Submit Tab Masuk (Database SQLite)
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!loginIdentifier.trim() || !loginPassword.trim()) {
-      setAuthError('Nama/Email dan kata sandi wajib diisi!');
+      setAuthError('Nama Akun/Email dan kata sandi wajib diisi!');
       return;
     }
 
@@ -142,7 +140,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
     try {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
         body: JSON.stringify({
           login: loginIdentifier.trim(),
           password: loginPassword,
@@ -156,14 +154,18 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
         return;
       }
 
+      sound.playSuccess();
       const user = data.user;
       let loadedAvatar = user?.avatar;
       if (typeof loadedAvatar === 'string') {
-        try { loadedAvatar = JSON.parse(loadedAvatar); } catch(e) {}
+        try {
+          loadedAvatar = JSON.parse(loadedAvatar);
+        } catch (e) {}
       }
       if (!loadedAvatar || typeof loadedAvatar !== 'object' || !loadedAvatar.gender) {
-        loadedAvatar = avatar;
+        loadedAvatar = getAvatarForGender('male');
       }
+
       try {
         localStorage.setItem('raden_player_avatar', JSON.stringify(loadedAvatar));
         localStorage.setItem('raden_player_user', JSON.stringify(user));
@@ -171,6 +173,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
 
       const safeRoomId = user?.private_room_id || `safe-${user?.id || 1}`;
       onSuccess(user.name, loadedAvatar, safeRoomId);
+      onClose();
     } catch (err) {
       setAuthError('Gagal terhubung ke database server. Pastikan server aktif.');
     } finally {
@@ -178,20 +181,28 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
     }
   };
 
-  // Submit Step 1 Daftar: Lanjut ke pemilihan avatar
+  // Submit Step 1 Daftar: Validasi Akun & Tanggal Lahir -> Lanjut ke Pilih Avatar Male/Female
   const handleRegisterStep1Submit = (e: React.FormEvent) => {
     e.preventDefault();
     setAuthError(null);
+
     if (!registerUsername.trim() || !registerEmail.trim() || !registerPassword.trim()) {
       setAuthError('Semua kolom pendaftaran wajib diisi!');
       return;
     }
+
+    if (!registerBirthDate) {
+      setAuthError('Tanggal lahir wajib diisi untuk menghitung umur karakter!');
+      return;
+    }
+
     if (registerPassword !== registerConfirmPassword) {
       setAuthError('Konfirmasi kata sandi tidak cocok!');
       return;
     }
+
     sound.playClick();
-    setRegisterStep(2); // Pindah ke Step 2: Pilih Avatar
+    setRegisterStep(2); // Pindah ke Step 2: Pilih Avatar Male / Female
   };
 
   // Submit Step 2 Daftar: Simpan ke Database SQLite & Masuk ke Game
@@ -200,15 +211,18 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
     setAuthError(null);
     setIsLoading(true);
 
+    const finalAvatar = getAvatarForGender(selectedGender);
+
     try {
       const res = await fetch('/api/auth/register', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
         body: JSON.stringify({
           name: registerUsername.trim(),
           email: registerEmail.trim(),
+          birth_date: registerBirthDate,
           password: registerPassword,
-          avatar: avatar,
+          avatar: finalAvatar,
         }),
       });
 
@@ -222,12 +236,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
       sound.playSuccess();
       const user = data.user;
       try {
-        localStorage.setItem('raden_player_avatar', JSON.stringify(avatar));
+        localStorage.setItem('raden_player_avatar', JSON.stringify(finalAvatar));
         localStorage.setItem('raden_player_user', JSON.stringify(user));
       } catch (err) {}
 
       const safeRoomId = user?.private_room_id || `safe-${user?.id || 1}`;
-      onSuccess(user.name, avatar, safeRoomId);
+      onSuccess(user.name, finalAvatar, safeRoomId);
+      onClose();
     } catch (err) {
       setAuthError('Gagal terhubung ke server autentikasi.');
     } finally {
@@ -239,505 +254,577 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
   const handleForgotSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!forgotEmail.trim()) {
-      setAuthError('Masukkan email terdaftar!');
+      setAuthError('Email wajib diisi!');
       return;
     }
+
     setAuthError(null);
     setIsLoading(true);
 
     try {
       const res = await fetch('/api/auth/forgot-password', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-        body: JSON.stringify({ email: forgotEmail.trim(), new_password: 'password123' }),
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({ email: forgotEmail.trim() }),
       });
+
       const data = await res.json();
       if (!res.ok || data.status === 'error') {
         setAuthError(data.message || 'Email tidak terdaftar!');
-        setIsLoading(false);
-        return;
+      } else {
+        sound.playSuccess();
+        setForgotSent(true);
       }
-      sound.playSuccess();
-      setForgotSent(true);
     } catch (err) {
-      setAuthError('Gagal mereset kata sandi.');
+      setAuthError('Gagal menghubungi server reset sandi.');
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Social Login (Google / Facebook)
+  // Social Login Mock
   const handleSocialLogin = (provider: 'google' | 'facebook') => {
     sound.playClick();
     setSocialLoading(provider);
+    setAuthError(null);
 
     setTimeout(() => {
+      setSocialLoading(null);
+      const guestName = `${provider === 'google' ? 'Google' : 'FB'}_${Math.floor(1000 + Math.random() * 9000)}`;
+      const guestAvatar = getAvatarForGender('male');
+      const safeRoomId = `safe-social-${Date.now().toString(36)}`;
       sound.playSuccess();
-      const mockName = provider === 'google' ? 'GooglePlayer' : 'FacebookPlayer';
-      const safeRoomId = `safe-guest-${Date.now().toString(36)}`;
-      onSuccess(mockName, avatar, safeRoomId);
-    }, 1000);
+      onSuccess(guestName, guestAvatar, safeRoomId);
+      onClose();
+    }, 1200);
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4 animate-in fade-in duration-200">
-      <div className="w-full max-w-md bg-black border border-neutral-800 rounded-2xl p-6 text-neutral-100 flex flex-col gap-4 font-['Chakra_Petch'] max-h-[92vh] overflow-hidden">
-        {/* Modal Header */}
-        <div className="flex items-center justify-between border-b border-neutral-800 pb-3">
-          <div>
-            <h2 className="text-xl font-bold tracking-wider text-amber-400 uppercase">
-              {activeTab === 'login' && !isForgotView && 'MASUK KE GAME'}
-              {activeTab === 'login' && isForgotView && 'PULIHKAN SANDI'}
-              {activeTab === 'register' && registerStep === 1 && 'DAFTAR AKUN BARU'}
-              {activeTab === 'register' && registerStep === 2 && 'PILIH & KUSTOMISASI AVATAR'}
-            </h2>
-            <p className="text-xs text-neutral-400 mt-0.5">
-              {activeTab === 'login' && !isForgotView && 'Masuk dengan akun terdaftar untuk melanjutkan.'}
-              {activeTab === 'login' && isForgotView && 'Masukkan email terdaftar untuk menerima tautan reset.'}
-              {activeTab === 'register' && registerStep === 1 && 'Langkah 1: Lengkapi informasi akun Anda.'}
-              {activeTab === 'register' && registerStep === 2 && 'Langkah 2: Pilih gender & kustomisasi penampilan avatarmu.'}
-            </p>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/85 font-['Chakra_Petch'] animate-in fade-in duration-200">
+      <div className="relative w-full max-w-xl bg-black border border-neutral-800 rounded-xl flex flex-col overflow-hidden max-h-[92vh]">
+
+        {/* ==================================================================== */}
+        {/* HEADER MODAL: Flat Pure Black                                        */}
+        {/* ==================================================================== */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-800 bg-[#0a0a0a]">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-md bg-neutral-900 border border-neutral-800 flex items-center justify-center text-amber-400">
+              {activeTab === 'login' ? <LogIn className="w-4 h-4" /> : <UserPlus className="w-4 h-4" />}
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h2 className="text-base font-bold text-amber-400 tracking-wider uppercase">
+                  {activeTab === 'login' ? 'Masuk ke Game' : 'Daftar Akun Baru'}
+                </h2>
+                <span className="text-[10px] font-mono font-bold bg-amber-500 text-black px-1.5 py-0.5 rounded">
+                  PORTAL
+                </span>
+              </div>
+              <p className="text-xs text-neutral-400 mt-0.5">
+                {activeTab === 'login'
+                  ? 'Akses akun petualangan open world Anda yang telah terdaftar.'
+                  : 'Buat identitas karakter baru dan mulai petualangan di RadenWorld.'}
+              </p>
+            </div>
           </div>
+
           <button
             onClick={() => {
               sound.playClick();
               onClose();
             }}
-            className="p-1 rounded-lg text-neutral-400 hover:text-amber-400 hover:bg-neutral-900 transition-colors cursor-pointer"
+            className="p-1.5 rounded-md text-neutral-400 hover:text-amber-400 hover:bg-neutral-800 transition-colors cursor-pointer"
+            title="Tutup"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* 2 Tab Switcher Saja: MASUK & DAFTAR (Simpel 2 Warna) */}
-        <div className="flex rounded-xl bg-neutral-900 border border-neutral-800 p-1">
+        {/* ==================================================================== */}
+        {/* TAB NAVIGATION BAR (MASUK vs DAFTAR)                                 */}
+        {/* ==================================================================== */}
+        <div className="flex items-center gap-1.5 px-6 pt-3 pb-2 border-b border-neutral-800 bg-[#0a0a0a]">
           <button
             type="button"
             onClick={() => handleTabChange('login')}
-            className={`flex-1 py-1.5 text-xs font-bold uppercase tracking-wider rounded-lg transition-all cursor-pointer ${
+            className={`flex-1 py-2 px-3 rounded-md text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-colors cursor-pointer ${
               activeTab === 'login'
-                ? 'bg-amber-500 text-black'
-                : 'text-neutral-400 hover:text-neutral-200'
+                ? 'bg-amber-500 text-black font-black'
+                : 'text-neutral-400 hover:text-amber-300 hover:bg-neutral-800'
             }`}
           >
-            MASUK (SUDAH PUNYA AKUN)
+            <LogIn className="w-3.5 h-3.5" />
+            <span>1. MASUK KE GAME</span>
           </button>
+
           <button
             type="button"
             onClick={() => handleTabChange('register')}
-            className={`flex-1 py-1.5 text-xs font-bold uppercase tracking-wider rounded-lg transition-all cursor-pointer ${
+            className={`flex-1 py-2 px-3 rounded-md text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-colors cursor-pointer ${
               activeTab === 'register'
-                ? 'bg-amber-500 text-black'
-                : 'text-neutral-400 hover:text-neutral-200'
+                ? 'bg-amber-500 text-black font-black'
+                : 'text-neutral-400 hover:text-amber-300 hover:bg-neutral-800'
             }`}
           >
-            DAFTAR (AKUN BARU)
+            <UserPlus className="w-3.5 h-3.5" />
+            <span>2. DAFTAR AKUN BARU</span>
           </button>
         </div>
 
-        {/* Pesan Kesalahan / Status Autentikasi Database */}
-        {authError && (
-          <div className="p-2.5 rounded-xl bg-amber-950/80 border border-amber-500 text-amber-300 text-xs font-bold text-center animate-in fade-in">
-            ⚠️ {authError}
-          </div>
-        )}
+        {/* ==================================================================== */}
+        {/* MODAL CONTENT BODY                                                   */}
+        {/* ==================================================================== */}
+        <div className="p-6 overflow-y-auto space-y-4 custom-scrollbar flex-1 min-h-[380px] max-h-[72vh]">
 
-        {/* ============================================================== */}
-        {/* 1. KONTEN TAB MASUK (TANPA AVATAR, HANYA LOGIN & LUPA SANDI) */}
-        {/* ============================================================== */}
-        {activeTab === 'login' && (
-          <div className="space-y-4">
-            {!isForgotView ? (
-              /* --- Form Masuk Normal --- */
-              <form onSubmit={handleLoginSubmit} className="space-y-3.5">
-                {/* Social Login Buttons */}
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => handleSocialLogin('google')}
-                    disabled={!!socialLoading}
-                    className="py-2 px-3 rounded-xl bg-slate-900 hover:bg-slate-850 border border-slate-700 hover:border-amber-500/50 text-xs font-bold text-slate-200 transition-all cursor-pointer uppercase tracking-wider"
-                  >
-                    {socialLoading === 'google' ? 'PROSES...' : 'MASUK GOOGLE'}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleSocialLogin('facebook')}
-                    disabled={!!socialLoading}
-                    className="py-2 px-3 rounded-xl bg-slate-900 hover:bg-slate-850 border border-slate-700 hover:border-amber-500/50 text-xs font-bold text-slate-200 transition-all cursor-pointer uppercase tracking-wider"
-                  >
-                    {socialLoading === 'facebook' ? 'PROSES...' : 'MASUK FACEBOOK'}
-                  </button>
-                </div>
+          {/* Banner Error jika ada */}
+          {authError && (
+            <div className="flex items-center gap-2.5 p-3.5 bg-neutral-900 border border-amber-500/50 rounded-md text-amber-300 text-xs font-semibold animate-in fade-in">
+              <AlertCircle className="w-4 h-4 text-amber-400 shrink-0" />
+              <span>{authError}</span>
+            </div>
+          )}
 
-                <div className="flex items-center gap-3 my-1 text-[11px] text-slate-500 uppercase tracking-wider">
-                  <div className="flex-1 h-px bg-slate-800" />
-                  <span>ATAU DENGAN EMAIL/USER</span>
-                  <div className="flex-1 h-px bg-slate-800" />
-                </div>
+          {/* ================================================================== */}
+          {/* 1. KONTEN TAB MASUK                                                */}
+          {/* ================================================================== */}
+          {activeTab === 'login' && (
+            <div className="space-y-4 animate-in fade-in duration-150">
+              {!isForgotView ? (
+                <form onSubmit={handleLoginSubmit} className="space-y-4">
+                  {/* Quick Social Buttons */}
+                  <div className="grid grid-cols-2 gap-2.5">
+                    <button
+                      type="button"
+                      onClick={() => handleSocialLogin('google')}
+                      disabled={!!socialLoading}
+                      className="py-2.5 px-3 rounded-md bg-[#0e0e0e] hover:bg-neutral-900 border border-neutral-800 hover:border-amber-400 text-xs font-bold text-neutral-200 transition-colors cursor-pointer uppercase tracking-wider flex items-center justify-center gap-2"
+                    >
+                      <span className="w-2 h-2 rounded-full bg-rose-500" />
+                      <span>{socialLoading === 'google' ? 'Menghubungkan...' : 'Google'}</span>
+                    </button>
 
-                {/* Input Username / Email */}
-                <div className="space-y-1">
-                  <label className="text-[11px] font-bold text-slate-300 uppercase tracking-wider">
-                    Nama Akun / Email:
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={loginIdentifier}
-                    onChange={(e) => setLoginIdentifier(e.target.value)}
-                    placeholder="Masukkan nama pengguna atau email..."
-                    className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500"
-                  />
-                </div>
+                    <button
+                      type="button"
+                      onClick={() => handleSocialLogin('facebook')}
+                      disabled={!!socialLoading}
+                      className="py-2.5 px-3 rounded-md bg-[#0e0e0e] hover:bg-neutral-900 border border-neutral-800 hover:border-amber-400 text-xs font-bold text-neutral-200 transition-colors cursor-pointer uppercase tracking-wider flex items-center justify-center gap-2"
+                    >
+                      <span className="w-2 h-2 rounded-full bg-blue-500" />
+                      <span>{socialLoading === 'facebook' ? 'Menghubungkan...' : 'Facebook'}</span>
+                    </button>
+                  </div>
 
-                {/* Input Password & Link Lupa Sandi */}
-                <div className="space-y-1">
-                  <div className="flex items-center justify-between">
-                    <label className="text-[11px] font-bold text-slate-300 uppercase tracking-wider">
-                      Kata Sandi:
+                  <div className="flex items-center gap-3 my-1 text-[10px] text-neutral-400 uppercase tracking-widest font-mono">
+                    <div className="flex-1 h-px bg-neutral-800" />
+                    <span>ATAU DENGAN AKUN TERDAFTAR</span>
+                    <div className="flex-1 h-px bg-neutral-800" />
+                  </div>
+
+                  {/* Input Username / Email */}
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+                      <User className="w-3.5 h-3.5" />
+                      <span>Nama Karakter atau Email:</span>
                     </label>
+                    <input
+                      type="text"
+                      required
+                      value={loginIdentifier}
+                      onChange={(e) => setLoginIdentifier(e.target.value)}
+                      placeholder="Masukkan nama pengguna atau email..."
+                      className="w-full px-3.5 py-2.5 bg-black border border-neutral-800 rounded-md text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-amber-400 font-mono transition-colors"
+                    />
+                  </div>
+
+                  {/* Input Password & Lupa Password */}
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+                        <Lock className="w-3.5 h-3.5" />
+                        <span>Kata Sandi:</span>
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          sound.playClick();
+                          setIsForgotView(true);
+                        }}
+                        className="text-[11px] font-bold text-neutral-400 hover:text-amber-400 transition-colors cursor-pointer uppercase"
+                      >
+                        Lupa Kata Sandi?
+                      </button>
+                    </div>
+                    <input
+                      type="password"
+                      required
+                      value={loginPassword}
+                      onChange={(e) => setLoginPassword(e.target.value)}
+                      placeholder="••••••••"
+                      className="w-full px-3.5 py-2.5 bg-black border border-neutral-800 rounded-md text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-amber-400 font-mono transition-colors"
+                    />
+                  </div>
+
+                  {/* Tombol Submit Masuk */}
+                  <button
+                    type="submit"
+                    disabled={isLoading}
+                    className="w-full mt-2 py-3 px-4 rounded-md font-black text-xs text-black bg-amber-500 hover:bg-amber-400 border border-amber-400 active:scale-[0.98] transition-colors cursor-pointer uppercase tracking-wider flex items-center justify-center gap-2"
+                  >
+                    <span>{isLoading ? 'MEMVERIFIKASI...' : 'MASUK KE DUNIA SEKARANG'}</span>
+                    <ArrowRight className="w-4 h-4 stroke-[3]" />
+                  </button>
+                </form>
+              ) : (
+                /* Form Lupa Sandi */
+                <form onSubmit={handleForgotSubmit} className="space-y-4 animate-in fade-in duration-150">
+                  <div className="p-4 rounded-md bg-[#0e0e0e] border border-neutral-800 text-xs text-neutral-300 space-y-1">
+                    <div className="font-bold text-amber-400 uppercase tracking-wide">Pemulihan Akun</div>
+                    <p className="text-neutral-400 text-[11px]">
+                      Masukkan alamat email akun Anda. Sistem akan memverifikasi dan mengirimkan tautan reset kata sandi.
+                    </p>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+                      <Mail className="w-3.5 h-3.5" />
+                      <span>Alamat Email Terdaftar:</span>
+                    </label>
+                    <input
+                      type="email"
+                      required
+                      value={forgotEmail}
+                      onChange={(e) => setForgotEmail(e.target.value)}
+                      placeholder="nama@email.com"
+                      className="w-full px-3.5 py-2.5 bg-black border border-neutral-800 rounded-md text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-amber-400 font-mono transition-colors"
+                    />
+                  </div>
+
+                  {forgotSent && (
+                    <div className="p-3.5 rounded-md bg-neutral-900 border border-emerald-500/50 text-emerald-300 text-xs font-semibold flex items-center gap-2">
+                      <Check className="w-4 h-4 text-emerald-400" />
+                      <span>Tautan pemulihan telah dikirim ke {forgotEmail}!</span>
+                    </div>
+                  )}
+
+                  <div className="flex gap-2.5 pt-2">
                     <button
                       type="button"
                       onClick={() => {
                         sound.playClick();
-                        setIsForgotView(true);
+                        setIsForgotView(false);
                       }}
-                      className="text-[11px] font-bold text-amber-400 hover:underline cursor-pointer uppercase"
+                      className="flex-1 py-2.5 rounded-md border border-neutral-800 bg-neutral-900 text-xs font-bold text-neutral-300 hover:text-white uppercase tracking-wider transition-colors cursor-pointer"
                     >
-                      Lupa sandi?
+                      ← KEMBALI
+                    </button>
+
+                    <button
+                      type="submit"
+                      disabled={isLoading}
+                      className="flex-1 py-2.5 rounded-md bg-amber-500 hover:bg-amber-400 text-black text-xs font-bold uppercase tracking-wider border border-amber-400 transition-colors cursor-pointer"
+                    >
+                      {isLoading ? 'MENGIRIM...' : 'KIRIM RESET'}
                     </button>
                   </div>
-                  <input
-                    type="password"
-                    required
-                    value={loginPassword}
-                    onChange={(e) => setLoginPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className="w-full px-3 py-2 bg-neutral-900 border border-neutral-800 rounded-xl text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-amber-400"
-                  />
-                </div>
-
-                {/* Tombol Masuk */}
-                <button
-                  type="submit"
-                  className="w-full mt-2 py-3 px-4 rounded-xl font-bold text-xs text-black bg-amber-500 hover:bg-amber-400 border border-amber-400 active:scale-[0.98] transition-all cursor-pointer uppercase tracking-wider flex items-center justify-center gap-2"
-                >
-                  <span>MASUK SEKARANG</span>
-                  <ArrowRight className="w-4 h-4" />
-                </button>
-              </form>
-            ) : (
-              /* --- Form Lupa Sandi di Dalam Masuk --- */
-              <form onSubmit={handleForgotSubmit} className="space-y-3.5">
-                <div className="p-3 rounded-xl bg-neutral-900 border border-neutral-800 text-xs text-neutral-300">
-                  Masukkan email akun terdaftar Anda. Kami akan mengirimkan instruksi untuk menyetel ulang kata sandi.
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-[11px] font-bold text-neutral-300 uppercase tracking-wider">
-                    Email Akun Anda:
-                  </label>
-                  <input
-                    type="email"
-                    required
-                    value={forgotEmail}
-                    onChange={(e) => setForgotEmail(e.target.value)}
-                    placeholder="nama@email.com"
-                    className="w-full px-3 py-2 bg-neutral-900 border border-neutral-800 rounded-xl text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-amber-400"
-                  />
-                </div>
-
-                {forgotSent && (
-                  <div className="p-3 rounded-xl bg-neutral-900 border border-amber-500/50 text-amber-300 text-xs text-center font-bold">
-                    Tautan pemulihan telah dikirim ke {forgotEmail}! Silakan periksa inbox Anda.
-                  </div>
-                )}
-
-                <div className="flex gap-2 pt-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      sound.playClick();
-                      setIsForgotView(false);
-                    }}
-                    className="flex-1 py-2.5 rounded-xl border border-neutral-800 bg-neutral-900 text-xs font-bold text-neutral-300 hover:text-white uppercase tracking-wider cursor-pointer"
-                  >
-                    ← KEMBALI
-                  </button>
-
-                  <button
-                    type="submit"
-                    className="flex-1 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black text-xs font-bold uppercase tracking-wider border border-amber-400 cursor-pointer"
-                  >
-                    KIRIM RESET
-                  </button>
-                </div>
-              </form>
-            )}
-          </div>
-        )}
-
-        {/* ============================================================== */}
-        {/* 2. KONTEN TAB DAFTAR (DAFTAR DULU -> HABIS TUH PILIH AVATAR) */}
-        {/* ============================================================== */}
-        {activeTab === 'register' && (
-          <div className="space-y-3">
-            {/* Step Indicator */}
-            <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider px-1 text-slate-400">
-              <span className={registerStep === 1 ? 'text-amber-400' : ''}>1. DATA AKUN</span>
-              <span className="text-slate-600">➔</span>
-              <span className={registerStep === 2 ? 'text-amber-400' : ''}>2. PILIH AVATAR</span>
+                </form>
+              )}
             </div>
+          )}
 
-            {registerStep === 1 ? (
-              /* --- Step 1: Form Registrasi Akun --- */
-              <form onSubmit={handleRegisterStep1Submit} className="space-y-3">
-                <div className="space-y-1">
-                  <label className="text-[11px] font-bold text-slate-300 uppercase tracking-wider">
-                    Nama Karakter:
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={registerUsername}
-                    onChange={(e) => setRegisterUsername(e.target.value)}
-                    placeholder="Contoh: RadenSatria..."
-                    className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500"
-                  />
+          {/* ================================================================== */}
+          {/* 2. KONTEN TAB DAFTAR (Step 1: Data Akun, Step 2: Pilih Avatar)     */}
+          {/* ================================================================== */}
+          {activeTab === 'register' && (
+            <div className="space-y-4 animate-in fade-in duration-150">
+
+              {/* Step Wizard Breadcrumb */}
+              <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider px-1">
+                <div className={`flex items-center gap-1.5 ${registerStep === 1 ? 'text-amber-400' : 'text-neutral-400'}`}>
+                  <span className={`w-5 h-5 rounded-md flex items-center justify-center text-[10px] ${registerStep === 1 ? 'bg-amber-500 text-black font-black' : 'bg-neutral-800 text-neutral-400'}`}>
+                    1
+                  </span>
+                  <span>DATA AKUN & TANGGAL LAHIR</span>
                 </div>
 
-                <div className="space-y-1">
-                  <label className="text-[11px] font-bold text-slate-300 uppercase tracking-wider">
-                    Alamat Email:
-                  </label>
-                  <input
-                    type="email"
-                    required
-                    value={registerEmail}
-                    onChange={(e) => setRegisterEmail(e.target.value)}
-                    placeholder="nama@email.com"
-                    className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500"
-                  />
+                <span className="text-neutral-400">➔</span>
+
+                <div className={`flex items-center gap-1.5 ${registerStep === 2 ? 'text-amber-400' : 'text-neutral-400'}`}>
+                  <span className={`w-5 h-5 rounded-md flex items-center justify-center text-[10px] ${registerStep === 2 ? 'bg-amber-500 text-black font-black' : 'bg-neutral-800 text-neutral-400'}`}>
+                    2
+                  </span>
+                  <span>PILIH AVATAR (MALE / FEMALE)</span>
                 </div>
+              </div>
 
-                <div className="space-y-1">
-                  <label className="text-[11px] font-bold text-slate-300 uppercase tracking-wider">
-                    Kata Sandi:
-                  </label>
-                  <input
-                    type="password"
-                    required
-                    value={registerPassword}
-                    onChange={(e) => setRegisterPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500"
-                  />
-                </div>
+              {registerStep === 1 ? (
+                /* --- STEP 1: FORM PENDAFTARAN & TANGGAL LAHIR --- */
+                <form onSubmit={handleRegisterStep1Submit} className="space-y-3.5">
+                  {/* Nama Karakter */}
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+                      <User className="w-3.5 h-3.5" />
+                      <span>Nama Karakter:</span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={registerUsername}
+                      onChange={(e) => setRegisterUsername(e.target.value)}
+                      placeholder="Contoh: RadenSatria..."
+                      className="w-full px-3.5 py-2.5 bg-black border border-neutral-800 rounded-md text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-amber-400 font-mono transition-colors"
+                    />
+                  </div>
 
-                <div className="space-y-1">
-                  <label className="text-[11px] font-bold text-slate-300 uppercase tracking-wider">
-                    Konfirmasi Kata Sandi:
-                  </label>
-                  <input
-                    type="password"
-                    required
-                    value={registerConfirmPassword}
-                    onChange={(e) => setRegisterConfirmPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500"
-                  />
-                </div>
+                  {/* Alamat Email */}
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+                      <Mail className="w-3.5 h-3.5" />
+                      <span>Alamat Email:</span>
+                    </label>
+                    <input
+                      type="email"
+                      required
+                      value={registerEmail}
+                      onChange={(e) => setRegisterEmail(e.target.value)}
+                      placeholder="nama@email.com"
+                      className="w-full px-3.5 py-2.5 bg-black border border-neutral-800 rounded-md text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-amber-400 font-mono transition-colors"
+                    />
+                  </div>
 
-                <button
-                  type="submit"
-                  className="w-full mt-2 py-3 px-4 rounded-xl font-bold text-xs text-black bg-amber-500 hover:bg-amber-400 border border-amber-400 active:scale-[0.98] transition-all cursor-pointer uppercase tracking-wider flex items-center justify-center gap-2"
-                >
-                  <span>LANJUT PILIH AVATAR</span>
-                  <ArrowRight className="w-4 h-4" />
-                </button>
-              </form>
-            ) : (
-              /* --- Step 2: Pilih Avatar (Gender, Kulit, Baju, Celana, Topi) --- */
-              <form onSubmit={handleRegisterFinalSubmit} className="space-y-3.5 overflow-y-auto max-h-[62vh] pr-1 custom-scrollbar">
-                {/* Avatar Live Preview & Gender Toggle */}
-                <div className="flex items-center gap-4 bg-neutral-900/80 p-3 rounded-2xl border border-neutral-800">
-                  <AvatarPreview avatar={avatar} size={100} />
-
-                  <div className="flex-1 space-y-2">
-                    <div className="text-[11px] font-bold text-neutral-300 uppercase tracking-wider">
-                      Pilih Gender:
+                  {/* TANGGAL LAHIR (Otomatis Menampilkan Umur di Profil) */}
+                  <div className="space-y-1.5 p-3.5 bg-[#0e0e0e] border border-neutral-800 rounded-md">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+                        <Calendar className="w-3.5 h-3.5" />
+                        <span>Tanggal Lahir:</span>
+                      </label>
+                      <span className="text-xs font-mono font-bold text-amber-300 bg-neutral-900 border border-neutral-800 px-2 py-0.5 rounded">
+                        Umur: {calculatedAge} Tahun
+                      </span>
                     </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      {(['male', 'female'] as Gender[]).map((g) => {
-                        const isSel = avatar.gender === g;
-                        return (
-                          <button
-                            key={g}
-                            type="button"
-                            onClick={() => {
-                              sound.playClick();
-                              setAvatar({ ...avatar, gender: g });
-                            }}
-                            className={`py-2 px-3 rounded-xl border text-center text-xs font-bold uppercase tracking-wider transition-all cursor-pointer ${
-                              isSel
-                                ? 'bg-amber-500 text-black border-amber-400'
-                                : 'bg-[#0e0e0e] border-neutral-800 text-neutral-400 hover:text-white'
-                            }`}
-                          >
-                            {g === 'male' ? 'LAKI-LAKI' : 'PEREMPUAN'}
-                          </button>
-                        );
-                      })}
+
+                    <input
+                      type="date"
+                      required
+                      max={todayDate}
+                      value={registerBirthDate}
+                      onChange={(e) => setRegisterBirthDate(e.target.value)}
+                      className="w-full px-3.5 py-2 bg-black border border-neutral-800 rounded-md text-xs text-white focus:outline-none focus:border-amber-400 font-mono transition-colors"
+                    />
+
+                    <p className="text-[11px] text-neutral-400 leading-relaxed">
+                      Umur karakter akan otomatis dihitung berdasarkan tanggal lahir dan ditampilkan di profil publik Anda.
+                    </p>
+                  </div>
+
+                  {/* Kata Sandi & Konfirmasi */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+                        <Lock className="w-3.5 h-3.5" />
+                        <span>Kata Sandi:</span>
+                      </label>
+                      <input
+                        type="password"
+                        required
+                        value={registerPassword}
+                        onChange={(e) => setRegisterPassword(e.target.value)}
+                        placeholder="••••••••"
+                        className="w-full px-3.5 py-2.5 bg-black border border-neutral-800 rounded-md text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-amber-400 font-mono transition-colors"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+                        <Lock className="w-3.5 h-3.5" />
+                        <span>Konfirmasi Sandi:</span>
+                      </label>
+                      <input
+                        type="password"
+                        required
+                        value={registerConfirmPassword}
+                        onChange={(e) => setRegisterConfirmPassword(e.target.value)}
+                        placeholder="••••••••"
+                        className="w-full px-3.5 py-2.5 bg-black border border-neutral-800 rounded-md text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-amber-400 font-mono transition-colors"
+                      />
                     </div>
                   </div>
-                </div>
-
-                {/* 1. Warna Kulit */}
-                <div className="space-y-1.5">
-                  <label className="text-[11px] font-bold text-neutral-300 uppercase tracking-wider">
-                    Warna Kulit:
-                  </label>
-                  <div className="flex gap-2.5">
-                    {skinPalette.map((item) => (
-                      <button
-                        key={item.color}
-                        type="button"
-                        onClick={() => {
-                          sound.playClick();
-                          setAvatar({ ...avatar, skinColor: item.color });
-                        }}
-                        className={`w-7 h-7 rounded-full border-2 transition-transform cursor-pointer relative flex items-center justify-center ${
-                          avatar.skinColor === item.color
-                            ? 'border-amber-400 scale-110 ring-2 ring-amber-400'
-                            : 'border-transparent hover:scale-105'
-                        }`}
-                        style={{ backgroundColor: item.color }}
-                        title={item.name}
-                      >
-                        {avatar.skinColor === item.color && (
-                          <Check className="w-3.5 h-3.5 text-black stroke-[3]" />
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* 2. Warna Baju */}
-                <div className="space-y-1.5">
-                  <label className="text-[11px] font-bold text-neutral-300 uppercase tracking-wider">
-                    Warna Baju:
-                  </label>
-                  <div className="flex gap-2.5">
-                    {shirtPalette.map((item) => (
-                      <button
-                        key={item.color}
-                        type="button"
-                        onClick={() => {
-                          sound.playClick();
-                          setAvatar({ ...avatar, shirtColor: item.color });
-                        }}
-                        className={`w-7 h-7 rounded-full border-2 transition-transform cursor-pointer flex items-center justify-center ${
-                          avatar.shirtColor === item.color
-                            ? 'border-amber-400 scale-110 ring-2 ring-amber-400'
-                            : 'border-transparent hover:scale-105'
-                        }`}
-                        style={{ backgroundColor: item.color }}
-                        title={item.name}
-                      >
-                        {avatar.shirtColor === item.color && (
-                          <Check className="w-3.5 h-3.5 text-white stroke-[3]" />
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* 3. Warna Celana */}
-                <div className="space-y-1.5">
-                  <label className="text-[11px] font-bold text-neutral-300 uppercase tracking-wider">
-                    Warna Celana:
-                  </label>
-                  <div className="flex gap-2.5">
-                    {pantsPalette.map((item) => (
-                      <button
-                        key={item.color}
-                        type="button"
-                        onClick={() => {
-                          sound.playClick();
-                          setAvatar({ ...avatar, pantsColor: item.color });
-                        }}
-                        className={`w-7 h-7 rounded-full border-2 transition-transform cursor-pointer flex items-center justify-center ${
-                          avatar.pantsColor === item.color
-                            ? 'border-amber-400 scale-110 ring-2 ring-amber-400'
-                            : 'border-transparent hover:scale-105'
-                        }`}
-                        style={{ backgroundColor: item.color }}
-                        title={item.name}
-                      >
-                        {avatar.pantsColor === item.color && (
-                          <Check className="w-3.5 h-3.5 text-white stroke-[3]" />
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* 4. Topi Avatar */}
-                <div className="space-y-1.5">
-                  <label className="text-[11px] font-bold text-neutral-300 uppercase tracking-wider">
-                    Pilihan Topi Avatar:
-                  </label>
-                  <div className="grid grid-cols-3 sm:grid-cols-5 gap-1.5">
-                    {hatOptions.map((opt) => {
-                      const isSel = avatar.hatType === opt.id;
-                      return (
-                        <button
-                          key={opt.id}
-                          type="button"
-                          onClick={() => {
-                            sound.playClick();
-                            setAvatar({ ...avatar, hatType: opt.id });
-                          }}
-                          className={`py-1.5 px-2 rounded-xl border text-center text-[10px] font-bold uppercase transition-all cursor-pointer ${
-                            isSel
-                              ? 'bg-amber-500 text-black border-amber-400'
-                              : 'bg-neutral-900 border-neutral-800 text-neutral-400 hover:text-white'
-                          }`}
-                        >
-                          {opt.label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Tombol Aksi Step 2: Kembali atau Selesai */}
-                <div className="flex gap-2 pt-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      sound.playClick();
-                      setRegisterStep(1);
-                    }}
-                    className="py-2.5 px-4 rounded-xl border border-neutral-800 bg-neutral-900 text-xs font-bold text-neutral-300 hover:text-white uppercase tracking-wider cursor-pointer flex items-center justify-center gap-1.5"
-                  >
-                    <ArrowLeft className="w-4 h-4" />
-                    <span>KEMBALI</span>
-                  </button>
 
                   <button
                     type="submit"
-                    className="flex-1 py-2.5 px-4 rounded-xl bg-amber-500 hover:bg-amber-400 text-black text-xs font-bold uppercase tracking-wider border border-amber-400 active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                    className="w-full mt-3 py-3 px-4 rounded-md font-black text-xs text-black bg-amber-500 hover:bg-amber-400 border border-amber-400 active:scale-[0.98] transition-colors cursor-pointer uppercase tracking-wider flex items-center justify-center gap-2"
                   >
-                    <span>SELESAI & MASUK DUNIA</span>
-                    <ArrowRight className="w-4 h-4" />
+                    <span>LANJUT KE PEMILIHAN AVATAR</span>
+                    <ArrowRight className="w-4 h-4 stroke-[3]" />
                   </button>
-                </div>
-              </form>
-            )}
+                </form>
+              ) : (
+                /* --- STEP 2: PILIH AVATAR (KHUSUS MALE DAN FEMALE SAJA) --- */
+                <form onSubmit={handleRegisterFinalSubmit} className="space-y-4 animate-in fade-in duration-150">
+                  <div className="text-center space-y-1 pb-1">
+                    <div className="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center justify-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5" />
+                      <span>Pilih Gender Karakter Utama:</span>
+                    </div>
+                    <p className="text-[11px] text-neutral-400">
+                      Pilih model avatar petualang Anda (Laki-laki atau Perempuan).
+                    </p>
+                  </div>
+
+                  {/* 2 KARTU BESAR PILIHAN: MALE VS FEMALE */}
+                  <div className="grid grid-cols-2 gap-3.5">
+                    {/* 1. MALE (LAKI-LAKI) */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        sound.playClick();
+                        setSelectedGender('male');
+                      }}
+                      className={`p-4 rounded-md border text-center flex flex-col items-center gap-3 transition-colors cursor-pointer relative ${
+                        selectedGender === 'male'
+                          ? 'bg-neutral-900 border-amber-400'
+                          : 'bg-[#0e0e0e] border-neutral-800 hover:border-neutral-700 hover:bg-neutral-900'
+                      }`}
+                    >
+                      {selectedGender === 'male' && (
+                        <div className="absolute top-2.5 right-2.5 w-5 h-5 rounded-full bg-amber-400 text-black flex items-center justify-center">
+                          <Check className="w-3 h-3 stroke-[3]" />
+                        </div>
+                      )}
+
+                      <div className="w-28 h-28 flex items-center justify-center">
+                        <AvatarPreview avatar={getAvatarForGender('male')} size={110} />
+                      </div>
+
+                      <div>
+                        <div className={`text-xs font-black uppercase tracking-wider ${selectedGender === 'male' ? 'text-amber-400' : 'text-white'}`}>
+                          Laki-Laki (Male)
+                        </div>
+                        <div className="text-[10px] text-neutral-400 mt-0.5">
+                          Petualang Tangguh
+                        </div>
+                      </div>
+
+                      <div className={`w-full py-1.5 rounded-md text-[10px] font-bold uppercase tracking-wider transition-colors ${
+                        selectedGender === 'male'
+                          ? 'bg-amber-500 text-black font-black'
+                          : 'bg-neutral-800 text-neutral-400'
+                      }`}>
+                        {selectedGender === 'male' ? 'TERPILIH ✓' : 'PILIH MALE'}
+                      </div>
+                    </button>
+
+                    {/* 2. FEMALE (PEREMPUAN) */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        sound.playClick();
+                        setSelectedGender('female');
+                      }}
+                      className={`p-4 rounded-md border text-center flex flex-col items-center gap-3 transition-colors cursor-pointer relative ${
+                        selectedGender === 'female'
+                          ? 'bg-neutral-900 border-amber-400'
+                          : 'bg-[#0e0e0e] border-neutral-800 hover:border-neutral-700 hover:bg-neutral-900'
+                      }`}
+                    >
+                      {selectedGender === 'female' && (
+                        <div className="absolute top-2.5 right-2.5 w-5 h-5 rounded-full bg-amber-400 text-black flex items-center justify-center">
+                          <Check className="w-3 h-3 stroke-[3]" />
+                        </div>
+                      )}
+
+                      <div className="w-28 h-28 flex items-center justify-center">
+                        <AvatarPreview avatar={getAvatarForGender('female')} size={110} />
+                      </div>
+
+                      <div>
+                        <div className={`text-xs font-black uppercase tracking-wider ${selectedGender === 'female' ? 'text-amber-400' : 'text-white'}`}>
+                          Perempuan (Female)
+                        </div>
+                        <div className="text-[10px] text-neutral-400 mt-0.5">
+                          Petualang Anggun
+                        </div>
+                      </div>
+
+                      <div className={`w-full py-1.5 rounded-md text-[10px] font-bold uppercase tracking-wider transition-colors ${
+                        selectedGender === 'female'
+                          ? 'bg-amber-500 text-black font-black'
+                          : 'bg-neutral-800 text-neutral-400'
+                      }`}>
+                        {selectedGender === 'female' ? 'TERPILIH ✓' : 'PILIH FEMALE'}
+                      </div>
+                    </button>
+                  </div>
+
+                  {/* Ringkasan Akun Sebelum Masuk */}
+                  <div className="p-3.5 bg-[#0e0e0e] border border-neutral-800 rounded-md text-xs space-y-1">
+                    <div className="flex justify-between">
+                      <span className="text-neutral-400">Nama Karakter:</span>
+                      <span className="font-bold text-white font-mono">{registerUsername}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-neutral-400">Tanggal Lahir:</span>
+                      <span className="font-bold text-amber-400 font-mono">
+                        {registerBirthDate} ({calculatedAge} Tahun)
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-neutral-400">Model Avatar:</span>
+                      <span className="font-bold text-amber-300 uppercase">
+                        {selectedGender === 'male' ? 'Male (Laki-laki)' : 'Female (Perempuan)'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Tombol Aksi Step 2 */}
+                  <div className="flex items-center gap-2.5 pt-1">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        sound.playClick();
+                        setRegisterStep(1);
+                      }}
+                      className="px-4 py-3 rounded-md border border-neutral-800 bg-neutral-900 text-neutral-300 hover:text-white text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer flex items-center gap-1.5"
+                    >
+                      <ArrowLeft className="w-4 h-4" />
+                      <span>Kembali</span>
+                    </button>
+
+                    <button
+                      type="submit"
+                      disabled={isLoading}
+                      className="flex-1 py-3 px-4 rounded-md font-black text-xs text-black bg-amber-500 hover:bg-amber-400 border border-amber-400 active:scale-[0.98] transition-colors cursor-pointer uppercase tracking-wider flex items-center justify-center gap-2"
+                    >
+                      <span>{isLoading ? 'MENDAFTARKAN...' : 'SELESAIKAN & MASUK KE GAME'}</span>
+                      <ArrowRight className="w-4 h-4 stroke-[3]" />
+                    </button>
+                  </div>
+                </form>
+              )}
+            </div>
+          )}
+
+        </div>
+
+        {/* ==================================================================== */}
+        {/* FOOTER ACTIONS                                                       */}
+        {/* ==================================================================== */}
+        <div className="px-6 py-3.5 border-t border-neutral-800 bg-[#0a0a0a] flex items-center justify-between text-xs">
+          <div className="text-[11px] text-neutral-400 font-mono">
+            RadenWorld Identity • Multi-Server Safe
           </div>
-        )}
+
+          <button
+            onClick={() => {
+              sound.playClick();
+              onClose();
+            }}
+            className="px-4 py-1.5 rounded-md border border-neutral-700 text-neutral-300 hover:text-white hover:border-amber-400 transition-colors font-bold text-xs cursor-pointer"
+          >
+            Tutup
+          </button>
+        </div>
+
       </div>
     </div>
   );

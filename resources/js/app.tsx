@@ -73,7 +73,11 @@ class ErrorBoundary extends Component<Props, State> {
 
 const container = document.getElementById('raden-game-app');
 if (container) {
-  const root = createRoot(container);
+  let root = (window as any).__raden_react_root;
+  if (!root) {
+    root = createRoot(container);
+    (window as any).__raden_react_root = root;
+  }
   root.render(
     <ErrorBoundary>
       <GameApp />

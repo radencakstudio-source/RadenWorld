@@ -61,6 +61,7 @@ interface HUDProps {
   isChatOpen: boolean;
   interactionPrompt?: string | null;
   onTriggerInteraction?: () => void;
+  controlMode?: 'pc' | 'mobile';
 }
 
 export const HUD: React.FC<HUDProps> = ({
@@ -73,9 +74,12 @@ export const HUD: React.FC<HUDProps> = ({
   isChatOpen,
   interactionPrompt,
   onTriggerInteraction,
+  controlMode = 'pc',
 }) => {
   const sound = SoundManager.getInstance();
   const displayServerCode = cleanServerCode(serverCode);
+  const isTouchDevice = typeof window !== 'undefined' && ('ontouchstart' in window || (navigator?.maxTouchPoints ?? 0) > 0 || window.innerWidth <= 1024);
+  const isMobile = controlMode === 'mobile' || isTouchDevice;
   const stats = playerStats || {
     x: 480,
     y: 380,
@@ -259,16 +263,26 @@ export const HUD: React.FC<HUDProps> = ({
               className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-amber-500 text-black border border-amber-400 font-bold text-xs uppercase tracking-wider hover:bg-amber-400 active:scale-95 cursor-pointer transition-all"
             >
               <Zap className="w-3.5 h-3.5 fill-current" />
-              <span>{interactionPrompt}</span>
+              <span>
+                {isMobile
+                  ? interactionPrompt
+                      .replace(/TEKAN\s*\[E\]\s*\/?\s*KLIK\s*UNTUK/gi, 'SENTUH UNTUK')
+                      .replace(/TEKAN\s*\[E\]\s*UNTUK/gi, 'SENTUH UNTUK')
+                      .replace(/TEKAN\s*\[E\]/gi, 'SENTUH')
+                      .replace(/\[E\]/gi, 'AKSI')
+                  : interactionPrompt}
+              </span>
             </button>
           )}
 
-          {/* Keterangan Kontrol PC / Laptop: Bersih Tanpa Drop-Shadow */}
-          <div className="hidden md:flex flex-col gap-0.5 text-xs font-bold text-amber-400 tracking-wider">
-            <div>jalan = <span className="text-amber-300">WASD/Panah</span></div>
-            <div>interaksi = <span className="text-amber-300">E</span></div>
-            <div>Chat = <span className="text-amber-300">/</span></div>
-          </div>
+          {/* Keterangan Kontrol PC / Laptop: Disembunyikan jika memilih Mobile */}
+          {!isMobile && (
+            <div className="hidden md:flex flex-col gap-0.5 text-xs font-bold text-amber-400 tracking-wider">
+              <div>jalan = <span className="text-amber-300">WASD/Panah</span></div>
+              <div>interaksi = <span className="text-amber-300">E</span></div>
+              <div>Chat = <span className="text-amber-300">/</span></div>
+            </div>
+          )}
         </div>
 
         {/* KANAN BAWAH: Nama Tempat (World) & Koordinat (x,y) Bersih Tanpa Drop-Shadow */}

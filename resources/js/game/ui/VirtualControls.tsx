@@ -3,37 +3,39 @@
  * FILE: resources/js/game/ui/VirtualControls.tsx
  * ============================================================================
  * FUNGSI UTAMA:
- * Kontrol Virtual Analog (Touch Joystick) dan Tombol Interaksi [E] khusus Mobile (HP/Tablet).
- * Desain:
- * 1. Analog Joystick sentuh 360° yang mulus dan responsif di kiri bawah.
- * 2. Tombol Interaksi [E] dan tombol Chat [/] di kanan bawah.
- * 3. Desain elegan gelap & emas amber, tanpa kedip, tanpa gangguan.
+ * Kontrol Virtual Analog (Touch Joystick 360°) dan Tombol Interaksi [AKSI] khusus Mobile (HP/Tablet).
+ * 
+ * FITUR:
+ * 1. Analog Joystick 360° yang mulus, presisi, dan responsif di kiri bawah.
+ * 2. Tombol Aksi / Interaksi [AKSI] di kanan bawah (tanpa tombol chat dobel).
+ * 3. Skema warna elegan: Flat Dark Carbon (#000000) & Emas Amber (#f59e0b).
  * ============================================================================
  */
 
 import React, { useState, useRef, useCallback } from 'react';
-import { MessageSquare, Zap } from 'lucide-react';
+import { Zap } from 'lucide-react';
+import { EventBus } from '../core/EventBus';
+import { SoundManager } from '../core/SoundManager';
 
 interface VirtualControlsProps {
-  onDirectionPress: (dir: 'up' | 'down' | 'left' | 'right') => void;
-  onDirectionRelease: () => void;
   onActionPress: () => void;
-  onChatPress: () => void;
+  onDirectionPress?: (dir: 'up' | 'down' | 'left' | 'right') => void;
+  onDirectionRelease?: () => void;
 }
 
 export const VirtualControls: React.FC<VirtualControlsProps> = ({
+  onActionPress,
   onDirectionPress,
   onDirectionRelease,
-  onActionPress,
-  onChatPress,
 }) => {
   const [knobPos, setKnobPos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const touchIdRef = useRef<number | null>(null);
+  const isMouseDraggingRef = useRef(false);
   const joystickBaseRef = useRef<HTMLDivElement>(null);
-  const activeDirRef = useRef<'up' | 'down' | 'left' | 'right' | null>(null);
+  const sound = SoundManager.getInstance();
 
-  const maxRadius = 38;
+  const maxRadius = 42;
 
   const updateJoystick = useCallback(
     (clientX: number, clientY: number) => {
@@ -54,29 +56,36 @@ export const VirtualControls: React.FC<VirtualControlsProps> = ({
 
       setKnobPos({ x: knobX, y: knobY });
 
-      // Jika pergeseran cukup signifikan (> 12px), tentukan arah
-      if (clampedDist > 12) {
-        let dir: 'up' | 'down' | 'left' | 'right';
-        if (Math.abs(dx) > Math.abs(dy)) {
-          dir = dx > 0 ? 'right' : 'left';
-        } else {
-          dir = dy > 0 ? 'down' : 'up';
-        }
+      // Jika digerakkan lebih dari deadzone (> 6px), kirim vektor analog 360 derajat
+      if (clampedDist > 6) {
+        const normX = knobX / maxRadius;
+        const normY = knobY / maxRadius;
 
-        if (activeDirRef.current !== dir) {
-          activeDirRef.current = dir;
+        EventBus.emit('joystick-move', { x: normX, y: normY });
+
+        // Kompatibilitas arah diskrit
+        if (onDirectionPress) {
+          const dir = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up');
           onDirectionPress(dir);
         }
       } else {
-        if (activeDirRef.current !== null) {
-          activeDirRef.current = null;
-          onDirectionRelease();
-        }
+        EventBus.emit('joystick-end');
+        onDirectionRelease?.();
       }
     },
     [onDirectionPress, onDirectionRelease]
   );
 
+  const resetJoystick = useCallback(() => {
+    touchIdRef.current = null;
+    isMouseDraggingRef.current = false;
+    setIsDragging(false);
+    setKnobPos({ x: 0, y: 0 });
+    EventBus.emit('joystick-end');
+    onDirectionRelease?.();
+  }, [onDirectionRelease]);
+
+  // Touch handlers
   const handleTouchStart = (e: React.TouchEvent) => {
     if (touchIdRef.current !== null) return;
     const touch = e.changedTouches[0];
@@ -101,75 +110,93 @@ export const VirtualControls: React.FC<VirtualControlsProps> = ({
     for (let i = 0; i < e.changedTouches.length; i++) {
       const touch = e.changedTouches[i];
       if (touch.identifier === touchIdRef.current) {
-        touchIdRef.current = null;
-        setIsDragging(false);
-        setKnobPos({ x: 0, y: 0 });
-        activeDirRef.current = null;
-        onDirectionRelease();
+        resetJoystick();
         break;
       }
     }
   };
 
+  // Mouse handlers untuk devtools mobile emulation
+  const handleMouseDown = (e: React.MouseEvent) => {
+    isMouseDraggingRef.current = true;
+    setIsDragging(true);
+    updateJoystick(e.clientX, e.clientY);
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isMouseDraggingRef.current) return;
+    updateJoystick(e.clientX, e.clientY);
+  };
+
+  const handleMouseUp = () => {
+    if (!isMouseDraggingRef.current) return;
+    resetJoystick();
+  };
+
   return (
-    <div className="fixed inset-x-0 bottom-4 z-40 pointer-events-none flex justify-between items-end px-4 md:px-8 font-['Chakra_Petch']">
+    <div className="fixed inset-x-0 bottom-12 md:bottom-16 z-40 pointer-events-none flex justify-between items-end px-5 md:px-10 font-['Chakra_Petch']">
       {/* ================================================================ */}
-      {/* KIRI BAWAH: ANALOG JOYSTICK VIRTUAL SENTUH                       */}
+      {/* KIRI BAWAH: ANALOG JOYSTICK VIRTUAL SENTUH (360 DERAJAT)         */}
       {/* ================================================================ */}
-      <div className="pointer-events-auto select-none touch-none">
+      <div className="pointer-events-auto select-none touch-none pb-1 pl-1">
         <div
           ref={joystickBaseRef}
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
           onTouchCancel={handleTouchEnd}
-          className="relative w-28 h-28 rounded-full bg-black border-2 border-neutral-800 flex items-center justify-center cursor-pointer"
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          onMouseLeave={handleMouseUp}
+          className="relative w-32 h-32 rounded-full bg-black/90 border-2 border-neutral-800 flex items-center justify-center cursor-pointer select-none touch-none shadow-lg shadow-black/60"
         >
-          {/* Sumbu Arah Halus (Indikator Salib) */}
+          {/* Garis Salib Sumbu Arah */}
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <div className="w-16 h-0.5 bg-neutral-800" />
+            <div className="w-20 h-0.5 bg-neutral-800/80" />
           </div>
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <div className="h-16 w-0.5 bg-neutral-800" />
+            <div className="h-20 w-0.5 bg-neutral-800/80" />
           </div>
 
-          {/* Knob Analog yang Bergerak Bersama Sentuhan Jari */}
+          {/* Lingkaran Batas Dalam */}
+          <div className="absolute w-20 h-20 rounded-full border border-neutral-800/60 pointer-events-none" />
+
+          {/* Knob Analog (Mengikuti Sentuhan Jari) */}
           <div
-            className={`w-12 h-12 rounded-full border-2 border-amber-400 bg-amber-500 flex items-center justify-center transition-transform ${
+            className={`w-14 h-14 rounded-full border-2 border-amber-300 bg-amber-500 flex items-center justify-center transition-transform select-none shadow-md shadow-amber-500/30 ${
               isDragging ? 'duration-0 scale-95' : 'duration-150 ease-out scale-100'
             }`}
             style={{
               transform: `translate3d(${knobPos.x}px, ${knobPos.y}px, 0)`,
             }}
           >
-            <div className="w-4 h-4 rounded-full bg-black border border-amber-300" />
+            <div className="w-5 h-5 rounded-full bg-black border border-amber-300" />
           </div>
         </div>
       </div>
 
       {/* ================================================================ */}
-      {/* KANAN BAWAH: TOMBOL INTERAKSI [E] & TOMBOL CHAT                  */}
+      {/* KANAN BAWAH: TOMBOL INTERAKSI [AKSI] TUNGGAL BULAT               */}
       {/* ================================================================ */}
-      <div className="pointer-events-auto flex items-end gap-3 select-none touch-none">
-        {/* Tombol Cepat Buka Chat */}
+      <div className="pointer-events-auto select-none touch-none pb-1 pr-1">
         <button
           type="button"
-          onClick={onChatPress}
-          className="w-11 h-11 rounded-md bg-black border border-neutral-800 text-amber-400 active:bg-amber-500 active:text-black flex items-center justify-center cursor-pointer transition-colors"
-          title="Buka Obrolan"
+          onTouchStart={(e) => {
+            e.preventDefault();
+            sound.playClick();
+            onActionPress();
+          }}
+          onClick={(e) => {
+            e.preventDefault();
+            sound.playClick();
+            onActionPress();
+          }}
+          className="w-18 h-18 md:w-20 md:h-20 rounded-full bg-gradient-to-b from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 border-2 border-amber-300 text-black active:scale-90 flex flex-col items-center justify-center font-black cursor-pointer transition-transform shadow-[0_4px_20px_rgba(245,158,11,0.35)] select-none"
+          title="Tombol Aksi / Interaksi"
         >
-          <MessageSquare className="w-4 h-4" />
-        </button>
-
-        {/* Tombol Interaksi Utama [E] (Bicara NPC / Buka Pintu / Aksi) */}
-        <button
-          type="button"
-          onClick={onActionPress}
-          className="w-14 h-14 rounded-lg bg-amber-500 border border-amber-400 text-black active:scale-90 flex flex-col items-center justify-center font-black cursor-pointer transition-colors"
-          title="Tombol Interaksi [E]"
-        >
-          <Zap className="w-5 h-5 fill-current text-black" />
-          <span className="text-[10px] font-extrabold tracking-widest mt-0.5">AKSI</span>
+          <Zap className="w-6 h-6 md:w-7 md:h-7 fill-black text-black stroke-[2.5]" />
+          <span className="text-[11px] md:text-xs font-black tracking-widest leading-none mt-1 text-black uppercase">AKSI</span>
         </button>
       </div>
     </div>

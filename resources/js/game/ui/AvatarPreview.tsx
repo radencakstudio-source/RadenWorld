@@ -30,7 +30,7 @@ export const AvatarPreview: React.FC<AvatarPreviewProps> = ({ avatar, size = 120
 
   return (
     <div
-      className="relative flex items-center justify-center rounded-2xl bg-black border border-neutral-800 overflow-hidden p-2 group"
+      className="relative flex items-center justify-center rounded-md bg-black border border-neutral-800 overflow-hidden p-2 group"
       style={{ width: size, height: size }}
     >
       <img

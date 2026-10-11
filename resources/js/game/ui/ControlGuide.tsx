@@ -4,10 +4,13 @@ import { X, Keyboard, MousePointer, MessageSquare, Box, Code2 } from 'lucide-rea
 interface ControlGuideProps {
   isOpen: boolean;
   onClose: () => void;
+  controlMode?: 'pc' | 'mobile';
 }
 
-export const ControlGuide: React.FC<ControlGuideProps> = ({ isOpen, onClose }) => {
+export const ControlGuide: React.FC<ControlGuideProps> = ({ isOpen, onClose, controlMode = 'pc' }) => {
   if (!isOpen) return null;
+
+  const isMobile = controlMode === 'mobile';
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4 pointer-events-auto">
@@ -16,7 +19,7 @@ export const ControlGuide: React.FC<ControlGuideProps> = ({ isOpen, onClose }) =
         <div className="flex items-center justify-between pb-3 border-b border-neutral-800">
           <div className="flex items-center gap-2 text-amber-400 font-bold text-base">
             <Keyboard className="w-5 h-5" />
-            <span>Petunjuk Kontrol & Sistem RadenWorld</span>
+            <span>Petunjuk Kontrol ({isMobile ? 'Mode Mobile' : 'Mode PC'})</span>
           </div>
           <button
             onClick={onClose}
@@ -35,7 +38,11 @@ export const ControlGuide: React.FC<ControlGuideProps> = ({ isOpen, onClose }) =
             <div>
               <div className="font-bold text-white mb-0.5">Navigasi / Pergerakan Karakter</div>
               <p className="text-neutral-400 leading-relaxed">
-                Gunakan tombol <kbd className="px-1.5 py-0.5 bg-neutral-800 rounded text-neutral-200 font-mono">W</kbd> <kbd className="px-1.5 py-0.5 bg-neutral-800 rounded text-neutral-200 font-mono">A</kbd> <kbd className="px-1.5 py-0.5 bg-neutral-800 rounded text-neutral-200 font-mono">S</kbd> <kbd className="px-1.5 py-0.5 bg-neutral-800 rounded text-neutral-200 font-mono">D</kbd> atau tombol <kbd className="px-1.5 py-0.5 bg-neutral-800 rounded text-neutral-200 font-mono">Panah (Arrow Keys)</kbd> untuk menjelajahi peta open world.
+                {isMobile ? (
+                  <>Gunakan <strong>Analog Joystick Sentuh 360°</strong> di kiri bawah atau tap lantai langsung untuk berjalan ke titik tujuan.</>
+                ) : (
+                  <>Gunakan tombol <kbd className="px-1.5 py-0.5 bg-neutral-800 rounded text-neutral-200 font-mono">W</kbd> <kbd className="px-1.5 py-0.5 bg-neutral-800 rounded text-neutral-200 font-mono">A</kbd> <kbd className="px-1.5 py-0.5 bg-neutral-800 rounded text-neutral-200 font-mono">S</kbd> <kbd className="px-1.5 py-0.5 bg-neutral-800 rounded text-neutral-200 font-mono">D</kbd> atau tombol <kbd className="px-1.5 py-0.5 bg-neutral-800 rounded text-neutral-200 font-mono">Panah</kbd> untuk berjalan.</>
+                )}
               </p>
             </div>
           </div>
@@ -47,7 +54,11 @@ export const ControlGuide: React.FC<ControlGuideProps> = ({ isOpen, onClose }) =
             <div>
               <div className="font-bold text-white mb-0.5">Interaksi Objek & NPC</div>
               <p className="text-neutral-400 leading-relaxed">
-                Klik mouse pada NPC <strong>Sage Raden</strong> di plaza atau <strong>Peti Harta (Chests)</strong> yang tersebar di peta untuk berinteraksi.
+                {isMobile ? (
+                  <>Dekati objek/NPC lalu sentuh tombol bulat <strong>[AKSI]</strong> di kanan bawah layar untuk berdialog atau masuk ruangan.</>
+                ) : (
+                  <>Dekati objek/NPC lalu tekan tombol <kbd className="px-1.5 py-0.5 bg-neutral-800 rounded text-neutral-200 font-mono">E</kbd> atau klik mouse pada objek.</>
+                )}
               </p>
             </div>
           </div>
@@ -59,7 +70,11 @@ export const ControlGuide: React.FC<ControlGuideProps> = ({ isOpen, onClose }) =
             <div>
               <div className="font-bold text-white mb-0.5">Multiplayer Real-Time Chat</div>
               <p className="text-neutral-400 leading-relaxed">
-                Tekan <kbd className="px-1.5 py-0.5 bg-neutral-800 rounded text-neutral-200 font-mono">Enter</kbd> untuk membuka input obrolan. Pesan akan otomatis muncul sebagai speech bubble di atas karakter dan di jendela chat semua pemain.
+                {isMobile ? (
+                  <>Sentuh ikon <strong>Chat</strong> di sebelah avatar profil untuk membuka pesan obrolan global.</>
+                ) : (
+                  <>Tekan <kbd className="px-1.5 py-0.5 bg-neutral-800 rounded text-neutral-200 font-mono">Enter</kbd> atau tombol Chat di atas untuk membuka input obrolan.</>
+                )}
               </p>
             </div>
           </div>

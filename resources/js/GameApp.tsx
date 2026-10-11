@@ -11,7 +11,7 @@
  * ============================================================================
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { GameCanvas } from './components/GameCanvas';
 import { HomeScreen } from './game/ui/HomeScreen';
 import { HUD } from './game/ui/HUD';
@@ -23,6 +23,7 @@ import { WardrobeModal } from './game/ui/WardrobeModal';
 import { ProfileModal } from './game/ui/ProfileModal';
 import { ServerModal, IGameServerOption } from './game/ui/ServerModal';
 import { DialogueBox } from './game/ui/DialogueBox';
+import { calculateAgeFromBirthDate } from './game/ui/AuthModal';
 import { EventBus } from './game/core/EventBus';
 import { SoundManager } from './game/core/SoundManager';
 import { NetworkManager } from './game/core/NetworkManager';
@@ -78,13 +79,44 @@ export const GameApp: React.FC = () => {
     level: 1,
     hp: 100,
     maxHp: 100,
-    name: 'Petualang',
+    name: (() => {
+      try {
+        const u = JSON.parse(localStorage.getItem('raden_player_user') || '{}');
+        if (u.name) return u.name;
+      } catch (e) {}
+      return 'Petualang';
+    })(),
     roomName: initialPath.startsWith('/world') ? 'SANCTUARY CENTRAL PLAZA' : 'RUMAH PRIBADI: RUANG UTAMA',
     inHouse: !initialPath.startsWith('/world'),
-    privateRoomId: 'safe-01',
-    role: 'player',
-    isSuperAdmin: false,
-    title: 'Petualang Pemula',
+    privateRoomId: (() => {
+      try {
+        const u = JSON.parse(localStorage.getItem('raden_player_user') || '{}');
+        if (u.private_room_id) return u.private_room_id;
+      } catch (e) {}
+      return 'safe-01';
+    })(),
+    role: (() => {
+      try {
+        const u = JSON.parse(localStorage.getItem('raden_player_user') || '{}');
+        if (u.role) return u.role;
+      } catch (e) {}
+      return 'player';
+    })(),
+    isSuperAdmin: (() => {
+      try {
+        const u = JSON.parse(localStorage.getItem('raden_player_user') || '{}');
+        if (u.is_super_admin || u.role === 'super_admin' || u.name?.toUpperCase() === 'RADEN' || u.email === 'radencakstudio@gmail.com') return true;
+      } catch (e) {}
+      return false;
+    })(),
+    title: (() => {
+      try {
+        const u = JSON.parse(localStorage.getItem('raden_player_user') || '{}');
+        if (u.is_super_admin || u.role === 'super_admin' || u.name?.toUpperCase() === 'RADEN' || u.email === 'radencakstudio@gmail.com') return '👑 SUPER ADMIN';
+        if (u.title) return u.title;
+      } catch (e) {}
+      return 'Petualang Pemula';
+    })(),
   });
 
   const [isServerModalOpen, setIsServerModalOpen] = useState(false);
@@ -123,7 +155,26 @@ export const GameApp: React.FC = () => {
       return 0;
     }
   });
-  const [playerAge] = useState<number>(21);
+  const [playerBirthDate, setPlayerBirthDate] = useState<string>(() => {
+    try {
+      const u = JSON.parse(localStorage.getItem('raden_player_user') || '{}');
+      return u.birth_date || '';
+    } catch (e) {
+      return '';
+    }
+  });
+
+  const playerAge = useMemo(() => {
+    if (playerBirthDate) {
+      return calculateAgeFromBirthDate(playerBirthDate);
+    }
+    try {
+      const u = JSON.parse(localStorage.getItem('raden_player_user') || '{}');
+      if (u.birth_date) return calculateAgeFromBirthDate(u.birth_date);
+    } catch (e) {}
+    return 21;
+  }, [playerBirthDate]);
+
   const [playerLikes] = useState<number>(36);
   const [playerGold] = useState<number>(2500);
   const [playerDiamonds] = useState<number>(50);
@@ -150,17 +201,18 @@ export const GameApp: React.FC = () => {
     // 1. Stats updates from Phaser engine (X, Y, Name, Room)
     const handleStats = (stats: any) => {
       setPlayerStats((prev) => {
+        const resolvedName = (stats.name && stats.name !== 'Petualang') ? stats.name : (prev.name || stats.name);
         if (
           prev.gridX === stats.gridX &&
           prev.gridY === stats.gridY &&
           prev.roomName === stats.roomName &&
           prev.hp === stats.hp &&
           prev.inHouse === stats.inHouse &&
-          prev.name === stats.name
+          prev.name === resolvedName
         ) {
           return prev;
         }
-        return { ...prev, ...stats };
+        return { ...prev, ...stats, name: resolvedName };
       });
       if (stats.avatar) {
         setWardrobeAvatar((prev) => {
@@ -359,6 +411,9 @@ export const GameApp: React.FC = () => {
       const savedUser = localStorage.getItem('raden_player_user');
       if (savedUser) {
         const u = JSON.parse(savedUser);
+        if (u.birth_date) {
+          setPlayerBirthDate(u.birth_date);
+        }
         if (u.role === 'super_admin' || u.is_super_admin || u.email === 'radencakstudio@gmail.com' || u.name?.toUpperCase() === 'RADEN') {
           isSuperAdmin = true;
           role = 'super_admin';
@@ -610,6 +665,7 @@ export const GameApp: React.FC = () => {
             isChatOpen={isChatOpen}
             interactionPrompt={interactionPrompt}
             onTriggerInteraction={handleTriggerInteraction}
+            controlMode={settings.controlMode}
           />
 
           <ProfileModal
@@ -625,6 +681,7 @@ export const GameApp: React.FC = () => {
             gold={playerGold}
             diamonds={playerDiamonds}
             age={playerAge}
+            birthDate={playerBirthDate}
             likes={playerLikes}
             gender={wardrobeAvatar.gender}
             description={playerBio}
@@ -652,6 +709,7 @@ export const GameApp: React.FC = () => {
           <ControlGuide
             isOpen={isGuideOpen}
             onClose={() => setIsGuideOpen(false)}
+            controlMode={settings.controlMode}
           />
 
           {/* Modal Lemari Pakaian (Ganti Ava di dalam Rumah) */}
@@ -661,13 +719,12 @@ export const GameApp: React.FC = () => {
             currentAvatar={wardrobeAvatar}
           />
 
-          {/* Tombol Kontrol Virtual Layar Sentuh jika Mode Mobile dipilih */}
-          {settings.controlMode === 'mobile' && (
+          {/* Tombol Kontrol Virtual Layar Sentuh jika Mode Mobile dipilih atau di perangkat mobile/touch */}
+          {(settings.controlMode === 'mobile' || (typeof window !== 'undefined' && ('ontouchstart' in window || (navigator?.maxTouchPoints ?? 0) > 0 || window.innerWidth <= 1024))) && (
             <VirtualControls
+              onActionPress={handleVirtualAction}
               onDirectionPress={handleVirtualDirectionPress}
               onDirectionRelease={handleVirtualDirectionRelease}
-              onActionPress={handleVirtualAction}
-              onChatPress={() => setIsChatOpen(true)}
             />
           )}
 

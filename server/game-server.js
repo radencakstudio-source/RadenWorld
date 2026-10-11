@@ -50,8 +50,9 @@ io.on('connection', (socket) => {
 
   // 1. Event pemain bergabung
   socket.on('player:join', (data) => {
-    const defaultX = 4800 + Math.floor((Math.random() - 0.5) * 200);
-    const defaultY = 4800 + Math.floor((Math.random() - 0.5) * 200);
+    const defaultX = (typeof data?.x === 'number' && !isNaN(data.x)) ? data.x : 4800;
+    const defaultY = (typeof data?.y === 'number' && !isNaN(data.y)) ? data.y : 4860;
+    const defaultDir = data?.direction || 'down';
 
     const isSuperAdmin = data.isSuperAdmin || data.role === 'super_admin' || data.name === 'RADEN';
 
@@ -80,7 +81,7 @@ io.on('connection', (socket) => {
       },
       x: defaultX,
       y: defaultY,
-      direction: 'down',
+      direction: defaultDir,
       isMoving: false,
       hp: isSuperAdmin ? 9999 : 100,
       maxHp: isSuperAdmin ? 9999 : 100,
@@ -101,7 +102,7 @@ io.on('connection', (socket) => {
     // Siarkan ke seluruh pemain lain bahwa ada pemain baru masuk
     socket.broadcast.emit('player:joined', player);
 
-    console.log(`[Player] ${player.name} (${player.avatar.gender}) [ROLE: ${player.role}] bergabung. Online: ${players.size}`);
+    console.log(`[Player] ${player.name} (${player.avatar.gender}) [ROLE: ${player.role}] pos=(${player.x}, ${player.y}) bergabung. Online: ${players.size}`);
   });
 
   // 2. Event pergerakan posisi pemain
@@ -109,10 +110,10 @@ io.on('connection', (socket) => {
     const player = players.get(socket.id);
     if (!player) return;
 
-    player.x = data.x;
-    player.y = data.y;
-    player.direction = data.direction || player.direction;
-    player.isMoving = data.isMoving;
+    if (typeof data.x === 'number' && !isNaN(data.x)) player.x = data.x;
+    if (typeof data.y === 'number' && !isNaN(data.y)) player.y = data.y;
+    if (data.direction) player.direction = data.direction;
+    player.isMoving = !!data.isMoving;
 
     // Siarkan posisi terbaru ke semua pemain lain
     socket.broadcast.emit('player:moved', {

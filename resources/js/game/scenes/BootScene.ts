@@ -151,9 +151,27 @@ export class BootScene extends Phaser.Scene {
           adminToken,
         });
       } else if (pathname.startsWith('/world')) {
-        this.scene.start('WorldScene');
+        let savedName = '';
+        let savedAvatar = undefined;
+        try {
+          const u = JSON.parse(localStorage.getItem('raden_player_user') || '{}');
+          if (u.name) savedName = u.name;
+          const a = localStorage.getItem('raden_player_avatar');
+          if (a) savedAvatar = JSON.parse(a);
+        } catch (e) {}
+        this.scene.start('WorldScene', { name: savedName, avatar: savedAvatar });
       } else {
-        this.scene.start('HouseScene');
+        let savedName = '';
+        let savedAvatar = undefined;
+        let savedRoomId = undefined;
+        try {
+          const u = JSON.parse(localStorage.getItem('raden_player_user') || '{}');
+          if (u.name) savedName = u.name;
+          if (u.private_room_id) savedRoomId = u.private_room_id;
+          const a = localStorage.getItem('raden_player_avatar');
+          if (a) savedAvatar = JSON.parse(a);
+        } catch (e) {}
+        this.scene.start('HouseScene', { name: savedName, avatar: savedAvatar, privateRoomId: savedRoomId });
       }
     });
   }

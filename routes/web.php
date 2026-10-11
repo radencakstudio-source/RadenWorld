@@ -143,6 +143,7 @@ Route::post('/api/auth/register', function (\Illuminate\Http\Request $request) {
     $user = \App\Models\User::create([
         'name' => $name,
         'email' => $email,
+        'birth_date' => $data['birth_date'] ?? null,
         'password' => \Illuminate\Support\Facades\Hash::make($password),
         'avatar' => $avatar,
         'level' => $level,
@@ -158,6 +159,7 @@ Route::post('/api/auth/register', function (\Illuminate\Http\Request $request) {
             'id' => $user->id,
             'name' => $user->name,
             'email' => $user->email,
+            'birth_date' => $user->birth_date,
             'avatar' => $user->avatar,
             'level' => $user->level,
             'exp' => $user->exp,
@@ -193,10 +195,11 @@ Route::post('/api/auth/login', function (\Illuminate\Http\Request $request) {
         ->first();
 
     // Khusus Akun Super Admin: jika belum ada di database, buat langsung
-    if (!$user && (strtolower($login) === 'radencakstudio@gmail.com' || strtoupper($login) === 'RADEN')) {
+    if (!$user && (strtolower($login) === 'radencakstudio@gmail.com' || strtolower($login) === 'raden')) {
         $user = \App\Models\User::create([
-            'name' => 'RADEN',
+            'name' => 'raden',
             'email' => 'radencakstudio@gmail.com',
+            'birth_date' => '2004-08-16',
             'password' => \Illuminate\Support\Facades\Hash::make('Raden1234'),
             'role' => 'super_admin',
             'title' => '👑 SUPER ADMIN',
@@ -253,6 +256,7 @@ Route::post('/api/auth/login', function (\Illuminate\Http\Request $request) {
             'id' => $user->id,
             'name' => $user->name,
             'email' => $user->email,
+            'birth_date' => $user->birth_date,
             'avatar' => $user->avatar,
             'level' => $user->level,
             'exp' => $user->exp,

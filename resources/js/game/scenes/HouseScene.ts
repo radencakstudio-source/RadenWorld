@@ -60,10 +60,34 @@ export class HouseScene extends Phaser.Scene {
   public init(data?: { name?: string; avatar?: IAvatarCustomization; privateRoomId?: string }): void {
     this.isTransitioning = false;
     this.player = null as any;
-    if (data?.name) this.playerName = data.name;
-    if (data?.avatar) this.currentAvatar = data.avatar;
+
+    let savedName = '';
+    let savedRoomId = '';
+    let savedAvatar: IAvatarCustomization | null = null;
+    try {
+      const u = JSON.parse(localStorage.getItem('raden_player_user') || '{}');
+      if (u.name) savedName = u.name;
+      if (u.private_room_id) savedRoomId = u.private_room_id;
+      const a = localStorage.getItem('raden_player_avatar');
+      if (a) savedAvatar = JSON.parse(a);
+    } catch (e) {}
+
+    if (data?.name) {
+      this.playerName = data.name;
+    } else if (savedName) {
+      this.playerName = savedName;
+    }
+
+    if (data?.avatar) {
+      this.currentAvatar = data.avatar;
+    } else if (savedAvatar) {
+      this.currentAvatar = savedAvatar;
+    }
+
     if (data?.privateRoomId) {
       this.privateRoomId = data.privateRoomId;
+    } else if (savedRoomId) {
+      this.privateRoomId = savedRoomId;
     } else if (window.location.pathname.startsWith('/home/')) {
       const seg = window.location.pathname.replace('/home/', '').trim();
       if (seg) this.privateRoomId = seg;
@@ -98,9 +122,13 @@ export class HouseScene extends Phaser.Scene {
       if (userData?.privateRoomId) this.privateRoomId = userData.privateRoomId;
       if (this.player) {
         this.player.setAvatar(this.currentAvatar);
+        if (userData?.name) {
+          this.player.setEntityName(userData.name);
+        }
       } else {
         this.spawnPlayerInHouse();
       }
+      this.emitStats(this.player?.x || 840, this.player?.y || 620, 'RUMAH PRIBADI: RUANG UTAMA');
     };
     EventBus.on('join-game', onJoinGame);
 
@@ -413,6 +441,13 @@ export class HouseScene extends Phaser.Scene {
         }
       }
     } catch (e) {}
+
+    if (!this.playerName || this.playerName === 'Petualang') {
+      try {
+        const u = JSON.parse(localStorage.getItem('raden_player_user') || '{}');
+        if (u.name) this.playerName = u.name;
+      } catch (e) {}
+    }
 
     this.player = new Player(
       this,

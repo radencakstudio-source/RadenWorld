@@ -42,7 +42,10 @@ export class RemotePlayer extends Entity {
   /** Koordinat Y tujuan interpolasi */
   private targetY: number;
 
-  /** Status apakah pemain lain sedang berjalan */
+  /** Waktu penerimaan paket jaringan terakhir (ms) */
+  private lastPacketTime: number = 0;
+
+  /** Status apakah pemain jarak jauh sedang bergerak */
   private isMoving: boolean = false;
 
   /**
@@ -63,6 +66,7 @@ export class RemotePlayer extends Entity {
     this.gender = avatar?.gender === 'female' ? 'female' : 'male';
     this.targetX = x;
     this.targetY = y;
+    this.lastPacketTime = Date.now();
 
     // Proporsi Karakter HD: w = ~119.5px x h = 177px, di dalam grid 1x2 (120x240px)
     this.charHeight = 177;
@@ -80,12 +84,12 @@ export class RemotePlayer extends Entity {
     });
     this.adjustSpriteScale();
 
+    // Matikan physics body arcade agar tidak bertabrakan atau ditarik paksa oleh world physics loop
     const body = this.body as Phaser.Physics.Arcade.Body;
     if (body) {
       body.setImmovable(true);
       body.moves = false;
-      body.setSize(70, 36);
-      body.setOffset(-35, 12);
+      body.enable = false;
     }
   }
 
@@ -93,68 +97,117 @@ export class RemotePlayer extends Entity {
    * Menerima pembaruan status posisi dan pergerakan dari WebSocket server
    */
   public setNetworkState(x: number, y: number, direction: Direction, isMoving: boolean): void {
-    this.targetX = x;
-    this.targetY = y;
-    this.currentDirection = direction;
-    this.isMoving = isMoving;
-    this.updateAnimation(isMoving);
+    if (typeof x === 'number' && !isNaN(x)) {
+      const dx = x - this.x;
+      const dy = (typeof y === 'number' && !isNaN(y) ? y : this.targetY) - this.y;
+      // Jika selisih posisi sangat besar (> 180px, misal baru spawn/teleport), langsung snap ke koordinat asli
+      if (dx * dx + dy * dy > 32400) {
+        this.x = x;
+        if (typeof y === 'number' && !isNaN(y)) this.y = y;
+      }
+      this.targetX = x;
+    }
+    if (typeof y === 'number' && !isNaN(y)) this.targetY = y;
+    if (direction) this.currentDirection = direction;
+    this.isMoving = !!isMoving;
+    this.lastPacketTime = Date.now();
   }
 
   public update(time: number, delta: number): void {
     this.updateFloatingElementsScale();
-    const lerpFactor = 0.2;
-    this.x = Phaser.Math.Linear(this.x, this.targetX, lerpFactor);
-    this.y = Phaser.Math.Linear(this.y, this.targetY, lerpFactor);
+
+    const dx = this.targetX - this.x;
+    const dy = this.targetY - this.y;
+    const distSq = dx * dx + dy * dy;
+
+    // 1. Interpolasi pergerakan posisi: snap jika sangat dekat (< 1px) untuk mencegah getar/jitter
+    if (distSq < 1.0) {
+      this.x = this.targetX;
+      this.y = this.targetY;
+    } else {
+      const lerp = Math.min(1.0, (delta / 1000) * 14);
+      this.x += dx * lerp;
+      this.y += dy * lerp;
+    }
+
+    // 2. Evaluasi status berjalan vs diam secara cerdas (Dead reckoning auto-idle)
+    // Jika jarak ke target sudah tercapai (< 2.5px) ATAU paket terakhir sudah lebih dari 180ms:
+    // Remote player PASTI sedang IDLE (mencegah bug jalan di tempat / glitch lompat)
+    const timeSincePacket = Date.now() - this.lastPacketTime;
+    const isStationary = distSq < 6.25; // dist < 2.5px
+    const isPacketStale = this.lastPacketTime > 0 && timeSincePacket > 200;
+
+    const shouldWalk = this.isMoving && !isStationary && !isPacketStale;
+
+    if (shouldWalk) {
+      // Perbarui arah hadap otomatis mengikuti vektor arah jika bergerak dominan
+      if (Math.abs(dx) > Math.abs(dy) + 2) {
+        this.currentDirection = dx > 0 ? 'right' : 'left';
+      } else if (Math.abs(dy) > Math.abs(dx) + 2) {
+        this.currentDirection = dy > 0 ? 'down' : 'up';
+      }
+      this.playWalkAnimation();
+    } else {
+      this.playIdlePose();
+    }
   }
 
   /**
-   * Mengatur animasi berjalan (Movement) dan pose diam (Idle) pemain remote
+   * Memutar animasi jalan remote player
    */
-  private updateAnimation(moving: boolean): void {
+  private playWalkAnimation(): void {
     if (!this.sprite || !this.sprite.anims) return;
 
-    if (moving) {
-      let animKey = `player-${this.gender}-walk-down`;
-      if (this.currentDirection === 'up') {
-        animKey = `player-${this.gender}-walk-up`;
-        this.sprite.setFlipX(false);
-      } else if (this.currentDirection === 'down') {
-        animKey = `player-${this.gender}-walk-down`;
-        this.sprite.setFlipX(false);
-      } else if (this.currentDirection === 'left') {
-        animKey = `player-${this.gender}-walk-side`;
-        this.sprite.setFlipX(true);
-      } else if (this.currentDirection === 'right') {
-        animKey = `player-${this.gender}-walk-side`;
-        this.sprite.setFlipX(false);
-      }
+    let animKey = `player-${this.gender}-walk-down`;
+    if (this.currentDirection === 'up') {
+      animKey = `player-${this.gender}-walk-up`;
+      this.sprite.setFlipX(false);
+    } else if (this.currentDirection === 'down') {
+      animKey = `player-${this.gender}-walk-down`;
+      this.sprite.setFlipX(false);
+    } else if (this.currentDirection === 'left') {
+      animKey = `player-${this.gender}-walk-side`;
+      this.sprite.setFlipX(true);
+    } else if (this.currentDirection === 'right') {
+      animKey = `player-${this.gender}-walk-side`;
+      this.sprite.setFlipX(false);
+    }
 
-      if (this.currentAnimKey !== animKey || !this.sprite.anims.isPlaying) {
-        this.currentAnimKey = animKey;
-        this.sprite.anims.play(animKey, true);
-        this.adjustSpriteScale();
-      }
-    } else {
-      if (this.sprite.anims.isPlaying) {
-        this.sprite.anims.stop();
-      }
-      this.currentAnimKey = '';
+    if (this.currentAnimKey !== animKey || !this.sprite.anims.isPlaying) {
+      this.currentAnimKey = animKey;
+      this.sprite.anims.play(animKey, true);
+      this.adjustSpriteScale();
+    }
+  }
 
-      let idleKey = `player-${this.gender}-idle-front`;
-      if (this.currentDirection === 'up') {
-        idleKey = `player-${this.gender}-idle-back`;
-        this.sprite.setFlipX(false);
-      } else if (this.currentDirection === 'down') {
-        idleKey = `player-${this.gender}-idle-front`;
-        this.sprite.setFlipX(false);
-      } else if (this.currentDirection === 'left') {
-        idleKey = `player-${this.gender}-idle-side`;
-        this.sprite.setFlipX(true);
-      } else if (this.currentDirection === 'right') {
-        idleKey = `player-${this.gender}-idle-side`;
-        this.sprite.setFlipX(false);
-      }
+  /**
+   * Menampilkan pose diam (Idle) remote player
+   */
+  private playIdlePose(): void {
+    if (!this.sprite) return;
 
+    if (this.sprite.anims && this.sprite.anims.isPlaying) {
+      this.sprite.anims.stop();
+    }
+    this.currentAnimKey = '';
+
+    let idleKey = `player-${this.gender}-idle-front`;
+    if (this.currentDirection === 'up') {
+      idleKey = `player-${this.gender}-idle-back`;
+      this.sprite.setFlipX(false);
+    } else if (this.currentDirection === 'down') {
+      idleKey = `player-${this.gender}-idle-front`;
+      this.sprite.setFlipX(false);
+    } else if (this.currentDirection === 'left') {
+      idleKey = `player-${this.gender}-idle-side`;
+      this.sprite.setFlipX(true);
+    } else if (this.currentDirection === 'right') {
+      idleKey = `player-${this.gender}-idle-side`;
+      this.sprite.setFlipX(false);
+    }
+
+    // Hanya ubah tekstur jika berbeda agar tidak terjadi glitch redraw frame
+    if (this.sprite.texture.key !== idleKey) {
       this.sprite.setTexture(idleKey);
       this.adjustSpriteScale();
     }

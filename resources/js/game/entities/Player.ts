@@ -51,6 +51,9 @@ export class Player extends Entity {
     D: Phaser.Input.Keyboard.Key;
   };
 
+  /** Vektor arah kontrol joystick analog virtual (khusus mobile) */
+  private joystickVector: { x: number; y: number } | null = null;
+
   /** Timestamp pengiriman data posisi terakhir ke WebSocket server (untuk throttling) */
   private lastSentTime: number = 0;
 
@@ -100,7 +103,14 @@ export class Player extends Entity {
     maxHp: number = 100
   ) {
     // Kecepatan gerak dipercepat ke 360 px/s (3 petak ubin/detik) agar lincah, sigap, dan responsif
-    super(scene, x, y, id, name, hp, maxHp, 360);
+    let effectiveName = name;
+    if (!effectiveName || effectiveName === 'Petualang') {
+      try {
+        const u = JSON.parse(localStorage.getItem('raden_player_user') || '{}');
+        if (u.name) effectiveName = u.name;
+      } catch (e) {}
+    }
+    super(scene, x, y, id, effectiveName, hp, maxHp, 360);
     this.avatar = avatar;
     this.gender = avatar?.gender === 'female' ? 'female' : 'male';
     this.networkManager = NetworkManager.getInstance();
@@ -149,13 +159,39 @@ export class Player extends Entity {
         if (this.body) {
           (this.body as Phaser.Physics.Arcade.Body).setVelocity(0, 0);
         }
+        this.joystickVector = null;
         this.isMoving = false;
         this.updateAnimation(false);
+        if (this.scene.scene.key === 'WorldScene') {
+          this.networkManager.sendMovement(this.x, this.y, this.currentDirection, false);
+        }
       }
     };
     EventBus.on('dialogue-active', onDialogueActive);
+
+    // Tangani input kontrol analog joystick virtual dari layar sentuh mobile
+    const onJoystickMove = (vec: { x: number; y: number }) => {
+      this.joystickVector = vec;
+      this.targetDestination = null;
+      this.onArrivalCallback = null;
+    };
+    const onJoystickEnd = () => {
+      this.joystickVector = null;
+      if (this.isMoving) {
+        this.isMoving = false;
+        this.updateAnimation(false);
+        if (this.scene.scene.key === 'WorldScene') {
+          this.networkManager.sendMovement(this.x, this.y, this.currentDirection, false);
+        }
+      }
+    };
+    EventBus.on('joystick-move', onJoystickMove);
+    EventBus.on('joystick-end', onJoystickEnd);
+
     this.once(Phaser.GameObjects.Events.DESTROY, () => {
       EventBus.off('dialogue-active', onDialogueActive);
+      EventBus.off('joystick-move', onJoystickMove);
+      EventBus.off('joystick-end', onJoystickEnd);
     });
 
     this.lastX = x;
@@ -254,9 +290,13 @@ export class Player extends Entity {
       body.setVelocity(0, 0);
       this.targetDestination = null;
       this.onArrivalCallback = null;
+      this.joystickVector = null;
       if (this.isMoving) {
         this.isMoving = false;
         this.updateAnimation(false);
+        if (this.scene.scene.key === 'WorldScene') {
+          this.networkManager.sendMovement(this.x, this.y, this.currentDirection, false);
+        }
       }
       return;
     }
@@ -271,8 +311,21 @@ export class Player extends Entity {
 
     const hasManualInput = left || right || up || down;
 
-    if (hasManualInput) {
-      // Prioritaskan kendali manual (Keyboard/Joystick)! Batalkan navigasi otomatis
+    if (this.joystickVector && (Math.abs(this.joystickVector.x) > 0.05 || Math.abs(this.joystickVector.y) > 0.05)) {
+      // 1. Input Analog Joystick Virtual (360° Touch)
+      this.targetDestination = null;
+      this.onArrivalCallback = null;
+
+      vx = this.joystickVector.x * this.speed;
+      vy = this.joystickVector.y * this.speed;
+
+      if (Math.abs(vx) > Math.abs(vy)) {
+        this.currentDirection = vx > 0 ? 'right' : 'left';
+      } else {
+        this.currentDirection = vy > 0 ? 'down' : 'up';
+      }
+    } else if (hasManualInput) {
+      // 2. Input Keyboard PC (WASD & Panah)
       this.targetDestination = null;
       this.onArrivalCallback = null;
 
@@ -298,13 +351,12 @@ export class Player extends Entity {
         vy *= 0.7071;
       }
     } else if (this.targetDestination) {
-      // Navigasi otomatis Point & Click / Tap-to-move
+      // 3. Navigasi otomatis Point & Click / Tap-to-move
       const dx = this.targetDestination.x - this.x;
       const dy = this.targetDestination.y - this.y;
       const dist = Math.hypot(dx, dy);
 
       if (dist <= 12) {
-        // Pemain telah sampai di titik target
         this.targetDestination = null;
         vx = 0;
         vy = 0;
@@ -316,7 +368,6 @@ export class Player extends Entity {
         vx = Math.cos(angle) * this.speed;
         vy = Math.sin(angle) * this.speed;
 
-        // Tentukan arah hadap animasi berdasarkan pergerakan dominan
         if (Math.abs(dx) > Math.abs(dy)) {
           this.currentDirection = dx > 0 ? 'right' : 'left';
         } else {
@@ -337,14 +388,24 @@ export class Player extends Entity {
       this.updateAnimation(nowMoving);
     }
 
-    // Sinkronisasi data posisi ke server setiap 60ms saat bergerak
+    // Hanya kirim sinkronisasi jaringan saat pemain berada di WorldScene (Open World)
+    const inWorld = this.scene.scene.key === 'WorldScene';
+    if (!inWorld) return;
+
+    // Sinkronisasi data posisi ke server setiap 50ms saat bergerak
     const moved = Math.abs(this.x - this.lastX) > 1 || Math.abs(this.y - this.lastY) > 1;
-    if (moved && time - this.lastSentTime > 60) {
+    if (nowMoving && moved && time - this.lastSentTime > 50) {
       this.lastSentTime = time;
       this.lastX = this.x;
       this.lastY = this.y;
-      this.networkManager.sendMovement(this.x, this.y, this.currentDirection, this.isMoving);
+      this.networkManager.sendMovement(this.x, this.y, this.currentDirection, true);
     } else if (movementStateChanged && !nowMoving) {
+      this.lastX = this.x;
+      this.lastY = this.y;
+      this.networkManager.sendMovement(this.x, this.y, this.currentDirection, false);
+    } else if (!nowMoving && time - this.lastSentTime > 2500) {
+      // Heartbeat posisi diam berkala untuk menjaga sinkronisasi 100% akurat di semua player lain
+      this.lastSentTime = time;
       this.lastX = this.x;
       this.lastY = this.y;
       this.networkManager.sendMovement(this.x, this.y, this.currentDirection, false);

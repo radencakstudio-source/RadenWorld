@@ -101,8 +101,15 @@ export abstract class Entity extends Phaser.GameObjects.Container {
     }
 
     // Inisialisasi teks nama karakter di atas kepala - Tajam, HD & Bersih Tanpa Background
-    const isSuperAdmin = name.toUpperCase() === 'RADEN';
-    const displayName = isSuperAdmin ? `👑 RADEN [ADMIN]` : name;
+    let isSuperAdmin = name.toUpperCase() === 'RADEN';
+    try {
+      const u = JSON.parse(localStorage.getItem('raden_player_user') || '{}');
+      if (u.name?.toLowerCase() === name.toLowerCase() && (u.role === 'super_admin' || u.is_super_admin || u.email === 'radencakstudio@gmail.com')) {
+        isSuperAdmin = true;
+      }
+    } catch (e) {}
+
+    const displayName = isSuperAdmin ? `👑 ${name.toUpperCase()} [ADMIN]` : name;
     const nameColor = isSuperAdmin ? '#f59e0b' : '#ffffff';
 
     this.nameTag = scene.add.text(0, -145, displayName, {
@@ -123,11 +130,20 @@ export abstract class Entity extends Phaser.GameObjects.Container {
   /**
    * Memperbarui nama tampilan entitas
    */
-  public setEntityName(newName: string): void {
+  public setEntityName(newName: string, isSuper?: boolean): void {
     if (!newName) return;
     this.entityName = newName;
-    const isSuperAdmin = newName.toUpperCase() === 'RADEN';
-    const displayName = isSuperAdmin ? `👑 RADEN [ADMIN]` : newName;
+    let isSuperAdmin = isSuper ?? (newName.toUpperCase() === 'RADEN');
+    if (!isSuperAdmin) {
+      try {
+        const u = JSON.parse(localStorage.getItem('raden_player_user') || '{}');
+        if (u.name?.toLowerCase() === newName.toLowerCase() && (u.role === 'super_admin' || u.is_super_admin || u.email === 'radencakstudio@gmail.com')) {
+          isSuperAdmin = true;
+        }
+      } catch (e) {}
+    }
+
+    const displayName = isSuperAdmin ? `👑 ${newName.toUpperCase()} [ADMIN]` : newName;
     if (this.nameTag) {
       this.nameTag.setText(displayName);
       this.nameTag.setColor(isSuperAdmin ? '#f59e0b' : '#ffffff');

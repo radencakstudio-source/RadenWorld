@@ -44,6 +44,9 @@ export class NetworkManager {
     avatar: IAvatarCustomization;
     role?: string;
     isSuperAdmin?: boolean;
+    x?: number;
+    y?: number;
+    direction?: Direction;
   } | null = null;
 
   /** Penyimpan callback terdaftar agar tidak hilang saat reconnect / connect tertunda */
@@ -148,8 +151,19 @@ export class NetworkManager {
           this.lastJoinData.name,
           this.lastJoinData.avatar,
           this.lastJoinData.role,
-          this.lastJoinData.isSuperAdmin
+          this.lastJoinData.isSuperAdmin,
+          this.lastJoinData.x,
+          this.lastJoinData.y,
+          this.lastJoinData.direction
         );
+        if (typeof this.lastJoinData.x === 'number' && typeof this.lastJoinData.y === 'number') {
+          this.sendMovement(
+            this.lastJoinData.x,
+            this.lastJoinData.y,
+            this.lastJoinData.direction || 'down',
+            false
+          );
+        }
       }
     });
 
@@ -257,8 +271,16 @@ export class NetworkManager {
     return this.socket?.id;
   }
 
-  public joinGame(name: string, avatar: IAvatarCustomization, role?: string, isSuperAdmin?: boolean): void {
-    this.lastJoinData = { name, avatar, role, isSuperAdmin };
+  public joinGame(
+    name: string,
+    avatar: IAvatarCustomization,
+    role?: string,
+    isSuperAdmin?: boolean,
+    x?: number,
+    y?: number,
+    direction?: Direction
+  ): void {
+    this.lastJoinData = { name, avatar, role, isSuperAdmin, x, y, direction };
     if (!this.socket || !this.isConnected) return;
     const isSuper = isSuperAdmin || role === 'super_admin' || name.toUpperCase() === 'RADEN';
     this.socket.emit('player:join', {
@@ -266,6 +288,9 @@ export class NetworkManager {
       avatar,
       role: isSuper ? 'super_admin' : (role || 'player'),
       isSuperAdmin: isSuper,
+      x: typeof x === 'number' && !isNaN(x) ? x : 4800,
+      y: typeof y === 'number' && !isNaN(y) ? y : 4860,
+      direction: direction || 'down',
     });
   }
 
@@ -273,6 +298,11 @@ export class NetworkManager {
    * Memancarkan data koordinat pergerakan pemain lokal ke server
    */
   public sendMovement(x: number, y: number, direction: Direction, isMoving: boolean): void {
+    if (this.lastJoinData) {
+      this.lastJoinData.x = x;
+      this.lastJoinData.y = y;
+      this.lastJoinData.direction = direction;
+    }
     if (!this.socket || !this.isConnected) return;
     this.socket.emit('player:move', { x, y, direction, isMoving });
   }

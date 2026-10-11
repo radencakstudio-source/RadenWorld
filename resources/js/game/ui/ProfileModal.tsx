@@ -17,6 +17,7 @@
 import React, { useState } from 'react';
 import { IAvatarCustomization } from '../types';
 import { AvatarPreview } from './AvatarPreview';
+import { calculateAgeFromBirthDate } from './AuthModal';
 import {
   User,
   X,
@@ -51,6 +52,7 @@ interface ProfileModalProps {
   description?: string;
   onSaveDescription?: (newDesc: string) => void;
   age?: number;
+  birthDate?: string;
   likes?: number;
   gender?: 'male' | 'female';
 }
@@ -73,6 +75,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
   description = 'Petualang penjelajah tanah agung RadenWorld.',
   onSaveDescription,
   age = 21,
+  birthDate,
   likes = 32,
   gender,
 }) => {
@@ -83,13 +86,26 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
 
   if (!isOpen) return null;
 
+  // Resolusi tanggal lahir: dari prop atau dari data user yang tersimpan di localStorage
+  const resolvedBirthDate = birthDate || (() => {
+    try {
+      const u = JSON.parse(localStorage.getItem('raden_player_user') || '{}');
+      return u.birth_date || '';
+    } catch (e) {
+      return '';
+    }
+  })();
+
   const isSuperAdmin = propIsSuperAdmin || role === 'super_admin' || name.toUpperCase() === 'RADEN';
   const effectiveLevel = isSuperAdmin ? 99 : level;
   const effectiveTitle = isSuperAdmin ? 'KREATOR & SUPER ADMIN' : title;
   const effectiveGold = isSuperAdmin ? 999999 : gold;
   const effectiveDiamonds = isSuperAdmin ? 9999 : diamonds;
   const effectiveLikes = isSuperAdmin ? 9999 : likes;
-  const effectiveAge = isSuperAdmin ? 99 : age;
+  
+  // Umur otomatis dihitung dari tanggal lahir jika tersedia
+  const calculatedAge = resolvedBirthDate ? calculateAgeFromBirthDate(resolvedBirthDate) : (age || 21);
+  const effectiveAge = calculatedAge;
 
   const maxExp = effectiveLevel * 100;
   const expPercent = isSuperAdmin ? 100 : Math.min(100, Math.round((exp / maxExp) * 100));
@@ -212,9 +228,16 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
           {/* 1. Umur */}
           <div className="p-2.5 rounded-md border border-neutral-800 bg-[#101010] flex items-center gap-2.5">
             <Calendar className="w-4 h-4 text-amber-400/80 shrink-0" />
-            <div>
+            <div className="min-w-0">
               <div className="text-[10px] text-neutral-400 uppercase font-bold tracking-wider">UMUR</div>
-              <div className="text-xs font-bold text-neutral-100">{effectiveAge} Tahun</div>
+              <div className="text-xs font-bold text-neutral-100 flex items-center gap-1.5 flex-wrap">
+                <span>{effectiveAge} Tahun</span>
+                {resolvedBirthDate && (
+                  <span className="text-[10px] text-neutral-400 font-mono font-normal">
+                    ({resolvedBirthDate})
+                  </span>
+                )}
+              </div>
             </div>
           </div>
 

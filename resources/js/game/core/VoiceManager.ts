@@ -27,8 +27,9 @@ export class VoiceManager {
   /** AudioContext untuk perekaman & deteksi suara lokal (VAD) */
   private recordContext: AudioContext | null = null;
 
-  /** Node pemrosesan audio mentah (ScriptProcessor) */
+  /** Node pemrosesan audio mentah (AudioWorklet atau ScriptProcessor) */
   private scriptProcessor: ScriptProcessorNode | null = null;
+  private audioWorkletNode: AudioWorkletNode | null = null;
 
   /** AudioContext untuk pemutaran suara pemain lain yang masuk */
   private playbackContext: AudioContext | null = null;
@@ -197,68 +198,46 @@ export class VoiceManager {
       await this.recordContext.resume();
 
       const source = this.recordContext.createMediaStreamSource(this.localStream);
-      
-      // Ukuran buffer 1024 sampel pada 16kHz = ~64ms per paket (latensi super instan & ultra responsif)
-      this.scriptProcessor = this.recordContext.createScriptProcessor(1024, 1, 1);
 
-      this.scriptProcessor.onaudioprocess = (e: AudioProcessingEvent) => {
-        if (!this.isMicEnabled) return;
+      // Gunakan AudioWorklet modern untuk mencegah pesan deprecation di browser
+      if (this.recordContext.audioWorklet) {
+        try {
+          const workletCode = `
+            class VoiceInputProcessor extends AudioWorkletProcessor {
+              process(inputs) {
+                const input = inputs[0];
+                if (input && input[0]) {
+                  this.port.postMessage(input[0]);
+                }
+                return true;
+              }
+            }
+            registerProcessor('voice-input-processor', VoiceInputProcessor);
+          `;
+          const blob = new Blob([workletCode], { type: 'application/javascript' });
+          const workletUrl = URL.createObjectURL(blob);
+          await this.recordContext.audioWorklet.addModule(workletUrl);
+          URL.revokeObjectURL(workletUrl);
 
-        const input = e.inputBuffer.getChannelData(0);
+          const workletNode = new AudioWorkletNode(this.recordContext, 'voice-input-processor');
+          workletNode.port.onmessage = (e) => {
+            if (e.data instanceof Float32Array) {
+              this.processAudioInput(e.data);
+            }
+          };
 
-        // 1. Hitung intensitas volume RMS (Voice Activity Detection)
-        let sumSquares = 0;
-        for (let i = 0; i < input.length; i++) {
-          sumSquares += input[i] * input[i];
+          source.connect(workletNode);
+          const dummyGain = this.recordContext.createGain();
+          dummyGain.gain.value = 0;
+          workletNode.connect(dummyGain);
+          dummyGain.connect(this.recordContext.destination);
+          this.audioWorkletNode = workletNode;
+        } catch (e) {
+          this.setupScriptProcessorFallback(source);
         }
-        const rms = Math.sqrt(sumSquares / input.length);
-
-        // Ambang batas berbicara wajar (menghindari mendengus pelan/background noise)
-        const isSpeakingNow = rms > 0.015;
-
-        if (isSpeakingNow) {
-          // Bersihkan timer jeda diam
-          if (this.silenceTimeout) {
-            window.clearTimeout(this.silenceTimeout);
-            this.silenceTimeout = null;
-          }
-
-          if (!this.isLocalSpeaking) {
-            this.isLocalSpeaking = true;
-            this.networkManager.sendVoiceSpeaking(true);
-            EventBus.emit('local-player-speaking', { isSpeaking: true });
-          }
-
-          // 2. Konversi Float32 [-1.0, 1.0] ke Int16 PCM untuk transmisi biner yang sangat ringan
-          const pcm16 = new Int16Array(input.length);
-          for (let i = 0; i < input.length; i++) {
-            const s = Math.max(-1, Math.min(1, input[i]));
-            pcm16[i] = s < 0 ? s * 0x8000 : s * 0x7fff;
-          }
-
-          // 3. Kirim paket suara biner melalui WebSocket
-          this.networkManager.sendVoiceChunk(pcm16.buffer, this.localX, this.localY);
-        } else {
-          // Pengguna sedang tidak bersuara: beri jeda 350ms sebelum mematikan status agar tidak flicker
-          if (this.isLocalSpeaking && !this.silenceTimeout) {
-            this.silenceTimeout = window.setTimeout(() => {
-              this.isLocalSpeaking = false;
-              this.silenceTimeout = null;
-              this.networkManager.sendVoiceSpeaking(false);
-              EventBus.emit('local-player-speaking', { isSpeaking: false });
-            }, 350);
-          }
-        }
-      };
-
-      // Hubungkan source ke processor
-      source.connect(this.scriptProcessor);
-
-      // Gunakan gain 0 ke destination agar tidak memantulkan suara sendiri ke speaker lokal
-      const dummyGain = this.recordContext.createGain();
-      dummyGain.gain.value = 0;
-      this.scriptProcessor.connect(dummyGain);
-      dummyGain.connect(this.recordContext.destination);
+      } else {
+        this.setupScriptProcessorFallback(source);
+      }
 
       this.isMicEnabled = true;
       EventBus.emit('mic-state-changed', { isEnabled: true });
@@ -273,6 +252,74 @@ export class VoiceManager {
   }
 
   /**
+   * Fallback jika AudioWorklet tidak didukung atau gagal dimuat
+   */
+  private setupScriptProcessorFallback(source: MediaStreamAudioSourceNode): void {
+    if (!this.recordContext) return;
+    this.scriptProcessor = this.recordContext.createScriptProcessor(1024, 1, 1);
+    this.scriptProcessor.onaudioprocess = (e: AudioProcessingEvent) => {
+      if (!this.isMicEnabled) return;
+      const input = e.inputBuffer.getChannelData(0);
+      this.processAudioInput(input);
+    };
+
+    source.connect(this.scriptProcessor);
+    const dummyGain = this.recordContext.createGain();
+    dummyGain.gain.value = 0;
+    this.scriptProcessor.connect(dummyGain);
+    dummyGain.connect(this.recordContext.destination);
+  }
+
+  /**
+   * Memproses paket audio input (Float32Array) dengan VAD dan konversi ke Int16 PCM
+   */
+  private processAudioInput(input: Float32Array): void {
+    if (!this.isMicEnabled) return;
+
+    // 1. Hitung intensitas volume RMS (Voice Activity Detection)
+    let sumSquares = 0;
+    for (let i = 0; i < input.length; i++) {
+      sumSquares += input[i] * input[i];
+    }
+    const rms = Math.sqrt(sumSquares / input.length);
+
+    // Ambang batas berbicara wajar (menghindari mendengus pelan/background noise)
+    const isSpeakingNow = rms > 0.015;
+
+    if (isSpeakingNow) {
+      if (this.silenceTimeout) {
+        window.clearTimeout(this.silenceTimeout);
+        this.silenceTimeout = null;
+      }
+
+      if (!this.isLocalSpeaking) {
+        this.isLocalSpeaking = true;
+        this.networkManager.sendVoiceSpeaking(true);
+        EventBus.emit('local-player-speaking', { isSpeaking: true });
+      }
+
+      // 2. Konversi Float32 [-1.0, 1.0] ke Int16 PCM untuk transmisi biner
+      const pcm16 = new Int16Array(input.length);
+      for (let i = 0; i < input.length; i++) {
+        const s = Math.max(-1, Math.min(1, input[i]));
+        pcm16[i] = s < 0 ? s * 0x8000 : s * 0x7fff;
+      }
+
+      // 3. Kirim paket suara biner melalui WebSocket
+      this.networkManager.sendVoiceChunk(pcm16.buffer, this.localX, this.localY);
+    } else {
+      if (this.isLocalSpeaking && !this.silenceTimeout) {
+        this.silenceTimeout = window.setTimeout(() => {
+          this.isLocalSpeaking = false;
+          this.silenceTimeout = null;
+          this.networkManager.sendVoiceSpeaking(false);
+          EventBus.emit('local-player-speaking', { isSpeaking: false });
+        }, 350);
+      }
+    }
+  }
+
+  /**
    * Menghentikan perekaman mikrofon
    */
   public stopMic(): void {
@@ -283,8 +330,17 @@ export class VoiceManager {
       this.silenceTimeout = null;
     }
 
+    if (this.audioWorkletNode) {
+      try {
+        this.audioWorkletNode.disconnect();
+      } catch (e) {}
+      this.audioWorkletNode = null;
+    }
+
     if (this.scriptProcessor) {
-      this.scriptProcessor.disconnect();
+      try {
+        this.scriptProcessor.disconnect();
+      } catch (e) {}
       this.scriptProcessor = null;
     }
 

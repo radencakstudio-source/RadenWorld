@@ -21,8 +21,11 @@ import { VirtualControls } from './game/ui/VirtualControls';
 import { SettingsModal, GameSettings } from './game/ui/SettingsModal';
 import { WardrobeModal } from './game/ui/WardrobeModal';
 import { ProfileModal } from './game/ui/ProfileModal';
+import { ServerModal, IGameServerOption } from './game/ui/ServerModal';
+import { DialogueBox } from './game/ui/DialogueBox';
 import { EventBus } from './game/core/EventBus';
 import { SoundManager } from './game/core/SoundManager';
+import { NetworkManager } from './game/core/NetworkManager';
 import { IAvatarCustomization, IChatMessage } from './game/types';
 
 export const GameApp: React.FC = () => {
@@ -53,6 +56,8 @@ export const GameApp: React.FC = () => {
     gridX?: number;
     gridY?: number;
     level?: number;
+    hp?: number;
+    maxHp?: number;
     name: string;
     avatar?: IAvatarCustomization;
     roomName?: string;
@@ -62,13 +67,19 @@ export const GameApp: React.FC = () => {
     isSuperAdmin?: boolean;
     title?: string;
   }>({
-    x: initialPath.startsWith('/world') ? 1600 : 480,
-    y: initialPath.startsWith('/world') ? 1600 : 380,
-    gridX: initialPath.startsWith('/world') ? 25 : 10,
-    gridY: initialPath.startsWith('/world') ? 25 : 7,
+    x: initialPath.startsWith('/world')
+      ? (() => { try { const p = JSON.parse(localStorage.getItem('raden_pos_world') || ''); if (p?.x) return p.x; } catch (e) {} return 4800; })()
+      : (() => { try { const p = JSON.parse(localStorage.getItem('raden_pos_house_safe-01') || ''); if (p?.x) return p.x; } catch (e) {} return 840; })(),
+    y: initialPath.startsWith('/world')
+      ? (() => { try { const p = JSON.parse(localStorage.getItem('raden_pos_world') || ''); if (p?.y) return p.y; } catch (e) {} return 4860; })()
+      : (() => { try { const p = JSON.parse(localStorage.getItem('raden_pos_house_safe-01') || ''); if (p?.y) return p.y; } catch (e) {} return 620; })(),
+    gridX: initialPath.startsWith('/world') ? 40 : 7,
+    gridY: initialPath.startsWith('/world') ? 40 : 5,
     level: 1,
+    hp: 100,
+    maxHp: 100,
     name: 'Petualang',
-    roomName: initialPath.startsWith('/world') ? 'SANCTUARY PLAZA: PUSAT KOTA' : 'RUMAH PRIBADI: RUANG UTAMA',
+    roomName: initialPath.startsWith('/world') ? 'SANCTUARY CENTRAL PLAZA' : 'RUMAH PRIBADI: RUANG UTAMA',
     inHouse: !initialPath.startsWith('/world'),
     privateRoomId: 'safe-01',
     role: 'player',
@@ -76,12 +87,46 @@ export const GameApp: React.FC = () => {
     title: 'Petualang Pemula',
   });
 
-  const [serverCode, setServerCode] = useState('RADEN-ASIA-01');
+  const [isServerModalOpen, setIsServerModalOpen] = useState(false);
+  const [serverCode, setServerCode] = useState(() => {
+    try {
+      const saved = localStorage.getItem('raden_server_code');
+      if (!saved || saved.toUpperCase().includes('RADEN')) {
+        const normalized = saved?.includes('02') ? 'Asia 2' : saved?.includes('ID') ? 'Asia 3' : saved?.includes('GLOBAL') ? 'Asia 4' : 'Asia 1';
+        localStorage.setItem('raden_server_code', normalized);
+        return normalized;
+      }
+      return saved;
+    } catch (e) {
+      return 'Asia 1';
+    }
+  });
   const [interactionPrompt, setInteractionPrompt] = useState<string | null>(null);
   const [messages, setMessages] = useState<IChatMessage[]>([]);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isGuideOpen, setIsGuideOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+
+  // Profile Attribute States
+  const [playerBio, setPlayerBio] = useState<string>(() => {
+    try {
+      return localStorage.getItem('raden_player_bio') || 'Petualang penjelajah tanah agung RadenWorld.';
+    } catch (e) {
+      return 'Petualang penjelajah tanah agung RadenWorld.';
+    }
+  });
+  const [playerExp, setPlayerExp] = useState<number>(() => {
+    try {
+      const u = JSON.parse(localStorage.getItem('raden_player_user') || '{}');
+      return typeof u.exp === 'number' ? u.exp : 0;
+    } catch (e) {
+      return 0;
+    }
+  });
+  const [playerAge] = useState<number>(21);
+  const [playerLikes] = useState<number>(36);
+  const [playerGold] = useState<number>(2500);
+  const [playerDiamonds] = useState<number>(50);
 
   // Wardrobe Modal State
   const [isWardrobeOpen, setIsWardrobeOpen] = useState(false);
@@ -104,9 +149,24 @@ export const GameApp: React.FC = () => {
   useEffect(() => {
     // 1. Stats updates from Phaser engine (X, Y, Name, Room)
     const handleStats = (stats: any) => {
-      setPlayerStats((prev) => ({ ...prev, ...stats }));
+      setPlayerStats((prev) => {
+        if (
+          prev.gridX === stats.gridX &&
+          prev.gridY === stats.gridY &&
+          prev.roomName === stats.roomName &&
+          prev.hp === stats.hp &&
+          prev.inHouse === stats.inHouse &&
+          prev.name === stats.name
+        ) {
+          return prev;
+        }
+        return { ...prev, ...stats };
+      });
       if (stats.avatar) {
-        setWardrobeAvatar(stats.avatar);
+        setWardrobeAvatar((prev) => {
+          if (JSON.stringify(prev) === JSON.stringify(stats.avatar)) return prev;
+          return stats.avatar;
+        });
       }
     };
 
@@ -117,7 +177,19 @@ export const GameApp: React.FC = () => {
 
     // 3. New chat message received
     const handleChat = (msg: IChatMessage) => {
-      setMessages((prev) => [...prev.slice(-40), msg]);
+      setMessages((prev) => {
+        if (!msg || !msg.text) return prev;
+        // Mencegah duplikasi pesan jika ID sudah ada atau pesan identik dari pengirim yang sama
+        if (prev.some((m) => m.id === msg.id || (m.senderName === msg.senderName && m.text === msg.text))) return prev;
+        
+        let formattedTime = msg.timestamp;
+        if (typeof formattedTime === 'number' || (typeof formattedTime === 'string' && /^\d{10,14}$/.test(formattedTime))) {
+          const d = new Date(Number(formattedTime));
+          formattedTime = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+        }
+
+        return [...prev.slice(-50), { ...msg, timestamp: formattedTime }];
+      });
     };
 
     // 4. Open wardrobe event from Lemari in HouseScene
@@ -148,16 +220,21 @@ export const GameApp: React.FC = () => {
           let isSuper = false;
           try {
             const u = JSON.parse(localStorage.getItem('raden_player_user') || '{}');
-            isSuper = u.role === 'super_admin' || u.is_super_admin || u.email === 'radencakstudio@gmail.com' || u.name?.toUpperCase() === 'RADEN';
+            isSuper = u.role === 'super_admin' || u.is_super_admin || u.email === 'radencakstudio@gmail.com' || u.name?.toUpperCase() === 'RADEN' || playerStats.isSuperAdmin;
           } catch (e) {}
 
-          if (!isSuper) {
+          if (!isSuper && !playerStats.isSuperAdmin && playerStats.name?.toUpperCase() !== 'RADEN') {
             alert('Akses Ditolak: Hanya Super Admin yang diizinkan mengakses Portal Admin!');
             window.history.replaceState(null, '', '/');
             setGameState('home');
           } else {
             const seg = p.replace('/admin/', '').trim() || 'raden-master-key';
-            EventBus.emit('switch-scene', { scene: 'AdminPortalScene', adminToken: seg });
+            EventBus.emit('switch-scene', {
+              scene: 'AdminPortalScene',
+              adminToken: seg,
+              name: playerStats.name,
+              avatar: playerStats.avatar || wardrobeAvatar,
+            });
           }
         }
       }
@@ -217,10 +294,10 @@ export const GameApp: React.FC = () => {
       }
 
       setPlayerStats({
-        x: isAdminPath ? 640 : (initialPath.startsWith('/world') ? 1600 : 480),
-        y: isAdminPath ? 560 : (initialPath.startsWith('/world') ? 1600 : 380),
-        gridX: isAdminPath ? 10 : (initialPath.startsWith('/world') ? 25 : 10),
-        gridY: isAdminPath ? 8 : (initialPath.startsWith('/world') ? 25 : 7),
+        x: isAdminPath ? 640 : (initialPath.startsWith('/world') ? 4800 : 840),
+        y: isAdminPath ? 560 : (initialPath.startsWith('/world') ? 4800 : 620),
+        gridX: isAdminPath ? 10 : (initialPath.startsWith('/world') ? 40 : 7),
+        gridY: isAdminPath ? 8 : (initialPath.startsWith('/world') ? 40 : 5),
         level: level,
         name: playerName,
         avatar: playerAvatar,
@@ -230,7 +307,7 @@ export const GameApp: React.FC = () => {
         roomName: isAdminPath
           ? `PORTAL SUPER ADMIN: PUSAT KENDALI (ID: ${adminToken})`
           : (initialPath.startsWith('/world')
-            ? 'SANCTUARY PLAZA: PUSAT KOTA'
+            ? 'SANCTUARY CENTRAL PLAZA'
             : `RUMAH PRIBADI: RUANG UTAMA (SAFE: ${safeId})`),
         inHouse: !initialPath.startsWith('/world') && !isAdminPath,
         privateRoomId: safeId,
@@ -325,7 +402,36 @@ export const GameApp: React.FC = () => {
   };
 
   const handleSendMessage = (text: string) => {
-    EventBus.emit('send-chat', text);
+    const trimmed = text ? text.trim() : '';
+    if (!trimmed) return;
+
+    const isSuper = Boolean(
+      playerStats.isSuperAdmin ||
+      playerStats.role === 'super_admin' ||
+      playerStats.name?.toUpperCase() === 'RADEN'
+    );
+    const d = new Date();
+    const timeStr = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+    const myMsgId = `chat_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+
+    const localMsg: IChatMessage = {
+      id: myMsgId,
+      senderId: NetworkManager.getInstance().getSocketId() || 'local_player',
+      senderName: playerStats.name || 'Petualang',
+      senderRole: playerStats.role || 'player',
+      isSuperAdmin: isSuper,
+      text: trimmed,
+      timestamp: timeStr,
+    };
+
+    // 1. Optimistic Update: Langsung tambahkan ke riwayat pesan lokal agar seketika muncul
+    setMessages((prev) => [...prev.slice(-50), localMsg]);
+
+    // 2. Tampilkan balon kata di atas kepala karakter lokal di scene Phaser yang sedang berjalan
+    EventBus.emit('send-chat', trimmed);
+
+    // 3. Kirim paket obrolan ke server WebSocket multiplayer
+    NetworkManager.getInstance().sendChat(trimmed, playerStats.name, playerStats.role, isSuper);
   };
 
   const handleTriggerInteraction = () => {
@@ -360,6 +466,13 @@ export const GameApp: React.FC = () => {
     setCurrentPath(adminPath);
     setIsProfileOpen(false);
 
+    try {
+      const u = JSON.parse(localStorage.getItem('raden_player_user') || '{}');
+      u.role = 'super_admin';
+      u.is_super_admin = true;
+      localStorage.setItem('raden_player_user', JSON.stringify(u));
+    } catch (e) {}
+
     setPlayerStats((prev) => ({
       ...prev,
       x: 640,
@@ -377,6 +490,8 @@ export const GameApp: React.FC = () => {
     EventBus.emit('switch-scene', {
       scene: 'AdminPortalScene',
       adminToken: randomToken,
+      name: playerStats.name,
+      avatar: playerStats.avatar || wardrobeAvatar,
     });
   };
 
@@ -401,6 +516,71 @@ export const GameApp: React.FC = () => {
     handleTriggerInteraction();
   };
 
+  // Fitur LOGOUT Akun
+  const handleLogout = () => {
+    sound.playClick();
+    if (!confirm('Apakah kamu yakin ingin keluar / logout dari akun?')) return;
+    try {
+      localStorage.removeItem('raden_player_user');
+      localStorage.removeItem('raden_player_avatar');
+    } catch (e) {}
+
+    NetworkManager.getInstance().disconnect();
+    setIsProfileOpen(false);
+    setGameState('home');
+    if (window.location.pathname !== '/') {
+      window.history.pushState(null, '', '/');
+    }
+    setCurrentPath('/');
+  };
+
+  // EXP Passive Ticker: Bertambah otomatis seiring waktu saat aktif bermain di game
+  useEffect(() => {
+    if (gameState !== 'playing') return;
+
+    const expInterval = setInterval(() => {
+      if (playerStats.isSuperAdmin || playerStats.role === 'super_admin' || playerStats.name?.toUpperCase() === 'RADEN') {
+        return;
+      }
+
+      setPlayerExp((prevExp) => {
+        const currentLvl = playerStats.level || 1;
+        const maxExp = currentLvl * 100;
+        const newExp = prevExp + 5;
+
+        if (newExp >= maxExp) {
+          const nextLvl = currentLvl + 1;
+          setPlayerStats((s) => ({ ...s, level: nextLvl }));
+          sound.playSuccess();
+          EventBus.emit('new-chat-message', {
+            id: `lvlup_${Date.now()}`,
+            sender: 'SISTEM',
+            text: `🎉 Selamat! Kamu telah naik ke Level ${nextLvl}!`,
+            timestamp: Date.now(),
+            isSystem: true,
+          });
+          try {
+            const u = JSON.parse(localStorage.getItem('raden_player_user') || '{}');
+            u.level = nextLvl;
+            u.exp = 0;
+            localStorage.setItem('raden_player_user', JSON.stringify(u));
+          } catch (e) {}
+          return 0;
+        }
+
+        try {
+          const u = JSON.parse(localStorage.getItem('raden_player_user') || '{}');
+          u.exp = newExp;
+          localStorage.setItem('raden_player_user', JSON.stringify(u));
+        } catch (e) {}
+
+        return newExp;
+      });
+    }, 4000);
+
+    return () => clearInterval(expInterval);
+  }, [gameState, playerStats.level, playerStats.isSuperAdmin, playerStats.role, playerStats.name]);
+
   return (
     <div className="relative w-screen h-screen overflow-hidden bg-[#0a0f1d] font-['Chakra_Petch']">
       {/* 2D HTML5 Canvas Game Engine (Phaser 3) */}
@@ -412,6 +592,7 @@ export const GameApp: React.FC = () => {
           onStartGame={handleStartGame}
           settings={settings}
           onUpdateSettings={setSettings}
+          onOpenServerModal={() => setIsServerModalOpen(true)}
         />
       )}
 
@@ -424,6 +605,8 @@ export const GameApp: React.FC = () => {
             onToggleChat={() => setIsChatOpen(!isChatOpen)}
             onToggleGuide={() => setIsGuideOpen(true)}
             onOpenProfile={() => setIsProfileOpen(true)}
+            onOpenSettings={() => setInGameSettingsOpen(true)}
+            onOpenServerModal={() => setIsServerModalOpen(true)}
             isChatOpen={isChatOpen}
             interactionPrompt={interactionPrompt}
             onTriggerInteraction={handleTriggerInteraction}
@@ -435,9 +618,23 @@ export const GameApp: React.FC = () => {
             name={playerStats?.name || 'Petualang'}
             avatar={playerStats?.avatar || wardrobeAvatar}
             level={playerStats?.level || 1}
+            exp={playerExp}
             role={playerStats?.role}
             isSuperAdmin={playerStats?.isSuperAdmin}
             title={playerStats?.isSuperAdmin ? '👑 KREATOR & SUPER ADMIN' : (playerStats?.title || 'Petualang Pemula')}
+            gold={playerGold}
+            diamonds={playerDiamonds}
+            age={playerAge}
+            likes={playerLikes}
+            gender={wardrobeAvatar.gender}
+            description={playerBio}
+            onSaveDescription={(d) => {
+              setPlayerBio(d);
+              try {
+                localStorage.setItem('raden_player_bio', d);
+              } catch (e) {}
+            }}
+            onLogout={handleLogout}
             onTeleportToAdminPortal={handleTeleportToAdminPortal}
           />
 
@@ -446,7 +643,11 @@ export const GameApp: React.FC = () => {
             onSendMessage={handleSendMessage}
             isOpen={isChatOpen}
             onClose={() => setIsChatOpen(false)}
+            gender={((playerStats?.avatar?.gender || wardrobeAvatar.gender) === 'female' ? 'female' : 'male')}
           />
+
+          {/* Dialog Narasi NPC Bergaya RPG (Next, Before, Skip) */}
+          <DialogueBox />
 
           <ControlGuide
             isOpen={isGuideOpen}
@@ -476,9 +677,30 @@ export const GameApp: React.FC = () => {
             onClose={() => setInGameSettingsOpen(false)}
             settings={settings}
             onUpdateSettings={setSettings}
+            onOpenServerModal={() => {
+              setInGameSettingsOpen(false);
+              setIsServerModalOpen(true);
+            }}
           />
         </>
       )}
+
+      {/* Modal Pemilih & Pindah Server (Bisa Diakses Global dari Home maupun In-Game) */}
+      <ServerModal
+        isOpen={isServerModalOpen}
+        onClose={() => setIsServerModalOpen(false)}
+        currentServerCode={serverCode}
+        onSelectServer={(server: IGameServerOption) => {
+          setServerCode(server.code);
+          EventBus.emit('new-chat-message', {
+            id: `sys_srv_${Date.now()}`,
+            sender: 'SISTEM',
+            text: `🌐 Berhasil beralih ke server ${server.name} (${server.code})!`,
+            timestamp: Date.now(),
+            isSystem: true,
+          });
+        }}
+      />
     </div>
   );
 };

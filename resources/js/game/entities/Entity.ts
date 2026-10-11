@@ -40,14 +40,26 @@ export abstract class Entity extends Phaser.GameObjects.Container {
   /** Komponen teks Phaser untuk nameplate di atas kepala karakter */
   protected nameTag: Phaser.GameObjects.Text;
 
-  /** Komponen grafis Phaser untuk bar darah dinamis */
-  protected healthBar: Phaser.GameObjects.Graphics;
-
   /** Kontainer balon obrolan saat karakter berbicara */
   protected speechBubble: Phaser.GameObjects.Container | null = null;
 
   /** Timer penghilang otomatis balon obrolan */
   protected speechTimer: Phaser.Time.TimerEvent | null = null;
+
+  /** Kontainer balon reaksi ekspresi karakter */
+  protected expressionBubble: Phaser.GameObjects.Container | null = null;
+
+  /** Timer penghilang otomatis balon reaksi ekspresi */
+  protected expressionTimer: Phaser.Time.TimerEvent | null = null;
+
+  /** Indikator visual ketika karakter sedang berbicara lewat proximity mic */
+  protected speakingIndicator: Phaser.GameObjects.Container | null = null;
+
+  /** Timer penghilang otomatis indikator visual berbicara */
+  protected speakingTimer: Phaser.Time.TimerEvent | null = null;
+
+  /** Tinggi entitas visual untuk penempatan nameTag dan speechBubble (177px sesuai aset karakter HD) */
+  protected entityHeight: number = 177;
 
   /**
    * Konstruktor Inisialisasi Entitas
@@ -84,30 +96,52 @@ export abstract class Entity extends Phaser.GameObjects.Container {
     const body = this.body as Phaser.Physics.Arcade.Body;
     if (body) {
       body.setCollideWorldBounds(true);
-      body.setSize(32, 32);
-      body.setOffset(-16, -16);
+      body.setSize(70, 36);
+      body.setOffset(-35, 12);
     }
 
-    // Inisialisasi teks nama karakter di atas kepala
+    // Inisialisasi teks nama karakter di atas kepala - Tajam, HD & Bersih Tanpa Background
     const isSuperAdmin = name.toUpperCase() === 'RADEN';
     const displayName = isSuperAdmin ? `👑 RADEN [ADMIN]` : name;
     const nameColor = isSuperAdmin ? '#f59e0b' : '#ffffff';
 
-    this.nameTag = scene.add.text(0, -32, displayName, {
-      fontFamily: '"Plus Jakarta Sans", sans-serif',
-      fontSize: '11px',
+    this.nameTag = scene.add.text(0, -145, displayName, {
+      fontFamily: '"Chakra Petch", "Plus Jakarta Sans", sans-serif',
+      fontSize: '13px',
       color: nameColor,
-      stroke: '#0f172a',
-      strokeThickness: 3,
-      fontStyle: isSuperAdmin ? 'bold' : 'normal',
+      stroke: '#050811',
+      strokeThickness: 3.5,
+      fontStyle: 'bold',
       align: 'center',
+      resolution: 4, // Resolusi 4x agar teks tetap tajam kristal tanpa blur pada zoom atau layar retina
     }).setOrigin(0.5);
     this.add(this.nameTag);
 
-    // Inisialisasi bar HP karakter
-    this.healthBar = scene.add.graphics();
-    this.add(this.healthBar);
-    this.drawHealthBar();
+    // Catatan: Bar darah (HP) dihilangkan total sesuai permintaan (Game Edukasi, bukan fighting)
+  }
+
+  /**
+   * Memperbarui nama tampilan entitas
+   */
+  public setEntityName(newName: string): void {
+    if (!newName) return;
+    this.entityName = newName;
+    const isSuperAdmin = newName.toUpperCase() === 'RADEN';
+    const displayName = isSuperAdmin ? `👑 RADEN [ADMIN]` : newName;
+    if (this.nameTag) {
+      this.nameTag.setText(displayName);
+      this.nameTag.setColor(isSuperAdmin ? '#f59e0b' : '#ffffff');
+    }
+  }
+
+  /**
+   * Menyesuaikan tinggi entitas dan mengatur ulang posisi nameTag
+   */
+  public setEntityHeight(height: number): void {
+    this.entityHeight = height;
+    if (this.nameTag) {
+      this.nameTag.setY(-145);
+    }
   }
 
   /** Mengambil ID unik entitas */
@@ -120,14 +154,14 @@ export abstract class Entity extends Phaser.GameObjects.Container {
     return this.entityName;
   }
 
-  /** Mengambil nilai HP terkini */
+  /** Mengambil nilai HP terkini (Game Edukasi: selalu penuh 100) */
   public getHealth(): number {
-    return this.hp;
+    return 100;
   }
 
   /** Mengambil nilai batas maksimum HP */
   public getMaxHealth(): number {
-    return this.maxHp;
+    return 100;
   }
 
   /** Mengambil arah hadap entitas */
@@ -136,44 +170,21 @@ export abstract class Entity extends Phaser.GameObjects.Container {
   }
 
   /**
-   * Mengubah nilai HP entitas dan memperbarui tampilan Health Bar
-   * @param hp Nilai HP terbaru
-   * @param maxHp Nilai Max HP (opsional)
+   * Update status kesehatan (Ditiadakan - Game Edukasi)
    */
-  public updateHealth(hp: number, maxHp: number = this.maxHp): void {
-    this.hp = Math.max(0, Math.min(hp, maxHp));
-    this.maxHp = maxHp;
-    this.drawHealthBar();
-  }
-
-  /**
-   * Merender grafis Health Bar (Hijau > Kuning > Merah sesuai sisa persentase darah)
-   */
-  protected drawHealthBar(): void {
-    this.healthBar.clear();
-    const barWidth = 32;
-    const barHeight = 4;
-    const barX = -barWidth / 2;
-    const barY = -22;
-
-    // Latar belakang bar (hitam semi transparan)
-    this.healthBar.fillStyle(0x0f172a, 0.8);
-    this.healthBar.fillRect(barX - 1, barY - 1, barWidth + 2, barHeight + 2);
-
-    // Isi bar darah dinamis
-    const pct = this.hp / this.maxHp;
-    const color = pct > 0.5 ? 0x22c55e : pct > 0.2 ? 0xf59e0b : 0xef4444;
-
-    this.healthBar.fillStyle(color, 1);
-    this.healthBar.fillRect(barX, barY, Math.max(0, barWidth * pct), barHeight);
+  public updateHealth(hp: number, maxHp: number = 100): void {
+    this.hp = 100;
+    this.maxHp = 100;
   }
 
   /**
    * Menampilkan Balon Kata (Speech Bubble) di atas kepala karakter saat mengirim chat
    * @param message Pesan teks yang diucapkan
-   * @param durationMs Durasi balon tampil sebelum hilang otomatis (default: 4000ms)
+   * @param durationMs Durasi balon tampil sebelum hilang otomatis (default: 4500ms)
    */
-  public showSpeechBubble(message: string, durationMs: number = 4000): void {
+  public showSpeechBubble(message: string, durationMs: number = 4500): void {
+    if (!this.scene || !this.scene.add || !this.scene.time || !this.active) return;
+
     if (this.speechBubble) {
       this.speechBubble.destroy();
       this.speechBubble = null;
@@ -183,36 +194,254 @@ export abstract class Entity extends Phaser.GameObjects.Container {
       this.speechTimer = null;
     }
 
-    const bubble = this.scene.add.container(0, -52);
+    // Posisikan balon tepat di atas kepala dan nameplate (-195px)
+    const bubbleY = -195;
+    const bubble = this.scene.add.container(0, bubbleY);
+
     const bubbleText = this.scene.add.text(0, 0, message, {
       fontFamily: '"Plus Jakarta Sans", sans-serif',
-      fontSize: '11px',
+      fontSize: '12px',
       color: '#0f172a',
-      wordWrap: { width: 140 },
+      fontStyle: 'bold',
+      resolution: 3, // Resolusi HD tajam saat kamera di-zoom in
+      wordWrap: { width: 160 },
       align: 'center',
     }).setOrigin(0.5);
 
-    const padding = 8;
-    const bgWidth = Math.max(40, bubbleText.width + padding * 2);
-    const bgHeight = bubbleText.height + padding * 1.5;
+    const paddingX = 14;
+    const paddingY = 8;
+    const bgWidth = Math.max(50, bubbleText.width + paddingX * 2);
+    const bgHeight = bubbleText.height + paddingY * 2;
 
     const bg = this.scene.add.graphics();
-    bg.fillStyle(0xffffff, 0.95);
-    bg.lineStyle(1.5, 0x94a3b8, 1);
-    bg.fillRoundedRect(-bgWidth / 2, -bgHeight / 2, bgWidth, bgHeight, 6);
-    bg.strokeRoundedRect(-bgWidth / 2, -bgHeight / 2, bgWidth, bgHeight, 6);
+    // Bayangan halus balon
+    bg.fillStyle(0x000000, 0.2);
+    bg.fillRoundedRect(-bgWidth / 2, -bgHeight / 2 + 2, bgWidth, bgHeight, 10);
 
-    // Panah segitiga penunjuk ke arah kepala karakter
-    bg.fillTriangle(0, bgHeight / 2 + 5, -4, bgHeight / 2, 4, bgHeight / 2);
+    // Latar belakang balon putih susu bulat lucu & border halus
+    bg.fillStyle(0xffffff, 0.98);
+    bg.lineStyle(2, 0x1e293b, 0.9);
+    bg.fillRoundedRect(-bgWidth / 2, -bgHeight / 2, bgWidth, bgHeight, 10);
+    bg.strokeRoundedRect(-bgWidth / 2, -bgHeight / 2, bgWidth, bgHeight, 10);
+
+    // Ekor segitiga imut menunjuk ke arah kepala karakter
+    bg.fillStyle(0xffffff, 0.98);
+    bg.fillTriangle(0, bgHeight / 2 + 6, -5, bgHeight / 2, 5, bgHeight / 2);
+    bg.lineStyle(2, 0x1e293b, 0.9);
+    bg.lineBetween(-5, bgHeight / 2, 0, bgHeight / 2 + 6);
+    bg.lineBetween(0, bgHeight / 2 + 6, 5, bgHeight / 2);
 
     bubble.add([bg, bubbleText]);
     this.add(bubble);
     this.speechBubble = bubble;
 
+    // Skala awal menyesuaikan tingkat zoom kamera secara terbalik (Inverse Scale: Zoom out -> bubble perbesar, Zoom in -> bubble perkecil)
+    const camZoom = this.scene.cameras?.main?.zoom || 1.0;
+    const invScale = 1 / Math.max(0.5, camZoom);
+    const initScale = Math.max(0.75, Math.min(1.85, invScale));
+    bubble.setScale(0.2);
+    this.scene.tweens.add({
+      targets: bubble,
+      scale: initScale,
+      duration: 200,
+      ease: 'Back.easeOut',
+    });
+
     this.speechTimer = this.scene.time.delayedCall(durationMs, () => {
-      if (this.speechBubble) {
-        this.speechBubble.destroy();
-        this.speechBubble = null;
+      if (this.speechBubble && this.scene && this.scene.tweens) {
+        this.scene.tweens.add({
+          targets: this.speechBubble,
+          alpha: 0,
+          scale: 0.3,
+          duration: 180,
+          onComplete: () => {
+            if (this.speechBubble) {
+              this.speechBubble.destroy();
+              this.speechBubble = null;
+            }
+          },
+        });
+      }
+    });
+  }
+
+  /**
+   * Menampilkan Balon Reaksi Ekspresi Wajah di atas kepala karakter
+   * @param textureKey Kunci tekstur gambar ekspresi di Phaser ('expr-male-smile', dll.)
+   * @param durationMs Durasi balon tampil sebelum hilang otomatis
+   */
+  public showExpressionReaction(textureKey: string, durationMs: number = 3500): void {
+    if (!this.scene || !this.scene.add || !this.scene.time || !this.active) return;
+
+    if (this.expressionBubble) {
+      this.expressionBubble.destroy();
+      this.expressionBubble = null;
+    }
+    if (this.expressionTimer) {
+      this.expressionTimer.remove();
+      this.expressionTimer = null;
+    }
+
+    // Posisi mengambang tepat di atas kepala karakter (-215px)
+    const bubbleY = -215;
+    const bubble = this.scene.add.container(0, bubbleY);
+
+    const exprSprite = this.scene.add.sprite(0, 0, textureKey);
+    const frame = exprSprite.frame;
+    const realW = (frame && frame.realWidth) ? frame.realWidth : (exprSprite.width || 100);
+    const realH = (frame && frame.realHeight) ? frame.realHeight : (exprSprite.height || 100);
+    const aspect = realH > 0 ? (realW / realH) : 1.2;
+    const targetH = 80;
+    const targetW = Math.round(targetH * aspect);
+    exprSprite.setDisplaySize(targetW, targetH);
+
+    bubble.add(exprSprite);
+    this.add(bubble);
+    this.expressionBubble = bubble;
+
+    // Skala awal menyesuaikan tingkat zoom kamera secara terbalik
+    const camZoom = this.scene.cameras?.main?.zoom || 1.0;
+    const invScale = 1 / Math.max(0.5, camZoom);
+    const initScale = Math.max(0.75, Math.min(1.85, invScale));
+
+    bubble.setScale(0.2);
+    this.scene.tweens.add({
+      targets: bubble,
+      scale: initScale,
+      y: bubbleY - 10,
+      duration: 250,
+      ease: 'Back.easeOut',
+    });
+
+    this.expressionTimer = this.scene.time.delayedCall(durationMs, () => {
+      if (this.expressionBubble && this.scene && this.scene.tweens) {
+        this.scene.tweens.add({
+          targets: this.expressionBubble,
+          alpha: 0,
+          scale: 0.3,
+          duration: 200,
+          onComplete: () => {
+            if (this.expressionBubble) {
+              this.expressionBubble.destroy();
+              this.expressionBubble = null;
+            }
+          },
+        });
+      }
+    });
+  }
+
+  /**
+   * Memperbarui skala elemen melayang (chat bubble, ekspresi) agar mengikuti tingkat zoom kamera
+   * Secara terbalik (Inverse Scale): Ketika kamera zoom out, bubble membesar agar tetap terbaca jelas;
+   * ketika kamera zoom in, bubble mengecil agar tidak mendominasi layar.
+   */
+  protected updateFloatingElementsScale(): void {
+    const camZoom = this.scene?.cameras?.main?.zoom || 1.0;
+    const invScale = 1 / Math.max(0.5, camZoom);
+    const targetScale = Math.max(0.75, Math.min(1.85, invScale));
+
+    if (this.nameTag && this.nameTag.active) {
+      this.nameTag.setScale(targetScale);
+    }
+    if (this.speechBubble && this.speechBubble.active) {
+      this.speechBubble.setScale(targetScale);
+    }
+    if (this.expressionBubble && this.expressionBubble.active) {
+      this.expressionBubble.setScale(targetScale);
+    }
+    if (this.speakingIndicator && this.speakingIndicator.active) {
+      this.speakingIndicator.setScale(targetScale);
+    }
+  }
+
+  /**
+   * Menampilkan atau menyembunyikan indikator visual mikrofon berbicara di atas kepala karakter
+   * @param isSpeaking Status apakah entitas sedang berbicara
+   * @param durationMs Durasi sebelum indikator memudar otomatis jika tidak ada paket suara baru
+   */
+  /**
+   * Menampilkan atau menyembunyikan ikon sound visual di atas kepala karakter saat berbicara
+   * @param isSpeaking Status apakah entitas sedang berbicara
+   * @param durationMs Durasi sebelum indikator memudar otomatis jika tidak ada paket suara baru
+   */
+  public setSpeaking(isSpeaking: boolean, durationMs: number = 1000): void {
+    if (!this.scene || !this.active) return;
+
+    if (this.speakingTimer) {
+      this.speakingTimer.remove();
+      this.speakingTimer = null;
+    }
+
+    if (!isSpeaking) {
+      if (this.speakingIndicator && this.speakingIndicator.visible) {
+        this.scene.tweens?.killTweensOf(this.speakingIndicator);
+        this.scene.tweens?.add({
+          targets: this.speakingIndicator,
+          alpha: 0,
+          scale: 0.8,
+          duration: 160,
+          ease: 'Cubic.easeIn',
+          onComplete: () => {
+            if (this.speakingIndicator) {
+              this.speakingIndicator.setVisible(false);
+            }
+          },
+        });
+      }
+      return;
+    }
+
+    if (!this.speakingIndicator) {
+      const container = this.scene.add.container(0, -172);
+
+      const bg = this.scene.add.graphics();
+      // Desain badge gelap elegan dengan bingkai neon hijau emerald
+      bg.fillStyle(0x0a0f1d, 0.95);
+      bg.lineStyle(2, 0x10b981, 1);
+      bg.fillRoundedRect(-18, -12, 36, 24, 7);
+      bg.strokeRoundedRect(-18, -12, 36, 24, 7);
+
+      // Ikon sound gelombang suara yang jelas (🔊)
+      const iconText = this.scene.add.text(0, 0, '🔊', {
+        fontSize: '13px',
+      }).setOrigin(0.5);
+
+      container.add([bg, iconText]);
+      this.add(container);
+      this.speakingIndicator = container;
+    }
+
+    const wasHidden = !this.speakingIndicator.visible || this.speakingIndicator.alpha < 0.8;
+    this.speakingIndicator.setVisible(true);
+
+    if (wasHidden) {
+      this.speakingIndicator.setAlpha(1);
+      this.scene.tweens?.killTweensOf(this.speakingIndicator);
+      this.speakingIndicator.setScale(0.85);
+      this.scene.tweens?.add({
+        targets: this.speakingIndicator,
+        scale: 1,
+        duration: 120,
+        ease: 'Back.easeOut',
+      });
+    }
+
+    // Auto-hide setelah suara selesai jika tidak ada paket suara baru
+    this.speakingTimer = this.scene.time.delayedCall(durationMs, () => {
+      if (this.speakingIndicator && this.speakingIndicator.visible) {
+        this.scene.tweens?.add({
+          targets: this.speakingIndicator,
+          alpha: 0,
+          scale: 0.8,
+          duration: 180,
+          ease: 'Cubic.easeIn',
+          onComplete: () => {
+            if (this.speakingIndicator) {
+              this.speakingIndicator.setVisible(false);
+            }
+          },
+        });
       }
     });
   }

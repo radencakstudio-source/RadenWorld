@@ -35,5 +35,14 @@ export function createGameConfig(parentContainerId: string = 'game-container'): 
     scene: [BootScene, HouseScene, WorldScene, AdminPortalScene],
     pixelArt: false,
     roundPixels: true,
+    antialias: true,
+    antialiasGL: true,
+    fps: {
+      target: 60,
+      forceSetTimeOut: false,
+    },
+    audio: {
+      noAudio: true,
+    },
   };
 }

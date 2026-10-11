@@ -280,10 +280,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/85 backdrop-blur-md p-4 animate-in fade-in duration-200">
-      <div className="w-full max-w-md bg-[#0b0f19] border border-amber-500/40 rounded-2xl shadow-2xl p-6 text-slate-100 flex flex-col gap-4 font-['Chakra_Petch'] max-h-[92vh] overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4 animate-in fade-in duration-200">
+      <div className="w-full max-w-md bg-black border border-neutral-800 rounded-2xl p-6 text-neutral-100 flex flex-col gap-4 font-['Chakra_Petch'] max-h-[92vh] overflow-hidden">
         {/* Modal Header */}
-        <div className="flex items-center justify-between border-b border-amber-500/20 pb-3">
+        <div className="flex items-center justify-between border-b border-neutral-800 pb-3">
           <div>
             <h2 className="text-xl font-bold tracking-wider text-amber-400 uppercase">
               {activeTab === 'login' && !isForgotView && 'MASUK KE GAME'}
@@ -291,7 +291,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
               {activeTab === 'register' && registerStep === 1 && 'DAFTAR AKUN BARU'}
               {activeTab === 'register' && registerStep === 2 && 'PILIH & KUSTOMISASI AVATAR'}
             </h2>
-            <p className="text-xs text-slate-400 mt-0.5">
+            <p className="text-xs text-neutral-400 mt-0.5">
               {activeTab === 'login' && !isForgotView && 'Masuk dengan akun terdaftar untuk melanjutkan.'}
               {activeTab === 'login' && isForgotView && 'Masukkan email terdaftar untuk menerima tautan reset.'}
               {activeTab === 'register' && registerStep === 1 && 'Langkah 1: Lengkapi informasi akun Anda.'}
@@ -303,21 +303,21 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
               sound.playClick();
               onClose();
             }}
-            className="p-1 rounded-lg text-slate-400 hover:text-amber-400 hover:bg-slate-900 transition-colors cursor-pointer"
+            className="p-1 rounded-lg text-neutral-400 hover:text-amber-400 hover:bg-neutral-900 transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* 2 Tab Switcher Saja: MASUK & DAFTAR (Simpel 2 Warna) */}
-        <div className="flex rounded-xl bg-slate-900 border border-slate-800 p-1">
+        <div className="flex rounded-xl bg-neutral-900 border border-neutral-800 p-1">
           <button
             type="button"
             onClick={() => handleTabChange('login')}
             className={`flex-1 py-1.5 text-xs font-bold uppercase tracking-wider rounded-lg transition-all cursor-pointer ${
               activeTab === 'login'
-                ? 'bg-amber-500 text-slate-950 shadow'
-                : 'text-slate-400 hover:text-slate-200'
+                ? 'bg-amber-500 text-black'
+                : 'text-neutral-400 hover:text-neutral-200'
             }`}
           >
             MASUK (SUDAH PUNYA AKUN)
@@ -327,8 +327,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
             onClick={() => handleTabChange('register')}
             className={`flex-1 py-1.5 text-xs font-bold uppercase tracking-wider rounded-lg transition-all cursor-pointer ${
               activeTab === 'register'
-                ? 'bg-amber-500 text-slate-950 shadow'
-                : 'text-slate-400 hover:text-slate-200'
+                ? 'bg-amber-500 text-black'
+                : 'text-neutral-400 hover:text-neutral-200'
             }`}
           >
             DAFTAR (AKUN BARU)
@@ -414,14 +414,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
                     value={loginPassword}
                     onChange={(e) => setLoginPassword(e.target.value)}
                     placeholder="••••••••"
-                    className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500"
+                    className="w-full px-3 py-2 bg-neutral-900 border border-neutral-800 rounded-xl text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-amber-400"
                   />
                 </div>
 
                 {/* Tombol Masuk */}
                 <button
                   type="submit"
-                  className="w-full mt-2 py-3 px-4 rounded-xl font-bold text-xs text-slate-950 bg-amber-500 hover:bg-amber-400 shadow-lg shadow-amber-500/20 active:scale-[0.98] transition-all cursor-pointer uppercase tracking-wider flex items-center justify-center gap-2"
+                  className="w-full mt-2 py-3 px-4 rounded-xl font-bold text-xs text-black bg-amber-500 hover:bg-amber-400 border border-amber-400 active:scale-[0.98] transition-all cursor-pointer uppercase tracking-wider flex items-center justify-center gap-2"
                 >
                   <span>MASUK SEKARANG</span>
                   <ArrowRight className="w-4 h-4" />
@@ -430,12 +430,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
             ) : (
               /* --- Form Lupa Sandi di Dalam Masuk --- */
               <form onSubmit={handleForgotSubmit} className="space-y-3.5">
-                <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 text-xs text-slate-300">
+                <div className="p-3 rounded-xl bg-neutral-900 border border-neutral-800 text-xs text-neutral-300">
                   Masukkan email akun terdaftar Anda. Kami akan mengirimkan instruksi untuk menyetel ulang kata sandi.
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-[11px] font-bold text-slate-300 uppercase tracking-wider">
+                  <label className="text-[11px] font-bold text-neutral-300 uppercase tracking-wider">
                     Email Akun Anda:
                   </label>
                   <input
@@ -444,12 +444,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
                     value={forgotEmail}
                     onChange={(e) => setForgotEmail(e.target.value)}
                     placeholder="nama@email.com"
-                    className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500"
+                    className="w-full px-3 py-2 bg-neutral-900 border border-neutral-800 rounded-xl text-xs text-white placeholder-neutral-500 focus:outline-none focus:border-amber-400"
                   />
                 </div>
 
                 {forgotSent && (
-                  <div className="p-3 rounded-xl bg-amber-950/50 border border-amber-800 text-amber-300 text-xs text-center font-bold">
+                  <div className="p-3 rounded-xl bg-neutral-900 border border-amber-500/50 text-amber-300 text-xs text-center font-bold">
                     Tautan pemulihan telah dikirim ke {forgotEmail}! Silakan periksa inbox Anda.
                   </div>
                 )}
@@ -461,14 +461,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
                       sound.playClick();
                       setIsForgotView(false);
                     }}
-                    className="flex-1 py-2.5 rounded-xl border border-slate-700 bg-slate-900 text-xs font-bold text-slate-300 hover:text-white uppercase tracking-wider cursor-pointer"
+                    className="flex-1 py-2.5 rounded-xl border border-neutral-800 bg-neutral-900 text-xs font-bold text-neutral-300 hover:text-white uppercase tracking-wider cursor-pointer"
                   >
                     ← KEMBALI
                   </button>
 
                   <button
                     type="submit"
-                    className="flex-1 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold uppercase tracking-wider shadow cursor-pointer"
+                    className="flex-1 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black text-xs font-bold uppercase tracking-wider border border-amber-400 cursor-pointer"
                   >
                     KIRIM RESET
                   </button>
@@ -551,7 +551,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
 
                 <button
                   type="submit"
-                  className="w-full mt-2 py-3 px-4 rounded-xl font-bold text-xs text-slate-950 bg-amber-500 hover:bg-amber-400 shadow-lg shadow-amber-500/20 active:scale-[0.98] transition-all cursor-pointer uppercase tracking-wider flex items-center justify-center gap-2"
+                  className="w-full mt-2 py-3 px-4 rounded-xl font-bold text-xs text-black bg-amber-500 hover:bg-amber-400 border border-amber-400 active:scale-[0.98] transition-all cursor-pointer uppercase tracking-wider flex items-center justify-center gap-2"
                 >
                   <span>LANJUT PILIH AVATAR</span>
                   <ArrowRight className="w-4 h-4" />
@@ -561,11 +561,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
               /* --- Step 2: Pilih Avatar (Gender, Kulit, Baju, Celana, Topi) --- */
               <form onSubmit={handleRegisterFinalSubmit} className="space-y-3.5 overflow-y-auto max-h-[62vh] pr-1 custom-scrollbar">
                 {/* Avatar Live Preview & Gender Toggle */}
-                <div className="flex items-center gap-4 bg-slate-900/80 p-3 rounded-2xl border border-slate-800">
+                <div className="flex items-center gap-4 bg-neutral-900/80 p-3 rounded-2xl border border-neutral-800">
                   <AvatarPreview avatar={avatar} size={100} />
 
                   <div className="flex-1 space-y-2">
-                    <div className="text-[11px] font-bold text-slate-300 uppercase tracking-wider">
+                    <div className="text-[11px] font-bold text-neutral-300 uppercase tracking-wider">
                       Pilih Gender:
                     </div>
                     <div className="grid grid-cols-2 gap-2">
@@ -581,8 +581,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
                             }}
                             className={`py-2 px-3 rounded-xl border text-center text-xs font-bold uppercase tracking-wider transition-all cursor-pointer ${
                               isSel
-                                ? 'bg-amber-500 text-slate-950 border-amber-400 shadow'
-                                : 'bg-slate-850 border-slate-700 text-slate-400 hover:text-white'
+                                ? 'bg-amber-500 text-black border-amber-400'
+                                : 'bg-[#0e0e0e] border-neutral-800 text-neutral-400 hover:text-white'
                             }`}
                           >
                             {g === 'male' ? 'LAKI-LAKI' : 'PEREMPUAN'}
@@ -595,7 +595,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
 
                 {/* 1. Warna Kulit */}
                 <div className="space-y-1.5">
-                  <label className="text-[11px] font-bold text-slate-300 uppercase tracking-wider">
+                  <label className="text-[11px] font-bold text-neutral-300 uppercase tracking-wider">
                     Warna Kulit:
                   </label>
                   <div className="flex gap-2.5">
@@ -609,14 +609,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
                         }}
                         className={`w-7 h-7 rounded-full border-2 transition-transform cursor-pointer relative flex items-center justify-center ${
                           avatar.skinColor === item.color
-                            ? 'border-amber-400 scale-110 shadow-lg'
+                            ? 'border-amber-400 scale-110 ring-2 ring-amber-400'
                             : 'border-transparent hover:scale-105'
                         }`}
                         style={{ backgroundColor: item.color }}
                         title={item.name}
                       >
                         {avatar.skinColor === item.color && (
-                          <Check className="w-3.5 h-3.5 text-slate-950 stroke-[3]" />
+                          <Check className="w-3.5 h-3.5 text-black stroke-[3]" />
                         )}
                       </button>
                     ))}
@@ -625,7 +625,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
 
                 {/* 2. Warna Baju */}
                 <div className="space-y-1.5">
-                  <label className="text-[11px] font-bold text-slate-300 uppercase tracking-wider">
+                  <label className="text-[11px] font-bold text-neutral-300 uppercase tracking-wider">
                     Warna Baju:
                   </label>
                   <div className="flex gap-2.5">
@@ -639,7 +639,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
                         }}
                         className={`w-7 h-7 rounded-full border-2 transition-transform cursor-pointer flex items-center justify-center ${
                           avatar.shirtColor === item.color
-                            ? 'border-amber-400 scale-110 shadow-lg'
+                            ? 'border-amber-400 scale-110 ring-2 ring-amber-400'
                             : 'border-transparent hover:scale-105'
                         }`}
                         style={{ backgroundColor: item.color }}
@@ -655,7 +655,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
 
                 {/* 3. Warna Celana */}
                 <div className="space-y-1.5">
-                  <label className="text-[11px] font-bold text-slate-300 uppercase tracking-wider">
+                  <label className="text-[11px] font-bold text-neutral-300 uppercase tracking-wider">
                     Warna Celana:
                   </label>
                   <div className="flex gap-2.5">
@@ -669,7 +669,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
                         }}
                         className={`w-7 h-7 rounded-full border-2 transition-transform cursor-pointer flex items-center justify-center ${
                           avatar.pantsColor === item.color
-                            ? 'border-amber-400 scale-110 shadow-lg'
+                            ? 'border-amber-400 scale-110 ring-2 ring-amber-400'
                             : 'border-transparent hover:scale-105'
                         }`}
                         style={{ backgroundColor: item.color }}
@@ -685,7 +685,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
 
                 {/* 4. Topi Avatar */}
                 <div className="space-y-1.5">
-                  <label className="text-[11px] font-bold text-slate-300 uppercase tracking-wider">
+                  <label className="text-[11px] font-bold text-neutral-300 uppercase tracking-wider">
                     Pilihan Topi Avatar:
                   </label>
                   <div className="grid grid-cols-3 sm:grid-cols-5 gap-1.5">
@@ -701,8 +701,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
                           }}
                           className={`py-1.5 px-2 rounded-xl border text-center text-[10px] font-bold uppercase transition-all cursor-pointer ${
                             isSel
-                              ? 'bg-amber-500 text-slate-950 border-amber-400 shadow'
-                              : 'bg-slate-900 border-slate-700 text-slate-400 hover:text-white'
+                              ? 'bg-amber-500 text-black border-amber-400'
+                              : 'bg-neutral-900 border-neutral-800 text-neutral-400 hover:text-white'
                           }`}
                         >
                           {opt.label}
@@ -720,7 +720,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
                       sound.playClick();
                       setRegisterStep(1);
                     }}
-                    className="py-2.5 px-4 rounded-xl border border-slate-700 bg-slate-900 text-xs font-bold text-slate-300 hover:text-white uppercase tracking-wider cursor-pointer flex items-center justify-center gap-1.5"
+                    className="py-2.5 px-4 rounded-xl border border-neutral-800 bg-neutral-900 text-xs font-bold text-neutral-300 hover:text-white uppercase tracking-wider cursor-pointer flex items-center justify-center gap-1.5"
                   >
                     <ArrowLeft className="w-4 h-4" />
                     <span>KEMBALI</span>
@@ -728,7 +728,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
 
                   <button
                     type="submit"
-                    className="flex-1 py-2.5 px-4 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold uppercase tracking-wider shadow-lg shadow-amber-500/20 active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                    className="flex-1 py-2.5 px-4 rounded-xl bg-amber-500 hover:bg-amber-400 text-black text-xs font-bold uppercase tracking-wider border border-amber-400 active:scale-[0.98] transition-all cursor-pointer flex items-center justify-center gap-1.5"
                   >
                     <span>SELESAI & MASUK DUNIA</span>
                     <ArrowRight className="w-4 h-4" />

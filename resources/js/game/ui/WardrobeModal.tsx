@@ -64,10 +64,10 @@ export const WardrobeModal: React.FC<WardrobeModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#0a0f1d]/85 backdrop-blur-md font-['Chakra_Petch']">
-      <div className="relative w-full max-w-lg bg-[#0a0f1d] border-2 border-amber-500 rounded-2xl shadow-2xl overflow-hidden p-6 text-amber-400">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 font-['Chakra_Petch']">
+      <div className="relative w-full max-w-lg bg-black border border-neutral-800 rounded-2xl overflow-hidden p-6 text-amber-400">
         {/* Header */}
-        <div className="flex items-center justify-between pb-4 border-b border-amber-500/30">
+        <div className="flex items-center justify-between pb-4 border-b border-neutral-800">
           <div className="flex items-center gap-2">
             <Sparkles className="w-5 h-5 text-amber-500" />
             <h2 className="text-base font-bold tracking-wider uppercase text-amber-400">
@@ -79,7 +79,7 @@ export const WardrobeModal: React.FC<WardrobeModalProps> = ({
               sound.playClick();
               onClose();
             }}
-            className="p-1 rounded-lg border border-amber-500/40 hover:bg-amber-500 hover:text-[#0a0f1d] transition-all cursor-pointer"
+            className="p-1 rounded-lg border border-neutral-700 hover:bg-amber-500 hover:text-black transition-all cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -88,7 +88,7 @@ export const WardrobeModal: React.FC<WardrobeModalProps> = ({
         {/* Content: Preview & Customization Grid */}
         <div className="mt-5 grid grid-cols-1 md:grid-cols-12 gap-5 items-center">
           {/* Avatar Preview */}
-          <div className="md:col-span-5 flex flex-col items-center justify-center p-4 rounded-xl border border-amber-500/40 bg-[#0a0f1d] shadow-inner">
+          <div className="md:col-span-5 flex flex-col items-center justify-center p-4 rounded-xl border border-neutral-800 bg-neutral-900">
             <AvatarPreview avatar={avatar} size={140} />
             <span className="mt-3 text-xs font-bold uppercase tracking-widest text-amber-400">
               PRATINJAU KARAKTER
@@ -138,7 +138,7 @@ export const WardrobeModal: React.FC<WardrobeModalProps> = ({
                       setAvatar({ ...avatar, skinColor: color });
                     }}
                     className={`w-7 h-7 rounded-lg border-2 transition-transform cursor-pointer ${
-                      avatar.skinColor === color ? 'border-amber-400 scale-110 shadow' : 'border-amber-900/60'
+                      avatar.skinColor === color ? 'border-amber-400 scale-110' : 'border-neutral-700'
                     }`}
                     style={{ backgroundColor: color }}
                   />
@@ -161,7 +161,7 @@ export const WardrobeModal: React.FC<WardrobeModalProps> = ({
                       setAvatar({ ...avatar, shirtColor: color });
                     }}
                     className={`w-7 h-7 rounded-lg border-2 transition-transform cursor-pointer ${
-                      avatar.shirtColor === color ? 'border-amber-400 scale-110 shadow' : 'border-amber-900/60'
+                      avatar.shirtColor === color ? 'border-amber-400 scale-110' : 'border-neutral-700'
                     }`}
                     style={{ backgroundColor: color }}
                   />
@@ -184,7 +184,7 @@ export const WardrobeModal: React.FC<WardrobeModalProps> = ({
                       setAvatar({ ...avatar, pantsColor: color });
                     }}
                     className={`w-7 h-7 rounded-lg border-2 transition-transform cursor-pointer ${
-                      avatar.pantsColor === color ? 'border-amber-400 scale-110 shadow' : 'border-amber-900/60'
+                      avatar.pantsColor === color ? 'border-amber-400 scale-110' : 'border-neutral-700'
                     }`}
                     style={{ backgroundColor: color }}
                   />
@@ -208,8 +208,8 @@ export const WardrobeModal: React.FC<WardrobeModalProps> = ({
                     }}
                     className={`py-1 px-2 rounded-lg border text-[11px] font-bold uppercase transition-all cursor-pointer ${
                       avatar.hatType === h.type
-                        ? 'bg-amber-500 text-[#0a0f1d] border-amber-400'
-                        : 'bg-[#0a0f1d] text-amber-400 border-amber-500/40 hover:border-amber-500'
+                        ? 'bg-amber-500 text-black border-amber-400'
+                        : 'bg-neutral-900 text-amber-400 border-neutral-800 hover:border-amber-500'
                     }`}
                   >
                     {h.label}
@@ -221,21 +221,21 @@ export const WardrobeModal: React.FC<WardrobeModalProps> = ({
         </div>
 
         {/* Action Buttons */}
-        <div className="mt-6 pt-4 border-t border-amber-500/30 flex items-center justify-end gap-3">
+        <div className="mt-6 pt-4 border-t border-neutral-800 flex items-center justify-end gap-3">
           <button
             type="button"
             onClick={() => {
               sound.playClick();
               onClose();
             }}
-            className="px-4 py-2 rounded-xl border border-amber-500/50 bg-[#0a0f1d] text-amber-400 text-xs font-bold uppercase tracking-wider hover:border-amber-400 cursor-pointer transition-all"
+            className="px-4 py-2 rounded-xl border border-neutral-700 bg-neutral-900 text-amber-400 text-xs font-bold uppercase tracking-wider hover:border-amber-400 cursor-pointer transition-all"
           >
             BATAL
           </button>
           <button
             type="button"
             onClick={handleSave}
-            className="flex items-center gap-1.5 px-6 py-2 rounded-xl bg-amber-500 text-[#0a0f1d] text-xs font-bold uppercase tracking-wider hover:bg-amber-400 cursor-pointer transition-all shadow-lg"
+            className="flex items-center gap-1.5 px-6 py-2 rounded-xl bg-amber-500 text-black text-xs font-bold uppercase tracking-wider hover:bg-amber-400 cursor-pointer transition-all"
           >
             <Check className="w-4 h-4" />
             <span>SIMPAN AVATAR</span>

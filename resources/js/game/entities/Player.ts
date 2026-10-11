@@ -7,9 +7,10 @@
  * pengguna (pemain saat ini).
  * 
  * FITUR:
- * - Kustomisasi Avatar dinamis (gender, warna kulit, baju, celana, topi).
+ * - Proporsi ukuran 1x2 petak grid (X: 1 petak, Y: 2 petak) sesuai standar RPG.
+ * - Karakter Male & Female dengan aset tekstur visual terpisah.
+ * - Animasi jalan 9-frame (depan, belakang, samping) & pose diam (idle directional).
  * - Input keyboard (WASD & Panah).
- * - Kecepatan fisik & animasi langkah berjalan (bobbing).
  * - Sinkronisasi posisi ke WebSocket server.
  * ============================================================================
  */
@@ -18,14 +19,26 @@ import Phaser from 'phaser';
 import { Entity } from './Entity';
 import { IAvatarCustomization, Direction } from '../types';
 import { NetworkManager } from '../core/NetworkManager';
-import { AvatarGenerator } from '../utils/AvatarGenerator';
+import { EventBus } from '../core/EventBus';
 
 export class Player extends Entity {
   /** Data kustomisasi avatar pemain */
   private avatar: IAvatarCustomization;
 
-  /** Objek gambar/sprite visual karakter */
-  private sprite: Phaser.GameObjects.Sprite | Phaser.GameObjects.Image;
+  /** Gender karakter ('male' | 'female') */
+  private gender: 'male' | 'female';
+
+  /** Lebar karakter visual (1 petak grid) */
+  private charWidth: number;
+
+  /** Tinggi karakter visual (2 petak grid) */
+  private charHeight: number;
+
+  /** Objek sprite visual karakter */
+  private sprite: Phaser.GameObjects.Sprite;
+
+  /** Kunci animasi yang sedang aktif diputar */
+  private currentAnimKey: string = '';
 
   /** Objek penangkap tombol panah keyboard */
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
@@ -47,14 +60,23 @@ export class Player extends Entity {
   /** Koordinat Y terakhir yang telah dikirim ke server */
   private lastY: number = 0;
 
+  /** Status apakah karakter sedang berdialog dengan NPC */
+  private isDialogueActive: boolean = false;
+
   /** Status apakah karakter saat ini sedang bergerak atau diam */
   private isMoving: boolean = false;
+
+  /** Arah hadap terakhir untuk mendeteksi perubahan arah gerak */
+  private lastDirection: Direction = 'down';
 
   /** Referensi ke singleton NetworkManager */
   private networkManager: NetworkManager;
 
-  /** Efek tween animasi langkah berjalan karakter */
-  private walkTween: Phaser.Tweens.Tween | null = null;
+  /** Target koordinat tujuan navigasi Point & Click / Tap-to-move */
+  private targetDestination: { x: number; y: number } | null = null;
+
+  /** Callback yang dipanggil sesampainya di tujuan point-and-click */
+  private onArrivalCallback: (() => void) | null = null;
 
   /**
    * Konstruktor Karakter Pemain Lokal
@@ -77,19 +99,82 @@ export class Player extends Entity {
     hp: number = 100,
     maxHp: number = 100
   ) {
-    super(scene, x, y, id, name, hp, maxHp, 220);
+    // Kecepatan gerak dipercepat ke 360 px/s (3 petak ubin/detik) agar lincah, sigap, dan responsif
+    super(scene, x, y, id, name, hp, maxHp, 360);
     this.avatar = avatar;
+    this.gender = avatar?.gender === 'female' ? 'female' : 'male';
     this.networkManager = NetworkManager.getInstance();
 
-    // Buat tekstur avatar unik sesuai gender & pakaian
-    const textureKey = AvatarGenerator.getOrCreateTexture(scene, avatar);
-    this.sprite = scene.add.image(0, 0, textureKey);
-    this.sprite.setDisplaySize(38, 38);
-    this.addAt(this.sprite, 0);
+    // Proporsi Karakter HD: tinggi 177px di dalam grid 1x2 (120x240px)
+    // Pivot stabil di petak ubin 1x1 (120x120px)
+    this.charHeight = 177;
+    this.charWidth = 119.5;
+    this.setEntityHeight(this.charHeight);
+
+    // Sprite karakter visual: Pose awal Diam Menghadap Depan (bayangan sudah menyatu di aset gambar)
+    const initialKey = `player-${this.gender}-idle-front`;
+    this.sprite = scene.add.sprite(0, 48, initialKey);
+    // Origin di tengah kaki karakter (0.5, 1.0) berdiri tepat di atas bayangan ubin 1x1
+    this.sprite.setOrigin(0.5, 1.0);
+    this.add(this.sprite);
+
+    // Pastikan setiap pergantian frame animasi mempertahankan rasio aspek alami 100% tanpa glitch
+    this.sprite.on(Phaser.Animations.Events.ANIMATION_UPDATE, () => {
+      this.adjustSpriteScale();
+    });
+    this.adjustSpriteScale();
+
+    // 3. Kotak tabrakan fisik Arcade di bagian kaki karakter (1x1 tile)
+    const body = this.body as Phaser.Physics.Arcade.Body;
+    if (body) {
+      body.setSize(70, 36);
+      body.setOffset(-35, 12);
+    }
 
     this.setupInput(scene);
+
+    // Tangani kehilangan fokus jendela (buka aplikasi lain / switch tab) agar tidak freeze
+    scene.game.events.on(Phaser.Core.Events.BLUR, () => {
+      if (this.body) {
+        (this.body as Phaser.Physics.Arcade.Body).setVelocity(0, 0);
+      }
+      this.isMoving = false;
+      this.updateAnimation(false);
+    });
+
+    // Tangani status dialog NPC aktif: kunci pergerakan karakter seketika
+    const onDialogueActive = (active: boolean) => {
+      this.isDialogueActive = !!active;
+      if (active) {
+        if (this.body) {
+          (this.body as Phaser.Physics.Arcade.Body).setVelocity(0, 0);
+        }
+        this.isMoving = false;
+        this.updateAnimation(false);
+      }
+    };
+    EventBus.on('dialogue-active', onDialogueActive);
+    this.once(Phaser.GameObjects.Events.DESTROY, () => {
+      EventBus.off('dialogue-active', onDialogueActive);
+    });
+
     this.lastX = x;
     this.lastY = y;
+  }
+
+  /** Memperbarui avatar pemain saat diganti dari lemari pakaian */
+  public setAvatar(newAvatar: IAvatarCustomization): void {
+    if (!newAvatar) return;
+    this.avatar = newAvatar;
+    this.gender = newAvatar.gender === 'female' ? 'female' : 'male';
+    this.updateAnimation(this.isMoving);
+  }
+
+  /** Memperbarui nama pemain dan plat nama di atas kepala */
+  public override setName(newName: string): this {
+    super.setName(newName);
+    this.setEntityName(newName);
+    return this;
   }
 
   /**
@@ -117,19 +202,61 @@ export class Player extends Entity {
   }
 
   /**
+   * Menggerakkan karakter secara otomatis menuju titik target (Point & Click / Tap-to-move)
+   * @param targetX Koordinat X tujuan dalam pixel dunia game
+   * @param targetY Koordinat Y tujuan dalam pixel dunia game
+   * @param onArrival Callback yang dipanggil saat karakter tiba di tujuan
+   */
+  public navigateTo(targetX: number, targetY: number, onArrival?: () => void): void {
+    if (this.isDialogueActive) return;
+    this.targetDestination = { x: targetX, y: targetY };
+    this.onArrivalCallback = onArrival || null;
+  }
+
+  /**
+   * Membatalkan pergerakan otomatis point-and-click
+   */
+  public stopNavigation(): void {
+    this.targetDestination = null;
+    this.onArrivalCallback = null;
+  }
+
+  /** Alias kompatibilitas untuk pembatalan navigasi */
+  public stopMoveTo(): void {
+    this.stopNavigation();
+  }
+
+  /**
    * Game loop yang dieksekusi 60 FPS
    */
   public update(time: number, delta: number): void {
     const body = this.body as Phaser.Physics.Arcade.Body;
-    if (!body || !this.cursors) return;
+    if (!body) return;
+
+    // Perbarui ukuran skala chat bubble dan ekspresi mengikuti zoom kamera
+    this.updateFloatingElementsScale();
+
+    // Jika sedang dalam dialog NPC aktif, kunci pergerakan karakter sampai selesai
+    if (this.isDialogueActive) {
+      body.setVelocity(0, 0);
+      this.targetDestination = null;
+      this.onArrivalCallback = null;
+      if (this.isMoving) {
+        this.isMoving = false;
+        this.updateAnimation(false);
+      }
+      return;
+    }
 
     // Jika pengguna sedang fokus mengetik di input chat atau form lain, hentikan pergerakan karakter
     const isTyping = document.activeElement?.tagName === 'INPUT' || document.activeElement?.tagName === 'TEXTAREA';
     if (isTyping) {
       body.setVelocity(0, 0);
+      this.targetDestination = null;
+      this.onArrivalCallback = null;
       if (this.isMoving) {
         this.isMoving = false;
-        this.handleWalkAnimation(false);
+        this.updateAnimation(false);
       }
       return;
     }
@@ -137,41 +264,77 @@ export class Player extends Entity {
     let vx = 0;
     let vy = 0;
 
-    const left = this.cursors.left.isDown || this.keysWASD.A.isDown;
-    const right = this.cursors.right.isDown || this.keysWASD.D.isDown;
-    const up = this.cursors.up.isDown || this.keysWASD.W.isDown;
-    const down = this.cursors.down.isDown || this.keysWASD.S.isDown;
+    const left = Boolean(this.cursors?.left?.isDown || this.keysWASD?.A?.isDown);
+    const right = Boolean(this.cursors?.right?.isDown || this.keysWASD?.D?.isDown);
+    const up = Boolean(this.cursors?.up?.isDown || this.keysWASD?.W?.isDown);
+    const down = Boolean(this.cursors?.down?.isDown || this.keysWASD?.S?.isDown);
 
-    if (left) {
-      vx -= this.speed;
-      this.currentDirection = 'left';
-      this.sprite.setScale(-1, 1);
-    } else if (right) {
-      vx += this.speed;
-      this.currentDirection = 'right';
-      this.sprite.setScale(1, 1);
-    }
+    const hasManualInput = left || right || up || down;
 
-    if (up) {
-      vy -= this.speed;
-      this.currentDirection = 'up';
-    } else if (down) {
-      vy += this.speed;
-      this.currentDirection = 'down';
-    }
+    if (hasManualInput) {
+      // Prioritaskan kendali manual (Keyboard/Joystick)! Batalkan navigasi otomatis
+      this.targetDestination = null;
+      this.onArrivalCallback = null;
 
-    // Normalisasi kecepatan diagonal
-    if (vx !== 0 && vy !== 0) {
-      vx *= 0.7071;
-      vy *= 0.7071;
+      if (left) {
+        vx -= this.speed;
+        this.currentDirection = 'left';
+      } else if (right) {
+        vx += this.speed;
+        this.currentDirection = 'right';
+      }
+
+      if (up) {
+        vy -= this.speed;
+        this.currentDirection = 'up';
+      } else if (down) {
+        vy += this.speed;
+        this.currentDirection = 'down';
+      }
+
+      // Normalisasi kecepatan diagonal
+      if (vx !== 0 && vy !== 0) {
+        vx *= 0.7071;
+        vy *= 0.7071;
+      }
+    } else if (this.targetDestination) {
+      // Navigasi otomatis Point & Click / Tap-to-move
+      const dx = this.targetDestination.x - this.x;
+      const dy = this.targetDestination.y - this.y;
+      const dist = Math.hypot(dx, dy);
+
+      if (dist <= 12) {
+        // Pemain telah sampai di titik target
+        this.targetDestination = null;
+        vx = 0;
+        vy = 0;
+        const cb = this.onArrivalCallback;
+        this.onArrivalCallback = null;
+        if (cb) cb();
+      } else {
+        const angle = Math.atan2(dy, dx);
+        vx = Math.cos(angle) * this.speed;
+        vy = Math.sin(angle) * this.speed;
+
+        // Tentukan arah hadap animasi berdasarkan pergerakan dominan
+        if (Math.abs(dx) > Math.abs(dy)) {
+          this.currentDirection = dx > 0 ? 'right' : 'left';
+        } else {
+          this.currentDirection = dy > 0 ? 'down' : 'up';
+        }
+      }
     }
 
     body.setVelocity(vx, vy);
 
     const nowMoving = vx !== 0 || vy !== 0;
-    if (nowMoving !== this.isMoving) {
+    const directionChanged = this.currentDirection !== this.lastDirection;
+    const movementStateChanged = nowMoving !== this.isMoving;
+
+    if (movementStateChanged || (nowMoving && directionChanged)) {
       this.isMoving = nowMoving;
-      this.handleWalkAnimation(nowMoving);
+      this.lastDirection = this.currentDirection;
+      this.updateAnimation(nowMoving);
     }
 
     // Sinkronisasi data posisi ke server setiap 60ms saat bergerak
@@ -181,35 +344,87 @@ export class Player extends Entity {
       this.lastX = this.x;
       this.lastY = this.y;
       this.networkManager.sendMovement(this.x, this.y, this.currentDirection, this.isMoving);
+    } else if (movementStateChanged && !nowMoving) {
+      this.lastX = this.x;
+      this.lastY = this.y;
+      this.networkManager.sendMovement(this.x, this.y, this.currentDirection, false);
     }
   }
 
   /**
-   * Mengatur animasi langkah naik-turun (bobbing)
+   * Mengatur animasi berjalan (Movement) dan pose diam (Idle) sesuai arah hadap
    */
-  private handleWalkAnimation(moving: boolean): void {
-    if (moving && !this.walkTween) {
-      this.walkTween = this.scene.tweens.add({
-        targets: this.sprite,
-        y: -3,
-        duration: 150,
-        yoyo: true,
-        repeat: -1,
-        ease: 'Sine.easeInOut'
-      });
-    } else if (!moving && this.walkTween) {
-      this.walkTween.stop();
-      this.walkTween = null;
-      this.sprite.setY(0);
+  private updateAnimation(moving: boolean): void {
+    if (!this.sprite || !this.sprite.anims) return;
+
+    if (moving) {
+      let animKey = `player-${this.gender}-walk-down`;
+      if (this.currentDirection === 'up') {
+        animKey = `player-${this.gender}-walk-up`;
+        this.sprite.setFlipX(false);
+      } else if (this.currentDirection === 'down') {
+        animKey = `player-${this.gender}-walk-down`;
+        this.sprite.setFlipX(false);
+      } else if (this.currentDirection === 'left') {
+        animKey = `player-${this.gender}-walk-side`;
+        this.sprite.setFlipX(true);
+      } else if (this.currentDirection === 'right') {
+        animKey = `player-${this.gender}-walk-side`;
+        this.sprite.setFlipX(false);
+      }
+
+      if (this.currentAnimKey !== animKey || !this.sprite.anims.isPlaying) {
+        this.currentAnimKey = animKey;
+        this.sprite.anims.play(animKey, true);
+        this.adjustSpriteScale();
+      }
+    } else {
+      if (this.sprite.anims.isPlaying) {
+        this.sprite.anims.stop();
+      }
+      this.currentAnimKey = '';
+
+      let idleKey = `player-${this.gender}-idle-front`;
+      if (this.currentDirection === 'up') {
+        idleKey = `player-${this.gender}-idle-back`;
+        this.sprite.setFlipX(false);
+      } else if (this.currentDirection === 'down') {
+        idleKey = `player-${this.gender}-idle-front`;
+        this.sprite.setFlipX(false);
+      } else if (this.currentDirection === 'left') {
+        idleKey = `player-${this.gender}-idle-side`;
+        this.sprite.setFlipX(true);
+      } else if (this.currentDirection === 'right') {
+        idleKey = `player-${this.gender}-idle-side`;
+        this.sprite.setFlipX(false);
+      }
+
+      this.sprite.setTexture(idleKey);
+      this.adjustSpriteScale();
     }
   }
 
-  /** Membersihkan tween dan objek saat karakter dihancurkan */
-  public destroy(fromScene?: boolean): void {
-    if (this.walkTween) {
-      this.walkTween.stop();
-      this.walkTween = null;
-    }
-    super.destroy(fromScene);
+  /**
+   * Menyesuaikan ukuran tampilan sprite secara dinamis agar sesuai rasio aspek 100% dari aset asli Figma
+   * Menjaga tinggi karakter 177px dan lebar proporsional (~119.5px) di dalam ubin 1x2 (120x240px)
+   */
+  private adjustSpriteScale(): void {
+    if (!this.sprite) return;
+    const frame = this.sprite.frame;
+    const realH = frame ? (frame.realHeight || frame.height) : 586;
+    const realW = frame ? (frame.realWidth || frame.width) : 395;
+    const aspect = realH > 0 ? (realW / realH) : 0.674;
+    this.charHeight = 177;
+    this.charWidth = Math.round(this.charHeight * aspect * 100) / 100;
+    this.sprite.setDisplaySize(this.charWidth, this.charHeight);
+  }
+
+  /**
+   * Menampilkan reaksi ekspresi wajah asli di atas kepala karakter
+   * @param type 'normal' | 'smile' | 'shock' | 'angry'
+   */
+  public triggerExpression(type: 'normal' | 'smile' | 'shock' | 'angry'): void {
+    const textureKey = `expr-${this.gender}-${type}`;
+    this.showExpressionReaction(textureKey);
   }
 }

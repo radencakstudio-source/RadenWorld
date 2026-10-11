@@ -16,7 +16,7 @@
     @viteReactRefresh
     @vite(['resources/css/app.css', 'resources/js/app.tsx'])
 </head>
-<body class="bg-slate-950 text-slate-100 antialiased overflow-hidden select-none">
+<body class="bg-black text-neutral-100 antialiased overflow-hidden select-none">
     <div id="raden-game-app"></div>
 </body>
 </html>

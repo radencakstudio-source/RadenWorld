@@ -3,42 +3,190 @@
  * FILE: resources/js/game/scenes/WorldScene.ts
  * ============================================================================
  * FUNGSI UTAMA:
- * Scene utama 2D Open World di Phaser 3 yang mengatur dunia permainan:
- * 1. Peta tanah bermotif catur (Checkerboard Dark & Light Grid) 3200x3200 pixel.
- * 2. Pemain lokal dengan avatar unik (gender, warna kulit, baju, celana, topi).
- * 3. Pemain lain di open world yang sinkron via Socket.io.
- * 4. Sistem kamera pelacak (lerp tracking) dan NPC interaktif.
+ * Scene 2D Open World Multiplayer luas (9600x9600 pixel) berbasis grid 120px.
+ * 
+ * SPESIFIKASI:
+ * 1. Skala Grid: 1 Grid = 120px x 120px (Pola catur alam hijau tua & zamrud).
+ * 2. Karakter: 94.52px x 177px, di tengah kolom 1x2 petak (120x240px).
+ * 3. Kamera: Zoom in & Zoom out yang halus (smooth lerp/tween) tanpa getaran.
+ * 4. Peta Luas & Megah: 80x80 petak ubin (9600x9600px), mencakup Plaza Kota,
+ *    Pasar & Toko, Rumah Pribadi, Telaga Mistik, Hutan Zamrud, Kebun & Kincir Angin.
+ * 5. NPC Interaktif Ramah: Sage Raden, Blacksmith Arya, Alchemist Sari,
+ *    Merchant Malik, Fisherman Danu, Farmer Joko, Captain Bima, Elder Maya (Menggantikan monster).
+ * 6. Keandalan: Penanganan reconnect, tab/app switch, dan refresh tanpa bug freeze/hilang.
  * ============================================================================
  */
 
 import Phaser from 'phaser';
 import { Player } from '../entities/Player';
 import { RemotePlayer } from '../entities/RemotePlayer';
-import { Monster } from '../entities/Monster';
 import { NetworkManager } from '../core/NetworkManager';
 import { EventBus } from '../core/EventBus';
-import { IPlayerData, IMonsterData, IChatMessage, IWorldInitData, IAvatarCustomization } from '../types';
+import { IPlayerData, IChatMessage, IWorldInitData, IAvatarCustomization } from '../types';
+
+interface INpcConfig {
+  id: string;
+  name: string;
+  role: string;
+  avatarType: 'sage' | 'blacksmith' | 'alchemist' | 'merchant' | 'guard' | 'fisherman' | 'farmer' | 'elder';
+  x: number;
+  y: number;
+  greeting: string;
+  dialogues: string[];
+  spriteKey: string;
+}
 
 export class WorldScene extends Phaser.Scene {
   private player: Player | null = null;
   private remotePlayers: Map<string, RemotePlayer> = new Map();
-  private monsters: Map<string, Monster> = new Map();
   private networkManager: NetworkManager;
 
-  public readonly worldWidth: number = 3200;
-  public readonly worldHeight: number = 3200;
+  // Luas Peta Dunia Terbuka (80 x 80 petak ubin @ 120px = 9600 x 9600 px)
+  public readonly worldWidth: number = 9600;
+  public readonly worldHeight: number = 9600;
+  public readonly tileSize: number = 120;
 
   private pendingPlayerName: string | null = null;
   private pendingAvatar: IAvatarCustomization | null = null;
   private spawnNearHouseDoor: boolean = false;
+  private privateRoomId: string = 'safe-01';
 
   // Zona Bangunan & Pintu Interaktif
-  private playerHouseDoor = { x: 1520, y: 1750 };
-  private blacksmithZone = { x: 1460, y: 1490 };
-  private alchemistZone = { x: 1740, y: 1490 };
+  private playerHouseDoor = { x: 4800, y: 5520 };
   private activePrompt: string | null = null;
   private lastStatsEmitTime: number = 0;
-  private privateRoomId: string = 'safe-01';
+  private lastGridX: number = -1;
+  private lastGridY: number = -1;
+  private lastLocationName: string = '';
+  private doorCooldownUntil: number = 0;
+  private isTransitioning: boolean = false;
+
+  // Kontrol zoom kamera halus
+  private targetZoom: number = 0.9;
+
+  // Daftar NPC Interaktif Ramah di Berbagai Penjuru Dunia dengan Narasi Dialog Multi-Halaman
+  private npcs: INpcConfig[] = [
+    {
+      id: 'npc_sage',
+      name: 'Sage Raden',
+      role: 'Tetua Kebijaksanaan',
+      avatarType: 'sage',
+      x: 4860,
+      y: 4760,
+      greeting: 'Salam sejahtera, wahai penjelajah dunia!',
+      dialogues: [
+        'Salam sejahtera, wahai penjelajah! Selamat datang di RadenWorld, tanah agung yang dibangun dengan penuh kebebasan dan persahabatan.',
+        'Dunia luas ini terbentang 80x80 petak catur dengan distrik megah: Alun-Alun Sanctuary, Kuil Purba, hingga Telaga Mistik Kristal.',
+        'Kamu bisa menjelajah bersama kawan-kawanmu, berbincang langsung melalui Proximity Voice Chat di radius 5 petak, dan mengukir kisah hebatmu di sini!'
+      ],
+      spriteKey: 'npc-sprite',
+    },
+    {
+      id: 'npc_blacksmith',
+      name: 'Blacksmith Arya',
+      role: 'Pandai Besi Terhebat',
+      avatarType: 'blacksmith',
+      x: 4560,
+      y: 3840,
+      greeting: 'Klang! Klang! Panasnya tungku tempa menyambutmu!',
+      dialogues: [
+        'Klang! Klang! Hahaha, sambutlah deburan api tempa Arya! Pandai besi nomor satu di seluruh kota Sanctuary!',
+        'Zirah baja kristal dan pedang pusaka yang kutempa dirancang dari paduan logam terbaik agar mampu melindungimu di alam liar.',
+        'Jika kamu menemukan bijih mineral langka di reruntuhan granit timur, bawa ke mari. Akan kutempa menjadi perlengkapan legendaris!'
+      ],
+      spriteKey: 'npc-sprite',
+    },
+    {
+      id: 'npc_alchemist',
+      name: 'Alchemist Sari',
+      role: 'Penyeduh Ramuan Ajaib',
+      avatarType: 'alchemist',
+      x: 5040,
+      y: 3840,
+      greeting: 'Ramuan herbal harum siap menyegarkan staminamu.',
+      dialogues: [
+        'Ssshh... pelankan langkahmu, ramuan sari bunga Telaga Mistik sedang mendidih sempurna di dalam labu kaca ini.',
+        'Aku meracik eliksir pemulih stamina, tonik kelincahan langkah kaki, hingga esensi herbal relaksasi rumah.',
+        'Minumlah seteguk sebelum menempuh petualangan jauh. Pikiran yang tenang dan tubuh yang segar adalah benteng terkuatmu!'
+      ],
+      spriteKey: 'npc-sprite',
+    },
+    {
+      id: 'npc_merchant',
+      name: 'Merchant Malik',
+      role: 'Pedagang Keliling Antar Samudra',
+      avatarType: 'merchant',
+      x: 4800,
+      y: 3960,
+      greeting: 'Barang antik langka dari seberang samudra!',
+      dialogues: [
+        'Kemari, kawan! Mendekatlah! Kafilah daganganku baru saja mendarat dari pelayaran panjang menyeberangi tujuh samudra!',
+        'Banyak kain sutra berkilau, artefak permata zamrud antik, dan cenderamata eksotis yang kubawa di dalam gerobak emas ini.',
+        'Simpan koin emasmu baik-baik, karena kejutan barang antik di pasar Sanctuary selalu diburu para kolektor sejati!'
+      ],
+      spriteKey: 'npc-sprite',
+    },
+    {
+      id: 'npc_guard',
+      name: 'Captain Bima',
+      role: 'Komandan Penjaga Sanctuary',
+      avatarType: 'guard',
+      x: 4800,
+      y: 4320,
+      greeting: 'Sanctuary Plaza aman terkendali di bawah pengawasan.',
+      dialogues: [
+        'Tegakkan langkahmu, petualang! Saya, Kapten Bima, memimpin divisi penjaga untuk memastikan Sanctuary Plaza senantiasa aman dan tertib.',
+        'Hormati sesama kawan petualang, patuhi aturan kota, dan laporkan segera jika kamu menjumpai gangguan di wilayah perbatasan.',
+        'Jika situasi darurat terjadi, panggil Super Admin RADEN. Kami siap mengawal kedamaian tanah RadenWorld!'
+      ],
+      spriteKey: 'npc-sprite',
+    },
+    {
+      id: 'npc_fisherman',
+      name: 'Fisherman Danu',
+      role: 'Nelayan Telaga Mistik',
+      avatarType: 'fisherman',
+      x: 6400,
+      y: 3800,
+      greeting: 'Air Telaga Mistik sangat tenang dan jernih hari ini.',
+      dialogues: [
+        'Krieeet... suara derit dermaga kayu dan riak air Telaga Mistik selalu menjadi alunan paling menenteramkan di kala senja.',
+        'Ikan-ikan perak bersisik kristal sering berenang jinak mendekati tepian dermaga ketika matahari mulai condong ke barat.',
+        'Duduklah santai di tepian dermaga jika lelah mengelilingi dunia. Angin sejuk telaga ini akan menyegarkan kembali jiwamu.'
+      ],
+      spriteKey: 'npc-sprite',
+    },
+    {
+      id: 'npc_farmer',
+      name: 'Farmer Joko',
+      role: 'Petani Padang Gandum Subur',
+      avatarType: 'farmer',
+      x: 4800,
+      y: 7200,
+      greeting: 'Kincir angin berputar, pertanda panen melimpah!',
+      dialogues: [
+        'Ohoho! Selamat datang di padang gandum selatan! Kincir angin raksasa berputar riang menghembuskan aroma gandum keemasan.',
+        'Hasil panen tanah gembur ini diolah menjadi roti gandum emas terlezat yang menyuplai seluruh penduduk kota Sanctuary.',
+        'Ketulusan dalam merawat bumi tidak pernah mengkhianati hasil. Nikmatilah hangatnya suasana pedesaan di sini!'
+      ],
+      spriteKey: 'npc-sprite',
+    },
+    {
+      id: 'npc_elder',
+      name: 'Elder Maya',
+      role: 'Penjaga Kuil Hutan Kuno',
+      avatarType: 'elder',
+      x: 2400,
+      y: 2400,
+      greeting: 'Pohon-pohon purba berbisik menceritakan sejarah.',
+      dialogues: [
+        'Dengarlah bisikan dedaunan purba yang menari perlahan... Pepohonan raksasa ini telah berdiri kokoh ribuan warsa.',
+        'Kuil Hutan Kuno menyimpan kristal perlindungan sakral yang memancarkan energi kedamaian ke seluruh bentang alam RadenWorld.',
+        'Berjalanlah dengan niat mulia dan rawatlah persahabatan di hatimu. Semesta akan senantiasa memberkati setiap langkahmu.'
+      ],
+      spriteKey: 'npc-sprite',
+    },
+  ];
 
   constructor() {
     super({ key: 'WorldScene' });
@@ -46,399 +194,568 @@ export class WorldScene extends Phaser.Scene {
   }
 
   public init(data?: { name?: string; avatar?: IAvatarCustomization; spawnNearHouse?: boolean; privateRoomId?: string }): void {
+    this.isTransitioning = false;
+    this.doorCooldownUntil = this.time ? this.time.now + 2500 : 0;
+    this.player = null as any;
+
     if (data?.name) this.pendingPlayerName = data.name;
     if (data?.avatar) this.pendingAvatar = data.avatar;
-    if (data?.spawnNearHouse) this.spawnNearHouseDoor = true;
+    this.spawnNearHouseDoor = !!data?.spawnNearHouse;
     if (data?.privateRoomId) this.privateRoomId = data.privateRoomId;
   }
 
   public create(): void {
-    // 1. Batas fisika dunia
+    // 1. Batas fisika dunia (9600x9600)
     this.physics.world.setBounds(0, 0, this.worldWidth, this.worldHeight);
 
-    // 2. Render grafis lingkungan alam dengan pola catur (Checkerboard Grid)
+    // 2. Render grafis lingkungan alam dengan pola catur 120x120px
     this.createWorldEnvironment();
 
-    // 3. Pasang pendengar event multiplayer
+    // 3. Render NPC Interaktif di seluruh wilayah
+    this.createWorldNpcs();
+
+    // 4. Pasang pendengar event multiplayer
     this.setupMultiplayerListeners();
 
-    // 4. Hubungkan sinyal dari UI React via EventBus
-    EventBus.on('join-game', (userData: { name: string; avatar: IAvatarCustomization }) => {
-      this.spawnLocalPlayer(userData.name, userData.avatar);
-    });
+    // 5. Tangani event sinyal dari UI React via EventBus
+    const onServerSwitched = () => {
+      // Bersihkan seluruh remote player lama dari realm/server sebelumnya
+      this.remotePlayers.forEach((rp) => {
+        if (rp && rp.active) rp.destroy();
+      });
+      this.remotePlayers.clear();
+    };
+    EventBus.on('server-switched', onServerSwitched);
 
-    EventBus.on('send-chat', (text: string) => {
+    const onJoinGame = (userData: { name: string; avatar: IAvatarCustomization }) => {
       if (this.player) {
+        this.player.setAvatar(userData.avatar);
+      } else {
+        this.spawnLocalPlayer(userData.name, userData.avatar);
+      }
+    };
+    EventBus.on('join-game', onJoinGame);
+
+    const onSendChat = (text: string) => {
+      if (this.player && this.player.active && this.player.scene) {
         this.player.showSpeechBubble(text);
       }
-      this.networkManager.sendChat(text);
+    };
+    EventBus.on('send-chat', onSendChat);
+
+    const onTriggerExpression = (data: { type: 'normal' | 'smile' | 'shock' | 'angry' }) => {
+      if (this.player && this.player.active && this.player.scene) {
+        this.player.triggerExpression(data.type);
+      }
+      this.networkManager.sendExpression(data.type);
+    };
+    EventBus.on('trigger-expression', onTriggerExpression);
+
+    // Dengar ekspresi dari pemain lain di Open World
+    this.networkManager.onPlayerExpression((data) => {
+      const remote = this.remotePlayers.get(data.id);
+      if (remote && remote.active && remote.scene) {
+        remote.triggerExpression(data.type);
+      }
     });
 
-    // 5. Spawn langsung jika berpindah dari HouseScene
-    if (this.pendingPlayerName && this.pendingAvatar) {
-      this.spawnLocalPlayer(this.pendingPlayerName, this.pendingAvatar, this.spawnNearHouseDoor);
-    }
+    const onTriggerInteraction = () => {
+      this.triggerCurrentInteraction();
+    };
+    EventBus.on('trigger-interaction', onTriggerInteraction);
 
-    // 6. Tombol interaksi keyboard 'E' (abaikan jika sedang mengetik di input chat)
+    // Indikator visual Proximity Voice Chat
+    const onSpeakingStatus = (data: { senderId: string; isSpeaking: boolean }) => {
+      const remote = this.remotePlayers.get(data.senderId);
+      if (remote && remote.active) {
+        remote.setSpeaking(data.isSpeaking);
+      }
+    };
+    EventBus.on('player-speaking-status', onSpeakingStatus);
+
+    const onLocalSpeaking = (data: { isSpeaking: boolean }) => {
+      if (this.player && this.player.active) {
+        this.player.setSpeaking(data.isSpeaking);
+      }
+    };
+    EventBus.on('local-player-speaking', onLocalSpeaking);
+
+    // 6. Tombol interaksi keyboard 'E'
     this.input.keyboard?.on('keydown-E', () => {
       if (document.activeElement?.tagName === 'INPUT' || document.activeElement?.tagName === 'TEXTAREA') return;
       this.triggerCurrentInteraction();
     });
 
-    // Hubungkan klik tombol interaksi dari HUD
-    EventBus.on('trigger-interaction', () => {
-      this.triggerCurrentInteraction();
-    });
+    // Tap / Klik lantai grid untuk bergerak (Khusus PC & Mobile)
+    this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+      if (document.activeElement?.tagName === 'INPUT' || document.activeElement?.tagName === 'TEXTAREA') return;
+      if (pointer.rightButtonDown()) return;
 
-    // Hubungkan event beralih scene (misal tombol Back browser atau Teleport Admin Portal)
-    const handleSwitchScene = (data: { scene: string; privateRoomId?: string; adminToken?: string }) => {
-      if (data.scene === 'HouseScene') {
-        this.cameras.main.stopFollow();
-        this.networkManager.disconnect();
-        this.scene.start('HouseScene', {
-          name: this.player?.getEntityName() || this.pendingPlayerName || 'Petualang',
-          avatar: this.player?.getAvatar() || this.pendingAvatar,
-          privateRoomId: data.privateRoomId || this.privateRoomId,
-        });
-      } else if (data.scene === 'AdminPortalScene') {
-        this.cameras.main.stopFollow();
-        this.networkManager.disconnect();
-        this.scene.start('AdminPortalScene', {
-          name: this.player?.getEntityName() || this.pendingPlayerName || 'RADEN',
-          avatar: this.player?.getAvatar() || this.pendingAvatar,
-          adminToken: data.adminToken || 'raden-master-key',
-        });
+      const wx = pointer.worldX;
+      const wy = pointer.worldY;
+      if (wx < 100 || wx > this.worldWidth - 100 || wy < 100 || wy > this.worldHeight - 100) return;
+
+      // Cek apakah klik dekat dengan NPC (toleransi tap di HP)
+      for (const npc of this.npcs) {
+        if (Phaser.Math.Distance.Between(wx, wy, npc.x, npc.y) < 70) {
+          this.approachAndInteractWithNpc(npc);
+          return;
+        }
       }
-    };
-    EventBus.on('switch-scene', handleSwitchScene);
 
-    this.events.on('shutdown', () => {
-      EventBus.off('switch-scene', handleSwitchScene);
-      EventBus.emit('interaction-prompt', null);
+      // Pergerakan jalan biasa menuju titik grid yang di-tap/klik
+      if (this.player && this.player.active) {
+        this.spawnTapRipple(wx, wy);
+        this.player.navigateTo(wx, wy);
+      }
     });
 
-    EventBus.emit('game-ready');
+    // 7. Ambil cadangan user dari localStorage jika pendingPlayerName kosong (misal saat refresh browser)
+    if (!this.pendingPlayerName) {
+      let savedName = 'Petualang';
+      try {
+        const u = JSON.parse(localStorage.getItem('raden_player_user') || '{}');
+        if (u.name) savedName = u.name;
+        if (u.private_room_id) this.privateRoomId = u.private_room_id;
+      } catch (e) {}
+      this.pendingPlayerName = savedName;
+    }
+
+    if (!this.pendingAvatar) {
+      let savedAv: IAvatarCustomization = {
+        gender: 'male',
+        skinColor: '#fed7aa',
+        shirtColor: '#2563eb',
+        pantsColor: '#1e293b',
+        hatType: 'none',
+      };
+      try {
+        const saved = localStorage.getItem('raden_player_avatar');
+        if (saved) savedAv = JSON.parse(saved);
+      } catch (e) {}
+      this.pendingAvatar = savedAv;
+    }
+
+    // 8. Spawn karakter lokal
+    this.spawnLocalPlayer(this.pendingPlayerName, this.pendingAvatar, this.spawnNearHouseDoor);
+
+    // 9. Kontrol Zoom Kamera Halus (Mouse Wheel, Keyboard +/-, HUD buttons)
+    this.setupCameraZoomControls(0.9);
+
+    // Bersihkan listener saat shutdown dan destroy scene
+    const cleanupScene = () => {
+      this.cameras?.main?.stopFollow();
+      EventBus.off('join-game', onJoinGame);
+      EventBus.off('send-chat', onSendChat);
+      EventBus.off('trigger-expression', onTriggerExpression);
+      EventBus.off('trigger-interaction', onTriggerInteraction);
+      EventBus.off('player-speaking-status', onSpeakingStatus);
+      EventBus.off('local-player-speaking', onLocalSpeaking);
+      EventBus.emit('interaction-prompt', null);
+      this.networkManager.clearListeners();
+      if (this.player) {
+        this.player.destroy();
+        this.player = null as any;
+      }
+      this.remotePlayers.forEach((rp) => {
+        if (rp && rp.active) rp.destroy();
+      });
+      this.remotePlayers.clear();
+    };
+
+    this.events.on('shutdown', cleanupScene);
+    this.events.on('destroy', cleanupScene);
   }
 
   /**
-   * Menggambar tanah berpola catur (Checkerboard) gelap & terang
+   * Kontrol zoom kamera yang halus menggunakan tween (Scroll Wheel, Keyboard +/-, HUD buttons)
+   */
+  private setupCameraZoomControls(defaultZoom: number = 0.9): void {
+    this.targetZoom = defaultZoom;
+    this.cameras.main.setZoom(defaultZoom);
+    this.cameras.main.setRoundPixels(true);
+
+    // 1. Mouse wheel smooth zoom
+    const onWheel = (_pointer: Phaser.Input.Pointer, _gameObjects: any, _deltaX: number, deltaY: number) => {
+      const zoomFactor = deltaY > 0 ? 0.88 : 1.14;
+      this.smoothZoomTo(this.targetZoom * zoomFactor);
+    };
+    this.input.on('wheel', onWheel);
+
+    // 2. Event dari UI HUD / Keyboard
+    const handleZoomIn = () => this.smoothZoomTo(this.targetZoom * 1.18);
+    const handleZoomOut = () => this.smoothZoomTo(this.targetZoom * 0.84);
+    const handleZoomReset = () => this.smoothZoomTo(defaultZoom);
+    const handleZoomSet = (zoom: number) => this.smoothZoomTo(zoom);
+
+    EventBus.on('camera-zoom-in', handleZoomIn);
+    EventBus.on('camera-zoom-out', handleZoomOut);
+    EventBus.on('camera-zoom-reset', handleZoomReset);
+    EventBus.on('camera-zoom-set', handleZoomSet);
+
+    this.input.keyboard?.on('keydown-PLUS', handleZoomIn);
+    this.input.keyboard?.on('keydown-NUMPAD_ADD', handleZoomIn);
+    this.input.keyboard?.on('keydown-MINUS', handleZoomOut);
+    this.input.keyboard?.on('keydown-NUMPAD_SUBTRACT', handleZoomOut);
+
+    this.events.on('shutdown', () => {
+      this.input.off('wheel', onWheel);
+      EventBus.off('camera-zoom-in', handleZoomIn);
+      EventBus.off('camera-zoom-out', handleZoomOut);
+      EventBus.off('camera-zoom-reset', handleZoomReset);
+      EventBus.off('camera-zoom-set', handleZoomSet);
+    });
+  }
+
+  private smoothZoomTo(newZoom: number): void {
+    this.targetZoom = Phaser.Math.Clamp(newZoom, 0.5, 1.8);
+    this.tweens.killTweensOf(this.cameras.main);
+    this.tweens.add({
+      targets: this.cameras.main,
+      zoom: this.targetZoom,
+      duration: 220,
+      ease: 'Cubic.easeOut',
+    });
+  }
+
+  /**
+   * Menggambar lingkungan alam Open World 9600x9600px berpola catur kotak 120x120px
    */
   private createWorldEnvironment(): void {
-    // 1. Buat tekstur kotak catur 2x2 (128x128 pixel, masing-masing tile 64x64)
-    if (!this.textures.exists('chessboard-ground')) {
-      const g = this.make.graphics({ x: 0, y: 0 });
-      const darkColor = 0x14532d;   // Hijau Tua Gelap (Kotak Gelap)
-      const lightColor = 0x16a34a;  // Hijau Terang (Kotak Terang)
-
-      // Kotak (0,0) Gelap
-      g.fillStyle(darkColor, 1);
-      g.fillRect(0, 0, 64, 64);
-
-      // Kotak (1,0) Terang
-      g.fillStyle(lightColor, 1);
-      g.fillRect(64, 0, 64, 64);
-
-      // Kotak (0,1) Terang
-      g.fillStyle(lightColor, 1);
-      g.fillRect(0, 64, 64, 64);
-
-      // Kotak (1,1) Gelap
-      g.fillStyle(darkColor, 1);
-      g.fillRect(64, 64, 64, 64);
-
-      // Garis grid batas kotak catur
-      g.lineStyle(1, 0x0f291e, 0.35);
-      g.strokeRect(0, 0, 64, 64);
-      g.strokeRect(64, 0, 64, 64);
-      g.strokeRect(0, 64, 64, 64);
-      g.strokeRect(64, 64, 64, 64);
-
-      g.generateTexture('chessboard-ground', 128, 128);
-      g.destroy();
-    }
-
-    // Pasang TileSprite tanah catur melingkupi seluruh peta 3200x3200 pixel
-    const ground = this.add.tileSprite(
+    const bgGraphics = this.add.graphics();
+    // A. Lantai Dasar Catur Alam 9600x9600px Ringan 60 FPS via TileSprite (1 draw call)
+    const worldFloor = this.add.tileSprite(
       this.worldWidth / 2,
       this.worldHeight / 2,
       this.worldWidth,
       this.worldHeight,
-      'chessboard-ground'
+      'world-checker-tile'
     );
-    ground.setDepth(-100);
+    worldFloor.setDepth(-100);
 
-    const bgGraphics = this.add.graphics();
+    // B. Alun-Alun Pusat Sanctuary Plaza (4200 - 5400, 4200 - 5400)
+    const plazaLeft = 4200;
+    const plazaTop = 4200;
+    const plazaWidth = 1200;
+    const plazaHeight = 1200;
 
-    // Plaza kota Sanctuary di pusat peta (1600, 1600)
-    bgGraphics.fillStyle(0x334155, 1);
-    bgGraphics.fillCircle(1600, 1600, 260);
-    bgGraphics.fillStyle(0x475569, 1);
-    bgGraphics.fillCircle(1600, 1600, 220);
+    // Ubin Batu Plaza Pola Catur Ringan 60 FPS via TileSprite (1 draw call)
+    const plazaFloor = this.add.tileSprite(
+      plazaLeft + plazaWidth / 2,
+      plazaTop + plazaHeight / 2,
+      plazaWidth,
+      plazaHeight,
+      'plaza-checker-tile'
+    );
+    plazaFloor.setDepth(-90);
 
-    // Jalan batu salib (Utara-Selatan & Timur-Barat)
-    bgGraphics.fillStyle(0x334155, 0.9);
-    bgGraphics.fillRect(1560, 0, 80, this.worldHeight);
-    bgGraphics.fillRect(0, 1560, this.worldWidth, 80);
+    // Garis Batas Emas Sanctuary Plaza
+    bgGraphics.lineStyle(6, 0xf59e0b, 0.9);
+    bgGraphics.strokeRoundedRect(plazaLeft, plazaTop, plazaWidth, plazaHeight, 32);
 
-    // Danau Biru di Timur Laut
-    bgGraphics.fillStyle(0x0284c7, 0.85);
-    bgGraphics.fillEllipse(2400, 800, 480, 320);
-    bgGraphics.fillStyle(0x38bdf8, 0.4);
-    bgGraphics.fillEllipse(2400, 800, 440, 280);
+    // C. Jalan Penghubung Utama (Boulevard Beraspal / Batu)
+    // Jalan Utara-Selatan
+    bgGraphics.fillStyle(0x1e293b, 0.9);
+    bgGraphics.fillRect(4680, 2400, 240, 4800);
+    // Jalan Barat-Timur
+    bgGraphics.fillRect(2400, 4680, 4800, 240);
 
-    // Telaga di Barat Daya
-    bgGraphics.fillStyle(0x0284c7, 0.85);
-    bgGraphics.fillEllipse(800, 2400, 380, 260);
-
-    // Sebar pohon & batu alam
-    this.spawnNatureDecorations();
-
-    // Monumen Air Mancur Plaza
+    // D. Air Mancur Megah di Pusat Plaza (4800, 4800)
     const fountain = this.add.graphics();
     fountain.fillStyle(0x0284c7, 1);
-    fountain.fillCircle(1600, 1600, 45);
-    fountain.lineStyle(4, 0xf59e0b, 1);
-    fountain.strokeCircle(1600, 1600, 45);
+    fountain.fillCircle(4800, 4800, 90);
+    fountain.lineStyle(8, 0xf59e0b, 1);
+    fountain.strokeCircle(4800, 4800, 90);
+    fountain.fillStyle(0x38bdf8, 0.7);
+    fountain.fillCircle(4800, 4800, 60);
 
-    this.add.text(1600, 1530, '★ SANCTUARY PLAZA ★', {
+    this.add.text(4800, 4670, '★ SANCTUARY CENTRAL PLAZA ★', {
       fontFamily: '"Chakra Petch", sans-serif',
-      fontSize: '14px',
+      fontSize: '20px',
       color: '#fef08a',
       fontStyle: 'bold',
-      stroke: '#0f172a',
-      strokeThickness: 3,
+      stroke: '#0a0f1d',
+      strokeThickness: 5,
     }).setOrigin(0.5);
 
-    // NPC Sage Raden
-    const npcX = 1660;
-    const npcY = 1580;
-    const npc = this.add.image(npcX, npcY, 'npc-sprite').setDisplaySize(40, 40);
-    this.add.text(npcX, npcY - 32, 'Sage Raden', {
+    // E. Danau Mistik Kristal (Azure Lake) di Timur Laut (6400 - 8000, 2800 - 4400)
+    bgGraphics.fillStyle(0x0369a1, 0.9);
+    bgGraphics.fillEllipse(7200, 3600, 1400, 900);
+    bgGraphics.fillStyle(0x38bdf8, 0.5);
+    bgGraphics.fillEllipse(7200, 3600, 1200, 750);
+
+    // Dermaga Kayu di Tepi Danau
+    bgGraphics.fillStyle(0x78350f, 1);
+    bgGraphics.fillRect(6300, 3750, 220, 90);
+    bgGraphics.lineStyle(3, 0x451a03, 1);
+    bgGraphics.strokeRect(6300, 3750, 220, 90);
+
+    this.add.text(7200, 3400, '🌊 TELAGA MISTIK KRISTAL', {
       fontFamily: '"Chakra Petch", sans-serif',
-      fontSize: '12px',
-      color: '#a78bfa',
-      stroke: '#0f172a',
-      strokeThickness: 3,
+      fontSize: '18px',
+      color: '#7dd3fc',
+      fontStyle: 'bold',
+      stroke: '#0a0f1d',
+      strokeThickness: 4,
     }).setOrigin(0.5);
 
-    npc.setInteractive({ useHandCursor: true });
-    npc.on('pointerdown', () => {
-      EventBus.emit('new-chat-message', {
-        id: `npc_${Date.now()}`,
-        senderId: 'npc',
-        senderName: 'Sage Raden',
-        text: 'Selamat datang di RadenWorld! Gerakkan karaktermu di tanah berpola catur ini dengan tombol WASD atau tombol virtual layar.',
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      });
-    });
-
-    // ==============================================================
-    // 1. RUMAH PEMAIN (PLAYER HOUSE) - Selatan Plaza (1520, 1680)
-    // ==============================================================
+    // F. Rumah Pribadi Pemain (Residential District) - Selatan Plaza (4800, 5400)
     const houseG = this.add.graphics();
-    // Dinding kayu rumah
+    // Dinding kayu rumah besar
     houseG.fillStyle(0x78350f, 1);
-    houseG.fillRoundedRect(1460, 1630, 120, 90, 6);
-    houseG.lineStyle(2, 0x451a03, 1);
-    houseG.strokeRoundedRect(1460, 1630, 120, 90, 6);
-    // Atap pelana merah bata
+    houseG.fillRoundedRect(4660, 5300, 280, 200, 16);
+    houseG.lineStyle(4, 0x451a03, 1);
+    houseG.strokeRoundedRect(4660, 5300, 280, 200, 16);
+    // Atap pelana merah marun
     houseG.fillStyle(0x991b1b, 1);
-    houseG.fillTriangle(1440, 1630, 1520, 1570, 1600, 1630);
+    houseG.fillTriangle(4620, 5300, 4800, 5160, 4980, 5300);
     // Cerobong asap
     houseG.fillStyle(0x475569, 1);
-    houseG.fillRect(1560, 1565, 16, 25);
-    // Pintu rumah
-    houseG.fillStyle(0x0f172a, 1);
-    houseG.fillRect(1502, 1685, 36, 35);
+    houseG.fillRect(4900, 5170, 32, 50);
+    // Pintu masuk rumah
+    houseG.fillStyle(0x0a0f1d, 1);
+    houseG.fillRect(4755, 5420, 90, 80);
     houseG.fillStyle(0xf59e0b, 1);
-    houseG.fillCircle(1530, 1702, 3);
-    // Keset / Pintu Masuk
-    houseG.fillStyle(0xd97706, 0.7);
-    houseG.fillRect(1495, 1720, 50, 10);
+    houseG.fillCircle(4830, 5460, 6);
+    // Karpet keset depan pintu
+    houseG.fillStyle(0xd97706, 0.9);
+    houseG.fillRect(4740, 5500, 120, 24);
 
-    this.add.text(1520, 1610, '🏠 RUMAH PEMAIN', {
+    this.add.text(4800, 5260, '🏠 RUMAH PRIBADI PEMAIN', {
       fontFamily: '"Chakra Petch", sans-serif',
-      fontSize: '11px',
+      fontSize: '16px',
       color: '#fef08a',
       fontStyle: 'bold',
-      stroke: '#0f172a',
-      strokeThickness: 3,
+      stroke: '#0a0f1d',
+      strokeThickness: 4,
     }).setOrigin(0.5);
 
-    // ==============================================================
-    // 2. TOKO PANDAI BESI (BLACKSMITH ARYA) - Barat Laut (1460, 1490)
-    // ==============================================================
-    const forgeG = this.add.graphics();
-    // Bangunan bengkel batu
-    forgeG.fillStyle(0x334155, 1);
-    forgeG.fillRoundedRect(1400, 1440, 110, 80, 6);
-    // Atap genteng besi
-    forgeG.fillStyle(0x1e293b, 1);
-    forgeG.fillTriangle(1385, 1440, 1455, 1390, 1525, 1440);
-    // Tungku api & bara
-    forgeG.fillStyle(0xd97706, 1);
-    forgeG.fillRect(1420, 1475, 26, 26);
-    forgeG.fillStyle(0xef4444, 1);
-    forgeG.fillCircle(1433, 1488, 7);
-    // Paron besi (Anvil)
-    forgeG.fillStyle(0x64748b, 1);
-    forgeG.fillRect(1470, 1485, 22, 16);
+    // G. Kawasan Pasar & Toko (Market District) - Utara Plaza
+    // Toko Pandai Besi Arya
+    const bsG = this.add.graphics();
+    bsG.fillStyle(0x334155, 1);
+    bsG.fillRoundedRect(4420, 3720, 260, 180, 12);
+    bsG.lineStyle(3, 0x0f172a, 1);
+    bsG.strokeRoundedRect(4420, 3720, 260, 180, 12);
+    // Atap besi gelap
+    bsG.fillStyle(0x1e293b, 1);
+    bsG.fillTriangle(4390, 3720, 4550, 3600, 4710, 3720);
+    // Tungku api pandai besi
+    bsG.fillStyle(0xef4444, 1);
+    bsG.fillCircle(4470, 3810, 20);
 
-    this.add.text(1455, 1425, '⚒ TOKO SENJATA & ARMOR', {
+    this.add.text(4550, 3680, '⚔️ BENGKEL PANDAI BESI', {
       fontFamily: '"Chakra Petch", sans-serif',
-      fontSize: '10px',
-      color: '#fef08a',
+      fontSize: '15px',
+      color: '#fbbf24',
       fontStyle: 'bold',
-      stroke: '#0f172a',
-      strokeThickness: 3,
+      stroke: '#0a0f1d',
+      strokeThickness: 4,
     }).setOrigin(0.5);
 
-    const blacksmithNpc = this.add.image(1460, 1500, 'npc-sprite').setDisplaySize(38, 38);
-    this.add.text(1460, 1472, 'Blacksmith Arya', {
-      fontFamily: '"Chakra Petch", sans-serif',
-      fontSize: '11px',
-      color: '#f97316',
-      stroke: '#0f172a',
-      strokeThickness: 3,
-    }).setOrigin(0.5);
-
-    blacksmithNpc.setInteractive({ useHandCursor: true });
-    blacksmithNpc.on('pointerdown', () => {
-      EventBus.emit('new-chat-message', {
-        id: `npc_bs_${Date.now()}`,
-        senderId: 'npc',
-        senderName: 'Blacksmith Arya',
-        text: 'Pedang dan armor kualitas terbaik ditempa di sini! Siapkan gold-mu petualang.',
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      });
-    });
-
-    // ==============================================================
-    // 3. TOKO RAMUAN ALKIMIA (ALCHEMIST SARI) - Timur Laut (1740, 1490)
-    // ==============================================================
+    // Toko Alkimia Sari
     const alcG = this.add.graphics();
-    // Bangunan toko kayu & kaca
-    alcG.fillStyle(0x1e3a8a, 0.9);
-    alcG.fillRoundedRect(1690, 1440, 110, 80, 6);
-    // Atap kerucut ungu magis
-    alcG.fillStyle(0x6b21a8, 1);
-    alcG.fillTriangle(1675, 1440, 1745, 1390, 1815, 1440);
-    // Kuali ramuan hijau berkilau
-    alcG.fillStyle(0x0f172a, 1);
-    alcG.fillCircle(1715, 1490, 14);
-    alcG.fillStyle(0x10b981, 1);
-    alcG.fillCircle(1715, 1488, 10);
-    // Botol ramuan biru & merah di etalase
-    alcG.fillStyle(0x38bdf8, 1);
-    alcG.fillRect(1750, 1480, 8, 14);
-    alcG.fillStyle(0xef4444, 1);
-    alcG.fillRect(1762, 1480, 8, 14);
+    alcG.fillStyle(0x065f46, 1);
+    alcG.fillRoundedRect(4920, 3720, 260, 180, 12);
+    alcG.lineStyle(3, 0x022c22, 1);
+    alcG.strokeRoundedRect(4920, 3720, 260, 180, 12);
+    // Atap kubah zamrud
+    alcG.fillStyle(0x047857, 1);
+    alcG.fillTriangle(4890, 3720, 5050, 3600, 5210, 3720);
 
-    this.add.text(1745, 1425, '🧪 TOKO RAMUAN ALKIMIA', {
+    this.add.text(5050, 3680, '🧪 APOTEK ALKIMIA AJAIB', {
       fontFamily: '"Chakra Petch", sans-serif',
-      fontSize: '10px',
-      color: '#fef08a',
+      fontSize: '15px',
+      color: '#6ee7b7',
       fontStyle: 'bold',
-      stroke: '#0f172a',
-      strokeThickness: 3,
+      stroke: '#0a0f1d',
+      strokeThickness: 4,
     }).setOrigin(0.5);
 
-    const alchemistNpc = this.add.image(1740, 1500, 'npc-sprite').setDisplaySize(38, 38);
-    this.add.text(1740, 1472, 'Alchemist Sari', {
-      fontFamily: '"Chakra Petch", sans-serif',
-      fontSize: '11px',
-      color: '#34d399',
-      stroke: '#0f172a',
-      strokeThickness: 3,
-    }).setOrigin(0.5);
-
-    alchemistNpc.setInteractive({ useHandCursor: true });
-    alchemistNpc.on('pointerdown', () => {
-      EventBus.emit('new-chat-message', {
-        id: `npc_alc_${Date.now()}`,
-        senderId: 'npc',
-        senderName: 'Alchemist Sari',
-        text: 'Ramuan energi dan penyembuh siap untukmu, petualang terhormat!',
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      });
-    });
+    // Sebar ornamen alam di sekeliling dunia (Pohon & Batu)
+    this.spawnNatureDecorations();
   }
 
+  /**
+   * Menempatkan pohon, bebatuan, dan peti harta di area luas
+   */
   private spawnNatureDecorations(): void {
-    const natureObjects: { x: number; y: number; key: string }[] = [];
-
-    // Hutan utara
-    for (let i = 0; i < 28; i++) {
-      const x = 300 + (i % 7) * 140 + (Math.sin(i) * 40);
-      const y = 300 + Math.floor(i / 7) * 140 + (Math.cos(i) * 40);
-      natureObjects.push({ x, y, key: 'tree-asset' });
+    // 1. Hutan Zamrud Barat Laut (1600 - 3600, 1600 - 3600)
+    for (let i = 0; i < 48; i++) {
+      const x = 1600 + (i % 8) * 240 + Math.sin(i) * 60;
+      const y = 1600 + Math.floor(i / 8) * 240 + Math.cos(i) * 60;
+      const tree = this.add.image(x, y, 'tree-asset').setDisplaySize(96, 120);
+      tree.setDepth(y);
     }
 
-    // Bebatuan timur
-    for (let i = 0; i < 18; i++) {
-      const x = 2500 + (i % 6) * 100 + (Math.sin(i) * 30);
-      const y = 2200 + Math.floor(i / 6) * 110 + (Math.cos(i) * 30);
-      natureObjects.push({ x, y, key: i % 2 === 0 ? 'rock-asset' : 'tree-asset' });
+    // 2. Padang Timur (6500 - 8500, 5000 - 7500)
+    for (let i = 0; i < 30; i++) {
+      const x = 6500 + (i % 6) * 300 + Math.sin(i) * 80;
+      const y = 5000 + Math.floor(i / 6) * 320 + Math.cos(i) * 80;
+      const rock = this.add.image(x, y, i % 2 === 0 ? 'rock-asset' : 'tree-asset');
+      rock.setDisplaySize(i % 2 === 0 ? 80 : 96, i % 2 === 0 ? 60 : 120);
+      rock.setDepth(y);
     }
 
-    // Hutan selatan
-    for (let i = 0; i < 20; i++) {
-      const x = 1800 + (i % 5) * 150 + (Math.sin(i) * 45);
-      const y = 2300 + Math.floor(i / 5) * 130 + (Math.cos(i) * 35);
-      natureObjects.push({ x, y, key: 'tree-asset' });
-    }
-
-    // Peti harta karun
+    // 3. Peti Harta Karun Tersebar di Penjuru Dunia
     const chests = [
-      { x: 1450, y: 1450 },
-      { x: 2600, y: 700 },
-      { x: 750, y: 2200 },
-      { x: 2200, y: 2600 },
+      { x: 2600, y: 2200, name: 'Peti Hutan Kuno' },
+      { x: 7400, y: 2800, name: 'Peti Telaga Kristal' },
+      { x: 3800, y: 6800, name: 'Peti Padang Selatan' },
+      { x: 7800, y: 7200, name: 'Peti Bebatuan Timur' },
     ];
 
     chests.forEach(c => {
-      const chest = this.add.image(c.x, c.y, 'chest-asset').setDisplaySize(32, 32);
+      const chest = this.add.image(c.x, c.y, 'chest-asset').setDisplaySize(48, 48);
       chest.setInteractive({ useHandCursor: true });
       chest.on('pointerdown', () => {
         chest.setTint(0xfacc15);
         this.tweens.add({
           targets: chest,
-          scaleX: 1.2,
-          scaleY: 1.2,
+          scaleX: 1.25,
+          scaleY: 1.25,
           yoyo: true,
           duration: 200,
         });
         EventBus.emit('new-chat-message', {
           id: `chest_${Date.now()}`,
           senderId: 'system',
-          senderName: 'System',
-          text: 'Peti ditemukan! Berisi 50 Gold & 10 Experience Points.',
+          senderName: 'Sistem RadenWorld',
+          text: `Selamat! Kamu membuka ${c.name} dan memperoleh 100 Gold & 25 EXP!`,
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         });
       });
     });
+  }
 
-    natureObjects.forEach(obj => {
-      const item = this.add.image(obj.x, obj.y, obj.key);
-      if (obj.key === 'tree-asset') {
-        item.setDisplaySize(54, 68);
-        item.setDepth(obj.y);
-      } else {
-        item.setDisplaySize(42, 32);
-        item.setDepth(obj.y - 10);
-      }
+  /**
+   * Menempatkan seluruh NPC interaktif ramah di open world
+   */
+  private createWorldNpcs(): void {
+    this.npcs.forEach(npcData => {
+      // Sprite NPC dengan skala proporsional
+      const npcSprite = this.add.image(npcData.x, npcData.y, npcData.spriteKey).setDisplaySize(64, 64);
+      npcSprite.setOrigin(0.5, 1.0);
+      npcSprite.setDepth(npcData.y);
+
+      // Nameplate NPC - Tajam & HD Anti Blur
+      this.add.text(npcData.x, npcData.y - 74, npcData.name, {
+        fontFamily: '"Chakra Petch", sans-serif',
+        fontSize: '13px',
+        color: '#fef08a',
+        fontStyle: 'bold',
+        stroke: '#0a0f1d',
+        strokeThickness: 3.5,
+        resolution: 4,
+      }).setOrigin(0.5).setDepth(npcData.y + 1);
+
+      this.add.text(npcData.x, npcData.y - 58, `[${npcData.role}]`, {
+        fontFamily: '"Chakra Petch", sans-serif',
+        fontSize: '10px',
+        color: '#38bdf8',
+        stroke: '#0a0f1d',
+        strokeThickness: 2.5,
+        resolution: 4,
+      }).setOrigin(0.5).setDepth(npcData.y + 1);
+
+      npcSprite.setInteractive({ useHandCursor: true });
+      npcSprite.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+        if (pointer?.event) pointer.event.stopPropagation();
+        this.approachAndInteractWithNpc(npcData);
+      });
     });
   }
 
+  /**
+   * Mendekati NPC terlebih dahulu hingga jarak interaksi, baru membuka dialog
+   * (Berlaku untuk klik PC maupun tap layar sentuh Mobile)
+   */
+  private approachAndInteractWithNpc(npcData: INpcConfig): void {
+    if (!this.player || !this.player.active) return;
+
+    const px = this.player.x;
+    const py = this.player.y;
+    const dist = Phaser.Math.Distance.Between(px, py, npcData.x, npcData.y);
+
+    if (dist <= 110) {
+      // Pemain sudah dekat dengan NPC, langsung buka dialog
+      this.interactWithNpc(npcData);
+    } else {
+      // Pemain masih jauh: mendekat dulu ke arah NPC baru buka dialog
+      this.player.showSpeechBubble(`Menuju ke ${npcData.name}...`, 1500);
+
+      // Hitung titik berhenti di depan NPC (~75px)
+      const angle = Phaser.Math.Angle.Between(npcData.x, npcData.y, px, py);
+      const targetX = Math.round(npcData.x + Math.cos(angle) * 75);
+      const targetY = Math.round(npcData.y + Math.sin(angle) * 75);
+
+      this.spawnTapRipple(targetX, targetY);
+      this.player.navigateTo(targetX, targetY, () => {
+        this.interactWithNpc(npcData);
+      });
+    }
+  }
+
+  /**
+   * Efek animasi lingkaran sentuh emas saat klik atau tap grid lantai
+   */
+  private spawnTapRipple(x: number, y: number): void {
+    const circle = this.add.graphics();
+    circle.lineStyle(2, 0xf59e0b, 0.9);
+    circle.strokeCircle(x, y, 10);
+    circle.setDepth(y + 2);
+
+    this.tweens.add({
+      targets: circle,
+      scale: 2.2,
+      alpha: 0,
+      duration: 350,
+      ease: 'Cubic.easeOut',
+      onComplete: () => circle.destroy(),
+    });
+  }
+
+  private interactWithNpc(npcData: INpcConfig): void {
+    EventBus.emit('open-dialogue', {
+      id: npcData.id,
+      name: npcData.name,
+      role: npcData.role,
+      avatarType: npcData.avatarType,
+      dialogues: npcData.dialogues && npcData.dialogues.length > 0 ? npcData.dialogues : [npcData.greeting],
+    });
+  }
+
+  /**
+   * Spawn karakter lokal pemain
+   */
   public spawnLocalPlayer(name: string, avatar: IAvatarCustomization, nearHouse: boolean = false): void {
-    if (this.player) {
-      this.cameras.main.stopFollow();
-      this.player.destroy();
-      this.player = null;
+    // Jika pemain sudah aktif ada di scene dan masih valid
+    if (this.player && this.player.active && this.player.scene === this) {
+      this.player.setAvatar(avatar);
+      this.cameras.main.setRoundPixels(true);
+      this.cameras.main.startFollow(this.player, false, 0.18, 0.18);
+      this.cameras.main.centerOn(this.player.x, this.player.y);
+      return;
     }
 
-    const spawnX = nearHouse ? 1520 : 1600 + Math.floor((Math.random() - 0.5) * 80);
-    const spawnY = nearHouse ? 1750 : 1600 + Math.floor((Math.random() - 0.5) * 80);
+    // Koordinat spawn: pulihkan posisi terakhir pemain di Open World jika ada
+    let spawnX = nearHouse ? 4800 : 4800;
+    let spawnY = nearHouse ? 5660 : 4860;
+
+    if (!nearHouse) {
+      try {
+        const saved = localStorage.getItem('raden_pos_world');
+        if (saved) {
+          const p = JSON.parse(saved);
+          if (typeof p.x === 'number' && typeof p.y === 'number') {
+            if (p.x >= 240 && p.x <= this.worldWidth - 240 && p.y >= 240 && p.y <= this.worldHeight - 240) {
+              spawnX = p.x;
+              spawnY = p.y;
+            }
+          }
+        }
+      } catch (e) {}
+    }
 
     this.player = new Player(
       this,
@@ -452,46 +769,73 @@ export class WorldScene extends Phaser.Scene {
     );
 
     this.cameras.main.setBounds(0, 0, this.worldWidth, this.worldHeight);
-    this.cameras.main.startFollow(this.player, true, 0.08, 0.08);
-    this.cameras.main.setZoom(1.15);
+    this.cameras.main.setRoundPixels(true);
+    this.cameras.main.centerOn(spawnX, spawnY);
+    this.cameras.main.startFollow(this.player, false, 0.18, 0.18);
+    this.smoothZoomTo(0.9);
 
+    // Buka koneksi multiplayer dan daftarkan pemain
     this.networkManager.connect();
     const isSuperAdmin = name.toUpperCase() === 'RADEN';
     this.networkManager.joinGame(name, avatar, isSuperAdmin ? 'super_admin' : 'player', isSuperAdmin);
 
-    this.time.delayedCall(800, () => {
-      this.player?.showSpeechBubble(isSuperAdmin ? '👑 Salam sejahtera, RadenWorld!' : 'Halo dunia!');
+    this.time.delayedCall(600, () => {
+      this.player?.showSpeechBubble(isSuperAdmin ? '👑 Salam damai, RadenWorld!' : 'Halo dunia terbuka!');
     });
   }
 
   private setupMultiplayerListeners(): void {
+    this.networkManager.clearListeners();
+
     this.networkManager.onWorldInit((data: IWorldInitData) => {
-      data.players.forEach(p => this.addRemotePlayer(p));
-      data.monsters.forEach(m => this.addOrUpdateMonster(m));
+      if (!this.sys || !this.sys.displayList || !this.scene.isActive()) return;
+      const myName = (this.player?.getEntityName() || this.pendingPlayerName || '').trim().toLowerCase();
+      const myId = this.networkManager.getSocketId();
+
+      // Bersihkan remote player lama agar tidak ada ghost player tertinggal
+      this.remotePlayers.forEach((rp) => {
+        if (rp && rp.active) rp.destroy();
+      });
+      this.remotePlayers.clear();
+
+      data.players.forEach(p => {
+        if (p.id === myId || p.id === data.selfId) return;
+        if (myName && p.name && p.name.trim().toLowerCase() === myName) return;
+        this.addRemotePlayer(p);
+      });
       EventBus.emit('player-count-updated', this.remotePlayers.size + 1);
     });
 
     this.networkManager.onPlayerJoined((playerData: IPlayerData) => {
+      if (!this.sys || !this.sys.displayList || !this.scene.isActive()) return;
+      const myName = (this.player?.getEntityName() || this.pendingPlayerName || '').trim().toLowerCase();
+      const myId = this.networkManager.getSocketId();
+
+      if (playerData.id === myId) return;
+      if (myName && playerData.name && playerData.name.trim().toLowerCase() === myName) return;
+
       this.addRemotePlayer(playerData);
       EventBus.emit('player-count-updated', this.remotePlayers.size + 1);
 
       EventBus.emit('new-chat-message', {
-        id: `join_${Date.now()}`,
+        id: `join_${Date.now()}_${Math.random()}`,
         senderId: 'system',
-        senderName: 'System',
+        senderName: 'Sistem',
         text: `${playerData.name} telah memasuki open world!`,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       });
     });
 
     this.networkManager.onPlayerMoved((data) => {
+      if (!this.sys || !this.sys.displayList || !this.scene.isActive()) return;
       const remotePlayer = this.remotePlayers.get(data.id);
-      if (remotePlayer) {
+      if (remotePlayer && remotePlayer.active) {
         remotePlayer.setNetworkState(data.x, data.y, data.direction, data.isMoving);
       }
     });
 
     this.networkManager.onPlayerLeft((data) => {
+      if (!this.sys || !this.sys.displayList || !this.scene.isActive()) return;
       const remotePlayer = this.remotePlayers.get(data.id);
       if (remotePlayer) {
         remotePlayer.destroy();
@@ -499,9 +843,9 @@ export class WorldScene extends Phaser.Scene {
         EventBus.emit('player-count-updated', this.remotePlayers.size + 1);
 
         EventBus.emit('new-chat-message', {
-          id: `leave_${Date.now()}`,
+          id: `leave_${Date.now()}_${Math.random()}`,
           senderId: 'system',
-          senderName: 'System',
+          senderName: 'Sistem',
           text: `${data.name} meninggalkan open world.`,
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         });
@@ -509,180 +853,190 @@ export class WorldScene extends Phaser.Scene {
     });
 
     this.networkManager.onChatBroadcast((chat: IChatMessage) => {
+      if (!this.sys || !this.sys.displayList || !this.scene.isActive()) return;
       EventBus.emit('new-chat-message', chat);
       const remote = this.remotePlayers.get(chat.senderId);
-      if (remote) {
+      if (remote && remote.active) {
         remote.showSpeechBubble(chat.text);
       }
-    });
-
-    this.networkManager.onMonstersSync((monstersData: IMonsterData[]) => {
-      monstersData.forEach(m => {
-        let monster = this.monsters.get(m.id);
-        if (!monster) {
-          this.addOrUpdateMonster(m);
-        } else {
-          monster.setNetworkTarget(m.x, m.y);
-        }
-      });
     });
   }
 
   private addRemotePlayer(p: IPlayerData): void {
-    if (this.remotePlayers.has(p.id)) return;
-    const remote = new RemotePlayer(
-      this,
-      p.x,
-      p.y,
-      p.id,
-      p.name,
-      p.avatar || {
-        gender: 'male',
-        skinColor: '#fed7aa',
-        shirtColor: '#2563eb',
-        pantsColor: '#1e293b',
-        hatType: 'none',
-      },
-      p.hp,
-      p.maxHp
-    );
-    this.remotePlayers.set(p.id, remote);
-  }
+    if (!this.sys || !this.sys.displayList || !this.scene.isActive()) return;
+    const myName = (this.player?.getEntityName() || this.pendingPlayerName || '').trim().toLowerCase();
+    const myId = this.networkManager.getSocketId();
 
-  private addOrUpdateMonster(m: IMonsterData): void {
-    let monster = this.monsters.get(m.id);
-    if (!monster) {
-      monster = new Monster(this, m.x, m.y, m.id, m.name, m.type, m.hp, m.maxHp);
-      this.monsters.set(m.id, monster);
-    } else {
-      monster.setNetworkTarget(m.x, m.y);
+    // Jangan spawn diri sendiri sebagai remote player!
+    if (p.id === myId) return;
+    if (myName && p.name && p.name.trim().toLowerCase() === myName) return;
+    if (this.remotePlayers.has(p.id)) return;
+
+    // Bersihkan duplicate jika ada remote player lama dengan nama yang sama persis
+    for (const [existingId, existingRemote] of this.remotePlayers.entries()) {
+      if (existingRemote.getEntityName().trim().toLowerCase() === p.name.trim().toLowerCase()) {
+        existingRemote.destroy();
+        this.remotePlayers.delete(existingId);
+      }
+    }
+
+    try {
+      const remote = new RemotePlayer(
+        this,
+        p.x,
+        p.y,
+        p.id,
+        p.name,
+        p.avatar || {
+          gender: 'male',
+          skinColor: '#fed7aa',
+          shirtColor: '#2563eb',
+          pantsColor: '#1e293b',
+          hatType: 'none',
+        },
+        p.hp,
+        p.maxHp
+      );
+      this.remotePlayers.set(p.id, remote);
+    } catch (err) {
+      console.warn('[WorldScene] Gagal menambahkan remote player:', err);
     }
   }
 
   public update(time: number, delta: number): void {
-    if (this.player) {
-      this.player.update(time, delta);
-      this.player.setDepth(this.player.y);
+    if (!this.player || this.isTransitioning) return;
 
-      const px = this.player.x;
-      const py = this.player.y;
+    this.player.update(time, delta);
+    this.player.setDepth(this.player.y);
 
-      // Cek kedekatan dengan rumah pemain, toko pandai besi, toko alkimia
-      const distHouse = Phaser.Math.Distance.Between(px, py, this.playerHouseDoor.x, this.playerHouseDoor.y);
-      const distBlacksmith = Phaser.Math.Distance.Between(px, py, this.blacksmithZone.x, this.blacksmithZone.y);
-      const distAlchemist = Phaser.Math.Distance.Between(px, py, this.alchemistZone.x, this.alchemistZone.y);
+    const px = this.player.x;
+    const py = this.player.y;
 
-      let prompt: string | null = null;
-      let locationName = this.getRegionName(px, py);
+    // Cek kedekatan dengan rumah pemain
+    const distHouse = Phaser.Math.Distance.Between(px, py, this.playerHouseDoor.x, this.playerHouseDoor.y);
 
-      if (distHouse < 75) {
-        prompt = `TEKAN [E] / KLIK UNTUK MASUK KE RUMAH PRIBADI (${this.privateRoomId})`;
-        locationName = 'SANCTUARY: RUMAH PEMAIN';
-      } else if (distBlacksmith < 75) {
-        prompt = 'TEKAN [E] / KLIK UNTUK BICARA DENGAN PANDAI BESI';
-        locationName = 'SANCTUARY: TOKO PANDAI BESI';
-      } else if (distAlchemist < 75) {
-        prompt = 'TEKAN [E] / KLIK UNTUK BICARA DENGAN PENJUAL RAMUAN';
-        locationName = 'SANCTUARY: TOKO ALKIMIA';
+    let prompt: string | null = null;
+    let locationName = this.getRegionName(px, py);
+
+    // Hanya tampilkan prompt masuk rumah jika cooldown sudah selesai
+    if (distHouse < 110 && time > this.doorCooldownUntil) {
+      prompt = `TEKAN [E] / KLIK UNTUK MASUK KE RUMAH PRIBADI (${this.privateRoomId})`;
+      locationName = 'SANCTUARY: RUMAH PEMAIN';
+    } else {
+      // Cek kedekatan dengan NPC terdekat
+      for (const npc of this.npcs) {
+        const dist = Phaser.Math.Distance.Between(px, py, npc.x, npc.y);
+        if (dist < 100) {
+          prompt = `TEKAN [E] / KLIK UNTUK BICARA DENGAN ${npc.name.toUpperCase()}`;
+          break;
+        }
       }
+    }
 
-      if (prompt !== this.activePrompt) {
-        this.activePrompt = prompt;
-        EventBus.emit('interaction-prompt', prompt);
-      }
+    if (prompt !== this.activePrompt) {
+      this.activePrompt = prompt;
+      EventBus.emit('interaction-prompt', prompt);
+    }
 
-      if (time - this.lastStatsEmitTime > 60) {
-        this.lastStatsEmitTime = time;
-        EventBus.emit('player-stats-updated', {
-          x: Math.round(px),
-          y: Math.round(py),
-          gridX: Math.floor(px / 64),
-          gridY: Math.floor(py / 64),
-          hp: this.player.getHealth(),
-          maxHp: this.player.getMaxHealth(),
-          name: this.player.getEntityName(),
-          avatar: this.player.getAvatar(),
-          roomName: locationName,
-          inHouse: false,
-          level: 1,
-        });
-      }
+    const gridX = Math.floor(px / this.tileSize);
+    const gridY = Math.floor(py / this.tileSize);
+    const gridChanged = gridX !== this.lastGridX || gridY !== this.lastGridY;
+    const locChanged = locationName !== this.lastLocationName;
+    const periodicTimeout = time - this.lastStatsEmitTime > 1000;
+
+    if (gridChanged || locChanged || periodicTimeout) {
+      this.lastStatsEmitTime = time;
+      this.lastGridX = gridX;
+      this.lastGridY = gridY;
+      this.lastLocationName = locationName;
+      EventBus.emit('player-stats-updated', {
+        x: Math.round(px),
+        y: Math.round(py),
+        gridX,
+        gridY,
+        hp: this.player.getHealth(),
+        maxHp: this.player.getMaxHealth(),
+        name: this.player.getEntityName(),
+        avatar: this.player.getAvatar(),
+        roomName: locationName,
+        inHouse: false,
+        level: 1,
+      });
+
+      try {
+        localStorage.setItem(
+          'raden_pos_world',
+          JSON.stringify({ x: Math.round(px), y: Math.round(py) })
+        );
+      } catch (e) {}
     }
 
     this.remotePlayers.forEach(p => {
       p.update(time, delta);
       p.setDepth(p.y);
     });
-
-    this.monsters.forEach(m => {
-      m.update(time, delta);
-      m.setDepth(m.y);
-    });
   }
 
   public triggerCurrentInteraction(): void {
-    if (!this.player) return;
+    if (!this.player || this.isTransitioning) return;
     const px = this.player.x;
     const py = this.player.y;
 
-    // Masuk kembali ke rumah pribadi
-    if (Phaser.Math.Distance.Between(px, py, this.playerHouseDoor.x, this.playerHouseDoor.y) < 85) {
-      this.player.showSpeechBubble('Kembali ke rumah pribadi...');
-      this.networkManager.disconnect();
-      this.time.delayedCall(400, () => {
-        let safeId = this.privateRoomId;
-        try {
-          const storedUser = localStorage.getItem('raden_player_user');
-          if (storedUser) {
-            const u = JSON.parse(storedUser);
-            if (u.private_room_id) safeId = u.private_room_id;
-          }
-        } catch (e) {}
-        const housePath = `/home/${safeId}`;
-        if (window.location.pathname !== housePath) {
-          window.history.pushState(null, '', housePath);
-        }
-        EventBus.emit('url-changed', housePath);
-        this.scene.start('HouseScene', {
-          name: this.player?.getEntityName() || this.pendingPlayerName || 'Petualang',
-          avatar: this.player?.getAvatar() || this.pendingAvatar,
-          privateRoomId: safeId,
-        });
-      });
+    // 1. Masuk kembali ke rumah pribadi (jika dekat dan cooldown lewat)
+    const distHouse = Phaser.Math.Distance.Between(px, py, this.playerHouseDoor.x, this.playerHouseDoor.y);
+    if (distHouse < 130 && (!this.time || this.time.now > this.doorCooldownUntil)) {
+      this.transitionToHouse();
       return;
     }
 
-    // Interaksi dengan Pandai Besi Arya
-    if (Phaser.Math.Distance.Between(px, py, this.blacksmithZone.x, this.blacksmithZone.y) < 85) {
-      EventBus.emit('new-chat-message', {
-        id: `npc_bs_${Date.now()}`,
-        senderId: 'npc',
-        senderName: 'Blacksmith Arya',
-        text: 'Pedang dan armor kualitas terbaik siap melindungi petualanganmu di RadenWorld!',
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      });
-      return;
-    }
-
-    // Interaksi dengan Alchemist Sari
-    if (Phaser.Math.Distance.Between(px, py, this.alchemistZone.x, this.alchemistZone.y) < 85) {
-      EventBus.emit('new-chat-message', {
-        id: `npc_alc_${Date.now()}`,
-        senderId: 'npc',
-        senderName: 'Alchemist Sari',
-        text: 'Ramuan energi dan penyembuh siap untukmu, petualang terhormat!',
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      });
-      return;
+    // 2. Interaksi dengan NPC terdekat
+    for (const npc of this.npcs) {
+      const dist = Phaser.Math.Distance.Between(px, py, npc.x, npc.y);
+      if (dist < 120) {
+        this.interactWithNpc(npc);
+        return;
+      }
     }
   }
 
+  private transitionToHouse(): void {
+    if (this.isTransitioning) return;
+    this.isTransitioning = true;
+    this.player?.showSpeechBubble('Kembali ke rumah pribadi...');
+
+    this.time.delayedCall(400, () => {
+      let safeId = this.privateRoomId;
+      try {
+        const storedUser = localStorage.getItem('raden_player_user');
+        if (storedUser) {
+          const u = JSON.parse(storedUser);
+          if (u.private_room_id) safeId = u.private_room_id;
+        }
+      } catch (e) {}
+
+      const housePath = `/home/${safeId}`;
+      if (window.location.pathname !== housePath) {
+        window.history.pushState(null, '', housePath);
+      }
+      EventBus.emit('url-changed', housePath);
+      this.cameras?.main?.stopFollow();
+      this.networkManager.disconnect();
+      this.scene.start('HouseScene', {
+        name: this.player?.getEntityName() || this.pendingPlayerName || 'Petualang',
+        avatar: this.player?.getAvatar() || this.pendingAvatar,
+        privateRoomId: safeId,
+      });
+    });
+  }
+
   private getRegionName(x: number, y: number): string {
-    if (Math.hypot(x - 1600, y - 1600) < 300) return 'SANCTUARY PLAZA: PUSAT KOTA';
-    if (y < 800) return 'NORTH WHISPERING WOODS';
-    if (x > 2200 && y < 1200) return 'AZURE MYSTIC LAKE';
-    if (x > 2200 && y > 2000) return 'EASTERN GRANITE CRAGS';
-    if (y > 2200) return 'SOUTHERN EMERALD MEADOW';
-    return 'CATUR OPEN WILDLANDS';
+    if (Math.hypot(x - 4800, y - 4800) < 600) return 'SANCTUARY CENTRAL PLAZA';
+    if (x >= 4300 && x <= 5300 && y >= 3600 && y <= 4200) return 'SANCTUARY MARKET SQUARE';
+    if (Math.hypot(x - 4800, y - 5400) < 300) return 'SANCTUARY: RUMAH PEMAIN';
+    if (x > 6200 && y < 4600) return 'AZURE MYSTIC LAKE';
+    if (x < 3600 && y < 3600) return 'WHISPERING EMERALD FOREST';
+    if (y > 6600) return 'SOUTHERN WINDMILL FARMS';
+    if (x > 6800 && y > 5500) return 'EASTERN GRANITE RUINS';
+    return 'RADENWORLD OPEN REALMS';
   }
 }

@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Facades\Vite;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -19,6 +20,23 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        // Dukungan Akses Fleksibel Jaringan Lokal / Wi-Fi (IP Dinamis):
+        // Jika Vite sedang aktif (HMR / public/hot), arahkan URL aset Vite secara dinamis
+        // ke host/IP yang digunakan oleh browser saat ini (request()->getHost()).
+        if (file_exists(public_path('hot'))) {
+            $host = request()->getHost();
+            if (!empty($host)) {
+                $cacheDir = storage_path('framework/cache');
+                if (!is_dir($cacheDir)) {
+                    @mkdir($cacheDir, 0755, true);
+                }
+                $dynamicHotFile = $cacheDir . '/hot_' . md5($host);
+                $hotUrl = "http://{$host}:5173";
+                if (!file_exists($dynamicHotFile) || trim((string)@file_get_contents($dynamicHotFile)) !== $hotUrl) {
+                    @file_put_contents($dynamicHotFile, $hotUrl);
+                }
+                Vite::useHotFile($dynamicHotFile);
+            }
+        }
     }
 }

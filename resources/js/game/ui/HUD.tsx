@@ -22,7 +22,21 @@
 
 import React from 'react';
 import { IAvatarCustomization } from '../types';
-import { MapPin, Server, MessageSquare, HelpCircle, Zap, User } from 'lucide-react';
+import { Server, MessageSquare, Zap, User, Mic, MicOff, Settings, Globe, ArrowRightLeft } from 'lucide-react';
+import { EventBus } from '../core/EventBus';
+import { SoundManager } from '../core/SoundManager';
+import { VoiceManager } from '../core/VoiceManager';
+
+export const cleanServerCode = (code?: string | null): string => {
+  if (!code) return 'Asia 1';
+  const upper = code.toUpperCase();
+  if (upper.includes('RADEN-ASIA-01') || upper.includes('ASIA-01') || upper === 'ASIA 1') return 'Asia 1';
+  if (upper.includes('RADEN-ASIA-02') || upper.includes('ASIA-02') || upper === 'ASIA 2') return 'Asia 2';
+  if (upper.includes('RADEN-ID-01') || upper.includes('ID-01') || upper === 'ASIA 3') return 'Asia 3';
+  if (upper.includes('RADEN-GLOBAL-01') || upper.includes('GLOBAL-01') || upper === 'ASIA 4') return 'Asia 4';
+  if (upper.includes('RADEN-CUSTOM') || upper.includes('CUSTOM')) return 'Custom Host';
+  return code.replace(/^RADEN[-_ ]?/i, '').trim() || 'Asia 1';
+};
 
 interface HUDProps {
   playerStats: {
@@ -40,8 +54,10 @@ interface HUDProps {
   } | null;
   serverCode?: string;
   onToggleChat: () => void;
-  onToggleGuide: () => void;
+  onToggleGuide?: () => void;
   onOpenProfile: () => void;
+  onOpenSettings?: () => void;
+  onOpenServerModal?: () => void;
   isChatOpen: boolean;
   interactionPrompt?: string | null;
   onTriggerInteraction?: () => void;
@@ -49,148 +65,220 @@ interface HUDProps {
 
 export const HUD: React.FC<HUDProps> = ({
   playerStats,
-  serverCode = 'RADEN-ASIA-01',
+  serverCode = 'Asia 1',
   onToggleChat,
-  onToggleGuide,
   onOpenProfile,
+  onOpenSettings,
+  onOpenServerModal,
   isChatOpen,
   interactionPrompt,
   onTriggerInteraction,
 }) => {
+  const sound = SoundManager.getInstance();
+  const displayServerCode = cleanServerCode(serverCode);
   const stats = playerStats || {
     x: 480,
     y: 380,
     gridX: 10,
     gridY: 7,
     name: 'Petualang',
-    roomName: 'RUMAH PRIBADI: RUANG UTAMA',
+    roomName: 'World',
     level: 1,
   };
 
-  const locationLabel = stats.roomName || 'SANCTUARY PLAZA: PUSAT KOTA';
+  const rawLoc = stats.roomName || '';
+  let displayLocation = 'World';
+  if (stats.inHouse || rawLoc.includes('RUMAH')) {
+    displayLocation = 'Rumah Pribadi';
+  } else if (rawLoc.includes('PORTAL')) {
+    displayLocation = 'Portal Admin';
+  } else {
+    displayLocation = 'World';
+  }
+
   const playerLevel = stats.level || 1;
-  const gridX = stats.gridX ?? Math.floor(stats.x / 48);
-  const gridY = stats.gridY ?? Math.floor(stats.y / 48);
+  const gridX = stats.gridX ?? Math.floor(stats.x / 120);
+  const gridY = stats.gridY ?? Math.floor(stats.y / 120);
 
   const isSuperAdmin = stats.role === 'super_admin' || stats.isSuperAdmin || stats.name?.toUpperCase() === 'RADEN';
+
+  const [isMicActive, setIsMicActive] = React.useState(false);
+
+  React.useEffect(() => {
+    const voice = VoiceManager.getInstance();
+    setIsMicActive(voice.getIsMicEnabled());
+
+    const handleMicState = (data: { isEnabled: boolean }) => {
+      setIsMicActive(data.isEnabled);
+    };
+    EventBus.on('mic-state-changed', handleMicState);
+    return () => {
+      EventBus.off('mic-state-changed', handleMicState);
+    };
+  }, []);
+
+  const handleToggleMic = async () => {
+    sound.playClick();
+    const voice = VoiceManager.getInstance();
+    const state = await voice.toggleMic();
+    setIsMicActive(state);
+  };
 
   return (
     <div className="pointer-events-none fixed inset-0 z-40 flex flex-col justify-between p-4 md:p-5 font-['Chakra_Petch']">
       {/* ==================================================================== */}
-      {/* 1. TOP BAR: KIRI ATAS (PROFILE | NAMA & LEVEL | ICON CHAT) | KANAN   */}
+      {/* 1. TOP BAR: KIRI ATAS (PROFILE & CHAT) | KANAN ATAS (SERVER STATUS)  */}
       {/* ==================================================================== */}
-      <div className="flex items-start justify-between gap-4 w-full">
-        {/* KIRI ATAS: Profile Button, Nama & Level, serta Icon Chat */}
-        <div className={`pointer-events-auto flex items-center gap-2 bg-[#0a0f1d]/95 backdrop-blur-md border ${isSuperAdmin ? 'border-amber-400 shadow-amber-500/20' : 'border-amber-500/40'} p-2 rounded-2xl shadow-xl`}>
-          {/* Tombol Profil (Menggantikan Gender -> Menampilkan Pop-Up Karakter) */}
+      <div className="flex items-center justify-between gap-4 w-full">
+        {/* KIRI ATAS: Group Profile & Quick Action (H-10, Rounded-md, Flat Pure Black) */}
+        <div className="pointer-events-auto flex items-center gap-1.5">
+          {/* Tombol Profil Karakter: H-10, Rounded-md */}
           <button
             onClick={onOpenProfile}
-            className={`w-9 h-9 rounded-xl border ${isSuperAdmin ? 'border-amber-400 bg-amber-500/20 text-amber-300' : 'border-amber-500 bg-[#0a0f1d] text-amber-400'} hover:bg-amber-500 hover:text-[#0a0f1d] flex items-center justify-center shrink-0 transition-all cursor-pointer shadow group`}
+            className={`h-10 flex items-center gap-2.5 px-3 rounded-md bg-black border ${
+              isSuperAdmin ? 'border-amber-400' : 'border-neutral-800'
+            } hover:border-amber-400 transition-colors cursor-pointer group text-left`}
             title={isSuperAdmin ? '👑 Profil Super Admin (RADEN)' : 'Klik untuk membuka Profil Karakter'}
           >
-            <User className="w-4 h-4 transition-transform group-hover:scale-110" />
+            <div className={`w-6 h-6 rounded flex items-center justify-center ${
+              isSuperAdmin ? 'bg-amber-400 text-black' : 'bg-neutral-900 text-amber-400'
+            }`}>
+              <User className="w-3.5 h-3.5" />
+            </div>
+            <div className="flex flex-col leading-none">
+              <div className="flex items-center gap-1">
+                <span className="font-bold text-xs text-neutral-100 group-hover:text-amber-400 transition-colors uppercase tracking-wider truncate max-w-[120px]">
+                  {stats.name}
+                </span>
+                {isSuperAdmin && (
+                  <span className="text-[9px] font-black tracking-wider text-black bg-amber-400 px-1 py-0.5 rounded leading-none">
+                    ADMIN
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-1 mt-0.5">
+                <span className="text-[9px] font-bold tracking-widest text-neutral-400">
+                  LV. {playerLevel}
+                </span>
+              </div>
+            </div>
           </button>
 
-          {/* Nama Karakter dan Level */}
-          <div className="flex flex-col px-1 min-w-[90px]">
-            <div className="flex items-center gap-1.5">
-              <span className="font-bold text-xs text-amber-400 uppercase tracking-wider truncate max-w-[130px]">
-                {stats.name}
-              </span>
-              {isSuperAdmin && (
-                <span className="text-[9px] font-black tracking-wider text-[#0a0f1d] bg-amber-400 px-1 py-0.2 rounded shadow animate-pulse">
-                  👑 ADMIN
-                </span>
-              )}
-            </div>
-            <div className="flex items-center gap-1.5 mt-0.5">
-              <span className="text-[10px] font-bold tracking-widest text-[#0a0f1d] bg-amber-500 px-1.5 py-0.2 rounded">
-                LV. {playerLevel}
-              </span>
-              {isSuperAdmin && (
-                <span className="text-[10px] text-amber-400 font-bold uppercase tracking-wider">
-                  SUPER ADMIN
-                </span>
-              )}
-            </div>
-          </div>
-
-          {/* Garis Pembatas Vertikal */}
-          <div className="h-6 w-px bg-amber-500/30 mx-0.5" />
-
-          {/* Icon Chat Button (Membuka / Menutup Pop-Up Obrolan) */}
+          {/* Icon Chat Button (H-10 W-10, Rounded-md) */}
           <button
             onClick={onToggleChat}
-            className={`p-2 rounded-xl border transition-all cursor-pointer flex items-center justify-center ${
+            className={`h-10 w-10 rounded-md border flex items-center justify-center transition-colors cursor-pointer ${
               isChatOpen
-                ? 'bg-amber-500 text-[#0a0f1d] border-amber-400 font-bold shadow-md'
-                : 'bg-[#0a0f1d] text-amber-400 border-amber-500/40 hover:border-amber-400 hover:bg-amber-500 hover:text-[#0a0f1d]'
+                ? 'bg-amber-400 text-black border-amber-400 font-bold'
+                : 'bg-black text-neutral-300 border-neutral-800 hover:border-amber-400 hover:text-amber-400'
             }`}
-            title={isChatOpen ? 'Tutup Obrolan' : 'Buka Obrolan'}
+            title={isChatOpen ? 'Tutup Obrolan' : 'Buka Obrolan (atau tekan tombol "/")'}
           >
             <MessageSquare className="w-4 h-4" />
           </button>
+
+          {/* Tombol Mikrofon Proximity Voice Chat (H-10 W-10, Rounded-md) */}
+          <button
+            onClick={handleToggleMic}
+            className={`h-10 w-10 rounded-md border flex items-center justify-center relative transition-colors cursor-pointer ${
+              isMicActive
+                ? 'bg-emerald-600 text-white border-emerald-500 font-semibold'
+                : 'bg-black text-neutral-300 border-neutral-800 hover:border-neutral-700 hover:text-white'
+            }`}
+            title={
+              isMicActive
+                ? 'Mikrofon Aktif (Klik untuk Mematikan) - Jangkauan Suara ±5 Petak'
+                : 'Nyalakan Mikrofon (Proximity Voice Chat Radius ±5 Petak X & Y)'
+            }
+          >
+            {isMicActive ? <Mic className="w-4 h-4 text-white" /> : <MicOff className="w-4 h-4" />}
+            {isMicActive && (
+              <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-emerald-400" />
+            )}
+          </button>
         </div>
 
-        {/* KANAN ATAS: Status Server & Panduan Kontrol */}
-        <div className="pointer-events-auto flex items-center gap-2">
-          {/* Indikator Nama / Kode Server Game */}
-          <div className="flex items-center gap-2 bg-[#0a0f1d]/95 backdrop-blur-md border border-amber-500/40 px-4 py-2 rounded-xl shadow-xl text-xs font-bold text-amber-400 uppercase tracking-wider">
-            <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
-            <Server className="w-3.5 h-3.5 text-amber-400" />
-            <span>SERVER: {serverCode}</span>
-          </div>
-
-          {/* Tombol Panduan Kontrol */}
+        {/* KANAN ATAS: Status Server & Tombol Pengaturan (H-10, Rounded-md, Flat Pure Black) */}
+        <div className="pointer-events-auto flex items-center gap-1.5">
+          {/* Tombol Status Server Flat & Bersih: Format Singkat "Asia (angka)" (H-10, Rounded-md) */}
           <button
-            onClick={onToggleGuide}
-            className="p-2 rounded-xl bg-[#0a0f1d]/95 border border-amber-500/40 text-amber-400 hover:border-amber-400 hover:bg-amber-500 hover:text-[#0a0f1d] backdrop-blur-md shadow-xl transition-all cursor-pointer"
-            title="Panduan Kontrol"
+            onClick={() => {
+              sound.playClick();
+              onOpenServerModal?.();
+            }}
+            className="h-10 flex items-center gap-2 px-3 rounded-md bg-black border border-neutral-800 hover:border-amber-400 text-neutral-200 transition-colors cursor-pointer group"
+            title="Klik untuk Melihat Daftar Server & Pindah Realm"
           >
-            <HelpCircle className="w-4 h-4" />
+            {/* Indikator Titik Hijau Emerald Bersih Tanpa Glow */}
+            <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+
+            {/* Nama Singkat Server: Asia 1, Asia 2, dst. (Tanpa Kata Raden) */}
+            <Globe className="w-3.5 h-3.5 text-neutral-400 group-hover:text-amber-400 transition-colors" />
+            <div className="flex flex-col text-left leading-none">
+              <span className="text-[9px] text-neutral-400 uppercase tracking-widest font-semibold">
+                SERVER
+              </span>
+              <span className="text-xs font-black text-amber-300 uppercase tracking-wider font-mono mt-0.5">
+                {displayServerCode}
+              </span>
+            </div>
+
+            {/* Badge Aksi Pindah */}
+            <div className="flex items-center gap-1 text-[9px] font-bold tracking-wider text-black bg-amber-400 group-hover:bg-amber-300 px-1.5 py-0.5 rounded transition-colors ml-1">
+              <ArrowRightLeft className="w-2.5 h-2.5" />
+              <span>PINDAH</span>
+            </div>
           </button>
+
+          {/* Tombol Pengaturan (H-10 W-10, Rounded-md) */}
+          {onOpenSettings && (
+            <button
+              onClick={() => {
+                sound.playClick();
+                onOpenSettings();
+              }}
+              className="h-10 w-10 rounded-md bg-black border border-neutral-800 text-neutral-300 hover:text-amber-400 hover:border-amber-400 flex items-center justify-center transition-colors cursor-pointer"
+              title="Pengaturan Game & Konfigurasi IP Server"
+            >
+              <Settings className="w-4 h-4" />
+            </button>
+          )}
         </div>
       </div>
 
       {/* ==================================================================== */}
-      {/* 2. BOTTOM BAR: KIRI BAWAH POJOK (NAMA TEMPAT & KOORDINAT GRID X, Y)  */}
+      {/* 2. BOTTOM BAR: KIRI BAWAH (KONTROL PC) & KANAN BAWAH (WORLD & KOORDINAT) */}
       {/* ==================================================================== */}
-      <div className="flex items-end justify-between w-full">
-        {/* KIRI BAWAH POJOK: Lokasi Tempat, Koordinat Grid, & Tombol Aksi */}
-        <div className="pointer-events-auto flex flex-col items-start gap-2">
-          {/* Tombol Interaksi Cepat (Jika dekat pintu, lemari, kasur, dsb.) */}
+      <div className="flex items-end justify-between w-full pointer-events-none">
+        {/* KIRI BAWAH: Tombol Aksi & Keterangan Kontrol PC/Laptop Tanpa Background */}
+        <div className="pointer-events-auto flex flex-col items-start gap-2 select-none">
+          {/* Tombol Interaksi Cepat (Jika dekat objek pintu, kasur, dsb.) */}
           {interactionPrompt && (
             <button
               onClick={onTriggerInteraction}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-amber-500 text-[#0a0f1d] border border-amber-400 shadow-2xl font-bold text-xs uppercase tracking-wider hover:bg-amber-400 cursor-pointer transition-all animate-bounce"
+              className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-amber-500 text-black border border-amber-400 font-bold text-xs uppercase tracking-wider hover:bg-amber-400 active:scale-95 cursor-pointer transition-all"
             >
-              <Zap className="w-4 h-4 fill-current" />
+              <Zap className="w-3.5 h-3.5 fill-current" />
               <span>{interactionPrompt}</span>
             </button>
           )}
 
-          {/* Card Lokasi & Koordinat Grid (X, Y) di Kiri Bawah */}
-          <div className="bg-[#0a0f1d]/95 backdrop-blur-md border border-amber-500/40 px-4 py-2.5 rounded-2xl shadow-2xl flex flex-col gap-1 min-w-[220px]">
-            {/* Nama Tempat */}
-            <div className="flex items-center gap-1.5 text-amber-400 text-xs font-bold uppercase tracking-wider">
-              <MapPin className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-              <span className="truncate">{locationLabel}</span>
-            </div>
-
-            {/* Koordinat Grid Berdasarkan Petak Catur */}
-            <div className="text-xs text-amber-300 font-mono tracking-wider font-bold">
-              POSISI GRID: <span className="text-amber-400 font-extrabold">(X: {gridX}, Y: {gridY})</span>
-            </div>
+          {/* Keterangan Kontrol PC / Laptop: Bersih Tanpa Drop-Shadow */}
+          <div className="hidden md:flex flex-col gap-0.5 text-xs font-bold text-amber-400 tracking-wider">
+            <div>jalan = <span className="text-amber-300">WASD/Panah</span></div>
+            <div>interaksi = <span className="text-amber-300">E</span></div>
+            <div>Chat = <span className="text-amber-300">/</span></div>
           </div>
         </div>
 
-        {/* Petunjuk Tombol Ringkas di Tengah / Kanan Bawah */}
-        <div className="hidden md:flex bg-[#0a0f1d]/90 backdrop-blur-sm border border-amber-500/30 text-amber-400 text-[11px] px-3.5 py-1.5 rounded-full items-center gap-2 uppercase tracking-wider">
-          <span>JALAN: <strong className="text-amber-300">WASD</strong> / <strong className="text-amber-300">PANAH</strong></span>
-          <span>•</span>
-          <span>INTERAKSI: <strong className="text-amber-300">[E]</strong></span>
-          <span>•</span>
-          <span>CHAT: <strong className="text-amber-300">ENTER</strong></span>
+        {/* KANAN BAWAH: Nama Tempat (World) & Koordinat (x,y) Bersih Tanpa Drop-Shadow */}
+        <div className="pointer-events-auto flex flex-col items-end text-right select-none">
+          <div className="text-sm font-extrabold text-amber-400 uppercase tracking-wider">
+            {displayLocation}
+          </div>
+          <div className="text-xs font-mono font-bold text-amber-300 tracking-wide">
+            ({gridX}, {gridY})
+          </div>
         </div>
       </div>
     </div>

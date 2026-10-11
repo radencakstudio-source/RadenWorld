@@ -44,22 +44,18 @@ export const LobbyModal: React.FC<LobbyModalProps> = ({ onJoin }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-md p-4 animate-in fade-in duration-300">
-      <div className="w-full max-w-lg bg-slate-900/90 border border-slate-700/80 rounded-2xl shadow-2xl p-6 md:p-8 text-slate-100 flex flex-col gap-6 relative overflow-hidden">
-        {/* Glow Accent */}
-        <div className="absolute -top-24 -left-24 w-48 h-48 bg-cyan-500/20 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-24 -right-24 w-48 h-48 bg-amber-500/20 rounded-full blur-3xl pointer-events-none" />
-
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4 animate-in fade-in duration-300">
+      <div className="w-full max-w-lg bg-black border border-neutral-800 rounded-2xl p-6 md:p-8 text-neutral-100 flex flex-col gap-6 relative overflow-hidden">
         {/* Header */}
         <div className="text-center space-y-2">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 text-xs font-semibold uppercase tracking-wider">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-neutral-900 border border-neutral-800 text-amber-400 text-xs font-semibold uppercase tracking-wider">
             <Globe className="w-3.5 h-3.5" />
             2D Open World RPG • Multiplayer
           </div>
-          <h1 className="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-white via-slate-200 to-cyan-400 bg-clip-text text-transparent">
-            RadenWorld
+          <h1 className="text-3xl font-extrabold tracking-tight text-white">
+            Raden<span className="text-amber-400">World</span>
           </h1>
-          <p className="text-sm text-slate-400">
+          <p className="text-sm text-neutral-400">
             Jelajahi dunia 2D yang luas bersama pemain lain secara real-time.
           </p>
         </div>
@@ -68,8 +64,8 @@ export const LobbyModal: React.FC<LobbyModalProps> = ({ onJoin }) => {
         <form onSubmit={handleSubmit} className="space-y-5">
           {/* Player Name */}
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
-              <Users className="w-3.5 h-3.5 text-cyan-400" />
+            <label className="text-xs font-semibold uppercase tracking-wider text-neutral-300 flex items-center gap-1.5">
+              <Users className="w-3.5 h-3.5 text-amber-400" />
               Nama Karakter
             </label>
             <input
@@ -78,14 +74,14 @@ export const LobbyModal: React.FC<LobbyModalProps> = ({ onJoin }) => {
               onChange={(e) => setName(e.target.value)}
               placeholder="Contoh: RadenAria, AryaWiguna..."
               maxLength={18}
-              className="w-full px-4 py-2.5 bg-slate-800/90 border border-slate-700 rounded-xl text-slate-100 placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500 transition-all"
+              className="w-full px-4 py-2.5 bg-neutral-900 border border-neutral-800 rounded-xl text-neutral-100 placeholder-neutral-500 text-sm focus:outline-none focus:border-amber-400 transition-all"
             />
           </div>
 
           {/* Class Selection */}
           <div className="space-y-2">
-            <label className="text-xs font-semibold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
-              <Swords className="w-3.5 h-3.5 text-cyan-400" />
+            <label className="text-xs font-semibold uppercase tracking-wider text-neutral-300 flex items-center gap-1.5">
+              <Swords className="w-3.5 h-3.5 text-amber-400" />
               Pilih Role Karakter
             </label>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -99,19 +95,19 @@ export const LobbyModal: React.FC<LobbyModalProps> = ({ onJoin }) => {
                     onClick={() => setCharacterClass(c.id)}
                     className={`p-3 rounded-xl border text-left flex flex-col gap-2 transition-all cursor-pointer ${
                       isSelected
-                        ? `bg-gradient-to-b ${c.color} ${c.border} ring-2 ring-cyan-400/40 shadow-lg`
-                        : 'bg-slate-800/50 border-slate-700/60 hover:bg-slate-800 text-slate-400 hover:text-slate-200'
+                        ? 'bg-neutral-900 border-amber-400 text-amber-300'
+                        : 'bg-[#0e0e0e] border-neutral-800 hover:bg-neutral-900 text-neutral-400 hover:text-neutral-200'
                     }`}
                   >
                     <div className="flex items-center justify-between w-full">
-                      <Icon className={`w-5 h-5 ${isSelected ? 'text-white' : 'text-slate-400'}`} />
+                      <Icon className={`w-5 h-5 ${isSelected ? 'text-amber-400' : 'text-neutral-400'}`} />
                       {isSelected && (
-                        <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
+                        <span className="w-2 h-2 rounded-full bg-amber-400" />
                       )}
                     </div>
                     <div>
-                      <div className="font-bold text-sm text-slate-100">{c.name.split(' ')[0]}</div>
-                      <div className="text-[11px] text-slate-400 leading-tight mt-0.5">{c.desc}</div>
+                      <div className="font-bold text-sm text-neutral-100">{c.name.split(' ')[0]}</div>
+                      <div className="text-[11px] text-neutral-400 leading-tight mt-0.5">{c.desc}</div>
                     </div>
                   </button>
                 );
@@ -122,7 +118,7 @@ export const LobbyModal: React.FC<LobbyModalProps> = ({ onJoin }) => {
           {/* Submit Button */}
           <button
             type="submit"
-            className="w-full py-3 px-4 rounded-xl font-bold text-sm text-slate-950 bg-gradient-to-r from-cyan-400 via-sky-300 to-amber-300 hover:from-cyan-300 hover:to-amber-200 shadow-lg shadow-cyan-500/20 active:scale-[0.98] transition-all cursor-pointer"
+            className="w-full py-3 px-4 rounded-xl font-bold text-sm text-black bg-amber-500 hover:bg-amber-400 active:scale-[0.98] transition-all cursor-pointer border border-amber-400"
           >
             Masuk ke Open World ➔
           </button>

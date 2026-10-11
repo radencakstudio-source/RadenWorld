@@ -38,31 +38,37 @@ const io = new Server(httpServer, {
 /** Database memori (In-Memory Map) penyimpan seluruh pemain yang aktif */
 const players = new Map();
 
-/** Daftar monster penjelajah open world */
-const monsters = [
-  { id: 'm1', name: 'Emerald Slime', type: 'slime', x: 1200, y: 1300, hp: 50, maxHp: 50, targetX: 1200, targetY: 1300 },
-  { id: 'm2', name: 'Aqua Slime', type: 'slime', x: 1800, y: 1100, hp: 50, maxHp: 50, targetX: 1800, targetY: 1100 },
-  { id: 'm3', name: 'Forest Slime', type: 'slime', x: 1400, y: 1900, hp: 50, maxHp: 50, targetX: 1400, targetY: 1900 },
-  { id: 'm4', name: 'Royal Slime', type: 'slime', x: 2200, y: 1700, hp: 120, maxHp: 120, targetX: 2200, targetY: 1700 },
-];
+/** Daftar monster penjelajah open world (dihapus sesuai permintaan pengguna, diganti NPC di sisi klien) */
+const monsters = [];
 
-/** Batas luas koordinat dunia open world */
-const WORLD_WIDTH = 3200;
-const WORLD_HEIGHT = 3200;
+/** Batas luas koordinat dunia open world (Skala Grid 120px: 80x80 tiles = 9600x9600) */
+const WORLD_WIDTH = 9600;
+const WORLD_HEIGHT = 9600;
 
 io.on('connection', (socket) => {
   console.log(`[Socket] Koneksi baru terhubung: ${socket.id}`);
 
   // 1. Event pemain bergabung
   socket.on('player:join', (data) => {
-    const defaultX = 1600 + Math.floor((Math.random() - 0.5) * 200);
-    const defaultY = 1600 + Math.floor((Math.random() - 0.5) * 200);
+    const defaultX = 4800 + Math.floor((Math.random() - 0.5) * 200);
+    const defaultY = 4800 + Math.floor((Math.random() - 0.5) * 200);
 
     const isSuperAdmin = data.isSuperAdmin || data.role === 'super_admin' || data.name === 'RADEN';
 
+    const playerName = (data.name || `Player_${socket.id.substring(0, 4)}`).trim();
+
+    // Hapus sesi lama yang memiliki nama yang sama (mencegah ghost / double duplicate player saat reconnect/refresh)
+    for (const [oldId, oldPlayer] of players.entries()) {
+      if (oldId !== socket.id && oldPlayer.name.toLowerCase() === playerName.toLowerCase()) {
+        console.log(`[Server] Membersihkan sesi lama '${oldPlayer.name}' (ID: ${oldId})`);
+        players.delete(oldId);
+        io.emit('player:left', { id: oldId, name: oldPlayer.name });
+      }
+    }
+
     const player = {
       id: socket.id,
-      name: data.name || `Player_${socket.id.substring(0, 4)}`,
+      name: playerName,
       role: isSuperAdmin ? 'super_admin' : (data.role || 'player'),
       isSuperAdmin: isSuperAdmin,
       avatar: data.avatar || {
@@ -83,11 +89,11 @@ io.on('connection', (socket) => {
 
     players.set(socket.id, player);
 
-    // Kirim snapshot dunia ke pemain yang baru masuk
+    // Kirim snapshot dunia ke pemain yang baru masuk (pastikan tidak memuat self atau duplikat)
     socket.emit('world:init', {
       selfId: socket.id,
       selfPlayer: player,
-      players: Array.from(players.values()).filter(p => p.id !== socket.id),
+      players: Array.from(players.values()).filter(p => p.id !== socket.id && p.name.toLowerCase() !== playerName.toLowerCase()),
       monsters: monsters,
       worldBounds: { width: WORLD_WIDTH, height: WORLD_HEIGHT }
     });
@@ -122,12 +128,24 @@ io.on('connection', (socket) => {
 
   // 3. Event pesan obrolan (chat)
   socket.on('chat:message', (data) => {
-    const player = players.get(socket.id);
-    if (!player) return;
+    if (!data || typeof data.text !== 'string' || !data.text.trim()) return;
+
+    let player = players.get(socket.id);
+    if (!player) {
+      player = {
+        id: socket.id,
+        name: (data.senderName || `Pemain_${socket.id.substring(0, 4)}`).trim(),
+        role: data.senderRole || 'player',
+        isSuperAdmin: Boolean(data.isSuperAdmin || data.senderName?.toUpperCase() === 'RADEN'),
+      };
+      players.set(socket.id, player);
+    }
+
+    const trimmedText = data.text.trim();
 
     // Perintah khusus Super Admin /announce
-    if (player.isSuperAdmin && typeof data.text === 'string' && data.text.startsWith('/announce ')) {
-      const announcement = data.text.replace('/announce ', '').trim();
+    if (player.isSuperAdmin && trimmedText.startsWith('/announce ')) {
+      const announcement = trimmedText.replace('/announce ', '').trim();
       io.emit('chat:broadcast', {
         id: `announcement_${Date.now()}`,
         senderId: socket.id,
@@ -141,19 +159,41 @@ io.on('connection', (socket) => {
     }
 
     const chatPacket = {
-      id: `chat_${Date.now()}_${Math.random()}`,
+      id: `chat_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
       senderId: socket.id,
-      senderName: player.name,
-      senderRole: player.role,
-      isSuperAdmin: player.isSuperAdmin,
-      text: data.text,
+      senderName: player.name || data.senderName || 'Petualang',
+      senderRole: player.role || data.senderRole || 'player',
+      isSuperAdmin: Boolean(player.isSuperAdmin || data.isSuperAdmin || player.name?.toUpperCase() === 'RADEN'),
+      text: trimmedText,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     };
 
     io.emit('chat:broadcast', chatPacket);
   });
 
-  // 4. Event pemain disconnect
+  // 4. Proximity Voice Chat stream (audio packets)
+  socket.on('voice:chunk', (data) => {
+    const player = players.get(socket.id);
+    if (!player || !data || !data.audio) return;
+
+    socket.broadcast.emit('voice:stream', {
+      senderId: socket.id,
+      senderName: player.name,
+      x: typeof data.x === 'number' ? data.x : player.x,
+      y: typeof data.y === 'number' ? data.y : player.y,
+      audio: data.audio,
+    });
+  });
+
+  // Indikator visual ketika pemain sedang berbicara
+  socket.on('voice:speaking', (data) => {
+    socket.broadcast.emit('voice:speaking', {
+      senderId: socket.id,
+      isSpeaking: !!data?.isSpeaking,
+    });
+  });
+
+  // 5. Event pemain disconnect
   socket.on('disconnect', () => {
     const player = players.get(socket.id);
     if (player) {
@@ -162,24 +202,20 @@ io.on('connection', (socket) => {
       io.emit('player:left', { id: socket.id, name: player.name });
     }
   });
+
+  // 5. Event reaksi ekspresi wajah pemain
+  socket.on('player:expression', (data) => {
+    socket.broadcast.emit('player:expression', {
+      id: socket.id,
+      type: data.type
+    });
+  });
 });
 
-// Loop pergerakan acak monster setiap 3 detik
-setInterval(() => {
-  if (players.size === 0) return;
+// Catatan: Monster dihilangkan sesuai permintaan pengguna, open world diisi oleh NPC interaktif
 
-  monsters.forEach(m => {
-    const wanderDistance = 80;
-    m.targetX = Math.max(200, Math.min(WORLD_WIDTH - 200, m.x + (Math.random() - 0.5) * wanderDistance * 2));
-    m.targetY = Math.max(200, Math.min(WORLD_HEIGHT - 200, m.y + (Math.random() - 0.5) * wanderDistance * 2));
-    m.x = m.targetX;
-    m.y = m.targetY;
-  });
 
-  io.emit('monsters:sync', monsters);
-}, 3000);
-
-httpServer.listen(PORT, () => {
+httpServer.listen(PORT, '0.0.0.0', () => {
   console.log(`=========================================`);
   console.log(`🎮 RadenWorld Game Server (WebSocket)`);
   console.log(`🚀 Berjalan di port: http://localhost:${PORT}`);

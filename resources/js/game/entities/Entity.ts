@@ -58,6 +58,18 @@ export abstract class Entity extends Phaser.GameObjects.Container {
   /** Timer penghilang otomatis indikator visual berbicara */
   protected speakingTimer: Phaser.Time.TimerEvent | null = null;
 
+  /** Kontainer teks AFK mengambang di atas kepala karakter */
+  protected afkContainer: Phaser.GameObjects.Container | null = null;
+
+  /** Objek teks status AFK */
+  protected afkText: Phaser.GameObjects.Text | null = null;
+
+  /** Status apakah karakter sedang AFK */
+  protected isAfk: boolean = false;
+
+  /** Durasi AFK dalam detik */
+  protected afkDurationSeconds: number = 0;
+
   /** Tinggi entitas visual untuk penempatan nameTag dan speechBubble (177px sesuai aset karakter HD) */
   protected entityHeight: number = 177;
 
@@ -460,6 +472,76 @@ export abstract class Entity extends Phaser.GameObjects.Container {
         });
       }
     });
+  }
+
+  /**
+   * Menampilkan atau memperbarui badge status AFK di atas kepala karakter
+   * @param isAfk Status apakah pemain AFK
+   * @param durationSeconds Durasi AFK dalam detik
+   */
+  public setAfk(isAfk: boolean, durationSeconds: number = 0): void {
+    if (!this.scene || !this.scene.add || !this.active) return;
+
+    this.isAfk = isAfk;
+    this.afkDurationSeconds = Math.max(0, Math.floor(durationSeconds));
+
+    if (!isAfk) {
+      if (this.afkContainer) {
+        this.afkContainer.destroy();
+        this.afkContainer = null;
+        this.afkText = null;
+      }
+      return;
+    }
+
+    const mins = Math.floor(this.afkDurationSeconds / 60);
+    const secs = this.afkDurationSeconds % 60;
+    const durStr = mins > 0 ? (secs > 0 ? `${mins}m ${secs}d` : `${mins}m`) : `${secs}d`;
+    const afkString = `💤 AFK (${durStr})`;
+
+    if (this.afkText && this.afkContainer) {
+      this.afkText.setText(afkString);
+      return;
+    }
+
+    if (this.afkContainer) {
+      this.afkContainer.destroy();
+      this.afkContainer = null;
+    }
+
+    // Posisikan badge AFK di atas kepala karakter (y: -170)
+    const container = this.scene.add.container(0, -170);
+
+    const text = this.scene.add.text(0, 0, afkString, {
+      fontFamily: '"Chakra Petch", sans-serif',
+      fontSize: '11px',
+      color: '#fbbf24',
+      fontStyle: 'bold',
+      stroke: '#050811',
+      strokeThickness: 3.5,
+      resolution: 3,
+      align: 'center',
+    }).setOrigin(0.5);
+
+    const padX = 14;
+    const padY = 5;
+    const bgW = Math.max(70, text.width + padX);
+    const bgH = text.height + padY;
+
+    const bg = this.scene.add.graphics();
+    bg.fillStyle(0x000000, 0.85);
+    bg.lineStyle(1.5, 0xf59e0b, 0.9);
+    bg.fillRoundedRect(-bgW / 2, -bgH / 2, bgW, bgH, 5);
+    bg.strokeRoundedRect(-bgW / 2, -bgH / 2, bgW, bgH, 5);
+
+    container.add([bg, text]);
+    this.add(container);
+    this.afkContainer = container;
+    this.afkText = text;
+  }
+
+  public getIsAfk(): boolean {
+    return this.isAfk;
   }
 
   /**

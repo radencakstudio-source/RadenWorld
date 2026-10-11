@@ -140,6 +140,9 @@ export class RemotePlayer extends Entity {
     const shouldWalk = this.isMoving && !isStationary && !isPacketStale;
 
     if (shouldWalk) {
+      if (this.isAfk) {
+        this.setAfk(false);
+      }
       // Perbarui arah hadap otomatis mengikuti vektor arah jika bergerak dominan
       if (Math.abs(dx) > Math.abs(dy) + 2) {
         this.currentDirection = dx > 0 ? 'right' : 'left';
@@ -235,5 +238,43 @@ export class RemotePlayer extends Entity {
   public triggerExpression(type: 'normal' | 'smile' | 'shock' | 'angry'): void {
     const textureKey = `expr-${this.gender}-${type}`;
     this.showExpressionReaction(textureKey);
+  }
+
+  /** Mengambil data avatar remote player */
+  public getAvatar(): IAvatarCustomization {
+    return this.avatar;
+  }
+
+  /** Mengambil gender remote player */
+  public getGender(): 'male' | 'female' {
+    return this.gender;
+  }
+
+  /**
+   * Mengaktifkan interaksi klik/tap pada pemain jarak jauh untuk membuka modal profil
+   */
+  public makeClickable(onClicked: () => void): void {
+    // Area sentuh mencakup seluruh tubuh karakter (w: 100px, h: 220px dari kepala sampai kaki)
+    this.setInteractive(new Phaser.Geom.Rectangle(-50, -165, 100, 220), Phaser.Geom.Rectangle.Contains);
+    this.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+      pointer.event?.stopPropagation?.();
+      onClicked();
+    });
+
+    if (this.sprite) {
+      this.sprite.setInteractive({ useHandCursor: true });
+      this.sprite.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+        pointer.event?.stopPropagation?.();
+        onClicked();
+      });
+    }
+
+    if (this.nameTag) {
+      this.nameTag.setInteractive({ useHandCursor: true });
+      this.nameTag.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+        pointer.event?.stopPropagation?.();
+        onClicked();
+      });
+    }
   }
 }

@@ -22,6 +22,8 @@ import { SettingsModal, GameSettings } from './game/ui/SettingsModal';
 import { WardrobeModal } from './game/ui/WardrobeModal';
 import { ProfileModal } from './game/ui/ProfileModal';
 import { ServerModal, IGameServerOption } from './game/ui/ServerModal';
+import { TopUpModal } from './game/ui/TopUpModal';
+import { FriendRequestNotification, IFriendRequest } from './game/ui/FriendRequestNotification';
 import { DialogueBox } from './game/ui/DialogueBox';
 import { calculateAgeFromBirthDate } from './game/ui/AuthModal';
 import { EventBus } from './game/core/EventBus';
@@ -176,8 +178,57 @@ export const GameApp: React.FC = () => {
   }, [playerBirthDate]);
 
   const [playerLikes] = useState<number>(36);
-  const [playerGold] = useState<number>(2500);
-  const [playerDiamonds] = useState<number>(50);
+  const [playerGold, setPlayerGold] = useState<number>(() => {
+    try {
+      const g = localStorage.getItem('raden_player_gold');
+      if (g) return parseInt(g, 10);
+    } catch (e) {}
+    return 2500;
+  });
+  const [playerDiamonds, setPlayerDiamonds] = useState<number>(() => {
+    try {
+      const d = localStorage.getItem('raden_player_diamonds');
+      if (d) return parseInt(d, 10);
+    } catch (e) {}
+    return 50;
+  });
+  const [isTopUpOpen, setIsTopUpOpen] = useState(false);
+
+  // Inspected Player (saat menekan/klik pemain lain di open world)
+  const [inspectedPlayer, setInspectedPlayer] = useState<{
+    id: string;
+    name: string;
+    avatar?: IAvatarCustomization;
+    level?: number;
+    role?: string;
+    bio?: string;
+    isSuperAdmin?: boolean;
+  } | null>(null);
+
+  // Friend & Follow System States (dengan penyimpanan lokal)
+  const [friendsList, setFriendsList] = useState<string[]>(() => {
+    try {
+      const f = localStorage.getItem('raden_friends_list');
+      if (f) return JSON.parse(f);
+    } catch (e) {}
+    return [];
+  });
+  const [followingList, setFollowingList] = useState<string[]>(() => {
+    try {
+      const f = localStorage.getItem('raden_following_list');
+      if (f) return JSON.parse(f);
+    } catch (e) {}
+    return [];
+  });
+  const [followersList, setFollowersList] = useState<string[]>(() => {
+    try {
+      const f = localStorage.getItem('raden_followers_list');
+      if (f) return JSON.parse(f);
+    } catch (e) {}
+    return [];
+  });
+  const [sentFriendRequests, setSentFriendRequests] = useState<string[]>([]);
+  const [incomingFriendRequest, setIncomingFriendRequest] = useState<IFriendRequest | null>(null);
 
   // Wardrobe Modal State
   const [isWardrobeOpen, setIsWardrobeOpen] = useState(false);
@@ -299,6 +350,55 @@ export const GameApp: React.FC = () => {
     EventBus.on('new-chat-message', handleChat);
     EventBus.on('open-wardrobe', handleOpenWardrobe);
 
+    const handleInspectProfile = (target: any) => {
+      setInspectedPlayer(target);
+      setIsProfileOpen(true);
+    };
+    EventBus.on('inspect-player-profile', handleInspectProfile);
+
+    const handleIncomingFriend = (req: IFriendRequest) => {
+      console.log('[GameApp] Notifikasi permintaan pertemanan diterima:', req);
+      setIncomingFriendRequest(req);
+    };
+
+    const handleFriendResponse = (data: { fromId: string; fromName: string; accepted: boolean }) => {
+      console.log('[GameApp] Respon pertemanan diterima:', data);
+      if (data.accepted) {
+        sound.playSuccess();
+        setFriendsList((prev) => {
+          const next = Array.from(new Set([...prev, data.fromName]));
+          try { localStorage.setItem('raden_friends_list', JSON.stringify(next)); } catch (e) {}
+          return next;
+        });
+        EventBus.emit('new-chat-message', {
+          id: `fr_acc_${Date.now()}`,
+          sender: 'SISTEM',
+          text: `🎉 Permintaan pertemanan diterima! Kamu dan ${data.fromName} sekarang berteman!`,
+          timestamp: Date.now(),
+          isSystem: true,
+        });
+      } else {
+        sound.playClick();
+        setFollowingList((prev) => {
+          const next = Array.from(new Set([...prev, data.fromName]));
+          try { localStorage.setItem('raden_following_list', JSON.stringify(next)); } catch (e) {}
+          return next;
+        });
+        EventBus.emit('new-chat-message', {
+          id: `fr_rej_${Date.now()}`,
+          sender: 'SISTEM',
+          text: `🤝 Permintaan tidak diterima / waktu habis. Kamu sekarang mengikuti ${data.fromName}.`,
+          timestamp: Date.now(),
+          isSystem: true,
+        });
+      }
+    };
+
+    NetworkManager.getInstance().onFriendRequest(handleIncomingFriend);
+    NetworkManager.getInstance().onFriendResponse(handleFriendResponse);
+    EventBus.on('incoming-friend-request', handleIncomingFriend);
+    EventBus.on('friend-response-result', handleFriendResponse);
+
     // If opened directly with /home/{id}, /world, atau /admin/{token}
     if (isDirectInGame) {
       let playerName = 'Petualang';
@@ -386,7 +486,7 @@ export const GameApp: React.FC = () => {
         EventBus.off('player-stats-updated', handleStats);
         EventBus.off('interaction-prompt', handlePrompt);
         EventBus.off('new-chat-message', handleChat);
-        EventBus.off('open-wardrobe', handleOpenWardrobe);
+        EventBus.off('inspect-player-profile', handleInspectProfile);
       };
     }
 
@@ -397,8 +497,82 @@ export const GameApp: React.FC = () => {
       EventBus.off('interaction-prompt', handlePrompt);
       EventBus.off('new-chat-message', handleChat);
       EventBus.off('open-wardrobe', handleOpenWardrobe);
+      EventBus.off('inspect-player-profile', handleInspectProfile);
+      EventBus.off('incoming-friend-request', handleIncomingFriend);
+      EventBus.off('friend-response-result', handleFriendResponse);
     };
   }, []);
+
+  // Friend Request Handlers
+  const handleAddFriend = (targetId: string, targetName: string) => {
+    sound.playClick();
+    NetworkManager.getInstance().sendFriendRequest(targetId, targetName);
+    setSentFriendRequests((prev) => [...prev, targetId]);
+    EventBus.emit('new-chat-message', {
+      id: `fr_sent_${Date.now()}`,
+      sender: 'SISTEM',
+      text: `📨 Permintaan pertemanan dikirim ke ${targetName}. Menunggu respon...`,
+      timestamp: Date.now(),
+      isSystem: true,
+    });
+  };
+
+  const handleAcceptFriendRequest = (req: IFriendRequest) => {
+    sound.playSuccess();
+    NetworkManager.getInstance().sendFriendResponse(req.fromId, true, req.fromName);
+    setFriendsList((prev) => {
+      const next = Array.from(new Set([...prev, req.fromName]));
+      try { localStorage.setItem('raden_friends_list', JSON.stringify(next)); } catch (e) {}
+      return next;
+    });
+    setIncomingFriendRequest(null);
+    EventBus.emit('new-chat-message', {
+      id: `fr_acc_self_${Date.now()}`,
+      sender: 'SISTEM',
+      text: `🎉 Kamu dan ${req.fromName} sekarang resmi berteman!`,
+      timestamp: Date.now(),
+      isSystem: true,
+    });
+  };
+
+  const handleRejectFriendRequest = (req: IFriendRequest, isTimeout = false) => {
+    sound.playClick();
+    NetworkManager.getInstance().sendFriendResponse(req.fromId, false, req.fromName);
+    // Jika ditolak atau waktu 1 menit habis tanpa respon: pemohon otomatis menjadi pengikut (follower)
+    setFollowersList((prev) => {
+      const next = Array.from(new Set([...prev, req.fromName]));
+      try { localStorage.setItem('raden_followers_list', JSON.stringify(next)); } catch (e) {}
+      return next;
+    });
+    setIncomingFriendRequest(null);
+    EventBus.emit('new-chat-message', {
+      id: `fr_timeout_${Date.now()}`,
+      sender: 'SISTEM',
+      text: isTimeout
+        ? `⏱️ Waktu respon 1 menit habis. ${req.fromName} sekarang menjadi pengikut kamu.`
+        : `🤝 Permintaan ditolak. ${req.fromName} sekarang menjadi pengikut kamu.`,
+      timestamp: Date.now(),
+      isSystem: true,
+    });
+  };
+
+  // Top Up Berlian Handler
+  const handleSuccessTopUp = (addedDiamonds: number) => {
+    setPlayerDiamonds((prev) => {
+      const next = prev + addedDiamonds;
+      try {
+        localStorage.setItem('raden_player_diamonds', next.toString());
+      } catch (e) {}
+      return next;
+    });
+    EventBus.emit('new-chat-message', {
+      id: `topup_succ_${Date.now()}`,
+      sender: 'SISTEM',
+      text: `💎 Top Up Berhasil! +${addedDiamonds} Berlian telah masuk ke saldo!`,
+      timestamp: Date.now(),
+      isSystem: true,
+    });
+  };
 
   // Memulai game dari Home Screen (setelah Login / Kustomisasi Avatar)
   const handleStartGame = (name: string, avatar: IAvatarCustomization, privateRoomId?: string) => {
@@ -659,40 +833,57 @@ export const GameApp: React.FC = () => {
             serverCode={serverCode}
             onToggleChat={() => setIsChatOpen(!isChatOpen)}
             onToggleGuide={() => setIsGuideOpen(true)}
-            onOpenProfile={() => setIsProfileOpen(true)}
+            onOpenProfile={() => {
+              setInspectedPlayer(null);
+              setIsProfileOpen(true);
+            }}
             onOpenSettings={() => setInGameSettingsOpen(true)}
             onOpenServerModal={() => setIsServerModalOpen(true)}
             isChatOpen={isChatOpen}
             interactionPrompt={interactionPrompt}
             onTriggerInteraction={handleTriggerInteraction}
             controlMode={settings.controlMode}
+            gold={playerGold}
+            diamonds={playerDiamonds}
+            onOpenTopUp={() => setIsTopUpOpen(true)}
           />
 
           <ProfileModal
             isOpen={isProfileOpen}
-            onClose={() => setIsProfileOpen(false)}
-            name={playerStats?.name || 'Petualang'}
-            avatar={playerStats?.avatar || wardrobeAvatar}
-            level={playerStats?.level || 1}
-            exp={playerExp}
-            role={playerStats?.role}
-            isSuperAdmin={playerStats?.isSuperAdmin}
-            title={playerStats?.isSuperAdmin ? '👑 KREATOR & SUPER ADMIN' : (playerStats?.title || 'Petualang Pemula')}
-            gold={playerGold}
-            diamonds={playerDiamonds}
-            age={playerAge}
-            birthDate={playerBirthDate}
+            onClose={() => {
+              setIsProfileOpen(false);
+              setInspectedPlayer(null);
+            }}
+            name={inspectedPlayer ? inspectedPlayer.name : (playerStats?.name || 'Petualang')}
+            avatar={inspectedPlayer ? inspectedPlayer.avatar : (playerStats?.avatar || wardrobeAvatar)}
+            level={inspectedPlayer ? (inspectedPlayer.level || 1) : (playerStats?.level || 1)}
+            exp={inspectedPlayer ? 0 : playerExp}
+            role={inspectedPlayer ? inspectedPlayer.role : playerStats?.role}
+            isSuperAdmin={inspectedPlayer ? inspectedPlayer.isSuperAdmin : playerStats?.isSuperAdmin}
+            title={inspectedPlayer ? (inspectedPlayer.isSuperAdmin ? '👑 KREATOR & SUPER ADMIN' : 'Petualang') : (playerStats?.isSuperAdmin ? '👑 KREATOR & SUPER ADMIN' : (playerStats?.title || 'Petualang Pemula'))}
+            gold={inspectedPlayer ? 0 : playerGold}
+            diamonds={inspectedPlayer ? 0 : playerDiamonds}
+            age={inspectedPlayer ? 20 : playerAge}
+            birthDate={inspectedPlayer ? '' : playerBirthDate}
             likes={playerLikes}
-            gender={wardrobeAvatar.gender}
-            description={playerBio}
-            onSaveDescription={(d) => {
+            gender={inspectedPlayer ? (inspectedPlayer.avatar?.gender || 'male') : wardrobeAvatar.gender}
+            description={inspectedPlayer ? (inspectedPlayer.bio || 'Petualang penjelajah RadenWorld.') : playerBio}
+            onSaveDescription={inspectedPlayer ? undefined : (d) => {
               setPlayerBio(d);
               try {
                 localStorage.setItem('raden_player_bio', d);
               } catch (e) {}
             }}
-            onLogout={handleLogout}
-            onTeleportToAdminPortal={handleTeleportToAdminPortal}
+            friendsCount={friendsList.length}
+            followingCount={followingList.length}
+            followersCount={followersList.length}
+            isInspecting={!!inspectedPlayer}
+            isFriend={inspectedPlayer ? friendsList.includes(inspectedPlayer.name) : false}
+            isFriendRequested={inspectedPlayer ? sentFriendRequests.includes(inspectedPlayer.id) : false}
+            onAddFriend={inspectedPlayer ? () => handleAddFriend(inspectedPlayer.id, inspectedPlayer.name) : undefined}
+            onLogout={inspectedPlayer ? undefined : handleLogout}
+            onTeleportToAdminPortal={inspectedPlayer ? undefined : handleTeleportToAdminPortal}
+            onOpenTopUp={() => setIsTopUpOpen(true)}
           />
 
           <ChatBox
@@ -719,14 +910,30 @@ export const GameApp: React.FC = () => {
             currentAvatar={wardrobeAvatar}
           />
 
-          {/* Tombol Kontrol Virtual Layar Sentuh jika Mode Mobile dipilih atau di perangkat mobile/touch */}
-          {(settings.controlMode === 'mobile' || (typeof window !== 'undefined' && ('ontouchstart' in window || (navigator?.maxTouchPoints ?? 0) > 0 || window.innerWidth <= 1024))) && (
+          {/* Tombol Kontrol Virtual Layar Sentuh HANYA jika Mode Mobile dipilih (Mencegah muncul di mode PC) */}
+          {settings.controlMode === 'mobile' && (
             <VirtualControls
               onActionPress={handleVirtualAction}
               onDirectionPress={handleVirtualDirectionPress}
               onDirectionRelease={handleVirtualDirectionRelease}
+              isActionActive={!!interactionPrompt}
             />
           )}
+
+          {/* Modal Top Up Berlian */}
+          <TopUpModal
+            isOpen={isTopUpOpen}
+            onClose={() => setIsTopUpOpen(false)}
+            currentDiamonds={playerDiamonds}
+            onSuccessTopUp={handleSuccessTopUp}
+          />
+
+          {/* Pop-up Notifikasi Permintaan Pertemanan di Kanan Layar (Timer 1 Menit) */}
+          <FriendRequestNotification
+            request={incomingFriendRequest}
+            onAccept={handleAcceptFriendRequest}
+            onReject={handleRejectFriendRequest}
+          />
 
           {/* Modal Pengaturan jika dibuka */}
           <SettingsModal

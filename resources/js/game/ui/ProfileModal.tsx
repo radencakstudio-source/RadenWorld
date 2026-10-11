@@ -31,6 +31,7 @@ import {
   Edit3,
   Check,
   HelpCircle,
+  UserPlus,
 } from 'lucide-react';
 import { SoundManager } from '../core/SoundManager';
 
@@ -55,6 +56,14 @@ interface ProfileModalProps {
   birthDate?: string;
   likes?: number;
   gender?: 'male' | 'female';
+  friendsCount?: number;
+  followingCount?: number;
+  followersCount?: number;
+  isInspecting?: boolean;
+  isFriend?: boolean;
+  isFriendRequested?: boolean;
+  onAddFriend?: () => void;
+  onOpenTopUp?: () => void;
 }
 
 export const ProfileModal: React.FC<ProfileModalProps> = ({
@@ -78,6 +87,14 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
   birthDate,
   likes = 32,
   gender,
+  friendsCount = 0,
+  followingCount = 0,
+  followersCount = 0,
+  isInspecting = false,
+  isFriend = false,
+  isFriendRequested = false,
+  onAddFriend,
+  onOpenTopUp,
 }) => {
   const sound = SoundManager.getInstance();
 
@@ -99,8 +116,8 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
   const isSuperAdmin = propIsSuperAdmin || role === 'super_admin' || name.toUpperCase() === 'RADEN';
   const effectiveLevel = isSuperAdmin ? 99 : level;
   const effectiveTitle = isSuperAdmin ? 'KREATOR & SUPER ADMIN' : title;
-  const effectiveGold = isSuperAdmin ? 999999 : gold;
-  const effectiveDiamonds = isSuperAdmin ? 9999 : diamonds;
+  const effectiveGold = gold;
+  const effectiveDiamonds = diamonds;
   const effectiveLikes = isSuperAdmin ? 9999 : likes;
   
   // Umur otomatis dihitung dari tanggal lahir jika tersedia
@@ -260,12 +277,48 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
           </div>
 
           {/* 4. Permata */}
-          <div className="p-2.5 rounded-md border border-neutral-800 bg-[#101010] flex items-center gap-2.5">
-            <Gem className="w-4 h-4 text-amber-400/80 shrink-0" />
-            <div>
-              <div className="text-[10px] text-neutral-400 uppercase font-bold tracking-wider">PERMATA</div>
-              <div className="text-xs font-bold text-amber-300">{effectiveDiamonds.toLocaleString()} ✦</div>
+          <div
+            onClick={() => {
+              if (onOpenTopUp) {
+                sound.playClick();
+                onOpenTopUp();
+              }
+            }}
+            className={`p-2.5 rounded-md border border-neutral-800 bg-[#101010] flex items-center justify-between gap-2.5 transition-colors ${
+              onOpenTopUp ? 'cursor-pointer hover:border-cyan-500/50 group' : ''
+            }`}
+            title={onOpenTopUp ? 'Klik untuk Top Up Berlian' : 'Jumlah Berlian'}
+          >
+            <div className="flex items-center gap-2.5">
+              <Gem className="w-4 h-4 text-cyan-400 fill-cyan-400/20 shrink-0" />
+              <div>
+                <div className="text-[10px] text-neutral-400 uppercase font-bold tracking-wider">PERMATA</div>
+                <div className="text-xs font-bold text-cyan-300">{effectiveDiamonds.toLocaleString()} ✦</div>
+              </div>
             </div>
+            {!isInspecting && onOpenTopUp && (
+              <span className="text-[9px] font-black bg-cyan-400 hover:bg-cyan-300 text-black px-1.5 py-0.5 rounded uppercase tracking-wider">
+                TOPUP
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* ================================================================ */}
+        {/* STATISTIK SOSIAL: TEMAN, MENGIKUTI, DIIKUTI                      */}
+        {/* ================================================================ */}
+        <div className="grid grid-cols-3 gap-2">
+          <div className="p-2 rounded-md border border-neutral-800 bg-[#101010] text-center">
+            <div className="text-[10px] text-neutral-400 uppercase font-bold tracking-wider">TEMAN</div>
+            <div className="text-sm font-black text-amber-400 mt-0.5">{friendsCount}</div>
+          </div>
+          <div className="p-2 rounded-md border border-neutral-800 bg-[#101010] text-center">
+            <div className="text-[10px] text-neutral-400 uppercase font-bold tracking-wider">MENGIKUTI</div>
+            <div className="text-sm font-black text-neutral-200 mt-0.5">{followingCount}</div>
+          </div>
+          <div className="p-2 rounded-md border border-neutral-800 bg-[#101010] text-center">
+            <div className="text-[10px] text-neutral-400 uppercase font-bold tracking-wider">DIIKUTI</div>
+            <div className="text-sm font-black text-neutral-200 mt-0.5">{followersCount}</div>
           </div>
         </div>
 
@@ -278,7 +331,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
               <FileText className="w-3.5 h-3.5 text-amber-400/80" />
               <span>STATUS / BIO</span>
             </div>
-            {!isEditingBio ? (
+            {!isInspecting && (!isEditingBio ? (
               <button
                 type="button"
                 onClick={() => setIsEditingBio(true)}
@@ -296,7 +349,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                 <Check className="w-3 h-3" />
                 <span>SIMPAN</span>
               </button>
-            )}
+            ))}
           </div>
 
           {isEditingBio ? (
@@ -343,32 +396,74 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
         {/* ================================================================ */}
         {/* FOOTER ACTIONS                                                   */}
         {/* ================================================================ */}
-        <div className="pt-2 border-t border-neutral-800 flex items-center gap-2">
-          {/* Tombol Logout Akun */}
-          <button
-            type="button"
-            onClick={() => {
-              sound.playClick();
-              if (onLogout) onLogout();
-            }}
-            className="flex-1 py-2 px-3 rounded-md border border-neutral-800 bg-[#121212] hover:bg-[#1a1a1a] hover:border-red-500/50 text-neutral-400 hover:text-red-400 text-xs font-bold uppercase tracking-wider cursor-pointer transition-colors flex items-center justify-center gap-1.5"
-          >
-            <LogOut className="w-3.5 h-3.5" />
-            <span>LOGOUT</span>
-          </button>
+        {isInspecting ? (
+          <div className="pt-2 border-t border-neutral-800 flex items-center gap-2">
+            {/* Tombol Tambah Teman */}
+            <button
+              type="button"
+              disabled={isFriend || isFriendRequested}
+              onClick={() => {
+                sound.playClick();
+                if (onAddFriend) onAddFriend();
+              }}
+              className={`flex-1 py-2.5 px-3 rounded-md text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                isFriend
+                  ? 'bg-neutral-800 text-neutral-400 border border-neutral-700 cursor-default'
+                  : isFriendRequested
+                  ? 'bg-neutral-800 text-amber-300 border border-amber-500/50 cursor-default'
+                  : 'bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-black shadow-lg shadow-amber-500/20 active:scale-95'
+              }`}
+            >
+              <UserPlus className="w-3.5 h-3.5" />
+              <span>
+                {isFriend
+                  ? '✓ SUDAH BERTEMAN'
+                  : isFriendRequested
+                  ? '⏳ MENUNGGU KONFIRMASI'
+                  : '+ TAMBAH TEMAN'}
+              </span>
+            </button>
 
-          {/* Tombol Tutup Profil */}
-          <button
-            type="button"
-            onClick={() => {
-              sound.playClick();
-              onClose();
-            }}
-            className="flex-1 py-2 px-3 rounded-md bg-amber-500 hover:bg-amber-400 text-black text-xs font-bold uppercase tracking-wider cursor-pointer transition-colors"
-          >
-            TUTUP
-          </button>
-        </div>
+            {/* Tombol Tutup Profil */}
+            <button
+              type="button"
+              onClick={() => {
+                sound.playClick();
+                onClose();
+              }}
+              className="py-2.5 px-4 rounded-md border border-neutral-800 bg-[#121212] hover:bg-[#1a1a1a] text-neutral-300 text-xs font-bold uppercase tracking-wider cursor-pointer transition-colors"
+            >
+              TUTUP
+            </button>
+          </div>
+        ) : (
+          <div className="pt-2 border-t border-neutral-800 flex items-center gap-2">
+            {/* Tombol Logout Akun */}
+            <button
+              type="button"
+              onClick={() => {
+                sound.playClick();
+                if (onLogout) onLogout();
+              }}
+              className="flex-1 py-2 px-3 rounded-md border border-neutral-800 bg-[#121212] hover:bg-[#1a1a1a] hover:border-red-500/50 text-neutral-400 hover:text-red-400 text-xs font-bold uppercase tracking-wider cursor-pointer transition-colors flex items-center justify-center gap-1.5"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              <span>LOGOUT</span>
+            </button>
+
+            {/* Tombol Tutup Profil */}
+            <button
+              type="button"
+              onClick={() => {
+                sound.playClick();
+                onClose();
+              }}
+              className="flex-1 py-2 px-3 rounded-md bg-amber-500 hover:bg-amber-400 text-black text-xs font-bold uppercase tracking-wider cursor-pointer transition-colors"
+            >
+              TUTUP
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -876,6 +876,14 @@ export class WorldScene extends Phaser.Scene {
         remote.showSpeechBubble(chat.text);
       }
     });
+
+    this.networkManager.onPlayerAfk((data) => {
+      if (!this.sys || !this.sys.displayList || !this.scene.isActive()) return;
+      const remote = this.remotePlayers.get(data.id);
+      if (remote && remote.active) {
+        remote.setAfk(data.isAfk, data.durationSeconds);
+      }
+    });
   }
 
   private addRemotePlayer(p: IPlayerData): void {
@@ -922,6 +930,26 @@ export class WorldScene extends Phaser.Scene {
         p.hp,
         p.maxHp
       );
+
+      // Aktifkan interaksi klik/sentuh untuk membuka profil pemain lain
+      remote.makeClickable(() => {
+        const targetId = remote.getEntityId() || p.id;
+        const targetName = remote.getEntityName() || p.name;
+        console.log(`[WorldScene] Menginspeksi pemain: id=${targetId}, name=${targetName}`);
+        EventBus.emit('inspect-player-profile', {
+          id: targetId,
+          name: targetName,
+          avatar: remote.getAvatar() || p.avatar,
+          level: (p as any).level || 1,
+          role: p.role || 'player',
+          isSuperAdmin: p.isSuperAdmin || targetName?.toUpperCase() === 'RADEN',
+        });
+      });
+
+      if ((p as any).isAfk) {
+        remote.setAfk(true, (p as any).durationSeconds || 60);
+      }
+
       this.remotePlayers.set(p.id, remote);
     } catch (err) {
       console.warn('[WorldScene] Gagal menambahkan remote player:', err);

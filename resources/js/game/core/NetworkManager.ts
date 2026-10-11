@@ -59,6 +59,9 @@ export class NetworkManager {
     playerExpression: ((data: { id: string; type: 'normal' | 'smile' | 'shock' | 'angry' }) => void)[];
     voiceStream: ((data: { senderId: string; senderName: string; x: number; y: number; audio: ArrayBuffer }) => void)[];
     voiceSpeaking: ((data: { senderId: string; isSpeaking: boolean }) => void)[];
+    playerAfk: ((data: { id: string; isAfk: boolean; durationSeconds: number }) => void)[];
+    friendRequest: ((data: any) => void)[];
+    friendResponse: ((data: any) => void)[];
   } = {
     worldInit: [],
     playerJoined: [],
@@ -68,6 +71,9 @@ export class NetworkManager {
     playerExpression: [],
     voiceStream: [],
     voiceSpeaking: [],
+    playerAfk: [],
+    friendRequest: [],
+    friendResponse: [],
   };
 
   /** Konstruktor privat untuk mencegah pembuatan instansi ganda (Singleton) */
@@ -227,6 +233,9 @@ export class NetworkManager {
     this.socket.off('player:expression');
     this.socket.off('voice:stream');
     this.socket.off('voice:speaking');
+    this.socket.off('player:afk');
+    this.socket.off('friend:request_received');
+    this.socket.off('friend:response_result');
 
     this.socket.on('world:init', (data: IWorldInitData) => {
       this.listeners.worldInit.forEach((cb) => cb(data));
@@ -258,6 +267,22 @@ export class NetworkManager {
 
     this.socket.on('voice:speaking', (data: { senderId: string; isSpeaking: boolean }) => {
       this.listeners.voiceSpeaking.forEach((cb) => cb(data));
+    });
+
+    this.socket.on('player:afk', (data: { id: string; isAfk: boolean; durationSeconds: number }) => {
+      this.listeners.playerAfk.forEach((cb) => cb(data));
+    });
+
+    this.socket.on('friend:request_received', (data: any) => {
+      console.log('[NetworkManager] Diterima friend:request_received:', data);
+      EventBus.emit('incoming-friend-request', data);
+      this.listeners.friendRequest.forEach((cb) => cb(data));
+    });
+
+    this.socket.on('friend:response_result', (data: any) => {
+      console.log('[NetworkManager] Diterima friend:response_result:', data);
+      EventBus.emit('friend-response-result', data);
+      this.listeners.friendResponse.forEach((cb) => cb(data));
     });
   }
 
@@ -396,15 +421,79 @@ export class NetworkManager {
     this.bindSocketListeners();
   }
 
+  /**
+   * Mengirim status AFK pemain lokal ke server
+   */
+  public sendAfk(isAfk: boolean, durationSeconds?: number): void {
+    if (!this.socket || !this.isConnected) return;
+    this.socket.emit('player:afk', { isAfk, durationSeconds: durationSeconds || 0 });
+  }
+
+  /**
+   * Mendaftarkan callback saat pemain lain AFK atau kembali aktif
+   */
+  public onPlayerAfk(callback: (data: { id: string; isAfk: boolean; durationSeconds: number }) => void): void {
+    if (!this.listeners.playerAfk) this.listeners.playerAfk = [];
+    this.listeners.playerAfk.push(callback);
+    this.bindSocketListeners();
+  }
+
+  /**
+   * Mengirim permintaan pertemanan ke pemain lain
+   */
+  public sendFriendRequest(targetId: string, targetName: string): void {
+    if (!this.socket || !this.isConnected) return;
+    this.socket.emit('friend:request', {
+      targetId,
+      targetName,
+      senderName: this.lastJoinData?.name,
+      senderAvatar: this.lastJoinData?.avatar,
+      senderRole: this.lastJoinData?.role,
+      senderLevel: 1,
+    });
+  }
+
+  /**
+   * Mengirim jawaban permintaan pertemanan (terima / tolak)
+   */
+  public sendFriendResponse(requesterId: string, accepted: boolean, requesterName?: string): void {
+    if (!this.socket || !this.isConnected) return;
+    this.socket.emit('friend:response', {
+      requesterId,
+      requesterName,
+      accepted,
+      responderName: this.lastJoinData?.name,
+    });
+  }
+
+  /**
+   * Mendaftarkan callback saat menerima permintaan pertemanan dari pemain lain
+   */
+  public onFriendRequest(callback: (data: any) => void): void {
+    this.listeners.friendRequest = [callback];
+    this.bindSocketListeners();
+  }
+
+  /**
+   * Mendaftarkan callback saat menerima hasil respon permintaan pertemanan
+   */
+  public onFriendResponse(callback: (data: any) => void): void {
+    this.listeners.friendResponse = [callback];
+    this.bindSocketListeners();
+  }
+
   /** Mendaftarkan callback sinkronisasi monster (kompatibilitas mundur) */
   public onMonstersSync(_callback?: (monsters: any[]) => void): void {
     // Monster dihilangkan dan diganti dengan NPC interaktif di open world
   }
 
-  /** Reset listener khusus scene saat berpindah scene (mempertahankan listener voice global) */
+  /** Reset listener khusus scene saat berpindah scene (mempertahankan listener voice global & friends) */
   public clearListeners(): void {
-    const preservedVoiceStream = this.listeners.voiceStream;
-    const preservedVoiceSpeaking = this.listeners.voiceSpeaking;
+    const preservedVoiceStream = this.listeners.voiceStream || [];
+    const preservedVoiceSpeaking = this.listeners.voiceSpeaking || [];
+    const preservedFriendRequest = this.listeners.friendRequest || [];
+    const preservedFriendResponse = this.listeners.friendResponse || [];
+    const preservedPlayerAfk = this.listeners.playerAfk || [];
 
     this.listeners = {
       worldInit: [],
@@ -415,6 +504,9 @@ export class NetworkManager {
       playerExpression: [],
       voiceStream: preservedVoiceStream,
       voiceSpeaking: preservedVoiceSpeaking,
+      playerAfk: preservedPlayerAfk,
+      friendRequest: preservedFriendRequest,
+      friendResponse: preservedFriendResponse,
     };
 
     if (this.socket) {
@@ -424,7 +516,8 @@ export class NetworkManager {
       this.socket.off('player:left');
       this.socket.off('chat:broadcast');
       this.socket.off('player:expression');
-      // Jangan matikan voice:stream dan voice:speaking
+      this.socket.off('player:afk');
+      // Jangan matikan voice:stream, voice:speaking, friend:request_received, friend:response_result
     }
   }
 

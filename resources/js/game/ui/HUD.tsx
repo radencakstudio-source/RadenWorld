@@ -22,7 +22,7 @@
 
 import React from 'react';
 import { IAvatarCustomization } from '../types';
-import { Server, MessageSquare, Zap, User, Mic, MicOff, Settings, Globe, ArrowRightLeft } from 'lucide-react';
+import { Server, MessageSquare, Zap, User, Mic, MicOff, Settings, Globe, ArrowRightLeft, Coins, Gem, Plus } from 'lucide-react';
 import { EventBus } from '../core/EventBus';
 import { SoundManager } from '../core/SoundManager';
 import { VoiceManager } from '../core/VoiceManager';
@@ -62,6 +62,9 @@ interface HUDProps {
   interactionPrompt?: string | null;
   onTriggerInteraction?: () => void;
   controlMode?: 'pc' | 'mobile';
+  gold?: number;
+  diamonds?: number;
+  onOpenTopUp?: () => void;
 }
 
 export const HUD: React.FC<HUDProps> = ({
@@ -75,11 +78,13 @@ export const HUD: React.FC<HUDProps> = ({
   interactionPrompt,
   onTriggerInteraction,
   controlMode = 'pc',
+  gold = 2500,
+  diamonds = 50,
+  onOpenTopUp,
 }) => {
   const sound = SoundManager.getInstance();
   const displayServerCode = cleanServerCode(serverCode);
-  const isTouchDevice = typeof window !== 'undefined' && ('ontouchstart' in window || (navigator?.maxTouchPoints ?? 0) > 0 || window.innerWidth <= 1024);
-  const isMobile = controlMode === 'mobile' || isTouchDevice;
+  const isMobile = controlMode === 'mobile';
   const stats = playerStats || {
     x: 480,
     y: 380,
@@ -202,8 +207,52 @@ export const HUD: React.FC<HUDProps> = ({
           </button>
         </div>
 
-        {/* KANAN ATAS: Status Server & Tombol Pengaturan (H-10, Rounded-md, Flat Pure Black) */}
-        <div className="pointer-events-auto flex items-center gap-1.5">
+        {/* KANAN ATAS: KOIN, BERLIAN (TOP UP), STATUS SERVER & PENGATURAN */}
+        <div className="pointer-events-auto flex items-center gap-1.5 flex-wrap justify-end">
+          {/* KOIN EMAS (Bisa Diperoleh Dari Aktivitas) */}
+          <div
+            className="h-10 flex items-center gap-1.5 px-3 rounded-md bg-black border border-neutral-800 text-amber-400 select-none shadow-sm"
+            title="Koin Emas (Bisa diperoleh dari jelajah, quest & aktivitas)"
+          >
+            <Coins className="w-4 h-4 text-amber-400 shrink-0" />
+            <div className="flex flex-col text-left leading-none">
+              <span className="text-[8px] text-neutral-400 uppercase font-semibold">KOIN</span>
+              <span className="text-xs font-black font-mono tracking-wider text-amber-300 mt-0.5">
+                {gold.toLocaleString('id-ID')}
+              </span>
+            </div>
+          </div>
+
+          {/* BERLIAN (DAPAT MELALUI TOP UP) */}
+          <div
+            onClick={() => {
+              sound.playClick();
+              onOpenTopUp?.();
+            }}
+            className="h-10 flex items-center gap-1.5 pl-2.5 pr-1.5 rounded-md bg-black border border-neutral-800 text-cyan-400 select-none shadow-sm group hover:border-cyan-500/50 transition-colors cursor-pointer"
+            title="Berlian (Klik untuk Top Up)"
+          >
+            <Gem className="w-4 h-4 text-cyan-400 fill-cyan-400/20 shrink-0" />
+            <div className="flex flex-col text-left leading-none">
+              <span className="text-[8px] text-neutral-400 uppercase font-semibold">BERLIAN</span>
+              <span className="text-xs font-black font-mono tracking-wider text-cyan-300 mt-0.5">
+                {diamonds.toLocaleString('id-ID')}
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                sound.playClick();
+                onOpenTopUp?.();
+              }}
+              className="h-7 px-2 rounded bg-gradient-to-r from-cyan-500 to-cyan-400 hover:from-cyan-400 hover:to-cyan-300 text-black font-black text-[10px] tracking-wider uppercase flex items-center gap-1 ml-1 cursor-pointer transition-all shadow-sm active:scale-95"
+              title="Top Up Berlian"
+            >
+              <Plus className="w-3 h-3 stroke-[3]" />
+              <span>TOPUP</span>
+            </button>
+          </div>
+
           {/* Tombol Status Server Flat & Bersih: Format Singkat "Asia (angka)" (H-10, Rounded-md) */}
           <button
             onClick={() => {
@@ -254,33 +303,34 @@ export const HUD: React.FC<HUDProps> = ({
       {/* 2. BOTTOM BAR: KIRI BAWAH (KONTROL PC) & KANAN BAWAH (WORLD & KOORDINAT) */}
       {/* ==================================================================== */}
       <div className="flex items-end justify-between w-full pointer-events-none">
-        {/* KIRI BAWAH: Tombol Aksi & Keterangan Kontrol PC/Laptop Tanpa Background */}
+        {/* KIRI BAWAH: Tombol Aksi & Keterangan Shortcut PC (Disembunyikan jika Mobile) */}
         <div className="pointer-events-auto flex flex-col items-start gap-2 select-none">
-          {/* Tombol Interaksi Cepat (Jika dekat objek pintu, kasur, dsb.) */}
-          {interactionPrompt && (
+          {/* Tombol Interaksi Cepat (HANYA MUNCUL DI MODE PC) */}
+          {!isMobile && interactionPrompt && (
             <button
               onClick={onTriggerInteraction}
-              className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-amber-500 text-black border border-amber-400 font-bold text-xs uppercase tracking-wider hover:bg-amber-400 active:scale-95 cursor-pointer transition-all"
+              className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-amber-500 text-black border border-amber-400 font-bold text-xs uppercase tracking-wider hover:bg-amber-400 active:scale-95 cursor-pointer transition-all shadow-md shadow-amber-500/25"
             >
               <Zap className="w-3.5 h-3.5 fill-current" />
-              <span>
-                {isMobile
-                  ? interactionPrompt
-                      .replace(/TEKAN\s*\[E\]\s*\/?\s*KLIK\s*UNTUK/gi, 'SENTUH UNTUK')
-                      .replace(/TEKAN\s*\[E\]\s*UNTUK/gi, 'SENTUH UNTUK')
-                      .replace(/TEKAN\s*\[E\]/gi, 'SENTUH')
-                      .replace(/\[E\]/gi, 'AKSI')
-                  : interactionPrompt}
-              </span>
+              <span>{interactionPrompt}</span>
             </button>
           )}
 
-          {/* Keterangan Kontrol PC / Laptop: Disembunyikan jika memilih Mobile */}
+          {/* Keterangan Kontrol PC / Laptop: Selalu Terlihat di Mode PC */}
           {!isMobile && (
-            <div className="hidden md:flex flex-col gap-0.5 text-xs font-bold text-amber-400 tracking-wider">
-              <div>jalan = <span className="text-amber-300">WASD/Panah</span></div>
-              <div>interaksi = <span className="text-amber-300">E</span></div>
-              <div>Chat = <span className="text-amber-300">/</span></div>
+            <div className="flex flex-col gap-1 p-2.5 rounded-lg bg-black/85 border border-neutral-800 text-[11px] font-bold text-neutral-300 tracking-wider shadow-lg backdrop-blur-sm">
+              <div className="flex items-center gap-2">
+                <span className="px-1.5 py-0.5 rounded bg-neutral-900 border border-neutral-700 text-amber-300 font-mono text-[10px]">WASD / Panah</span>
+                <span>Jalan</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="px-1.5 py-0.5 rounded bg-neutral-900 border border-neutral-700 text-amber-300 font-mono text-[10px]">E</span>
+                <span>Interaksi / Bicara</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="px-1.5 py-0.5 rounded bg-neutral-900 border border-neutral-700 text-amber-300 font-mono text-[10px]">/</span>
+                <span>Buka Obrolan</span>
+              </div>
             </div>
           )}
         </div>

@@ -211,6 +211,112 @@ io.on('connection', (socket) => {
       type: data.type
     });
   });
+
+  // 6. Event status AFK pemain
+  socket.on('player:afk', (data) => {
+    const player = players.get(socket.id);
+    if (!player) return;
+    player.isAfk = !!data?.isAfk;
+    player.durationSeconds = data?.durationSeconds || 0;
+    socket.broadcast.emit('player:afk', {
+      id: socket.id,
+      isAfk: player.isAfk,
+      durationSeconds: player.durationSeconds
+    });
+  });
+
+  // 7. Event Permintaan Pertemanan (Friend Request)
+  socket.on('friend:request', (data) => {
+    const sender = players.get(socket.id);
+    const senderName = data?.senderName || sender?.name || 'Petualang';
+    const senderAvatar = data?.senderAvatar || sender?.avatar;
+    const senderLevel = data?.senderLevel || sender?.level || 1;
+    const senderRole = data?.senderRole || sender?.role || 'player';
+
+    console.log(`[Friend] Permintaan pertemanan dari "${senderName}" (${socket.id}) ke targetId="${data?.targetId}", targetName="${data?.targetName}"`);
+
+    // 1. Cari socket tujuan: coba via targetId terlebih dahulu
+    let targetSocketId = null;
+    if (data?.targetId && io.sockets.sockets.has(data.targetId)) {
+      targetSocketId = data.targetId;
+    }
+
+    // 2. Jika tidak ditemukan via socketId (misal client reconnect), cari berdasarkan nama pemain
+    if (!targetSocketId && data?.targetName) {
+      const targetLower = data.targetName.trim().toLowerCase();
+      for (const [sId, p] of players.entries()) {
+        if (p.name && p.name.trim().toLowerCase() === targetLower && io.sockets.sockets.has(sId)) {
+          targetSocketId = sId;
+          break;
+        }
+      }
+    }
+
+    if (!targetSocketId) {
+      console.warn(`[Friend] Gagal mengirim: target "${data?.targetName}" (id: ${data?.targetId}) tidak aktif / tidak ditemukan.`);
+      // Kirim notifikasi sistem kembali ke pengirim
+      socket.emit('chat:broadcast', {
+        id: `sys_err_${Date.now()}`,
+        senderId: 'SYSTEM',
+        senderName: 'SISTEM',
+        senderRole: 'system',
+        isSuperAdmin: false,
+        text: `⚠️ Pemain ${data?.targetName || 'tujuan'} sedang tidak aktif atau terputus.`,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      });
+      return;
+    }
+
+    const packet = {
+      id: `freq_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+      fromId: socket.id,
+      fromName: senderName,
+      fromAvatar: senderAvatar,
+      fromLevel: senderLevel,
+      fromRole: senderRole,
+      timestamp: Date.now(),
+    };
+
+    console.log(`[Friend] Mengirim notifikasi friend:request_received ke target socket ${targetSocketId} (${data?.targetName})`);
+    io.to(targetSocketId).emit('friend:request_received', packet);
+  });
+
+  // 8. Event Respon Permintaan Pertemanan (Terima / Tolak / Timeout)
+  socket.on('friend:response', (data) => {
+    const responder = players.get(socket.id);
+    const responderName = data?.responderName || responder?.name || 'Teman';
+
+    console.log(`[Friend] Respon pertemanan dari "${responderName}": accepted=${data?.accepted} untuk requesterId="${data?.requesterId}", requesterName="${data?.requesterName}"`);
+
+    // Cari socket pemohon: cek via requesterId terlebih dahulu
+    let requesterSocketId = null;
+    if (data?.requesterId && io.sockets.sockets.has(data.requesterId)) {
+      requesterSocketId = data.requesterId;
+    }
+
+    // Jika tidak ditemukan via socket ID, cari via nama pemohon
+    if (!requesterSocketId && data?.requesterName) {
+      const requesterLower = data.requesterName.trim().toLowerCase();
+      for (const [sId, p] of players.entries()) {
+        if (p.name && p.name.trim().toLowerCase() === requesterLower && io.sockets.sockets.has(sId)) {
+          requesterSocketId = sId;
+          break;
+        }
+      }
+    }
+
+    if (!requesterSocketId) {
+      console.warn(`[Friend] Pemohon "${data?.requesterName}" (id: ${data?.requesterId}) tidak ditemukan atau sudah logout.`);
+      return;
+    }
+
+    console.log(`[Friend] Mengirim hasil friend:response_result ke socket ${requesterSocketId}`);
+    io.to(requesterSocketId).emit('friend:response_result', {
+      fromId: socket.id,
+      fromName: responderName,
+      accepted: !!data?.accepted
+    });
+  });
 });
 
 // Catatan: Monster dihilangkan sesuai permintaan pengguna, open world diisi oleh NPC interaktif

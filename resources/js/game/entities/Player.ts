@@ -81,6 +81,12 @@ export class Player extends Entity {
   /** Callback yang dipanggil sesampainya di tujuan point-and-click */
   private onArrivalCallback: (() => void) | null = null;
 
+  /** Timestamp aktivitas terakhir untuk deteksi AFK (1 menit / 60 detik) */
+  private lastActivityTime: number = Date.now();
+
+  /** Detik terakhir saat teks AFK diperbarui */
+  private lastAfkUpdateSeconds: number = 0;
+
   /**
    * Konstruktor Karakter Pemain Lokal
    * @param scene Phaser Scene aktif
@@ -188,7 +194,16 @@ export class Player extends Entity {
     EventBus.on('joystick-move', onJoystickMove);
     EventBus.on('joystick-end', onJoystickEnd);
 
+    // Tangani input pengguna global (ketik, klik, tap) untuk reset timer AFK 1 menit
+    const onUserAction = () => {
+      this.resetActivity();
+    };
+    window.addEventListener('keydown', onUserAction);
+    window.addEventListener('pointerdown', onUserAction);
+
     this.once(Phaser.GameObjects.Events.DESTROY, () => {
+      window.removeEventListener('keydown', onUserAction);
+      window.removeEventListener('pointerdown', onUserAction);
       EventBus.off('dialogue-active', onDialogueActive);
       EventBus.off('joystick-move', onJoystickMove);
       EventBus.off('joystick-end', onJoystickEnd);
@@ -196,6 +211,20 @@ export class Player extends Entity {
 
     this.lastX = x;
     this.lastY = y;
+  }
+
+  /**
+   * Mengatur ulang timer aktivitas saat pemain melakukan aksi (bergerak/menekan tombol/klik)
+   */
+  public resetActivity(): void {
+    this.lastActivityTime = Date.now();
+    if (this.isAfk) {
+      this.setAfk(false);
+      this.lastAfkUpdateSeconds = 0;
+      if (this.scene.scene.key === 'WorldScene') {
+        this.networkManager.sendAfk(false);
+      }
+    }
   }
 
   /** Memperbarui avatar pemain saat diganti dari lemari pakaian */
@@ -386,6 +415,26 @@ export class Player extends Entity {
       this.isMoving = nowMoving;
       this.lastDirection = this.currentDirection;
       this.updateAnimation(nowMoving);
+    }
+
+    // Deteksi Inaktivitas / AFK (1 menit = 60 detik tidak bergerak & tidak berbuat apa-apa)
+    if (nowMoving || hasManualInput || this.joystickVector) {
+      this.resetActivity();
+    } else {
+      const idleTimeMs = Date.now() - this.lastActivityTime;
+      if (idleTimeMs >= 60000) {
+        const totalAfkSecs = Math.floor(idleTimeMs / 1000);
+        if (!this.isAfk) {
+          this.setAfk(true, totalAfkSecs);
+          this.lastAfkUpdateSeconds = totalAfkSecs;
+          if (this.scene.scene.key === 'WorldScene') {
+            this.networkManager.sendAfk(true, totalAfkSecs);
+          }
+        } else if (totalAfkSecs !== this.lastAfkUpdateSeconds) {
+          this.lastAfkUpdateSeconds = totalAfkSecs;
+          this.setAfk(true, totalAfkSecs);
+        }
+      }
     }
 
     // Hanya kirim sinkronisasi jaringan saat pemain berada di WorldScene (Open World)

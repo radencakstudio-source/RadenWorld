@@ -5,14 +5,15 @@
  * FUNGSI UTAMA:
  * Kontrol Virtual Analog (Touch Joystick 360°) dan Tombol Interaksi [AKSI] khusus Mobile (HP/Tablet).
  * 
- * FITUR:
- * 1. Analog Joystick 360° yang mulus, presisi, dan responsif di kiri bawah.
- * 2. Tombol Aksi / Interaksi [AKSI] di kanan bawah (tanpa tombol chat dobel).
- * 3. Skema warna elegan: Flat Dark Carbon (#000000) & Emas Amber (#f59e0b).
+ * PENINGKATAN:
+ * 1. Pointer Capture & Global Window Listener: Mencegah bug analog "balik ke awal" di Chrome saat digeser keluar lingkaran.
+ * 2. Tombol Aksi [AKSI] Bulat Tunggal di Kanan Bawah:
+ *    - Aktif & bercahaya (ring-4 ring-amber-300 animate-pulse) saat dekat NPC (Kapten Bima) / pintu.
+ *    - Mengeliminasi teks dialog di kiri bawah khusus mode mobile.
  * ============================================================================
  */
 
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { Zap } from 'lucide-react';
 import { EventBus } from '../core/EventBus';
 import { SoundManager } from '../core/SoundManager';
@@ -21,17 +22,18 @@ interface VirtualControlsProps {
   onActionPress: () => void;
   onDirectionPress?: (dir: 'up' | 'down' | 'left' | 'right') => void;
   onDirectionRelease?: () => void;
+  isActionActive?: boolean;
 }
 
 export const VirtualControls: React.FC<VirtualControlsProps> = ({
   onActionPress,
   onDirectionPress,
   onDirectionRelease,
+  isActionActive = false,
 }) => {
   const [knobPos, setKnobPos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
-  const touchIdRef = useRef<number | null>(null);
-  const isMouseDraggingRef = useRef(false);
+  const activePointerIdRef = useRef<number | null>(null);
   const joystickBaseRef = useRef<HTMLDivElement>(null);
   const sound = SoundManager.getInstance();
 
@@ -48,7 +50,7 @@ export const VirtualControls: React.FC<VirtualControlsProps> = ({
       const dy = clientY - centerY;
       const distance = Math.hypot(dx, dy);
 
-      // Batasi posisi knob dalam radius maksimum
+      // Batasi posisi knob dalam radius maksimum 42px
       const clampedDist = Math.min(distance, maxRadius);
       const angle = Math.atan2(dy, dx);
       const knobX = Math.cos(angle) * clampedDist;
@@ -63,7 +65,6 @@ export const VirtualControls: React.FC<VirtualControlsProps> = ({
 
         EventBus.emit('joystick-move', { x: normX, y: normY });
 
-        // Kompatibilitas arah diskrit
         if (onDirectionPress) {
           const dir = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up');
           onDirectionPress(dir);
@@ -77,60 +78,61 @@ export const VirtualControls: React.FC<VirtualControlsProps> = ({
   );
 
   const resetJoystick = useCallback(() => {
-    touchIdRef.current = null;
-    isMouseDraggingRef.current = false;
+    activePointerIdRef.current = null;
     setIsDragging(false);
     setKnobPos({ x: 0, y: 0 });
     EventBus.emit('joystick-end');
     onDirectionRelease?.();
   }, [onDirectionRelease]);
 
-  // Touch handlers
-  const handleTouchStart = (e: React.TouchEvent) => {
-    if (touchIdRef.current !== null) return;
-    const touch = e.changedTouches[0];
-    touchIdRef.current = touch.identifier;
-    setIsDragging(true);
-    updateJoystick(touch.clientX, touch.clientY);
-  };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (touchIdRef.current === null) return;
-    for (let i = 0; i < e.changedTouches.length; i++) {
-      const touch = e.changedTouches[i];
-      if (touch.identifier === touchIdRef.current) {
-        updateJoystick(touch.clientX, touch.clientY);
-        break;
+  // Window fallback listeners untuk menjamin drag tidak pernah terputus di Chrome/Safari/Firefox
+  useEffect(() => {
+    const handleGlobalPointerMove = (e: PointerEvent) => {
+      if (activePointerIdRef.current !== null && e.pointerId === activePointerIdRef.current) {
+        updateJoystick(e.clientX, e.clientY);
       }
-    }
-  };
+    };
 
-  const handleTouchEnd = (e: React.TouchEvent) => {
-    if (touchIdRef.current === null) return;
-    for (let i = 0; i < e.changedTouches.length; i++) {
-      const touch = e.changedTouches[i];
-      if (touch.identifier === touchIdRef.current) {
+    const handleGlobalPointerUp = (e: PointerEvent) => {
+      if (activePointerIdRef.current !== null && e.pointerId === activePointerIdRef.current) {
         resetJoystick();
-        break;
       }
-    }
-  };
+    };
 
-  // Mouse handlers untuk devtools mobile emulation
-  const handleMouseDown = (e: React.MouseEvent) => {
-    isMouseDraggingRef.current = true;
+    window.addEventListener('pointermove', handleGlobalPointerMove, { passive: true });
+    window.addEventListener('pointerup', handleGlobalPointerUp);
+    window.addEventListener('pointercancel', handleGlobalPointerUp);
+
+    return () => {
+      window.removeEventListener('pointermove', handleGlobalPointerMove);
+      window.removeEventListener('pointerup', handleGlobalPointerUp);
+      window.removeEventListener('pointercancel', handleGlobalPointerUp);
+    };
+  }, [updateJoystick, resetJoystick]);
+
+  // Pointer Handlers dengan Pointer Capture
+  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch (err) {}
+    activePointerIdRef.current = e.pointerId;
     setIsDragging(true);
     updateJoystick(e.clientX, e.clientY);
   };
 
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isMouseDraggingRef.current) return;
+  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (activePointerIdRef.current === null || e.pointerId !== activePointerIdRef.current) return;
     updateJoystick(e.clientX, e.clientY);
   };
 
-  const handleMouseUp = () => {
-    if (!isMouseDraggingRef.current) return;
-    resetJoystick();
+  const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (activePointerIdRef.current === e.pointerId) {
+      try {
+        e.currentTarget.releasePointerCapture(e.pointerId);
+      } catch (err) {}
+      resetJoystick();
+    }
   };
 
   return (
@@ -141,14 +143,10 @@ export const VirtualControls: React.FC<VirtualControlsProps> = ({
       <div className="pointer-events-auto select-none touch-none pb-1 pl-1">
         <div
           ref={joystickBaseRef}
-          onTouchStart={handleTouchStart}
-          onTouchMove={handleTouchMove}
-          onTouchEnd={handleTouchEnd}
-          onTouchCancel={handleTouchEnd}
-          onMouseDown={handleMouseDown}
-          onMouseMove={handleMouseMove}
-          onMouseUp={handleMouseUp}
-          onMouseLeave={handleMouseUp}
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+          onPointerCancel={handlePointerUp}
           className="relative w-32 h-32 rounded-full bg-black/90 border-2 border-neutral-800 flex items-center justify-center cursor-pointer select-none touch-none shadow-lg shadow-black/60"
         >
           {/* Garis Salib Sumbu Arah */}
@@ -162,7 +160,7 @@ export const VirtualControls: React.FC<VirtualControlsProps> = ({
           {/* Lingkaran Batas Dalam */}
           <div className="absolute w-20 h-20 rounded-full border border-neutral-800/60 pointer-events-none" />
 
-          {/* Knob Analog (Mengikuti Sentuhan Jari) */}
+          {/* Knob Analog (Mengikuti Sentuhan Jari Mulus Tanpa Mental/Balik Sendiri) */}
           <div
             className={`w-14 h-14 rounded-full border-2 border-amber-300 bg-amber-500 flex items-center justify-center transition-transform select-none shadow-md shadow-amber-500/30 ${
               isDragging ? 'duration-0 scale-95' : 'duration-150 ease-out scale-100'
@@ -192,11 +190,17 @@ export const VirtualControls: React.FC<VirtualControlsProps> = ({
             sound.playClick();
             onActionPress();
           }}
-          className="w-18 h-18 md:w-20 md:h-20 rounded-full bg-gradient-to-b from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 border-2 border-amber-300 text-black active:scale-90 flex flex-col items-center justify-center font-black cursor-pointer transition-transform shadow-[0_4px_20px_rgba(245,158,11,0.35)] select-none"
-          title="Tombol Aksi / Interaksi"
+          className={`w-18 h-18 md:w-20 md:h-20 rounded-full flex flex-col items-center justify-center font-black cursor-pointer transition-all select-none active:scale-90 ${
+            isActionActive
+              ? 'bg-gradient-to-b from-amber-300 to-amber-500 border-2 border-white ring-4 ring-amber-300 animate-pulse shadow-[0_0_25px_rgba(245,158,11,0.8)] scale-105'
+              : 'bg-gradient-to-b from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 border-2 border-amber-300 shadow-[0_4px_20px_rgba(245,158,11,0.35)]'
+          }`}
+          title={isActionActive ? 'Sentuh untuk Berbicara / Interaksi' : 'Tombol Aksi'}
         >
-          <Zap className="w-6 h-6 md:w-7 md:h-7 fill-black text-black stroke-[2.5]" />
-          <span className="text-[11px] md:text-xs font-black tracking-widest leading-none mt-1 text-black uppercase">AKSI</span>
+          <Zap className={`w-6 h-6 md:w-7 md:h-7 stroke-[2.5] ${isActionActive ? 'fill-black text-black' : 'fill-black text-black'}`} />
+          <span className="text-[11px] md:text-xs font-black tracking-widest leading-none mt-1 text-black uppercase">
+            AKSI
+          </span>
         </button>
       </div>
     </div>

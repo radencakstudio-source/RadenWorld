@@ -303,9 +303,11 @@ export class NetworkManager {
     isSuperAdmin?: boolean,
     x?: number,
     y?: number,
-    direction?: Direction
+    direction?: Direction,
+    gold?: number,
+    diamonds?: number
   ): void {
-    this.lastJoinData = { name, avatar, role, isSuperAdmin, x, y, direction };
+    this.lastJoinData = { name, avatar, role, isSuperAdmin, x, y, direction, gold, diamonds };
     if (!this.socket || !this.isConnected) return;
     const isSuper = isSuperAdmin || role === 'super_admin' || name.toUpperCase() === 'RADEN';
     this.socket.emit('player:join', {
@@ -316,6 +318,8 @@ export class NetworkManager {
       x: typeof x === 'number' && !isNaN(x) ? x : 4800,
       y: typeof y === 'number' && !isNaN(y) ? y : 4860,
       direction: direction || 'down',
+      gold: typeof gold === 'number' ? gold : (isSuper ? 999999 : 2500),
+      diamonds: typeof diamonds === 'number' ? diamonds : (isSuper ? 99999 : 50),
     });
   }
 

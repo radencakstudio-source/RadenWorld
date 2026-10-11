@@ -267,33 +267,33 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
             </div>
           </div>
 
-          {/* 3. Gold */}
+          {/* 3. Koin Emas */}
           <div className="p-2.5 rounded-md border border-neutral-800 bg-[#101010] flex items-center gap-2.5">
             <Coins className="w-4 h-4 text-amber-400/80 shrink-0" />
             <div>
-              <div className="text-[10px] text-neutral-400 uppercase font-bold tracking-wider">GOLD</div>
-              <div className="text-xs font-bold text-amber-400">{effectiveGold.toLocaleString()} G</div>
+              <div className="text-[10px] text-neutral-400 uppercase font-bold tracking-wider">KOIN</div>
+              <div className="text-xs font-bold text-amber-400">{effectiveGold.toLocaleString('id-ID')} G</div>
             </div>
           </div>
 
-          {/* 4. Permata */}
+          {/* 4. Berlian (Top Up) */}
           <div
             onClick={() => {
-              if (onOpenTopUp) {
+              if (!isInspecting && onOpenTopUp) {
                 sound.playClick();
                 onOpenTopUp();
               }
             }}
             className={`p-2.5 rounded-md border border-neutral-800 bg-[#101010] flex items-center justify-between gap-2.5 transition-colors ${
-              onOpenTopUp ? 'cursor-pointer hover:border-cyan-500/50 group' : ''
+              !isInspecting && onOpenTopUp ? 'cursor-pointer hover:border-cyan-500/50 group' : ''
             }`}
-            title={onOpenTopUp ? 'Klik untuk Top Up Berlian' : 'Jumlah Berlian'}
+            title={!isInspecting && onOpenTopUp ? 'Klik untuk Top Up Berlian' : 'Jumlah Berlian'}
           >
             <div className="flex items-center gap-2.5">
               <Gem className="w-4 h-4 text-cyan-400 fill-cyan-400/20 shrink-0" />
               <div>
-                <div className="text-[10px] text-neutral-400 uppercase font-bold tracking-wider">PERMATA</div>
-                <div className="text-xs font-bold text-cyan-300">{effectiveDiamonds.toLocaleString()} ✦</div>
+                <div className="text-[10px] text-neutral-400 uppercase font-bold tracking-wider">BERLIAN</div>
+                <div className="text-xs font-bold text-cyan-300">{effectiveDiamonds.toLocaleString('id-ID')} ✦</div>
               </div>
             </div>
             {!isInspecting && onOpenTopUp && (
@@ -378,8 +378,8 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
           <span className="font-bold text-amber-400">{effectiveLikes.toLocaleString()} ♥</span>
         </div>
 
-        {/* Tombol Teleport Portal Admin (Khusus Super Admin) */}
-        {isSuperAdmin && (
+        {/* Tombol Teleport Portal Admin (HANYA MUNCUL DI PROFIL SENDIRI JIKA PEMAIN ADALAH SUPER ADMIN) */}
+        {!isInspecting && isSuperAdmin && !!onTeleportToAdminPortal && (
           <button
             type="button"
             onClick={() => {

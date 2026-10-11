@@ -180,6 +180,9 @@ export const GameApp: React.FC = () => {
   const [playerLikes] = useState<number>(36);
   const [playerGold, setPlayerGold] = useState<number>(() => {
     try {
+      const u = JSON.parse(localStorage.getItem('raden_player_user') || '{}');
+      if (typeof u.gold === 'number') return u.gold;
+      if (typeof u.coins === 'number') return u.coins;
       const g = localStorage.getItem('raden_player_gold');
       if (g) return parseInt(g, 10);
     } catch (e) {}
@@ -187,6 +190,8 @@ export const GameApp: React.FC = () => {
   });
   const [playerDiamonds, setPlayerDiamonds] = useState<number>(() => {
     try {
+      const u = JSON.parse(localStorage.getItem('raden_player_user') || '{}');
+      if (typeof u.diamonds === 'number') return u.diamonds;
       const d = localStorage.getItem('raden_player_diamonds');
       if (d) return parseInt(d, 10);
     } catch (e) {}
@@ -203,6 +208,8 @@ export const GameApp: React.FC = () => {
     role?: string;
     bio?: string;
     isSuperAdmin?: boolean;
+    gold?: number;
+    diamonds?: number;
   } | null>(null);
 
   // Friend & Follow System States (dengan penyimpanan lokal)
@@ -562,6 +569,9 @@ export const GameApp: React.FC = () => {
       const next = prev + addedDiamonds;
       try {
         localStorage.setItem('raden_player_diamonds', next.toString());
+        const u = JSON.parse(localStorage.getItem('raden_player_user') || '{}');
+        u.diamonds = next;
+        localStorage.setItem('raden_player_user', JSON.stringify(u));
       } catch (e) {}
       return next;
     });
@@ -861,8 +871,8 @@ export const GameApp: React.FC = () => {
             role={inspectedPlayer ? inspectedPlayer.role : playerStats?.role}
             isSuperAdmin={inspectedPlayer ? inspectedPlayer.isSuperAdmin : playerStats?.isSuperAdmin}
             title={inspectedPlayer ? (inspectedPlayer.isSuperAdmin ? '👑 KREATOR & SUPER ADMIN' : 'Petualang') : (playerStats?.isSuperAdmin ? '👑 KREATOR & SUPER ADMIN' : (playerStats?.title || 'Petualang Pemula'))}
-            gold={inspectedPlayer ? 0 : playerGold}
-            diamonds={inspectedPlayer ? 0 : playerDiamonds}
+            gold={inspectedPlayer ? (typeof inspectedPlayer.gold === 'number' ? inspectedPlayer.gold : (inspectedPlayer.isSuperAdmin ? 999999 : 2500)) : playerGold}
+            diamonds={inspectedPlayer ? (typeof inspectedPlayer.diamonds === 'number' ? inspectedPlayer.diamonds : (inspectedPlayer.isSuperAdmin ? 99999 : 50)) : playerDiamonds}
             age={inspectedPlayer ? 20 : playerAge}
             birthDate={inspectedPlayer ? '' : playerBirthDate}
             likes={playerLikes}
@@ -883,7 +893,7 @@ export const GameApp: React.FC = () => {
             onAddFriend={inspectedPlayer ? () => handleAddFriend(inspectedPlayer.id, inspectedPlayer.name) : undefined}
             onLogout={inspectedPlayer ? undefined : handleLogout}
             onTeleportToAdminPortal={inspectedPlayer ? undefined : handleTeleportToAdminPortal}
-            onOpenTopUp={() => setIsTopUpOpen(true)}
+            onOpenTopUp={inspectedPlayer ? undefined : () => setIsTopUpOpen(true)}
           />
 
           <ChatBox

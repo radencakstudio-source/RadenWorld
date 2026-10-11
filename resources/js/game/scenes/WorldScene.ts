@@ -784,6 +784,15 @@ export class WorldScene extends Phaser.Scene {
     // Buka koneksi multiplayer dan daftarkan pemain dengan koordinat spawn sebenarnya
     this.networkManager.connect();
     const isSuperAdmin = name.toUpperCase() === 'RADEN';
+    let savedGold = isSuperAdmin ? 999999 : 2500;
+    let savedDiamonds = isSuperAdmin ? 99999 : 50;
+    try {
+      const g = localStorage.getItem('raden_player_gold');
+      if (g) savedGold = parseInt(g, 10);
+      const d = localStorage.getItem('raden_player_diamonds');
+      if (d) savedDiamonds = parseInt(d, 10);
+    } catch (e) {}
+
     this.networkManager.joinGame(
       name,
       avatar,
@@ -791,7 +800,9 @@ export class WorldScene extends Phaser.Scene {
       isSuperAdmin,
       spawnX,
       spawnY,
-      'down'
+      'down',
+      savedGold,
+      savedDiamonds
     );
     this.networkManager.sendMovement(spawnX, spawnY, 'down', false);
 
@@ -943,6 +954,8 @@ export class WorldScene extends Phaser.Scene {
           level: (p as any).level || 1,
           role: p.role || 'player',
           isSuperAdmin: p.isSuperAdmin || targetName?.toUpperCase() === 'RADEN',
+          gold: typeof p.gold === 'number' ? p.gold : ((p.isSuperAdmin || targetName?.toUpperCase() === 'RADEN') ? 999999 : 2500),
+          diamonds: typeof p.diamonds === 'number' ? p.diamonds : ((p.isSuperAdmin || targetName?.toUpperCase() === 'RADEN') ? 99999 : 50),
         });
       });
 

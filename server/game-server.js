@@ -79,6 +79,8 @@ io.on('connection', (socket) => {
         pantsColor: '#1e293b',
         hatType: 'none',
       },
+      gold: typeof data.gold === 'number' ? data.gold : (isSuperAdmin ? 999999 : 2500),
+      diamonds: typeof data.diamonds === 'number' ? data.diamonds : (isSuperAdmin ? 99999 : 50),
       x: defaultX,
       y: defaultY,
       direction: defaultDir,

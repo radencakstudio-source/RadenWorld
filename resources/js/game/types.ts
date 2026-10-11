@@ -24,6 +24,8 @@ export interface IPlayerData {
   level: number;
   role?: 'super_admin' | 'player' | string;
   isSuperAdmin?: boolean;
+  gold?: number;
+  diamonds?: number;
 }
 
 export interface IMonsterData {

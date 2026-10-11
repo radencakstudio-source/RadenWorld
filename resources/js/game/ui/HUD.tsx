@@ -101,6 +101,14 @@ export const HUD: React.FC<HUDProps> = ({
     displayLocation = 'Rumah Pribadi';
   } else if (rawLoc.includes('PORTAL')) {
     displayLocation = 'Portal Admin';
+  } else if (rawLoc.includes('GEDUNG SD') || rawLoc.includes('SD:')) {
+    displayLocation = 'Gedung SD';
+  } else if (rawLoc.includes('GEDUNG SMP') || rawLoc.includes('SMP:')) {
+    displayLocation = 'Gedung SMP';
+  } else if (rawLoc.includes('GEDUNG SMA') || rawLoc.includes('SMA:')) {
+    displayLocation = 'Gedung SMA';
+  } else if (rawLoc && rawLoc !== 'RADENWORLD OPEN REALMS') {
+    displayLocation = rawLoc;
   } else {
     displayLocation = 'World';
   }

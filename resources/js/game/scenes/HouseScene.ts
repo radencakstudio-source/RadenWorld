@@ -16,6 +16,7 @@
 import Phaser from 'phaser';
 import { Player } from '../entities/Player';
 import { EventBus } from '../core/EventBus';
+import { NetworkManager } from '../core/NetworkManager';
 import { IAvatarCustomization } from '../types';
 
 export class HouseScene extends Phaser.Scene {
@@ -98,10 +99,13 @@ export class HouseScene extends Phaser.Scene {
     // 1. Batas fisika dinding rumah
     this.physics.world.setBounds(0, 0, this.roomWidth, this.roomHeight);
 
-    // 2. Render tata ruang interior rumah berpola catur 120x120px
+    // 2. Berpindah ke room rumah pribadi (karakter keluar dari room Open World)
+    NetworkManager.getInstance().switchRoom('house-' + this.privateRoomId, 840, 620);
+
+    // 3. Render tata ruang interior rumah berpola catur 120x120px
     this.createHouseInterior();
 
-    // 3. Spawn karakter pemain di tengah ruang tamu rumah
+    // 4. Spawn karakter pemain di tengah ruang tamu rumah
     this.spawnPlayerInHouse();
 
     // 4. Hubungkan event ganti avatar dari lemari
@@ -148,6 +152,7 @@ export class HouseScene extends Phaser.Scene {
     this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
       if (document.activeElement?.tagName === 'INPUT' || document.activeElement?.tagName === 'TEXTAREA') return;
       if (pointer.rightButtonDown()) return;
+      if (this.player?.isMovementLocked()) return;
 
       const wx = pointer.worldX;
       const wy = pointer.worldY;
@@ -490,10 +495,10 @@ export class HouseScene extends Phaser.Scene {
   }
 
   public update(time: number, delta: number): void {
-    if (!this.player || this.isTransitioning) return;
+    if (!this.player || this.isTransitioning || (typeof window !== 'undefined' && window.location.pathname === '/')) return;
 
     this.player.update(time, delta);
-    this.player.setDepth(this.player.y);
+    this.player.setDepth(this.player.y + 60);
 
     const px = this.player.x;
     const py = this.player.y;
@@ -602,6 +607,7 @@ export class HouseScene extends Phaser.Scene {
         window.history.pushState(null, '', '/world');
       }
       EventBus.emit('url-changed', '/world');
+      NetworkManager.getInstance().switchRoom('world', 4800, 5800);
       this.cameras?.main?.stopFollow();
       this.scene.start('WorldScene', {
         name: this.playerName,

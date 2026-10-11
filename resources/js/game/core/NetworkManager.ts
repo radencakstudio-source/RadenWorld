@@ -47,6 +47,9 @@ export class NetworkManager {
     x?: number;
     y?: number;
     direction?: Direction;
+    gold?: number;
+    diamonds?: number;
+    room?: string;
   } | null = null;
 
   /** Penyimpan callback terdaftar agar tidak hilang saat reconnect / connect tertunda */
@@ -138,13 +141,18 @@ export class NetworkManager {
     }
 
     this.socket = io(this.serverUrl, {
-      transports: ['polling', 'websocket'],
-      reconnectionAttempts: 15,
-      reconnectionDelay: 1000,
+      transports: ['websocket'],
+      reconnectionAttempts: 5,
+      reconnectionDelay: 2500,
+      reconnectionDelayMax: 10000,
+      timeout: 3000,
     });
+
+    let hasLoggedOffline = false;
 
     this.socket.on('connect', () => {
       this.isConnected = true;
+      hasLoggedOffline = false;
       console.log(`[NetworkManager] Terhubung ke multiplayer game server: ${this.serverUrl}`);
       EventBus.emit('network-status-changed', { isConnected: true, serverUrl: this.serverUrl });
 
@@ -160,7 +168,10 @@ export class NetworkManager {
           this.lastJoinData.isSuperAdmin,
           this.lastJoinData.x,
           this.lastJoinData.y,
-          this.lastJoinData.direction
+          this.lastJoinData.direction,
+          this.lastJoinData.gold,
+          this.lastJoinData.diamonds,
+          this.lastJoinData.room || 'world'
         );
         if (typeof this.lastJoinData.x === 'number' && typeof this.lastJoinData.y === 'number') {
           this.sendMovement(
@@ -181,7 +192,10 @@ export class NetworkManager {
 
     this.socket.on('connect_error', (err) => {
       this.isConnected = false;
-      console.warn('[NetworkManager] Mode offline/lokal aktif:', err.message);
+      if (!hasLoggedOffline) {
+        hasLoggedOffline = true;
+        console.warn('[NetworkManager] Multiplayer server offline (mode lokal aktif):', err.message);
+      }
       EventBus.emit('network-status-changed', { isConnected: false, serverUrl: this.serverUrl, error: err.message });
     });
 
@@ -226,6 +240,7 @@ export class NetworkManager {
 
     // Bersihkan listener sebelumnya agar tidak double
     this.socket.off('world:init');
+    this.socket.off('room:players');
     this.socket.off('player:joined');
     this.socket.off('player:moved');
     this.socket.off('player:left');
@@ -239,6 +254,16 @@ export class NetworkManager {
 
     this.socket.on('world:init', (data: IWorldInitData) => {
       this.listeners.worldInit.forEach((cb) => cb(data));
+    });
+
+    this.socket.on('room:players', (data: { room: string; players: IPlayerData[] }) => {
+      this.listeners.worldInit.forEach((cb) => cb({
+        selfId: this.getSocketId() || '',
+        selfPlayer: null as any,
+        players: data.players,
+        monsters: [],
+        worldBounds: { width: 9600, height: 9600 },
+      }));
     });
 
     this.socket.on('player:joined', (player: IPlayerData) => {
@@ -296,6 +321,28 @@ export class NetworkManager {
     return this.socket?.id;
   }
 
+  /**
+   * Berpindah antar-room/area (World, Gedung SD, SMP, SMA, Rumah, Admin Portal)
+   */
+  public switchRoom(room: string, x?: number, y?: number, direction?: Direction): void {
+    if (this.lastJoinData) {
+      this.lastJoinData.room = room;
+      if (typeof x === 'number') this.lastJoinData.x = x;
+      if (typeof y === 'number') this.lastJoinData.y = y;
+      if (direction) this.lastJoinData.direction = direction;
+    }
+    if (!this.socket || !this.isConnected) return;
+    this.socket.emit('player:switch_room', { room, x, y, direction });
+  }
+
+  /**
+   * Meminta daftar pemain yang aktif di room saat ini
+   */
+  public requestRoomPlayers(): void {
+    if (!this.socket || !this.isConnected) return;
+    this.socket.emit('room:request_players');
+  }
+
   public joinGame(
     name: string,
     avatar: IAvatarCustomization,
@@ -305,14 +352,16 @@ export class NetworkManager {
     y?: number,
     direction?: Direction,
     gold?: number,
-    diamonds?: number
+    diamonds?: number,
+    room: string = 'world'
   ): void {
-    this.lastJoinData = { name, avatar, role, isSuperAdmin, x, y, direction, gold, diamonds };
+    this.lastJoinData = { name, avatar, role, isSuperAdmin, x, y, direction, gold, diamonds, room };
     if (!this.socket || !this.isConnected) return;
     const isSuper = isSuperAdmin || role === 'super_admin' || name.toUpperCase() === 'RADEN';
     this.socket.emit('player:join', {
       name,
       avatar,
+      room,
       role: isSuper ? 'super_admin' : (role || 'player'),
       isSuperAdmin: isSuper,
       x: typeof x === 'number' && !isNaN(x) ? x : 4800,

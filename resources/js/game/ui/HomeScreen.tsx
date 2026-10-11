@@ -2,16 +2,26 @@
  * ============================================================================
  * FILE: resources/js/game/ui/HomeScreen.tsx
  * ============================================================================
- * FUNGSI UTAMA:
- * Beranda utama (Home Screen / Main Menu) game RadenWorld.
- * 
- * SPESIFIKASI DESAIN:
- * - Layout menu 4 tombol di sebelah KIRI layar (Left-Aligned).
- * - Tombol simpel, minimalis tanpa logo/ikon berlebihan.
- * - Font gaming khas: 'Chakra Petch'.
- * - Skema warna murni 2 WARNA:
- *   1. Warna Primer: Dark Obsidian / Hitam Karbon (#0a0f1d)
- *   2. Warna Sekunder: Emas / Amber Gaming (#f59e0b)
+ * Lobby / Beranda Utama RadenWorld persis sesuai screenshot (Images 1 & 2):
+ * 1. Background pola catur hitam & abu-abu (Black & Gray Checkered Pattern).
+ * 2. Header kiri atas:
+ *    - RADEN WORLD (Font pixel kuning retro 'Press Start 2P')
+ *    - Institut Teknologi Dan Bisnis Ahmad Dahlan Lamongan (kuning)
+ *    - JELAJAHI DUNIA TERBUKA, CUSTOM SASI AVATARM (hitam)
+ *    - DAN BERMAIN BERSAMA PEMAIN LAIN (hitam)
+ * 3. Menu kiri 4 tombol oranye rounded dengan garis tepi hitam:
+ *    - PLAY (wajib login/daftar jika belum ada akun)
+ *    - SETTING
+ *    - CREDIT
+ *    - DOWNLOAD
+ * 4. Dua avatar raksasa berdiri berdampingan:
+ *    - Karakter Cewek di tengah (rambut pink, hoodie oranye, celana pink)
+ *    - Karakter Cowok di kanan (rambut biru, hoodie oranye, celana biru)
+ * 5. Kanan atas:
+ *    - Pill Server: ASIA - RADEN - 0001
+ *    - 3 Tombol kotak oranye: Download, Language, Information
+ * 6. Kanan bawah:
+ *    - Label © 2026 Powered by RadencakStudio - RadenWorld - v1.02.00
  * ============================================================================
  */
 
@@ -20,10 +30,9 @@ import { IAvatarCustomization } from '../types';
 import { AuthModal } from './AuthModal';
 import { SettingsModal, GameSettings } from './SettingsModal';
 import { CreditsModal } from './CreditsModal';
-import { ExitModal } from './ExitModal';
+import { DownloadModal } from './DownloadModal';
 import { SoundManager } from '../core/SoundManager';
-import { Volume2, VolumeX, Globe, ArrowRightLeft } from 'lucide-react';
-import { cleanServerCode } from './HUD';
+import { Download, Globe, Info } from 'lucide-react';
 
 interface HomeScreenProps {
   onStartGame: (name: string, avatar: IAvatarCustomization, privateRoomId?: string) => void;
@@ -41,21 +50,48 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isCreditsOpen, setIsCreditsOpen] = useState(false);
-  const [isExitOpen, setIsExitOpen] = useState(false);
-  const [currentServerCode] = useState(() => {
-    try {
-      return localStorage.getItem('raden_server_code') || 'Asia 1';
-    } catch (e) {
-      return 'Asia 1';
-    }
-  });
+  const [isDownloadOpen, setIsDownloadOpen] = useState(false);
 
-  const displayServerCode = cleanServerCode(currentServerCode);
   const sound = SoundManager.getInstance();
 
-  const handleOpenAuth = () => {
-    sound.playOpenModal();
-    setIsAuthOpen(true);
+  /**
+   * Menangani tombol PLAY:
+   * Pemain TIDAK BISA bergerak dan tidak bisa langsung bermain tanpa akun;
+   * harus masuk (login) atau daftar (register) terlebih dahulu via AuthModal!
+   */
+  const handlePlayClick = () => {
+    sound.playClick();
+    let hasValidUser = false;
+    let userData: any = null;
+
+    try {
+      const saved = localStorage.getItem('raden_player_user');
+      if (saved) {
+        const u = JSON.parse(saved);
+        if (u && (u.id || u.name)) {
+          hasValidUser = true;
+          userData = u;
+        }
+      }
+    } catch (e) {}
+
+    if (hasValidUser && userData) {
+      // Pemain sudah masuk/terdaftar sebelumnya, izinkan langsung masuk ke game
+      onStartGame(
+        userData.name,
+        userData.avatar || {
+          gender: 'male',
+          skinColor: '#fed7aa',
+          shirtColor: '#f59e0b',
+          pantsColor: '#1e293b',
+          hatType: 'none',
+        },
+        userData.private_room_id
+      );
+    } else {
+      // Pemain belum masuk/daftar -> Wajib buka form masuk/daftar!
+      setIsAuthOpen(true);
+    }
   };
 
   const handleOpenSettings = () => {
@@ -68,132 +104,173 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
     setIsCreditsOpen(true);
   };
 
-  const handleOpenExit = () => {
-    sound.playClick();
-    setIsExitOpen(true);
-  };
-
-  const toggleMute = () => {
-    sound.playClick();
-    const newMuted = !settings.isMuted;
-    onUpdateSettings({ ...settings, isMuted: newMuted });
-    sound.setMuted(newMuted);
+  const handleOpenDownload = () => {
+    sound.playOpenModal();
+    setIsDownloadOpen(true);
   };
 
   return (
-    <div className="fixed inset-0 z-30 flex flex-col justify-between p-8 md:p-14 select-none overflow-hidden font-['Chakra_Petch']">
-      {/* Background Layers: Flat Pure Black (Tanpa Shadow & Tanpa Glow) */}
-      <div className="absolute inset-0 bg-black/80 pointer-events-none" />
+    <div className="fixed inset-0 z-30 flex flex-col justify-between p-6 sm:p-10 select-none overflow-hidden font-['Chakra_Petch']">
+      {/* Background Lantai Catur Kotak-kotak Hitam & Abu-abu (Black & Gray Checkered Grid) */}
+      <div
+        className="absolute inset-0 pointer-events-none transform-gpu will-change-transform"
+        style={{
+          backgroundColor: '#3a3d42',
+          backgroundImage: `
+            linear-gradient(45deg, #8a8d94 25%, transparent 25%),
+            linear-gradient(-45deg, #8a8d94 25%, transparent 25%),
+            linear-gradient(45deg, transparent 75%, #8a8d94 75%),
+            linear-gradient(-45deg, transparent 75%, #8a8d94 75%)
+          `,
+          backgroundSize: '88px 88px',
+          backgroundPosition: '0 0, 0 44px, 44px -44px, -44px 0px',
+        }}
+      />
 
       {/* Top Header Bar */}
-      <div className="relative z-10 w-full flex items-center justify-between text-xs">
-        {/* Tombol Status Server: H-10, Rounded-md (Flat Pure Black) */}
-        <button
-          onClick={() => {
-            sound.playClick();
-            onOpenServerModal?.();
-          }}
-          className="h-10 flex items-center gap-2 px-3 rounded-md bg-black border border-neutral-800 hover:border-amber-400 text-neutral-200 font-bold uppercase text-xs transition-colors cursor-pointer group"
-          title="Klik untuk Melihat Daftar Server & Pindah Server"
-        >
-          <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
-          <Globe className="w-3.5 h-3.5 text-neutral-400 group-hover:text-amber-400 transition-colors" />
-          <span className="font-mono text-xs font-black text-amber-300">SERVER: {displayServerCode}</span>
-          <span className="text-[9px] font-bold bg-amber-400 text-black px-1.5 py-0.5 rounded flex items-center gap-1 group-hover:bg-amber-300 transition-colors ml-0.5">
-            <ArrowRightLeft className="w-2.5 h-2.5" />
-            <span>PINDAH</span>
-          </span>
-        </button>
-
-        {/* Top Right Quick Settings: H-10, Rounded-md */}
-        <div className="flex items-center gap-1.5">
-          <button
-            onClick={handleOpenSettings}
-            className="h-10 flex items-center gap-1.5 px-3 rounded-md bg-black border border-neutral-800 text-neutral-300 hover:border-amber-400 hover:text-amber-400 transition-colors cursor-pointer text-xs uppercase font-bold"
+      <div className="relative z-30 w-full flex items-start justify-between">
+        {/* Kiri Atas: Logo Judul & Subteks (Dibatasi rapi agar tidak menimpa avatar) */}
+        <div className="space-y-2 max-w-[320px] sm:max-w-[360px] md:max-w-[420px]">
+          <h1
+            className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-[#FFE600] font-['Press_Start_2P'] tracking-wider leading-none"
+            style={{
+              textShadow: '3px 3px 0px #000, -2px -2px 0px #000, 2px -2px 0px #000, -2px 2px 0px #000',
+            }}
           >
-            <Globe className="w-3.5 h-3.5" />
-            <span>{settings.language}</span>
+            RADEN WORLD
+          </h1>
+          <div className="pt-2 space-y-1">
+            <p className="text-white font-black text-xs sm:text-[13px] uppercase tracking-wide drop-shadow-[0_2px_4px_rgba(0,0,0,1)]">
+              JELAJAHI DUNIA TERBUKA, BERKENALAN DENGAN ORANG LAIN
+            </p>
+            <p className="text-[#FFE600] font-black text-xs sm:text-[13px] uppercase tracking-wide drop-shadow-[0_2px_4px_rgba(0,0,0,1)]">
+              DAN BERINTERAKSI BERSAMA PEMAIN LAIN SECARA REAL-TIME
+            </p>
+          </div>
+        </div>
+
+        {/* Kanan Atas: Server Bar & 3 Tombol Sesuai Desain Game */}
+        <div className="flex flex-col items-end gap-2 w-52 sm:w-60 md:w-64 z-30">
+          {/* Bar Server: ASIA - 0001 (Tanpa kata RADEN, sesuai game) */}
+          <button
+            onClick={() => {
+              sound.playClick();
+              onOpenServerModal?.();
+            }}
+            className="w-full py-1.5 px-3 rounded-lg bg-gradient-to-r from-[#ff7e29] to-[#ea580c] hover:brightness-110 border-2 border-black text-black font-black text-xs sm:text-[13px] tracking-wider text-center shadow-[0_2px_0_#000] active:translate-y-0.5 active:shadow-none transition-all cursor-pointer"
+            title="Klik untuk berpindah server"
+          >
+            Server: ASIA - 0001
           </button>
 
-          <button
-            onClick={toggleMute}
-            className="h-10 w-10 flex items-center justify-center rounded-md bg-black border border-neutral-800 text-neutral-300 hover:border-amber-400 hover:text-amber-400 transition-colors cursor-pointer"
-            title={settings.isMuted ? 'Aktifkan Suara' : 'Bisukan Suara'}
-          >
-            {settings.isMuted ? (
-              <VolumeX className="w-4 h-4 text-amber-500" />
-            ) : (
-              <Volume2 className="w-4 h-4 text-amber-400" />
-            )}
-          </button>
+          {/* 3 Tombol Kotak Oranye Game: Download, Language, Information */}
+          <div className="flex items-center gap-2 sm:gap-2.5 w-full justify-between">
+            {/* Download */}
+            <button
+              onClick={handleOpenDownload}
+              className="flex-1 h-14 sm:h-16 rounded-xl bg-gradient-to-b from-[#ff7e29] to-[#ea580c] hover:brightness-110 border-2 border-black flex flex-col items-center justify-center text-black shadow-[0_2px_0_#000] active:translate-y-0.5 active:shadow-none transition-all cursor-pointer group"
+              title="Unduh Game"
+            >
+              <Download className="w-5 sm:w-6 h-5 sm:h-6 group-hover:scale-110 transition-transform stroke-[2.5]" />
+              <span className="text-[10px] sm:text-[11px] font-black mt-0.5 leading-none tracking-tight">Download</span>
+            </button>
+
+            {/* Language */}
+            <button
+              onClick={handleOpenSettings}
+              className="flex-1 h-14 sm:h-16 rounded-xl bg-gradient-to-b from-[#ff7e29] to-[#ea580c] hover:brightness-110 border-2 border-black flex flex-col items-center justify-center text-black shadow-[0_2px_0_#000] active:translate-y-0.5 active:shadow-none transition-all cursor-pointer group"
+              title="Pengaturan Bahasa"
+            >
+              <Globe className="w-5 sm:w-6 h-5 sm:h-6 group-hover:scale-110 transition-transform stroke-[2.5]" />
+              <span className="text-[10px] sm:text-[11px] font-black mt-0.5 leading-none tracking-tight">Language</span>
+            </button>
+
+            {/* Information */}
+            <button
+              onClick={handleOpenCredits}
+              className="flex-1 h-14 sm:h-16 rounded-xl bg-gradient-to-b from-[#ff7e29] to-[#ea580c] hover:brightness-110 border-2 border-black flex flex-col items-center justify-center text-black shadow-[0_2px_0_#000] active:translate-y-0.5 active:shadow-none transition-all cursor-pointer group"
+              title="Informasi & Kredit"
+            >
+              <Info className="w-5 sm:w-6 h-5 sm:h-6 group-hover:scale-110 transition-transform stroke-[2.5]" />
+              <span className="text-[10px] sm:text-[11px] font-black mt-0.5 leading-none tracking-tight">Information</span>
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Main Content: Left-Aligned Menu Layout */}
-      <div className="relative z-10 flex flex-col justify-center max-w-md w-full my-auto space-y-7 pl-2 md:pl-6 text-left">
-        {/* Game Title */}
-        <div className="space-y-1.5">
-          <div className="text-amber-400 text-xs font-bold tracking-[0.25em] uppercase">
-            2D Open World Multiplayer
-          </div>
-          <h1 className="text-5xl md:text-6xl font-black tracking-tight text-white">
-            RADEN<span className="text-amber-400">WORLD</span>
-          </h1>
-          <p className="text-xs text-neutral-400 tracking-wide leading-relaxed max-w-sm">
-            Jelajahi peta dunia terbuka, kustomisasi avatarmu, dan bermain bersama pemain lain.
-          </p>
-        </div>
-
-        {/* 4 Left-Aligned Simple Text Buttons: Rounded-md (Crisp Flat Minimalist) */}
-        <div className="flex flex-col space-y-2.5 w-64 md:w-72">
-          {/* 1. TOMBOL MASUK */}
+      {/* Area Tengah: 4 Tombol Menu Kiri & Dua Karakter Avatar Raksasa Berdiri */}
+      <div className="relative z-10 w-full h-full flex items-center justify-between my-auto">
+        {/* Menu 4 Tombol Oranye Kiri */}
+        <div className="flex flex-col gap-3.5 sm:gap-4 w-56 sm:w-68 md:w-80 shrink-0 z-20">
+          {/* 1. PLAY */}
           <button
-            onClick={handleOpenAuth}
+            onClick={handlePlayClick}
             onMouseEnter={() => sound.playHover()}
-            className="group w-full py-2.5 px-4 rounded-md bg-amber-500 hover:bg-amber-400 text-black font-black text-sm uppercase tracking-wider active:scale-[0.98] transition-colors text-left flex items-center justify-between cursor-pointer border border-amber-400"
+            className="w-full py-3.5 sm:py-4 px-6 rounded-2xl bg-gradient-to-b from-[#ff7e29] to-[#ea580c] hover:brightness-110 border-[2.5px] border-black text-black font-black text-2xl sm:text-3xl tracking-wider text-left shadow-[0_4px_0_#000] active:translate-y-1 active:shadow-none transition-all cursor-pointer"
           >
-            <span>1. MASUK</span>
-            <span className="text-base group-hover:translate-x-1 transition-transform">➔</span>
+            PLAY
           </button>
 
-          {/* 2. TOMBOL SETTING */}
+          {/* 2. SETTING */}
           <button
             onClick={handleOpenSettings}
             onMouseEnter={() => sound.playHover()}
-            className="group w-full py-2.5 px-4 rounded-md bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 hover:border-amber-400 text-neutral-200 hover:text-amber-300 font-bold text-sm uppercase tracking-wider active:scale-[0.98] transition-colors text-left flex items-center justify-between cursor-pointer"
+            className="w-full py-3.5 sm:py-4 px-6 rounded-2xl bg-gradient-to-b from-[#ff7e29] to-[#ea580c] hover:brightness-110 border-[2.5px] border-black text-black font-black text-2xl sm:text-3xl tracking-wider text-left shadow-[0_4px_0_#000] active:translate-y-1 active:shadow-none transition-all cursor-pointer"
           >
-            <span>2. SETTING</span>
-            <span className="text-neutral-500 group-hover:text-amber-400 group-hover:translate-x-1 transition-transform">⚙</span>
+            SETTING
           </button>
 
-          {/* 3. TOMBOL CREDIT */}
+          {/* 3. CREDIT */}
           <button
             onClick={handleOpenCredits}
             onMouseEnter={() => sound.playHover()}
-            className="group w-full py-2.5 px-4 rounded-md bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 hover:border-amber-400 text-neutral-200 hover:text-amber-300 font-bold text-sm uppercase tracking-wider active:scale-[0.98] transition-colors text-left flex items-center justify-between cursor-pointer"
+            className="w-full py-3.5 sm:py-4 px-6 rounded-2xl bg-gradient-to-b from-[#ff7e29] to-[#ea580c] hover:brightness-110 border-[2.5px] border-black text-black font-black text-2xl sm:text-3xl tracking-wider text-left shadow-[0_4px_0_#000] active:translate-y-1 active:shadow-none transition-all cursor-pointer"
           >
-            <span>3. CREDIT</span>
-            <span className="text-neutral-500 group-hover:text-amber-400 group-hover:translate-x-1 transition-transform">★</span>
+            CREDIT
           </button>
 
-          {/* 4. TOMBOL EXIT */}
+          {/* 4. DOWNLOAD */}
           <button
-            onClick={handleOpenExit}
+            onClick={handleOpenDownload}
             onMouseEnter={() => sound.playHover()}
-            className="group w-full py-2.5 px-4 rounded-md bg-black hover:bg-neutral-900 border border-neutral-800 hover:border-amber-400 text-neutral-400 hover:text-amber-300 font-bold text-sm uppercase tracking-wider active:scale-[0.98] transition-colors text-left flex items-center justify-between cursor-pointer"
+            className="w-full py-3.5 sm:py-4 px-6 rounded-2xl bg-gradient-to-b from-[#ff7e29] to-[#ea580c] hover:brightness-110 border-[2.5px] border-black text-black font-black text-2xl sm:text-3xl tracking-wider text-left shadow-[0_4px_0_#000] active:translate-y-1 active:shadow-none transition-all cursor-pointer"
           >
-            <span>4. EXIT</span>
-            <span className="text-neutral-600 group-hover:text-amber-400 group-hover:translate-x-1 transition-transform">⏻</span>
+            DOWNLOAD
           </button>
+        </div>
+
+        {/* Dua Karakter Raksasa: FemaleAvatar & MaleAvatar - Sama Tingginya, Ringan, Tidak Menimpa Teks */}
+        <div className="absolute inset-y-0 right-0 left-[320px] sm:left-[380px] md:left-[430px] flex items-end justify-center pointer-events-none z-10 pb-4 sm:pb-6">
+          {/* Karakter Cewek: FemaleAvatar (Flipped via scale-x-[-1]) */}
+          <div className="relative flex flex-col items-center -mr-2 sm:-mr-4">
+            <img
+              src="/assets/sprites/characters/Player/Female/FemaleAvatar_Lobby.png"
+              alt="Female Avatar"
+              className="h-[50vh] sm:h-[60vh] md:h-[66vh] max-h-[560px] object-contain scale-x-[-1] transform-gpu will-change-transform"
+              loading="eager"
+            />
+          </div>
+
+          {/* Karakter Cowok: MaleAvatar */}
+          <div className="relative flex flex-col items-center ml-2 sm:ml-4">
+            <img
+              src="/assets/sprites/characters/Player/Male/MaleAvatar_Lobby.png"
+              alt="Male Avatar"
+              className="h-[50vh] sm:h-[60vh] md:h-[66vh] max-h-[560px] object-contain transform-gpu will-change-transform"
+              loading="eager"
+            />
+          </div>
         </div>
       </div>
 
-      {/* Footer Copyright */}
-      <div className="relative z-10 text-[11px] text-slate-500 pl-2 md:pl-6 uppercase tracking-wider">
-        <span>© 2026 RADENWORLD • POWERED BY PHASER 3 & PIXIJS</span>
+      {/* Footer Kanan Bawah: Label Hak Cipta & Versi (Sesuai Gaya Retro Game) */}
+      <div className="relative z-30 w-full flex justify-end items-center">
+        <div className="px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-[#ff7e29] to-[#ea580c] border-2 border-black shadow-[0_2px_0_#000] text-black text-[10px] sm:text-[11px] font-black tracking-wide">
+          © 2026 Powered by RadencakStudio - RadenWorld - v1.02.00
+        </div>
       </div>
 
-      {/* Modals */}
+      {/* Modals Terkait */}
       <AuthModal
         isOpen={isAuthOpen}
         onClose={() => setIsAuthOpen(false)}
@@ -216,9 +293,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         onClose={() => setIsCreditsOpen(false)}
       />
 
-      <ExitModal
-        isOpen={isExitOpen}
-        onClose={() => setIsExitOpen(false)}
+      <DownloadModal
+        isOpen={isDownloadOpen}
+        onClose={() => setIsDownloadOpen(false)}
       />
     </div>
   );

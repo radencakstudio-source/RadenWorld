@@ -51,8 +51,14 @@ export class WorldScene extends Phaser.Scene {
   private spawnNearHouseDoor: boolean = false;
   private privateRoomId: string = 'safe-01';
 
-  // Zona Bangunan & Pintu Interaktif
-  private playerHouseDoor = { x: 4800, y: 5520 };
+  // Zona Bangunan & Pintu Interaktif (SD, SMP, SMA, dan Rumah Pribadi)
+  private playerHouseDoor = { x: 4860, y: 7740 };
+  private schoolSdDoor = { x: 1740, y: 5340 };
+  private schoolSmpDoor = { x: 4860, y: 2100 };
+  private schoolSmaDoor = { x: 7860, y: 5340 };
+  private customSpawnPos: { x: number; y: number } | null = null;
+  private obstacles!: Phaser.Physics.Arcade.StaticGroup;
+
   private activePrompt: string | null = null;
   private lastStatsEmitTime: number = 0;
   private lastGridX: number = -1;
@@ -64,80 +70,95 @@ export class WorldScene extends Phaser.Scene {
   // Kontrol zoom kamera halus
   private targetZoom: number = 0.9;
 
-  // Daftar NPC Interaktif Ramah di Berbagai Penjuru Dunia dengan Narasi Dialog Multi-Halaman
+  // Daftar NPC Interaktif Ramah Bertema Indonesia (Pujasera Gerobak, Keamanan Sekolah, Tokoh Kota)
   private npcs: INpcConfig[] = [
     {
       id: 'npc_sage',
       name: 'Sage Raden',
-      role: 'Tetua Kebijaksanaan',
+      role: 'Wali Kota RadenWorld',
       avatarType: 'sage',
       x: 4860,
       y: 4760,
       greeting: 'Salam sejahtera, wahai penjelajah dunia!',
       dialogues: [
-        'Salam sejahtera, wahai penjelajah! Selamat datang di RadenWorld, tanah agung yang dibangun dengan penuh kebebasan dan persahabatan.',
-        'Dunia luas ini terbentang 80x80 petak catur dengan distrik megah: Alun-Alun Sanctuary, Kuil Purba, hingga Telaga Mistik Kristal.',
-        'Kamu bisa menjelajah bersama kawan-kawanmu, berbincang langsung melalui Proximity Voice Chat di radius 5 petak, dan mengukir kisah hebatmu di sini!'
+        'Salam sejahtera, wahai sahabat! Selamat datang di RadenWorld, kota metropolitan pendidikan yang ramah dan bersahabat.',
+        'Di sini terdapat kompleks pendidikan lengkap: Gedung SD di barat, Gedung SMP di utara, dan Gedung SMA unggulan di timur.',
+        'Kamu bisa menjelajah bersama kawan-kawanmu, berbincang langsung melalui Proximity Voice Chat di radius 5 petak, dan menikmati kuliner nusantara!'
       ],
       spriteKey: 'npc-sprite',
     },
     {
-      id: 'npc_blacksmith',
-      name: 'Blacksmith Arya',
-      role: 'Pandai Besi Terhebat',
-      avatarType: 'blacksmith',
-      x: 4560,
-      y: 3840,
-      greeting: 'Klang! Klang! Panasnya tungku tempa menyambutmu!',
-      dialogues: [
-        'Klang! Klang! Hahaha, sambutlah deburan api tempa Arya! Pandai besi nomor satu di seluruh kota Sanctuary!',
-        'Zirah baja kristal dan pedang pusaka yang kutempa dirancang dari paduan logam terbaik agar mampu melindungimu di alam liar.',
-        'Jika kamu menemukan bijih mineral langka di reruntuhan granit timur, bawa ke mari. Akan kutempa menjadi perlengkapan legendaris!'
-      ],
-      spriteKey: 'npc-sprite',
-    },
-    {
-      id: 'npc_alchemist',
-      name: 'Alchemist Sari',
-      role: 'Penyeduh Ramuan Ajaib',
-      avatarType: 'alchemist',
-      x: 5040,
-      y: 3840,
-      greeting: 'Ramuan herbal harum siap menyegarkan staminamu.',
-      dialogues: [
-        'Ssshh... pelankan langkahmu, ramuan sari bunga Telaga Mistik sedang mendidih sempurna di dalam labu kaca ini.',
-        'Aku meracik eliksir pemulih stamina, tonik kelincahan langkah kaki, hingga esensi herbal relaksasi rumah.',
-        'Minumlah seteguk sebelum menempuh petualangan jauh. Pikiran yang tenang dan tubuh yang segar adalah benteng terkuatmu!'
-      ],
-      spriteKey: 'npc-sprite',
-    },
-    {
-      id: 'npc_merchant',
-      name: 'Merchant Malik',
-      role: 'Pedagang Keliling Antar Samudra',
+      id: 'npc_bakso',
+      name: 'Bang Mamat',
+      role: 'Penjual Bakso Urat Solo',
       avatarType: 'merchant',
-      x: 4800,
-      y: 3960,
-      greeting: 'Barang antik langka dari seberang samudra!',
+      x: 4260,
+      y: 4620,
+      greeting: 'Bakso urat kuah sedap hangat, Mas/Mbak!',
       dialogues: [
-        'Kemari, kawan! Mendekatlah! Kafilah daganganku baru saja mendarat dari pelayaran panjang menyeberangi tujuh samudra!',
-        'Banyak kain sutra berkilau, artefak permata zamrud antik, dan cenderamata eksotis yang kubawa di dalam gerobak emas ini.',
-        'Simpan koin emasmu baik-baik, karena kejutan barang antik di pasar Sanctuary selalu diburu para kolektor sejati!'
+        'Monggo pinarak, Mas/Mbak! Bakso urat asli Solo kuah kaldu sapi gurih baru saja mendidih harum.',
+        'Satu porsi lengkap ada bakso urat, bakso halus, tahu bakso gurih, mie kuning, dan taburan pangsit renyah!',
+        'Cocok banget disantap hangat-hangat setelah lelah keliling kota dan belajar di sekolah!'
       ],
       spriteKey: 'npc-sprite',
     },
     {
-      id: 'npc_guard',
-      name: 'Captain Bima',
-      role: 'Komandan Penjaga Sanctuary',
-      avatarType: 'guard',
-      x: 4800,
-      y: 4320,
-      greeting: 'Sanctuary Plaza aman terkendali di bawah pengawasan.',
+      id: 'npc_mie_ayam',
+      name: 'Pak Joko',
+      role: 'Penjual Mie Ayam Jamur',
+      avatarType: 'merchant',
+      x: 5460,
+      y: 4620,
+      greeting: 'Mie ayam jamur bumbu spesial siap dihidangkan!',
       dialogues: [
-        'Tegakkan langkahmu, petualang! Saya, Kapten Bima, memimpin divisi penjaga untuk memastikan Sanctuary Plaza senantiasa aman dan tertib.',
-        'Hormati sesama kawan petualang, patuhi aturan kota, dan laporkan segera jika kamu menjumpai gangguan di wilayah perbatasan.',
-        'Jika situasi darurat terjadi, panggil Super Admin RADEN. Kami siap mengawal kedamaian tanah RadenWorld!'
+        'Selamat datang! Mau mie ayam manis gurih atau mie ayam rica-rica pedas mantap?',
+        'Daging ayam jamurnya dimasak perlahan dengan kecap manis pilihan dan daun bawang segar.',
+        'Pangsit goreng renyahnya juga gratis sepuasnya untuk kawan-kawan petualang!'
+      ],
+      spriteKey: 'npc-sprite',
+    },
+    {
+      id: 'npc_soto',
+      name: 'Cak Slamet',
+      role: 'Penjual Soto Lamongan',
+      avatarType: 'merchant',
+      x: 4860,
+      y: 5700,
+      greeting: 'Soto ayam koya gurih mantap khas Lamongan!',
+      dialogues: [
+        'Halo rek! Mampir ke gerobak Cak Slamet, soto ayam kampung kuah kuning koya gurih nomor satu!',
+        'Aroma rempah kunyit, jahe, dan serai dijamin bikin badan kembali segar bugar bertenaga.',
+        'Jangan lupa tambah perasan jeruk nipis dan sambal rawit merah biar makin nampol rasanya!'
+      ],
+      spriteKey: 'npc-sprite',
+    },
+    {
+      id: 'npc_satpam',
+      name: 'Pak Satpam Bambang',
+      role: 'Keamanan Kompleks Pendidikan',
+      avatarType: 'guard',
+      x: 4860,
+      y: 2340,
+      greeting: 'Kompleks sekolah aman dan tertib.',
+      dialogues: [
+        'Selamat siang adik-adik dan kawan petualang! Saya Pak Bambang, bertugas menjaga keamanan dan ketertiban kawasan pendidikan ini.',
+        'Gedung SD terletak di sebelah barat, Gedung SMP di sebelah utara plaza, dan Gedung SMA di sebelah timur.',
+        'Selalu tertib saat menyeberang jalan dan buang sampah pada tempatnya ya!'
+      ],
+      spriteKey: 'npc-sprite',
+    },
+    {
+      id: 'npc_kios_minuman',
+      name: 'Bu Minah',
+      role: 'Kios Minuman Segar',
+      avatarType: 'farmer',
+      x: 4680,
+      y: 4140,
+      greeting: 'Es teh manis dan es jeruk peras segar!',
+      dialogues: [
+        'Haus setelah jalan-jalan keliling kota? Mampir sini beli es teh manis melati atau es kelapa muda!',
+        'Minuman segar alami tanpa pemanis buatan, dijamin langsung plong di tenggorokan.',
+        'Semoga harimu menyenangkan dan penuh energi di RadenWorld!'
       ],
       spriteKey: 'npc-sprite',
     },
@@ -159,30 +180,15 @@ export class WorldScene extends Phaser.Scene {
     {
       id: 'npc_farmer',
       name: 'Farmer Joko',
-      role: 'Petani Padang Gandum Subur',
+      role: 'Petani Padang Hijau Subur',
       avatarType: 'farmer',
-      x: 4800,
-      y: 7200,
-      greeting: 'Kincir angin berputar, pertanda panen melimpah!',
+      x: 4860,
+      y: 7920,
+      greeting: 'Tanaman tumbuh subur, pertanda panen melimpah!',
       dialogues: [
-        'Ohoho! Selamat datang di padang gandum selatan! Kincir angin raksasa berputar riang menghembuskan aroma gandum keemasan.',
-        'Hasil panen tanah gembur ini diolah menjadi roti gandum emas terlezat yang menyuplai seluruh penduduk kota Sanctuary.',
-        'Ketulusan dalam merawat bumi tidak pernah mengkhianati hasil. Nikmatilah hangatnya suasana pedesaan di sini!'
-      ],
-      spriteKey: 'npc-sprite',
-    },
-    {
-      id: 'npc_elder',
-      name: 'Elder Maya',
-      role: 'Penjaga Kuil Hutan Kuno',
-      avatarType: 'elder',
-      x: 2400,
-      y: 2400,
-      greeting: 'Pohon-pohon purba berbisik menceritakan sejarah.',
-      dialogues: [
-        'Dengarlah bisikan dedaunan purba yang menari perlahan... Pepohonan raksasa ini telah berdiri kokoh ribuan warsa.',
-        'Kuil Hutan Kuno menyimpan kristal perlindungan sakral yang memancarkan energi kedamaian ke seluruh bentang alam RadenWorld.',
-        'Berjalanlah dengan niat mulia dan rawatlah persahabatan di hatimu. Semesta akan senantiasa memberkati setiap langkahmu.'
+        'Ohoho! Selamat datang di perkebunan selatan! Angin sepoi-sepoi menghembuskan aroma rerumputan segar.',
+        'Hasil bumi dan sayur-mayur segar dari kebun ini menyuplai kebutuhan pangan warga kota dan kantin sekolah.',
+        'Merawat alam dengan cinta kasih adalah kunci kemakmuran bersama!'
       ],
       spriteKey: 'npc-sprite',
     },
@@ -193,7 +199,7 @@ export class WorldScene extends Phaser.Scene {
     this.networkManager = NetworkManager.getInstance();
   }
 
-  public init(data?: { name?: string; avatar?: IAvatarCustomization; spawnNearHouse?: boolean; privateRoomId?: string }): void {
+  public init(data?: { name?: string; avatar?: IAvatarCustomization; spawnNearHouse?: boolean; privateRoomId?: string; spawnPos?: { x: number; y: number } }): void {
     this.isTransitioning = false;
     this.doorCooldownUntil = this.time ? this.time.now + 2500 : 0;
     this.player = null as any;
@@ -202,19 +208,27 @@ export class WorldScene extends Phaser.Scene {
     if (data?.avatar) this.pendingAvatar = data.avatar;
     this.spawnNearHouseDoor = !!data?.spawnNearHouse;
     if (data?.privateRoomId) this.privateRoomId = data.privateRoomId;
+    if (data?.spawnPos) this.customSpawnPos = data.spawnPos;
+    else this.customSpawnPos = null;
   }
 
   public create(): void {
     // 1. Batas fisika dunia (9600x9600)
     this.physics.world.setBounds(0, 0, this.worldWidth, this.worldHeight);
 
-    // 2. Render grafis lingkungan alam dengan pola catur 120x120px
+    // 2. Inisialisasi grup rintangan fisik statis (Pagar, Dinding Gedung, Meja, Gerobak, Batu)
+    this.obstacles = this.physics.add.staticGroup();
+
+    // 3. Masuk ke room 'world' pada WebSocket Server
+    this.networkManager.switchRoom('world');
+
+    // 4. Render grafis lingkungan alam dengan pola catur 120x120px
     this.createWorldEnvironment();
 
-    // 3. Render NPC Interaktif di seluruh wilayah
+    // 5. Render NPC Interaktif di seluruh wilayah
     this.createWorldNpcs();
 
-    // 4. Pasang pendengar event multiplayer
+    // 6. Pasang pendengar event multiplayer
     this.setupMultiplayerListeners();
 
     // 5. Tangani event sinyal dari UI React via EventBus
@@ -294,6 +308,7 @@ export class WorldScene extends Phaser.Scene {
     this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
       if (document.activeElement?.tagName === 'INPUT' || document.activeElement?.tagName === 'TEXTAREA') return;
       if (pointer.rightButtonDown()) return;
+      if (this.player?.isMovementLocked()) return;
 
       const wx = pointer.worldX;
       const wy = pointer.worldY;
@@ -423,7 +438,8 @@ export class WorldScene extends Phaser.Scene {
   }
 
   /**
-   * Menggambar lingkungan alam Open World 9600x9600px berpola catur kotak 120x120px
+   * Menggambar lingkungan alam Open World 9600x9600px:
+   * Termasuk Gedung SD, Gedung SMP, Gedung SMA, Rumah Pribadi, Pujasera Gerobak Kuliner, dan Fasilitas Kota
    */
   private createWorldEnvironment(): void {
     const bgGraphics = this.add.graphics();
@@ -437,13 +453,16 @@ export class WorldScene extends Phaser.Scene {
     );
     worldFloor.setDepth(-100);
 
-    // B. Alun-Alun Pusat Sanctuary Plaza (4200 - 5400, 4200 - 5400)
-    const plazaLeft = 4200;
-    const plazaTop = 4200;
-    const plazaWidth = 1200;
-    const plazaHeight = 1200;
+    // B. Alun-Alun Pusat Sanctuary Plaza (15x15 petak ubin = 1800x1800 px pada gx=33..47, gy=33..47)
+    const plazaGx = 33;
+    const plazaGy = 33;
+    const plazaGw = 15;
+    const plazaGh = 15;
+    const plazaLeft = plazaGx * this.tileSize;
+    const plazaTop = plazaGy * this.tileSize;
+    const plazaWidth = plazaGw * this.tileSize;
+    const plazaHeight = plazaGh * this.tileSize;
 
-    // Ubin Batu Plaza Pola Catur Ringan 60 FPS via TileSprite (1 draw call)
     const plazaFloor = this.add.tileSprite(
       plazaLeft + plazaWidth / 2,
       plazaTop + plazaHeight / 2,
@@ -453,27 +472,29 @@ export class WorldScene extends Phaser.Scene {
     );
     plazaFloor.setDepth(-90);
 
-    // Garis Batas Emas Sanctuary Plaza
     bgGraphics.lineStyle(6, 0xf59e0b, 0.9);
     bgGraphics.strokeRoundedRect(plazaLeft, plazaTop, plazaWidth, plazaHeight, 32);
 
-    // C. Jalan Penghubung Utama (Boulevard Beraspal / Batu)
-    // Jalan Utara-Selatan
+    // C. Jalan Boulevard Beraspal Menghubungkan Sekolah & Plaza
+    // Jalan Utara-Selatan (Menghubungkan SMP di Utara gx=39..41, gy=18 s/d Rumah di gy=60)
     bgGraphics.fillStyle(0x1e293b, 0.9);
-    bgGraphics.fillRect(4680, 2400, 240, 4800);
-    // Jalan Barat-Timur
-    bgGraphics.fillRect(2400, 4680, 4800, 240);
+    bgGraphics.fillRect(39 * 120, 18 * 120, 360, (60 - 18) * 120);
 
-    // D. Air Mancur Megah di Pusat Plaza (4800, 4800)
+    // Jalan Barat-Timur (Menghubungkan SD di Barat gx=17 s/d SMA di Timur gx=63)
+    bgGraphics.fillRect(17 * 120, 44 * 120, (63 - 17) * 120, 240);
+
+    // D. Air Mancur Megah di Pusat Plaza (Grid 40, 40 -> 4860, 4860)
+    const fountainCenterX = 40 * 120 + 60;
+    const fountainCenterY = 40 * 120 + 60;
     const fountain = this.add.graphics();
     fountain.fillStyle(0x0284c7, 1);
-    fountain.fillCircle(4800, 4800, 90);
+    fountain.fillCircle(fountainCenterX, fountainCenterY, 90);
     fountain.lineStyle(8, 0xf59e0b, 1);
-    fountain.strokeCircle(4800, 4800, 90);
+    fountain.strokeCircle(fountainCenterX, fountainCenterY, 90);
     fountain.fillStyle(0x38bdf8, 0.7);
-    fountain.fillCircle(4800, 4800, 60);
+    fountain.fillCircle(fountainCenterX, fountainCenterY, 60);
 
-    this.add.text(4800, 4670, '★ SANCTUARY CENTRAL PLAZA ★', {
+    this.add.text(fountainCenterX, fountainCenterY - 110, '★ SANCTUARY CENTRAL PLAZA ★', {
       fontFamily: '"Chakra Petch", sans-serif',
       fontSize: '20px',
       color: '#fef08a',
@@ -482,13 +503,15 @@ export class WorldScene extends Phaser.Scene {
       strokeThickness: 5,
     }).setOrigin(0.5);
 
-    // E. Danau Mistik Kristal (Azure Lake) di Timur Laut (6400 - 8000, 2800 - 4400)
+    // Collider air mancur di tengah plaza (1x1 petak)
+    this.addGridObstacle(40, 40, 1, 1);
+
+    // E. Telaga Mistik Kristal di Timur Laut (6400 - 8000, 2800 - 4400)
     bgGraphics.fillStyle(0x0369a1, 0.9);
     bgGraphics.fillEllipse(7200, 3600, 1400, 900);
     bgGraphics.fillStyle(0x38bdf8, 0.5);
     bgGraphics.fillEllipse(7200, 3600, 1200, 750);
 
-    // Dermaga Kayu di Tepi Danau
     bgGraphics.fillStyle(0x78350f, 1);
     bgGraphics.fillRect(6300, 3750, 220, 90);
     bgGraphics.lineStyle(3, 0x451a03, 1);
@@ -503,114 +526,414 @@ export class WorldScene extends Phaser.Scene {
       strokeThickness: 4,
     }).setOrigin(0.5);
 
-    // F. Rumah Pribadi Pemain (Residential District) - Selatan Plaza (4800, 5400)
-    const houseG = this.add.graphics();
-    // Dinding kayu rumah besar
-    houseG.fillStyle(0x78350f, 1);
-    houseG.fillRoundedRect(4660, 5300, 280, 200, 16);
-    houseG.lineStyle(4, 0x451a03, 1);
-    houseG.strokeRoundedRect(4660, 5300, 280, 200, 16);
-    // Atap pelana merah marun
-    houseG.fillStyle(0x991b1b, 1);
-    houseG.fillTriangle(4620, 5300, 4800, 5160, 4980, 5300);
-    // Cerobong asap
-    houseG.fillStyle(0x475569, 1);
-    houseG.fillRect(4900, 5170, 32, 50);
-    // Pintu masuk rumah
-    houseG.fillStyle(0x0a0f1d, 1);
-    houseG.fillRect(4755, 5420, 90, 80);
-    houseG.fillStyle(0xf59e0b, 1);
-    houseG.fillCircle(4830, 5460, 6);
-    // Karpet keset depan pintu
-    houseG.fillStyle(0xd97706, 0.9);
-    houseG.fillRect(4740, 5500, 120, 24);
+    // F. PUJASERA KULINER NUSANTARA (GEROBAK BAKSO, MIE AYAM, SOTO & MEJA MAKAN)
+    // 1. Gerobak Bakso Solo (3x3 petak grid = 360x360 px) pada gx = 34, gy = 35
+    this.addGridProp('cart-bakso', 34, 35, 3, 3, true, () => {
+      const npc = this.npcs.find(n => n.id === 'npc_bakso');
+      if (npc) this.approachAndInteractWithNpc(npc);
+    }, 2);
+    this.add.text(34 * 120 + 180, 35 * 120 - 20, '🍲 GEROBAK BAKSO SOLO', {
+      fontFamily: '"Chakra Petch", sans-serif',
+      fontSize: '14px',
+      color: '#fef08a',
+      fontStyle: 'bold',
+      stroke: '#0a0f1d',
+      strokeThickness: 4,
+    }).setOrigin(0.5).setDepth(38 * 120 + 1);
 
-    this.add.text(4800, 5260, '🏠 RUMAH PRIBADI PEMAIN', {
+    // 2. Gerobak Mie Ayam Jamur (3x3 petak grid = 360x360 px) pada gx = 44, gy = 35
+    this.addGridProp('cart-mie-ayam', 44, 35, 3, 3, true, () => {
+      const npc = this.npcs.find(n => n.id === 'npc_mie_ayam');
+      if (npc) this.approachAndInteractWithNpc(npc);
+    }, 2);
+    this.add.text(44 * 120 + 180, 35 * 120 - 20, '🍜 GEROBAK MIE AYAM JAMUR', {
+      fontFamily: '"Chakra Petch", sans-serif',
+      fontSize: '14px',
+      color: '#fef08a',
+      fontStyle: 'bold',
+      stroke: '#0a0f1d',
+      strokeThickness: 4,
+    }).setOrigin(0.5).setDepth(38 * 120 + 1);
+
+    // 3. Gerobak Soto Lamongan (3x3 petak grid = 360x360 px) pada gx = 39, gy = 44
+    this.addGridProp('cart-soto', 39, 44, 3, 3, true, () => {
+      const npc = this.npcs.find(n => n.id === 'npc_soto');
+      if (npc) this.approachAndInteractWithNpc(npc);
+    }, 2);
+    this.add.text(39 * 120 + 180, 44 * 120 - 20, '🥣 GEROBAK SOTO LAMONGAN', {
+      fontFamily: '"Chakra Petch", sans-serif',
+      fontSize: '14px',
+      color: '#fef08a',
+      fontStyle: 'bold',
+      stroke: '#0a0f1d',
+      strokeThickness: 4,
+    }).setOrigin(0.5).setDepth(47 * 120 + 1);
+
+    // Meja Makan (1x1 Meja.png) dan Kursi (1x2 Kursi Taman Front.png)
+    const diningSets = [
+      { tableGx: 35, tableGy: 39, chairGx: 35, chairGy: 40 },
+      { tableGx: 45, tableGy: 39, chairGx: 45, chairGy: 40 },
+      { tableGx: 36, tableGy: 43, chairGx: 36, chairGy: 44 },
+      { tableGx: 44, tableGy: 43, chairGx: 44, chairGy: 44 },
+    ];
+    diningSets.forEach(ds => {
+      this.addGridProp('prop-meja', ds.tableGx, ds.tableGy, 1, 1, true);
+      this.addGridProp('prop-kursi-front', ds.chairGx, ds.chairGy, 1, 2, false);
+    });
+
+    // Tong Sampah di Setiap Gerobak (1x2 Tong Sampah.png)
+    this.addGridProp('prop-tong-sampah', 33, 36, 1, 2, true);
+    this.addGridProp('prop-tong-sampah', 47, 36, 1, 2, true);
+    this.addGridProp('prop-tong-sampah', 38, 45, 1, 2, true);
+
+    // G. GEDUNG SEKOLAH DASAR (SD) - SISI BARAT (gx: 12, gy: 35, ukuran 5x10 petak grid = 600x1200 px)
+    this.addGridProp('school-sd-building', 12, 35, 5, 10, false, () => {
+      this.approachDoorAndEnter('sd', this.schoolSdDoor.x, this.schoolSdDoor.y);
+    });
+
+    // Rintangan dinding depan SD di baris bawah (gx=12..13 dan gx=15..16 solid, pintu tengah gx=14 terbuka)
+    this.addGridObstacle(12, 44, 2, 1);
+    this.addGridObstacle(15, 44, 2, 1);
+
+    // Pintu & Ambang Masuk Gedung SD
+    const sdThreshold = this.add.graphics();
+    sdThreshold.fillStyle(0xd70d0d, 0.95);
+    sdThreshold.fillRoundedRect(14 * 120 + 10, 44 * 120 + 80, 100, 36, 6);
+    sdThreshold.lineStyle(3, 0xf59e0b, 1);
+    sdThreshold.strokeRoundedRect(14 * 120 + 10, 44 * 120 + 80, 100, 36, 6);
+
+    this.add.text(14 * 120 + 60, 44 * 120 + 140, '🏫 GEDUNG SEKOLAH DASAR (SD)', {
+      fontFamily: '"Chakra Petch", sans-serif',
+      fontSize: '16px',
+      color: '#fca5a5',
+      fontStyle: 'bold',
+      stroke: '#0a0f1d',
+      strokeThickness: 4,
+    }).setOrigin(0.5).setDepth(45 * 120 + 10);
+
+    // Fasilitas di depan SD (1x2 Vending Machine Red, 1x3 Lampu, 1x2 Tong Sampah)
+    this.addGridProp('vending-red', 9, 43, 1, 2, true);
+    this.addGridProp('prop-lampu', 10, 42, 1, 3, false);
+    this.addGridObstacle(10, 44, 1, 1);
+    this.addGridProp('prop-lampu', 18, 42, 1, 3, false);
+    this.addGridObstacle(18, 44, 1, 1);
+    this.addGridProp('prop-tong-sampah', 19, 43, 1, 2, true);
+
+    // H. GEDUNG SEKOLAH MENENGAH PERTAMA (SMP) - SISI UTARA (gx: 38, gy: 8, ukuran 5x10 petak grid = 600x1200 px)
+    this.addGridProp('school-smp-building', 38, 8, 5, 10, false, () => {
+      this.approachDoorAndEnter('smp', this.schoolSmpDoor.x, this.schoolSmpDoor.y);
+    });
+
+    // Rintangan dinding depan SMP di baris bawah (gx=38..39 dan gx=41..42 solid, pintu tengah gx=40 terbuka)
+    this.addGridObstacle(38, 17, 2, 1);
+    this.addGridObstacle(41, 17, 2, 1);
+
+    // Pintu & Ambang Masuk Gedung SMP
+    const smpThreshold = this.add.graphics();
+    smpThreshold.fillStyle(0x0dd7ca, 0.95);
+    smpThreshold.fillRoundedRect(40 * 120 + 10, 17 * 120 + 80, 100, 36, 6);
+    smpThreshold.lineStyle(3, 0xf59e0b, 1);
+    smpThreshold.strokeRoundedRect(40 * 120 + 10, 17 * 120 + 80, 100, 36, 6);
+
+    this.add.text(40 * 120 + 60, 17 * 120 + 140, '🏫 GEDUNG SEKOLAH MENENGAH PERTAMA (SMP)', {
+      fontFamily: '"Chakra Petch", sans-serif',
+      fontSize: '16px',
+      color: '#67e8f9',
+      fontStyle: 'bold',
+      stroke: '#0a0f1d',
+      strokeThickness: 4,
+    }).setOrigin(0.5).setDepth(18 * 120 + 10);
+
+    // Fasilitas di depan SMP (1x2 Vending Machine Green, 1x3 Lampu, 1x2 Tong Sampah)
+    this.addGridProp('vending-green', 35, 16, 1, 2, true);
+    this.addGridProp('prop-lampu', 36, 15, 1, 3, false);
+    this.addGridObstacle(36, 17, 1, 1);
+    this.addGridProp('prop-lampu', 44, 15, 1, 3, false);
+    this.addGridObstacle(44, 17, 1, 1);
+    this.addGridProp('prop-tong-sampah', 45, 16, 1, 2, true);
+
+    // I. GEDUNG SEKOLAH MENENGAH ATAS (SMA) - SISI TIMUR (gx: 63, gy: 35, ukuran 5x10 petak grid = 600x1200 px)
+    this.addGridProp('school-sma-building', 63, 35, 5, 10, false, () => {
+      this.approachDoorAndEnter('sma', this.schoolSmaDoor.x, this.schoolSmaDoor.y);
+    });
+
+    // Rintangan dinding depan SMA di baris bawah (gx=63..64 dan gx=66..67 solid, pintu tengah gx=65 terbuka)
+    this.addGridObstacle(63, 44, 2, 1);
+    this.addGridObstacle(66, 44, 2, 1);
+
+    // Pintu & Ambang Masuk Gedung SMA
+    const smaThreshold = this.add.graphics();
+    smaThreshold.fillStyle(0x00eaff, 0.95);
+    smaThreshold.fillRoundedRect(65 * 120 + 10, 44 * 120 + 80, 100, 36, 6);
+    smaThreshold.lineStyle(3, 0xf59e0b, 1);
+    smaThreshold.strokeRoundedRect(65 * 120 + 10, 44 * 120 + 80, 100, 36, 6);
+
+    this.add.text(65 * 120 + 60, 44 * 120 + 140, '🏫 GEDUNG SEKOLAH MENENGAH ATAS (SMA)', {
+      fontFamily: '"Chakra Petch", sans-serif',
+      fontSize: '16px',
+      color: '#a5f3fc',
+      fontStyle: 'bold',
+      stroke: '#0a0f1d',
+      strokeThickness: 4,
+    }).setOrigin(0.5).setDepth(45 * 120 + 10);
+
+    // Fasilitas di depan SMA (1x2 Vending Machine Blue, Yellow, Lampu, Tong Sampah)
+    this.addGridProp('vending-blue', 60, 43, 1, 2, true);
+    this.addGridProp('vending-yellow', 61, 43, 1, 2, true);
+    this.addGridProp('prop-lampu', 62, 42, 1, 3, false);
+    this.addGridObstacle(62, 44, 1, 1);
+    this.addGridProp('prop-lampu', 69, 42, 1, 3, false);
+    this.addGridObstacle(69, 44, 1, 1);
+    this.addGridProp('prop-tong-sampah', 70, 43, 1, 2, true);
+
+    // J. RUMAH PRIBADI PEMAIN - SISI SELATAN (gx: 38, gy: 60, ukuran 5x5 petak grid = 600x600 px)
+    this.addGridProp('house-5x5', 38, 60, 5, 5, false, () => {
+      this.approachDoorAndEnter('house', this.playerHouseDoor.x, this.playerHouseDoor.y);
+    });
+
+    // Rintangan dinding depan rumah di baris bawah (gx=38..39 dan gx=41..42 solid, pintu tengah gx=40 terbuka)
+    this.addGridObstacle(38, 64, 2, 1);
+    this.addGridObstacle(41, 64, 2, 1);
+
+    // Pintu & Ambang Masuk Rumah
+    const houseThreshold = this.add.graphics();
+    houseThreshold.fillStyle(0xd97706, 0.95);
+    houseThreshold.fillRoundedRect(40 * 120 + 10, 64 * 120 + 80, 100, 36, 6);
+    houseThreshold.lineStyle(3, 0xf59e0b, 1);
+    houseThreshold.strokeRoundedRect(40 * 120 + 10, 64 * 120 + 80, 100, 36, 6);
+
+    this.add.text(40 * 120 + 60, 64 * 120 + 140, '🏠 RUMAH PRIBADI PEMAIN', {
       fontFamily: '"Chakra Petch", sans-serif',
       fontSize: '16px',
       color: '#fef08a',
       fontStyle: 'bold',
       stroke: '#0a0f1d',
       strokeThickness: 4,
-    }).setOrigin(0.5);
+    }).setOrigin(0.5).setDepth(65 * 120 + 10);
 
-    // G. Kawasan Pasar & Toko (Market District) - Utara Plaza
-    // Toko Pandai Besi Arya
-    const bsG = this.add.graphics();
-    bsG.fillStyle(0x334155, 1);
-    bsG.fillRoundedRect(4420, 3720, 260, 180, 12);
-    bsG.lineStyle(3, 0x0f172a, 1);
-    bsG.strokeRoundedRect(4420, 3720, 260, 180, 12);
-    // Atap besi gelap
-    bsG.fillStyle(0x1e293b, 1);
-    bsG.fillTriangle(4390, 3720, 4550, 3600, 4710, 3720);
-    // Tungku api pandai besi
-    bsG.fillStyle(0xef4444, 1);
-    bsG.fillCircle(4470, 3810, 20);
+    // Fasilitas di depan Rumah
+    this.addGridProp('prop-lampu', 36, 62, 1, 3, false);
+    this.addGridObstacle(36, 64, 1, 1);
+    this.addGridProp('prop-lampu', 44, 62, 1, 3, false);
+    this.addGridObstacle(44, 64, 1, 1);
+    this.addGridProp('prop-kursi-front', 35, 65, 1, 2, false);
 
-    this.add.text(4550, 3680, '⚔️ BENGKEL PANDAI BESI', {
-      fontFamily: '"Chakra Petch", sans-serif',
-      fontSize: '15px',
-      color: '#fbbf24',
-      fontStyle: 'bold',
-      stroke: '#0a0f1d',
-      strokeThickness: 4,
-    }).setOrigin(0.5);
-
-    // Toko Alkimia Sari
-    const alcG = this.add.graphics();
-    alcG.fillStyle(0x065f46, 1);
-    alcG.fillRoundedRect(4920, 3720, 260, 180, 12);
-    alcG.lineStyle(3, 0x022c22, 1);
-    alcG.strokeRoundedRect(4920, 3720, 260, 180, 12);
-    // Atap kubah zamrud
-    alcG.fillStyle(0x047857, 1);
-    alcG.fillTriangle(4890, 3720, 5050, 3600, 5210, 3720);
-
-    this.add.text(5050, 3680, '🧪 APOTEK ALKIMIA AJAIB', {
-      fontFamily: '"Chakra Petch", sans-serif',
-      fontSize: '15px',
-      color: '#6ee7b7',
-      fontStyle: 'bold',
-      stroke: '#0a0f1d',
-      strokeThickness: 4,
-    }).setOrigin(0.5);
-
-    // Sebar ornamen alam di sekeliling dunia (Pohon & Batu)
+    // Sebar ornamen alam di sekeliling dunia (Pohon, Lampu, Kursi Taman, Bebatuan)
     this.spawnNatureDecorations();
   }
 
   /**
-   * Menempatkan pohon, bebatuan, dan peti harta di area luas
+   * Menambahkan rintangan tabrakan statis yang menutup area petak grid tertentu
+   */
+  private addGridObstacle(gx: number, gy: number, gw: number, gh: number): void {
+    const pixelW = gw * this.tileSize;
+    const pixelH = gh * this.tileSize;
+    const centerX = gx * this.tileSize + pixelW / 2;
+    const centerY = gy * this.tileSize + pixelH / 2;
+
+    const zone = this.add.zone(centerX, centerY, pixelW, pixelH);
+    this.physics.add.existing(zone, true);
+    if (this.obstacles) {
+      this.obstacles.add(zone);
+    }
+  }
+
+  /**
+   * Menempatkan aset prop visual yang pas dan rata pada petak grid (AxB grid tiles @ 120px)
+   */
+  private addGridProp(
+    key: string,
+    gx: number,
+    gy: number,
+    gw: number,
+    gh: number,
+    isObstacle: boolean = true,
+    interactiveCallback?: () => void,
+    obstacleRows?: number
+  ): Phaser.GameObjects.Image | null {
+    if (!this.textures.exists(key)) return null;
+
+    const pixelW = gw * this.tileSize;
+    const pixelH = gh * this.tileSize;
+    const centerX = gx * this.tileSize + pixelW / 2;
+    const centerY = gy * this.tileSize + pixelH / 2;
+
+    const img = this.add.image(centerX, centerY, key);
+    img.setDisplaySize(pixelW, pixelH);
+
+    // Pembedaan Tegas:
+    // 1. Rumput Liar ('prop-rumput', 1x2): Bergerombol liar, BEBAS COLLISION (bisa ditembus), menimpa kaki pemain jika di belakangnya.
+    // 2. Taman Rumput ('prop-taman-rumput', 2x1): Tertata rapi, tidak banyak, dan MEMILIKI COLLISION fisik solid.
+    const isWildGrass = key === 'prop-rumput';
+    const isTamanRumput = key === 'prop-taman-rumput';
+
+    // Kedalaman visual (Y-sorting natural):
+    // Menggunakan dasar petak bawah (gy + gh) * tileSize.
+    // Jika pemain berjalan di belakang atau di dalam rumput liar, rumput menimpa kaki/badan pemain secara alami!
+    // Jika pemain berjalan di depan rumput liar, pemain menimpa rumput.
+    img.setDepth((gy + gh) * this.tileSize);
+
+    // Khusus rumput liar: 100% bebas collision (bisa dilewati)
+    if (isWildGrass) {
+      isObstacle = false;
+    }
+
+    // Khusus taman rumput: SELALU memiliki collision fisik solid (ada collision-nya)
+    if (isTamanRumput) {
+      isObstacle = true;
+    }
+
+    if (interactiveCallback) {
+      img.setInteractive({ useHandCursor: true });
+      img.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+        if (pointer?.event) pointer.event.stopPropagation();
+        interactiveCallback();
+      });
+    }
+
+    // Collision konsisten selebar X (gw) dan setinggi 1 petak grid di baris dasar objek:
+    // Taman Rumput (2x1) MEMILIKI collision fisik solid selebar 2 petak (gw=2, gh=1)!
+    if (isObstacle && !isWildGrass) {
+      this.addGridObstacle(gx, gy + gh - 1, gw, 1);
+    }
+
+    return img;
+  }
+
+  /**
+   * Menempatkan pohon, lampu jalan, kursi taman, bebatuan, taman rumput rapi, dan gerombolan rumput liar di dunia
    */
   private spawnNatureDecorations(): void {
-    // 1. Hutan Zamrud Barat Laut (1600 - 3600, 1600 - 3600)
-    for (let i = 0; i < 48; i++) {
-      const x = 1600 + (i % 8) * 240 + Math.sin(i) * 60;
-      const y = 1600 + Math.floor(i / 8) * 240 + Math.cos(i) * 60;
-      const tree = this.add.image(x, y, 'tree-asset').setDisplaySize(96, 120);
-      tree.setDepth(y);
-    }
+    // 1. Lampu Jalan Megah Sepanjang Boulevard Utama (1x3 Lampu.png)
+    const boulevardLampsGy = [20, 24, 28, 48, 52, 56];
+    boulevardLampsGy.forEach(ly => {
+      this.addGridProp('prop-lampu', 38, ly, 1, 3, false);
+      this.addGridObstacle(38, ly + 2, 1, 1);
+      this.addGridProp('prop-lampu', 42, ly, 1, 3, false);
+      this.addGridObstacle(42, ly + 2, 1, 1);
+    });
 
-    // 2. Padang Timur (6500 - 8500, 5000 - 7500)
-    for (let i = 0; i < 30; i++) {
-      const x = 6500 + (i % 6) * 300 + Math.sin(i) * 80;
-      const y = 5000 + Math.floor(i / 6) * 320 + Math.cos(i) * 80;
-      const rock = this.add.image(x, y, i % 2 === 0 ? 'rock-asset' : 'tree-asset');
-      rock.setDisplaySize(i % 2 === 0 ? 80 : 96, i % 2 === 0 ? 60 : 120);
-      rock.setDepth(y);
-    }
-
-    // 3. Peti Harta Karun Tersebar di Penjuru Dunia
-    const chests = [
-      { x: 2600, y: 2200, name: 'Peti Hutan Kuno' },
-      { x: 7400, y: 2800, name: 'Peti Telaga Kristal' },
-      { x: 3800, y: 6800, name: 'Peti Padang Selatan' },
-      { x: 7800, y: 7200, name: 'Peti Bebatuan Timur' },
+    // 2. Kursi Taman di Alun-Alun Plaza (Ditempatkan di sudut-sudut santai plaza)
+    const plazaBenches = [
+      { gx: 34, gy: 33 }, // NW Plaza
+      { gx: 46, gy: 33 }, // NE Plaza
+      { gx: 34, gy: 47 }, // SW Plaza
+      { gx: 46, gy: 47 }, // SE Plaza
     ];
+    plazaBenches.forEach(pb => {
+      this.addGridProp('prop-kursi-front', pb.gx, pb.gy, 1, 2, false);
+    });
 
+    // 3. TAMAN RUMPUT RAPI (2x1 TamanRumput.png) - TERTATA RAPI, TIDAK BANYAK, & MEMILIKI COLLISION FISIK SOLID
+    const neatGardenBeds = [
+      // A. Alun-Alun Central Plaza (4 Sudut Taman bersanding rapi dengan bangku taman)
+      { gx: 36, gy: 33 }, // NW Plaza: Bersanding rapi di samping bangku Barat Laut
+      { gx: 43, gy: 33 }, // NE Plaza: Bersanding rapi di samping bangku Timur Laut
+      { gx: 36, gy: 47 }, // SW Plaza: Bersanding rapi di samping bangku Barat Daya
+      { gx: 43, gy: 47 }, // SE Plaza: Bersanding rapi di samping bangku Timur Daya
+
+      // B. Pembatas Taman Depan Rumah Pribadi Pemain (Simetris & rapi di kiri & kanan gerbang)
+      { gx: 36, gy: 65 }, // Sayap Kiri Halaman Rumah
+      { gx: 43, gy: 65 }, // Sayap Kanan Halaman Rumah
+
+      // C. Taman Pembatas Gerbang Sekolah (Simetris di kiri & kanan koridor masuk)
+      // 1. Gedung SD (Pintu di gx=14, gy=44)
+      { gx: 11, gy: 45 }, // Sayap kiri jalan masuk SD
+      { gx: 16, gy: 45 }, // Sayap kanan jalan masuk SD
+
+      // 2. Gedung SMP (Pintu di gx=40, gy=17)
+      { gx: 37, gy: 18 }, // Sayap kiri jalan masuk SMP
+      { gx: 42, gy: 18 }, // Sayap kanan jalan masuk SMP
+
+      // 3. Gedung SMA (Pintu di gx=65, gy=44)
+      { gx: 62, gy: 45 }, // Sayap kiri jalan masuk SMA
+      { gx: 67, gy: 45 }, // Sayap kanan jalan masuk SMA
+    ];
+    neatGardenBeds.forEach(bed => {
+      this.addGridProp('prop-taman-rumput', bed.gx, bed.gy, 2, 1, true); // true = ada collision fisik!
+    });
+
+    // 4. GEROMBOLAN RUMPUT LIAR (1x2 Rumput.png) - 100% TANPA COLLISION & BERGEROMBOL ALAMI
+    // Menimpa (overlap di depan) pemain saat pemain berdiri di belakang / di dalam semak rumput
+    const wildGrassClusters = [
+      // A. Klaster Padang Hutan Barat (Bergerombol alami di sela-sela pepohonan nusantara)
+      { gx: 19, gy: 20 }, { gx: 20, gy: 20 }, { gx: 19, gy: 21 }, { gx: 20, gy: 21 }, { gx: 21, gy: 21 },
+      { gx: 23, gy: 24 }, { gx: 24, gy: 24 }, { gx: 25, gy: 24 }, { gx: 24, gy: 25 }, { gx: 25, gy: 25 }, { gx: 26, gy: 25 },
+      { gx: 17, gy: 27 }, { gx: 18, gy: 27 }, { gx: 18, gy: 28 }, { gx: 19, gy: 28 }, { gx: 20, gy: 28 },
+
+      // B. Klaster Pesisir Telaga Mistik Kristal (Bergerombol liar di tepian air)
+      { gx: 68, gy: 30 }, { gx: 69, gy: 30 }, { gx: 70, gy: 30 }, { gx: 69, gy: 31 }, { gx: 70, gy: 31 },
+      { gx: 60, gy: 36 }, { gx: 61, gy: 36 }, { gx: 60, gy: 37 }, { gx: 61, gy: 37 }, { gx: 62, gy: 37 },
+      { gx: 74, gy: 41 }, { gx: 75, gy: 41 }, { gx: 74, gy: 42 }, { gx: 75, gy: 42 }, { gx: 76, gy: 42 },
+
+      // C. Klaster Bebatuan Gunung Timur (Bergerombol di celah bebatuan)
+      { gx: 53, gy: 23 }, { gx: 54, gy: 23 }, { gx: 53, gy: 24 }, { gx: 54, gy: 24 }, { gx: 55, gy: 24 },
+      { gx: 70, gy: 53 }, { gx: 71, gy: 53 }, { gx: 70, gy: 54 }, { gx: 71, gy: 54 }, { gx: 72, gy: 54 },
+
+      // D. Klaster Padang Rumput Liar Selatan & Ladang (Bergerombol di alam terbuka sekitar rumah pemain & kebun)
+      { gx: 30, gy: 63 }, { gx: 31, gy: 63 }, { gx: 30, gy: 64 }, { gx: 31, gy: 64 }, { gx: 32, gy: 64 },
+      { gx: 48, gy: 63 }, { gx: 49, gy: 63 }, { gx: 48, gy: 64 }, { gx: 49, gy: 64 }, { gx: 50, gy: 64 },
+      { gx: 46, gy: 75 }, { gx: 47, gy: 75 }, { gx: 46, gy: 76 }, { gx: 47, gy: 76 }, { gx: 48, gy: 76 },
+
+      // E. Klaster Tepi Boulevard Hijau (Bergerombol alami di tanah rumput samping jalan besar)
+      { gx: 36, gy: 24 }, { gx: 37, gy: 24 }, { gx: 36, gy: 25 }, { gx: 37, gy: 25 },
+      { gx: 43, gy: 24 }, { gx: 44, gy: 24 }, { gx: 43, gy: 25 }, { gx: 44, gy: 25 },
+      { gx: 36, gy: 52 }, { gx: 37, gy: 52 }, { gx: 36, gy: 53 }, { gx: 37, gy: 53 },
+      { gx: 43, gy: 52 }, { gx: 44, gy: 52 }, { gx: 43, gy: 53 }, { gx: 44, gy: 53 },
+    ];
+    wildGrassClusters.forEach(wg => {
+      this.addGridProp('prop-rumput', wg.gx, wg.gy, 1, 2, false); // false = zero collision!
+    });
+
+    // 3. Pohon Rindang Sepanjang Taman & Tepi Jalan (Tersusun Rapi pada Petak Grid)
+    const boulevardTrees = [
+      { gx: 36, gy: 22, tall: true }, { gx: 44, gy: 22, tall: true },
+      { gx: 36, gy: 26, tall: false }, { gx: 44, gy: 26, tall: false },
+      { gx: 36, gy: 50, tall: true }, { gx: 44, gy: 50, tall: true },
+      { gx: 36, gy: 54, tall: false }, { gx: 44, gy: 54, tall: false },
+    ];
+    boulevardTrees.forEach(bt => {
+      const key = bt.tall ? 'prop-pohon-tall' : 'prop-pohon-small';
+      const gh = bt.tall ? 3 : 2;
+      this.addGridProp(key, bt.gx, bt.gy, 1, gh, false);
+      this.addGridObstacle(bt.gx, bt.gy + gh - 1, 1, 1);
+    });
+
+    // Taman Hutan Barat (Pohon berjarak 4 petak agar lega dan tidak berdempetan)
+    for (let i = 0; i < 16; i++) {
+      const gx = 18 + (i % 4) * 4;
+      const gy = 18 + Math.floor(i / 4) * 4;
+      const isTall = i % 2 === 0;
+      const key = isTall ? 'prop-pohon-tall' : 'prop-pohon-small';
+      const gh = isTall ? 3 : 2;
+      this.addGridProp(key, gx, gy, 1, gh, false);
+      this.addGridObstacle(gx, gy + gh - 1, 1, 1);
+    }
+
+    // 4. Bebatuan (1x2 Batu.png) - PAS TEPAT PADA PETAK GRID DENGAN COLLIDER FISIK SOLID (120x240 px)
+    const rockLocations = [
+      { gx: 54, gy: 24 }, { gx: 56, gy: 22 }, { gx: 58, gy: 26 },
+      { gx: 72, gy: 24 }, { gx: 74, gy: 22 }, { gx: 76, gy: 26 },
+      { gx: 68, gy: 50 }, { gx: 71, gy: 54 }, { gx: 74, gy: 52 },
+      { gx: 69, gy: 58 }, { gx: 73, gy: 62 }, { gx: 76, gy: 60 },
+      { gx: 20, gy: 60 }, { gx: 23, gy: 64 }, { gx: 26, gy: 62 },
+      { gx: 54, gy: 68 }, { gx: 57, gy: 72 }, { gx: 60, gy: 70 },
+    ];
+    rockLocations.forEach(r => {
+      this.addGridProp('prop-batu', r.gx, r.gy, 1, 2, true);
+    });
+
+    // 5. Peti Harta Karun Tersebar di Penjuru Dunia
+    const chests = [
+      { gx: 22, gy: 19, name: 'Peti Hutan Nusantara' },
+      { gx: 62, gy: 23, name: 'Peti Telaga Kristal' },
+      { gx: 32, gy: 57, name: 'Peti Padang Selatan' },
+      { gx: 65, gy: 60, name: 'Peti Bebatuan Timur' },
+    ];
     chests.forEach(c => {
-      const chest = this.add.image(c.x, c.y, 'chest-asset').setDisplaySize(48, 48);
+      const cx = c.gx * this.tileSize + 60;
+      const cy = c.gy * this.tileSize + 60;
+      const chest = this.add.image(cx, cy, 'chest-asset').setDisplaySize(48, 48);
       chest.setInteractive({ useHandCursor: true });
       chest.on('pointerdown', () => {
         chest.setTint(0xfacc15);
@@ -630,6 +953,31 @@ export class WorldScene extends Phaser.Scene {
         });
       });
     });
+  }
+
+  /**
+   * Menavigasikan pemain menuju ke pintu gedung dan memicu teleportasi saat sampai
+   */
+  private approachDoorAndEnter(type: 'sd' | 'smp' | 'sma' | 'house', doorX: number, doorY: number): void {
+    if (!this.player || !this.player.active) return;
+    const px = this.player.x;
+    const py = this.player.y;
+    const dist = Phaser.Math.Distance.Between(px, py, doorX, doorY);
+
+    if (dist <= 130) {
+      if (type === 'sd') this.transitionToSchool('sd', this.schoolSdDoor.x, this.schoolSdDoor.y + 120);
+      else if (type === 'smp') this.transitionToSchool('smp', this.schoolSmpDoor.x, this.schoolSmpDoor.y + 120);
+      else if (type === 'sma') this.transitionToSchool('sma', this.schoolSmaDoor.x, this.schoolSmaDoor.y + 120);
+      else this.transitionToHouse();
+    } else {
+      this.spawnTapRipple(doorX, doorY + 60);
+      this.player.navigateTo(doorX, doorY + 60, () => {
+        if (type === 'sd') this.transitionToSchool('sd', this.schoolSdDoor.x, this.schoolSdDoor.y + 120);
+        else if (type === 'smp') this.transitionToSchool('smp', this.schoolSmpDoor.x, this.schoolSmpDoor.y + 120);
+        else if (type === 'sma') this.transitionToSchool('sma', this.schoolSmaDoor.x, this.schoolSmaDoor.y + 120);
+        else this.transitionToHouse();
+      });
+    }
   }
 
   /**
@@ -746,10 +1094,13 @@ export class WorldScene extends Phaser.Scene {
     }
 
     // Koordinat spawn: pulihkan posisi terakhir pemain di Open World jika ada
-    let spawnX = nearHouse ? 4800 : 4800;
-    let spawnY = nearHouse ? 5660 : 4860;
+    let spawnX = nearHouse ? 4860 : 4860;
+    let spawnY = nearHouse ? 7860 : 4860;
 
-    if (!nearHouse) {
+    if (this.customSpawnPos) {
+      spawnX = this.customSpawnPos.x;
+      spawnY = this.customSpawnPos.y;
+    } else if (!nearHouse) {
       try {
         const saved = localStorage.getItem('raden_pos_world');
         if (saved) {
@@ -774,6 +1125,11 @@ export class WorldScene extends Phaser.Scene {
       100,
       100
     );
+
+    // Aktifkan tabrakan fisik Arcade agar karakter tidak bisa menembus dinding gedung, gerobak, batu, dan meja
+    if (this.obstacles) {
+      this.physics.add.collider(this.player, this.obstacles);
+    }
 
     this.cameras.main.setBounds(0, 0, this.worldWidth, this.worldHeight);
     this.cameras.main.setRoundPixels(true);
@@ -973,19 +1329,30 @@ export class WorldScene extends Phaser.Scene {
     if (!this.player || this.isTransitioning) return;
 
     this.player.update(time, delta);
-    this.player.setDepth(this.player.y);
+    this.player.setDepth(this.player.y + 60);
 
     const px = this.player.x;
     const py = this.player.y;
 
-    // Cek kedekatan dengan rumah pemain
+    // Cek kedekatan dengan pintu gedung sekolah dan rumah pemain
+    const distSd = Phaser.Math.Distance.Between(px, py, this.schoolSdDoor.x, this.schoolSdDoor.y);
+    const distSmp = Phaser.Math.Distance.Between(px, py, this.schoolSmpDoor.x, this.schoolSmpDoor.y);
+    const distSma = Phaser.Math.Distance.Between(px, py, this.schoolSmaDoor.x, this.schoolSmaDoor.y);
     const distHouse = Phaser.Math.Distance.Between(px, py, this.playerHouseDoor.x, this.playerHouseDoor.y);
 
     let prompt: string | null = null;
     let locationName = this.getRegionName(px, py);
 
-    // Hanya tampilkan prompt masuk rumah jika cooldown sudah selesai
-    if (distHouse < 110 && time > this.doorCooldownUntil) {
+    if (distSd < 120) {
+      prompt = 'TEKAN [E] / KLIK UNTUK MASUK KE GEDUNG SD';
+      locationName = 'KAWASAN PENDIDIKAN: GEDUNG SD';
+    } else if (distSmp < 120) {
+      prompt = 'TEKAN [E] / KLIK UNTUK MASUK KE GEDUNG SMP';
+      locationName = 'KAWASAN PENDIDIKAN: GEDUNG SMP';
+    } else if (distSma < 120) {
+      prompt = 'TEKAN [E] / KLIK UNTUK MASUK KE GEDUNG SMA';
+      locationName = 'KAWASAN PENDIDIKAN: GEDUNG SMA';
+    } else if (distHouse < 120 && time > this.doorCooldownUntil) {
       prompt = `TEKAN [E] / KLIK UNTUK MASUK KE RUMAH PRIBADI (${this.privateRoomId})`;
       locationName = 'SANCTUARY: RUMAH PEMAIN';
     } else {
@@ -1039,7 +1406,7 @@ export class WorldScene extends Phaser.Scene {
 
     this.remotePlayers.forEach(p => {
       p.update(time, delta);
-      p.setDepth(p.y);
+      p.setDepth(p.y + 60);
     });
   }
 
@@ -1048,14 +1415,32 @@ export class WorldScene extends Phaser.Scene {
     const px = this.player.x;
     const py = this.player.y;
 
-    // 1. Masuk kembali ke rumah pribadi (jika dekat dan cooldown lewat)
+    // 1. Masuk ke Gedung SD
+    if (Phaser.Math.Distance.Between(px, py, this.schoolSdDoor.x, this.schoolSdDoor.y) < 130) {
+      this.transitionToSchool('sd', this.schoolSdDoor.x, this.schoolSdDoor.y + 60);
+      return;
+    }
+
+    // 2. Masuk ke Gedung SMP
+    if (Phaser.Math.Distance.Between(px, py, this.schoolSmpDoor.x, this.schoolSmpDoor.y) < 130) {
+      this.transitionToSchool('smp', this.schoolSmpDoor.x, this.schoolSmpDoor.y + 60);
+      return;
+    }
+
+    // 3. Masuk ke Gedung SMA
+    if (Phaser.Math.Distance.Between(px, py, this.schoolSmaDoor.x, this.schoolSmaDoor.y) < 130) {
+      this.transitionToSchool('sma', this.schoolSmaDoor.x, this.schoolSmaDoor.y + 60);
+      return;
+    }
+
+    // 4. Masuk kembali ke rumah pribadi (jika dekat dan cooldown lewat)
     const distHouse = Phaser.Math.Distance.Between(px, py, this.playerHouseDoor.x, this.playerHouseDoor.y);
     if (distHouse < 130 && (!this.time || this.time.now > this.doorCooldownUntil)) {
       this.transitionToHouse();
       return;
     }
 
-    // 2. Interaksi dengan NPC terdekat
+    // 5. Interaksi dengan NPC terdekat
     for (const npc of this.npcs) {
       const dist = Phaser.Math.Distance.Between(px, py, npc.x, npc.y);
       if (dist < 120) {
@@ -1063,6 +1448,31 @@ export class WorldScene extends Phaser.Scene {
         return;
       }
     }
+  }
+
+  private transitionToSchool(schoolType: 'sd' | 'smp' | 'sma', returnX: number, returnY: number): void {
+    if (this.isTransitioning) return;
+    this.isTransitioning = true;
+    const label = schoolType === 'sd' ? 'Gedung SD' : schoolType === 'smp' ? 'Gedung SMP' : 'Gedung SMA';
+    this.player?.showSpeechBubble(`Masuk ke ${label}...`);
+
+    const schoolPath = `/world/${schoolType}`;
+    if (window.location.pathname !== schoolPath) {
+      window.history.pushState(null, '', schoolPath);
+    }
+    EventBus.emit('url-changed', schoolPath);
+
+    this.time.delayedCall(400, () => {
+      this.cameras?.main?.stopFollow();
+      this.scene.start('SchoolScene', {
+        schoolType,
+        name: this.player?.getEntityName() || this.pendingPlayerName || 'Petualang',
+        avatar: this.player?.getAvatar() || this.pendingAvatar,
+        returnX,
+        returnY,
+        fromDoor: true,
+      });
+    });
   }
 
   private transitionToHouse(): void {
@@ -1096,13 +1506,16 @@ export class WorldScene extends Phaser.Scene {
   }
 
   private getRegionName(x: number, y: number): string {
+    if (Math.hypot(x - 3480, y - 3840) < 650) return 'KAWASAN PENDIDIKAN: GEDUNG SD';
+    if (Math.hypot(x - 4800, y - 2640) < 650) return 'KAWASAN PENDIDIKAN: GEDUNG SMP';
+    if (Math.hypot(x - 6120, y - 3840) < 650) return 'KAWASAN PENDIDIKAN: GEDUNG SMA';
+    if (x >= 4300 && x <= 5300 && y >= 4400 && y <= 5200) return 'PUJASERA KULINER NUSANTARA';
+    if (Math.hypot(x - 4800, y - 5500) < 400) return 'SANCTUARY: RUMAH PEMAIN';
     if (Math.hypot(x - 4800, y - 4800) < 600) return 'SANCTUARY CENTRAL PLAZA';
-    if (x >= 4300 && x <= 5300 && y >= 3600 && y <= 4200) return 'SANCTUARY MARKET SQUARE';
-    if (Math.hypot(x - 4800, y - 5400) < 300) return 'SANCTUARY: RUMAH PEMAIN';
-    if (x > 6200 && y < 4600) return 'AZURE MYSTIC LAKE';
-    if (x < 3600 && y < 3600) return 'WHISPERING EMERALD FOREST';
-    if (y > 6600) return 'SOUTHERN WINDMILL FARMS';
-    if (x > 6800 && y > 5500) return 'EASTERN GRANITE RUINS';
+    if (x > 6200 && y < 4600) return 'TELAGA MISTIK KRISTAL';
+    if (x < 3600 && y < 3600) return 'HUTAN ZAMRUD INDONESIA';
+    if (y > 6600) return 'PERKEBUNAN HIJAU SELATAN';
+    if (x > 6800 && y > 5500) return 'BEBATUAN ALAM TIMUR';
     return 'RADENWORLD OPEN REALMS';
   }
 }

@@ -38,9 +38,11 @@ import {
   ZoomIn,
   Activity,
   Play,
+  Pause,
+  Music,
 } from 'lucide-react';
 
-export type LanguageCode = 'id' | 'en' | 'su' | 'jv';
+export type LanguageCode = 'id' | 'en' | 'zh' | 'ja' | 'ko' | 'ar' | 'fr' | 'ru' | 'de' | 'es';
 export type ControlMode = 'pc' | 'mobile';
 
 export interface GameSettings {
@@ -90,12 +92,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const [currentCameraZoom, setCurrentCameraZoom] = useState<number>(() => {
     return settings.cameraZoom || 0.9;
   });
+  const [isBgmPlaying, setIsBgmPlaying] = useState<boolean>(() => sound.getIsBgmPlaying());
 
   useEffect(() => {
     if (!isOpen) return;
     setIsSocketConnected(networkMgr.getIsConnected());
     setCurrentSocketUrl(networkMgr.getServerUrl());
     setIsFullscreen(Boolean(document.fullscreenElement));
+    setIsBgmPlaying(sound.getIsBgmPlaying());
 
     const handleNet = (data: { isConnected: boolean; serverUrl: string }) => {
       setIsSocketConnected(data.isConnected);
@@ -161,7 +165,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const handleVolumeChange = (field: 'masterVolume' | 'bgmVolume' | 'sfxVolume', value: number) => {
     const updated = { ...settings, [field]: value };
     onUpdateSettings(updated);
-    sound.setVolume(updated.masterVolume, updated.sfxVolume);
+    sound.setVolume(updated.masterVolume, updated.sfxVolume, updated.bgmVolume);
   };
 
   const handleTestSoundChime = () => {
@@ -204,9 +208,15 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
   const languagesList: { code: LanguageCode; name: string; region: string; flag: string }[] = [
     { code: 'id', name: 'Bahasa Indonesia', region: 'Indonesia (Bahasa Utama)', flag: '🇮🇩' },
-    { code: 'en', name: 'English (US)', region: 'International Global', flag: '🌐' },
-    { code: 'su', name: 'Basa Sunda', region: 'Tatar Pasundan / Jawa Barat', flag: '🍃' },
-    { code: 'jv', name: 'Basa Jawa', region: 'Nusantara / Jawa Tengah & Timur', flag: '👑' },
+    { code: 'en', name: 'English', region: 'Global / United States / UK', flag: '🇬🇧' },
+    { code: 'zh', name: '中文 (Mandarin)', region: 'China / Taiwan / Singapore', flag: '🇨🇳' },
+    { code: 'ja', name: '日本語 (Japanese)', region: 'Japan (Nihon)', flag: '🇯🇵' },
+    { code: 'ko', name: '한국어 (Korean)', region: 'South Korea (Hanguk)', flag: '🇰🇷' },
+    { code: 'ar', name: 'العربية (Arabic)', region: 'Timur Tengah & Afrika Utara', flag: '🇸🇦' },
+    { code: 'fr', name: 'Français (French)', region: 'Prancis & Komunitas Frankofon', flag: '🇫🇷' },
+    { code: 'ru', name: 'Русский (Russian)', region: 'Rusia & Negara CIS', flag: '🇷🇺' },
+    { code: 'de', name: 'Deutsch (German)', region: 'Jerman / Austria / Swiss', flag: '🇩🇪' },
+    { code: 'es', name: 'Español (Spanish)', region: 'Spanyol & Amerika Latin', flag: '🇪🇸' },
   ];
 
   const cameraZoomPresets = [
@@ -388,21 +398,63 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 />
               </div>
 
-              {/* Slider BGM Musik */}
-              <div className="p-3.5 rounded-md bg-[#0e0e0e] border border-neutral-800 space-y-2">
-                <div className="flex justify-between text-xs font-bold">
-                  <span className="text-neutral-300 uppercase tracking-wider">Musik Latar (BGM)</span>
-                  <span className="text-amber-400 font-mono">{Math.round(settings.bgmVolume * 100)}%</span>
+              {/* BGM Musik Resmi RadenWorld + Play/Pause Controller */}
+              <div className="p-3.5 rounded-md bg-[#0e0e0e] border border-neutral-800 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-md bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
+                      <Music className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <div className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                        <span>Musik Latar Resmi (BGM)</span>
+                        <span className={`text-[9px] px-1.5 py-0.2 rounded font-mono font-bold ${isBgmPlaying ? 'bg-emerald-500 text-black' : 'bg-neutral-800 text-neutral-300'}`}>
+                          {isBgmPlaying ? 'MEMUTAR' : 'JEDA'}
+                        </span>
+                      </div>
+                      <div className="text-[10px] text-amber-400/80 font-mono mt-0.5">
+                        RadenWorld Music.mp3
+                      </div>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      sound.toggleBGM();
+                      setIsBgmPlaying(sound.getIsBgmPlaying());
+                    }}
+                    className="px-3 py-1.5 rounded-md bg-amber-500 hover:bg-amber-400 active:scale-95 text-black font-bold text-xs uppercase tracking-wider transition-colors cursor-pointer flex items-center gap-1.5"
+                  >
+                    {isBgmPlaying ? (
+                      <>
+                        <Pause className="w-3.5 h-3.5 fill-current" />
+                        <span>Jeda BGM</span>
+                      </>
+                    ) : (
+                      <>
+                        <Play className="w-3.5 h-3.5 fill-current" />
+                        <span>Putar BGM</span>
+                      </>
+                    )}
+                  </button>
                 </div>
-                <input
-                  type="range"
-                  min="0"
-                  max="1"
-                  step="0.05"
-                  value={settings.bgmVolume}
-                  onChange={(e) => handleVolumeChange('bgmVolume', parseFloat(e.target.value))}
-                  className="w-full accent-amber-500 cursor-pointer h-2 bg-neutral-800 rounded-lg"
-                />
+
+                <div className="pt-1 space-y-1.5">
+                  <div className="flex justify-between text-xs font-bold">
+                    <span className="text-neutral-400 text-[11px] uppercase tracking-wider">Volume BGM</span>
+                    <span className="text-amber-400 font-mono">{Math.round(settings.bgmVolume * 100)}%</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.05"
+                    value={settings.bgmVolume}
+                    onChange={(e) => handleVolumeChange('bgmVolume', parseFloat(e.target.value))}
+                    className="w-full accent-amber-500 cursor-pointer h-2 bg-neutral-800 rounded-lg"
+                  />
+                </div>
               </div>
 
               {/* Slider SFX Efek Suara + Preview Button */}

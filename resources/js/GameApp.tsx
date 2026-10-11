@@ -25,6 +25,7 @@ import { ServerModal, IGameServerOption } from './game/ui/ServerModal';
 import { TopUpModal } from './game/ui/TopUpModal';
 import { FriendRequestNotification, IFriendRequest } from './game/ui/FriendRequestNotification';
 import { DialogueBox } from './game/ui/DialogueBox';
+import { LoadingScreen } from './game/ui/LoadingScreen';
 import { calculateAgeFromBirthDate } from './game/ui/AuthModal';
 import { EventBus } from './game/core/EventBus';
 import { SoundManager } from './game/core/SoundManager';
@@ -39,12 +40,13 @@ export const GameApp: React.FC = () => {
   // Screen state: 'home' (Lobby /) | 'playing' (Safe House, Open World, atau Portal Admin)
   const [gameState, setGameState] = useState<'home' | 'playing'>(isDirectInGame ? 'playing' : 'home');
   const [currentPath, setCurrentPath] = useState<string>(initialPath);
+  const [isLoadingScreen, setIsLoadingScreen] = useState(true);
 
   // Game Settings State
   const [settings, setSettings] = useState<GameSettings>({
     language: 'id',
     masterVolume: 0.8,
-    bgmVolume: 0.7,
+    bgmVolume: 0.05, // 5% sesuai permintaan pengguna
     sfxVolume: 0.8,
     isMuted: false,
     controlMode: 'pc', // 'pc' | 'mobile'
@@ -322,7 +324,13 @@ export const GameApp: React.FC = () => {
       } else {
         setGameState('playing');
         if (p.startsWith('/world')) {
-          EventBus.emit('switch-scene', { scene: 'WorldScene' });
+          const lowerP = p.toLowerCase();
+          if (lowerP === '/world/sd' || lowerP === '/world/smp' || lowerP === '/world/sma') {
+            const schoolType = lowerP.replace('/world/', '');
+            EventBus.emit('switch-scene', { scene: 'SchoolScene', schoolType });
+          } else {
+            EventBus.emit('switch-scene', { scene: 'WorldScene' });
+          }
         } else if (p.startsWith('/home')) {
           const seg = p.replace('/home/', '').trim();
           EventBus.emit('switch-scene', { scene: 'HouseScene', privateRoomId: seg });
@@ -503,12 +511,21 @@ export const GameApp: React.FC = () => {
       EventBus.off('player-stats-updated', handleStats);
       EventBus.off('interaction-prompt', handlePrompt);
       EventBus.off('new-chat-message', handleChat);
-      EventBus.off('open-wardrobe', handleOpenWardrobe);
-      EventBus.off('inspect-player-profile', handleInspectProfile);
       EventBus.off('incoming-friend-request', handleIncomingFriend);
       EventBus.off('friend-response-result', handleFriendResponse);
     };
   }, []);
+
+  // Memulai Musik Latar (BGM) Resmi RadenWorld secara otomatis
+  useEffect(() => {
+    sound.playBGM();
+  }, []);
+
+  const handleUpdateSettings = (newSettings: GameSettings) => {
+    setSettings(newSettings);
+    sound.setVolume(newSettings.masterVolume, newSettings.sfxVolume, newSettings.bgmVolume);
+    sound.setMuted(newSettings.isMuted);
+  };
 
   // Friend Request Handlers
   const handleAddFriend = (targetId: string, targetName: string) => {
@@ -586,6 +603,9 @@ export const GameApp: React.FC = () => {
 
   // Memulai game dari Home Screen (setelah Login / Kustomisasi Avatar)
   const handleStartGame = (name: string, avatar: IAvatarCustomization, privateRoomId?: string) => {
+    // Tampilkan LoadingScreen animasi retro boy walking to girl saat masuk bermain
+    setIsLoadingScreen(true);
+
     let isSuperAdmin = name.toUpperCase() === 'RADEN';
     let role = isSuperAdmin ? 'super_admin' : 'player';
     let level = isSuperAdmin ? 99 : 1;
@@ -825,12 +845,20 @@ export const GameApp: React.FC = () => {
       {/* 2D HTML5 Canvas Game Engine (Phaser 3) */}
       <GameCanvas />
 
-      {/* 1. TAMPILAN BERANDA (HOME SCREEN INTERAKTIF MENU KIRI) */}
-      {gameState === 'home' && (
+      {/* 0. LOADING SCREEN SESUAI GAMBAR (COWOK BERJALAN MENUJU KE CEWEK) */}
+      {isLoadingScreen && (
+        <LoadingScreen
+          onComplete={() => setIsLoadingScreen(false)}
+          serverCode="ASIA - 0001"
+        />
+      )}
+
+      {/* 1. TAMPILAN BERANDA (HOME SCREEN INTERAKTIF MENU KIRI SESUAI GAMBAR) */}
+      {!isLoadingScreen && gameState === 'home' && (
         <HomeScreen
           onStartGame={handleStartGame}
           settings={settings}
-          onUpdateSettings={setSettings}
+          onUpdateSettings={handleUpdateSettings}
           onOpenServerModal={() => setIsServerModalOpen(true)}
         />
       )}
@@ -950,7 +978,7 @@ export const GameApp: React.FC = () => {
             isOpen={inGameSettingsOpen}
             onClose={() => setInGameSettingsOpen(false)}
             settings={settings}
-            onUpdateSettings={setSettings}
+            onUpdateSettings={handleUpdateSettings}
             onOpenServerModal={() => {
               setInGameSettingsOpen(false);
               setIsServerModalOpen(true);

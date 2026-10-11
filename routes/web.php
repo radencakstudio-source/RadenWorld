@@ -11,13 +11,85 @@ Route::get('/home/{privateId?}', function ($privateId = null) {
     return view('welcome');
 });
 
-Route::get('/world', function () {
+Route::get('/world/{school?}', function ($school = null) {
+    return view('welcome');
+});
+
+Route::get('/school/{type?}', function ($type = null) {
     return view('welcome');
 });
 
 // Route Khusus Portal Super Admin (Dengan random token ID berkeamanan tinggi)
 Route::get('/admin/{adminToken?}', function ($adminToken = null) {
     return view('welcome');
+});
+
+// ============================================================================
+// API SEKOLAH (SD, SMP, SMA)
+// ============================================================================
+Route::get('/api/game/school/{type?}', function ($type = 'sd') {
+    $schools = [
+        'sd' => [
+            'type' => 'sd',
+            'name' => 'Sekolah Dasar (SD) RadenWorld',
+            'grade_level' => 'Tingkat 1 - 6',
+            'uniform' => 'Merah Putih',
+            'colors' => [
+                'light' => '#D70D0D',
+                'dark' => '#570404',
+            ],
+            'teacher' => [
+                'name' => 'Bu Guru Endang',
+                'role' => 'Wali Kelas SD Teladan',
+            ],
+            'student' => [
+                'name' => 'Budi Kecil',
+                'role' => 'Murid Berprestasi SD (Merah Putih)',
+            ],
+            'facilities' => ['Ruang Kelas 1-6', 'Papan Tulis Whiteboard', 'Meja Guru', 'Vending Machine Susu', 'Pojok Membaca'],
+        ],
+        'smp' => [
+            'type' => 'smp',
+            'name' => 'Sekolah Menengah Pertama (SMP) RadenWorld',
+            'grade_level' => 'Tingkat 7 - 9',
+            'uniform' => 'Biru Putih',
+            'colors' => [
+                'light' => '#0DD7CA',
+                'dark' => '#0C6125',
+            ],
+            'teacher' => [
+                'name' => 'Pak Guru Haryanto',
+                'role' => 'Guru IPA & Pembina OSIS SMP',
+            ],
+            'student' => [
+                'name' => 'Rian Aditya',
+                'role' => 'Ketua OSIS SMP (Biru Putih)',
+            ],
+            'facilities' => ['Laboratorium IPA', 'Ruang OSIS', 'Mading Sekolah', 'Vending Machine Minuman Segar', 'Meja Belajar Bersama'],
+        ],
+        'sma' => [
+            'type' => 'sma',
+            'name' => 'Sekolah Menengah Atas (SMA) RadenWorld',
+            'grade_level' => 'Tingkat 10 - 12',
+            'uniform' => 'Abu-abu Putih',
+            'colors' => [
+                'light' => '#FEFEFE',
+                'dark' => '#00EAFF',
+            ],
+            'teacher' => [
+                'name' => 'Ibu Dra. Ratna Dewi',
+                'role' => 'Kepala Sekolah SMA Kebangsaan',
+            ],
+            'student' => [
+                'name' => 'Dimas Alamsyah',
+                'role' => 'Ketua Pramuka & Siswa XII (Abu-Abu Putih)',
+            ],
+            'facilities' => ['Ruang Kelas Persiapan UTBK', 'Pojok Literasi Digital', 'Meja Diskusi Kelompok', 'Vending Machine', 'Papan Informasi Beasiswa'],
+        ],
+    ];
+
+    $selected = $schools[strtolower($type)] ?? $schools['sd'];
+    return response()->json($selected);
 });
 
 // ============================================================================
@@ -444,6 +516,117 @@ Route::get('/api/admin/portal/verify/{token}', function ($token, \Illuminate\Htt
         'authorized' => true,
         'token' => $token,
         'message' => 'Otoritas Super Admin terverifikasi. Selamat datang di Pusat Kendali RadenWorld!',
+    ]);
+});
+
+// Route SPA Gedung Sekolah (SD, SMP, SMA)
+Route::get('/school/{type?}', function ($type = 'sd') {
+    return view('welcome');
+});
+
+// ============================================================================
+// API KOMPLEKS PENDIDIKAN (GEDUNG SD, SMP, SMA)
+// ============================================================================
+Route::get('/api/game/school/{type}', function ($type) {
+    $normalized = strtolower(trim($type));
+
+    $schools = [
+        'sd' => [
+            'type' => 'sd',
+            'name' => 'Gedung Sekolah Dasar (SD)',
+            'code' => 'RADEN-SD-01',
+            'grade_levels' => 'Kelas 1 - Kelas 6 SD',
+            'motto' => 'Cerdas, Berkarakter, dan Berbudi Pekerti Luhur',
+            'floor_colors' => [
+                'light' => '#D70D0D',
+                'dark' => '#570404',
+            ],
+            'dimension' => [
+                'grid_width' => 18,
+                'grid_height' => 12,
+                'tile_size' => 120,
+            ],
+            'facilities' => [
+                'Ruang Kelas 1 - 6',
+                'Perpustakaan Mini Ceria',
+                'Papan Tulis Blackboard Interaktif',
+                'Meja Guru & Siswa Rapi',
+                'Vending Machine Minuman Segar',
+            ],
+            'npcs' => [
+                ['name' => 'Bu Guru Endang', 'role' => 'Wali Kelas SD Teladan', 'location' => 'Meja Guru'],
+                ['name' => 'Budi Santoso', 'role' => 'Ketua Murid Kelas 5 SD', 'location' => 'Baris Meja Depan'],
+                ['name' => 'Siti Nurhaliza', 'role' => 'Siswa Teladan SD', 'location' => 'Baris Meja Belakang'],
+            ],
+        ],
+        'smp' => [
+            'type' => 'smp',
+            'name' => 'Gedung Sekolah Menengah Pertama (SMP)',
+            'code' => 'RADEN-SMP-02',
+            'grade_levels' => 'Kelas 7 - Kelas 9 SMP',
+            'motto' => 'Kreatif, Inovatif, dan Berdaya Saing Global',
+            'floor_colors' => [
+                'light' => '#0DD7CA',
+                'dark' => '#0C6125',
+            ],
+            'dimension' => [
+                'grid_width' => 18,
+                'grid_height' => 12,
+                'tile_size' => 120,
+            ],
+            'facilities' => [
+                'Laboratorium Sains & Komputer',
+                'Ruang Kelas 7 - 9',
+                'Ruang OSIS SMP',
+                'Perpustakaan Digital',
+                'Vending Machine & Dispenser Sehat',
+            ],
+            'npcs' => [
+                ['name' => 'Pak Guru Hartono', 'role' => 'Guru IPA & Pembina OSIS SMP', 'location' => 'Meja Guru'],
+                ['name' => 'Dimas Pratama', 'role' => 'Ketua OSIS SMP', 'location' => 'Baris Meja Depan'],
+                ['name' => 'Annisa Rahma', 'role' => 'Sekretaris Kelas 8', 'location' => 'Baris Meja Belakang'],
+            ],
+        ],
+        'sma' => [
+            'type' => 'sma',
+            'name' => 'Gedung Sekolah Menengah Atas (SMA)',
+            'code' => 'RADEN-SMA-03',
+            'grade_levels' => 'Kelas 10 - Kelas 12 SMA',
+            'motto' => 'Unggul dalam Prestasi, Mandiri, dan Pemimpin Masa Depan',
+            'floor_colors' => [
+                'light' => '#FEFEFE',
+                'dark' => '#00EAFF',
+            ],
+            'dimension' => [
+                'grid_width' => 18,
+                'grid_height' => 12,
+                'tile_size' => 120,
+            ],
+            'facilities' => [
+                'Auditorium Akademik',
+                'Laboratorium Fisika & Kimia Modern',
+                'Lounge Diskusi & Studi Mandiri',
+                'Ruang Bimbingan Karir & Kuliah',
+                'Vending Machine Minuman Energi & Kopi',
+            ],
+            'npcs' => [
+                ['name' => 'Drs. Supriyadi, M.Pd.', 'role' => 'Kepala Sekolah & Guru Fisika SMA', 'location' => 'Meja Guru'],
+                ['name' => 'Reza Pahlevi', 'role' => 'Juara Olimpiade Sains Nasional', 'location' => 'Baris Meja Depan'],
+                ['name' => 'Nadia Salsabila', 'role' => 'Ketua MPK & Duta Pelajar SMA', 'location' => 'Baris Meja Belakang'],
+            ],
+        ],
+    ];
+
+    if (!isset($schools[$normalized])) {
+        return response()->json([
+            'status' => 'error',
+            'message' => 'Tipe sekolah tidak ditemukan. Pilih antara sd, smp, atau sma.',
+        ], 404);
+    }
+
+    return response()->json([
+        'status' => 'success',
+        'data' => $schools[$normalized],
     ]);
 });
 

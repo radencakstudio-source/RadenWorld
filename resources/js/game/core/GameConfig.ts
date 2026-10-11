@@ -13,6 +13,7 @@ import { BootScene } from '../scenes/BootScene';
 import { HouseScene } from '../scenes/HouseScene';
 import { WorldScene } from '../scenes/WorldScene';
 import { AdminPortalScene } from '../scenes/AdminPortalScene';
+import { SchoolScene } from '../scenes/SchoolScene';
 
 export function createGameConfig(parentContainerId: string = 'game-container'): Phaser.Types.Core.GameConfig {
   return {
@@ -32,7 +33,7 @@ export function createGameConfig(parentContainerId: string = 'game-container'): 
       mode: Phaser.Scale.RESIZE,
       autoCenter: Phaser.Scale.CENTER_BOTH,
     },
-    scene: [BootScene, HouseScene, WorldScene, AdminPortalScene],
+    scene: [BootScene, HouseScene, WorldScene, AdminPortalScene, SchoolScene],
     pixelArt: false,
     roundPixels: true,
     antialias: true,

@@ -20,6 +20,7 @@
  */
 
 import Phaser from 'phaser';
+import { EventBus } from '../core/EventBus';
 
 export class BootScene extends Phaser.Scene {
   constructor() {
@@ -30,48 +31,13 @@ export class BootScene extends Phaser.Scene {
    * Siklus hidup preload(): Mengunduh file aset dan menampilkan progress bar
    */
   public preload(): void {
-    const width = this.cameras.main.width;
-    const height = this.cameras.main.height;
-
-    // Visual Box & Progress Bar
-    const progressBar = this.add.graphics();
-    const progressBox = this.add.graphics();
-    progressBox.fillStyle(0x1e293b, 0.8);
-    progressBox.fillRoundedRect(width / 2 - 160, height / 2 - 25, 320, 50, 10);
-
-    const loadingText = this.make.text({
-      x: width / 2,
-      y: height / 2 - 50,
-      text: 'Loading RadenWorld Assets...',
-      style: {
-        font: '16px "Plus Jakarta Sans", sans-serif',
-        color: '#38bdf8',
-      }
-    }).setOrigin(0.5);
-
-    const percentText = this.make.text({
-      x: width / 2,
-      y: height / 2,
-      text: '0%',
-      style: {
-        font: '14px "Plus Jakarta Sans", sans-serif',
-        color: '#ffffff'
-      }
-    }).setOrigin(0.5);
-
-    // Update progres unduhan
+    // Pemuatan aset di latar belakang (tanpa box & teks kuno di atas canvas)
     this.load.on('progress', (value: number) => {
-      percentText.setText(`${Math.floor(value * 100)}%`);
-      progressBar.clear();
-      progressBar.fillStyle(0x38bdf8, 1);
-      progressBar.fillRoundedRect(width / 2 - 150, height / 2 - 15, 300 * value, 30, 6);
+      EventBus.emit('assets-loading-progress', value);
     });
 
     this.load.on('complete', () => {
-      progressBar.destroy();
-      progressBox.destroy();
-      loadingText.destroy();
-      percentText.destroy();
+      EventBus.emit('assets-loading-complete');
     });
 
     // Memuat aset dari folder terpisah public/assets/
@@ -122,6 +88,48 @@ export class BootScene extends Phaser.Scene {
     this.load.image('expr-female-smile', '/assets/sprites/characters/Player/Female/Ekspression/SenangFemale.png');
     this.load.image('expr-female-shock', '/assets/sprites/characters/Player/Female/Ekspression/KagetFemale.png');
     this.load.image('expr-female-angry', '/assets/sprites/characters/Player/Female/Ekspression/MarahFemale.png');
+
+    // 4. Aset Bangunan Sekolah (SD, SMP, SMA - 5x10 Petak Grid)
+    this.load.image('school-sd-building', '/assets/maps/SD/5x10%20Gedung%20SD.png');
+    this.load.image('school-smp-building', '/assets/maps/SMP/5x10%20Gedung%20SMP.png');
+    this.load.image('school-sma-building', '/assets/maps/SMA/5x10%20Gedung%20SMA.png');
+
+    // 5. Aset Gerobak Kuliner Nusantara & Rumah Modern
+    this.load.image('house-5x5', '/assets/maps/World/Assets/5x5%20Rumah.png');
+    this.load.image('cart-bakso', '/assets/maps/World/Assets/3x3%20Gerobak%20Bakso.png');
+    this.load.image('cart-mie-ayam', '/assets/maps/World/Assets/3x3%20Gerobak%20Mie%20Ayam.png');
+    this.load.image('cart-soto', '/assets/maps/World/Assets/3x3%20Gerobak%20Soto.png');
+
+    // 6. Aset Properti & Fasilitas Kota Open World
+    this.load.image('prop-meja', '/assets/maps/World/Assets/1x1%20Meja.png');
+    this.load.image('prop-batu', '/assets/maps/World/Assets/1x2%20Batu.png');
+    this.load.image('prop-kursi-front', '/assets/maps/World/Assets/1x2%20Kursi%20Taman%20Front.png');
+    this.load.image('prop-kursi-side', '/assets/maps/World/Assets/1x2%20Kursi%20Taman%20Side.png');
+    this.load.image('prop-kursi-side-1', '/assets/maps/World/Assets/1x2%20Kursi%20Taman%20Side-1.png');
+    this.load.image('prop-pohon-small', '/assets/maps/World/Assets/1x2%20Pohon.png');
+    this.load.image('prop-pohon-tall', '/assets/maps/World/Assets/1x3%20Pohon.png');
+    this.load.image('prop-rumput', '/assets/maps/World/Assets/1x2%20Rumput.png');
+    this.load.image('prop-taman-rumput', '/assets/maps/World/Assets/2x1%20TamanRumput.png');
+    this.load.image('prop-tong-sampah', '/assets/maps/World/Assets/1x2%20Tong%20Sampah.png');
+    this.load.image('prop-lampu', '/assets/maps/World/Assets/1x3%20Lampu.png');
+    this.load.image('vending-blue', '/assets/maps/World/Assets/1x2%20Vending%20Machine%20Blue.png');
+    this.load.image('vending-green', '/assets/maps/World/Assets/1x2%20Vending%20Machine%20Green.png');
+    this.load.image('vending-red', '/assets/maps/World/Assets/1x2%20Vending%20Machine%20Red.png');
+    this.load.image('vending-yellow', '/assets/maps/World/Assets/1x2%20Vending%20Machine%20Yellow.png');
+
+    // 7. Aset Eksklusif Ruang Kendali Super Admin (/assets/maps/Admin/Assets/)
+    this.load.image('admin-floor-dark', '/assets/maps/Admin/Assets/1x1%20Lantai%20Admin%20Gelap.png');
+    this.load.image('admin-floor-light', '/assets/maps/Admin/Assets/1x1%20Lantai%20Admin%20Terang.png');
+    this.load.image('admin-carpet-gold', '/assets/maps/Admin/Assets/2x1%20Karpet%20Emas.png');
+    this.load.image('admin-throne', '/assets/maps/Admin/Assets/3x3%20Tahta%20Raden.png');
+    this.load.image('admin-console-broadcast', '/assets/maps/Admin/Assets/2x2%20Konsol%20Broadcast.png');
+    this.load.image('admin-console-database', '/assets/maps/Admin/Assets/2x2%20Konsol%20Database.png');
+    this.load.image('admin-console-godmode', '/assets/maps/Admin/Assets/2x2%20Konsol%20Godmode.png');
+    this.load.image('admin-portal-world', '/assets/maps/Admin/Assets/2x2%20Portal%20World.png');
+    this.load.image('admin-portal-house', '/assets/maps/Admin/Assets/2x2%20Portal%20House.png');
+    this.load.image('admin-pillar', '/assets/maps/Admin/Assets/1x3%20Pilar%20Cyber.png');
+    this.load.image('admin-banner', '/assets/maps/Admin/Assets/1x2%20Banner%20Raden.png');
+    this.load.image('admin-holo-globe', '/assets/maps/Admin/Assets/2x2%20Holo%20Globe.png');
   }
 
   /**
@@ -150,7 +158,7 @@ export class BootScene extends Phaser.Scene {
           name: 'RADEN',
           adminToken,
         });
-      } else if (pathname.startsWith('/world')) {
+      } else if (pathname.startsWith('/world') || pathname.startsWith('/school')) {
         let savedName = '';
         let savedAvatar = undefined;
         try {
@@ -159,7 +167,17 @@ export class BootScene extends Phaser.Scene {
           const a = localStorage.getItem('raden_player_avatar');
           if (a) savedAvatar = JSON.parse(a);
         } catch (e) {}
-        this.scene.start('WorldScene', { name: savedName, avatar: savedAvatar });
+
+        const lowerPath = pathname.toLowerCase();
+        if (
+          lowerPath === '/world/sd' || lowerPath === '/world/smp' || lowerPath === '/world/sma' ||
+          lowerPath === '/school/sd' || lowerPath === '/school/smp' || lowerPath === '/school/sma'
+        ) {
+          const schoolType = lowerPath.replace('/world/', '').replace('/school/', '') as 'sd' | 'smp' | 'sma';
+          this.scene.start('SchoolScene', { schoolType, name: savedName, avatar: savedAvatar });
+        } else {
+          this.scene.start('WorldScene', { name: savedName, avatar: savedAvatar });
+        }
       } else {
         let savedName = '';
         let savedAvatar = undefined;
@@ -258,16 +276,17 @@ export class BootScene extends Phaser.Scene {
     }
 
     // Tekstur Tile Catur Berkualitas Tinggi & 60 FPS Ringan untuk Rumah (120x120px)
+    // Spesifikasi Warna Coklat: Gelap = #B58D00, Terang = #FFEFB5
     if (!this.textures.exists('house-checker-tile')) {
       const g = this.make.graphics({ x: 0, y: 0 });
       // Kotak Catur Kayu 240x240 (2x2 kotak @ 120px)
-      g.fillStyle(0x451a03, 1); // Dark
+      g.fillStyle(0xb58d00, 1); // Dark (#B58D00)
       g.fillRect(0, 0, 120, 120);
       g.fillRect(120, 120, 120, 120);
-      g.fillStyle(0x854d0e, 1); // Light
+      g.fillStyle(0xffefb5, 1); // Light (#FFEFB5)
       g.fillRect(120, 0, 120, 120);
       g.fillRect(0, 120, 120, 120);
-      g.lineStyle(1.5, 0x270f02, 0.45);
+      g.lineStyle(1.5, 0x8a6b00, 0.45);
       g.strokeRect(0, 0, 120, 120);
       g.strokeRect(120, 0, 120, 120);
       g.strokeRect(0, 120, 120, 120);
@@ -277,16 +296,17 @@ export class BootScene extends Phaser.Scene {
     }
 
     // Tekstur Tile Catur Berkualitas Tinggi & 60 FPS Ringan untuk Open World (120x120px)
+    // Spesifikasi Warna Hijau: Gelap = #359B4D, Terang = #89FFA5
     if (!this.textures.exists('world-checker-tile')) {
       const g = this.make.graphics({ x: 0, y: 0 });
       // Kotak Catur Alam 240x240 (2x2 kotak @ 120px)
-      g.fillStyle(0x14532d, 1); // Dark Forest Green
+      g.fillStyle(0x359b4d, 1); // Dark (#359B4D)
       g.fillRect(0, 0, 120, 120);
       g.fillRect(120, 120, 120, 120);
-      g.fillStyle(0x166534, 1); // Emerald Green
+      g.fillStyle(0x89ffa5, 1); // Light (#89FFA5)
       g.fillRect(120, 0, 120, 120);
       g.fillRect(0, 120, 120, 120);
-      g.lineStyle(1.5, 0x052e16, 0.4);
+      g.lineStyle(1.5, 0x277439, 0.4);
       g.strokeRect(0, 0, 120, 120);
       g.strokeRect(120, 0, 120, 120);
       g.strokeRect(0, 120, 120, 120);
@@ -311,6 +331,63 @@ export class BootScene extends Phaser.Scene {
       g.strokeRect(0, 120, 120, 120);
       g.strokeRect(120, 120, 120, 120);
       g.generateTexture('plaza-checker-tile', 240, 240);
+      g.destroy();
+    }
+
+    // 4. Tekstur Tile Catur Gedung SD (120x120px)
+    // Spesifikasi Warna SD: Terang = #D70D0D, Gelap = #570404
+    if (!this.textures.exists('sd-checker-tile')) {
+      const g = this.make.graphics({ x: 0, y: 0 });
+      g.fillStyle(0x570404, 1); // Gelap (#570404)
+      g.fillRect(0, 0, 120, 120);
+      g.fillRect(120, 120, 120, 120);
+      g.fillStyle(0xd70d0d, 1); // Terang (#D70D0D)
+      g.fillRect(120, 0, 120, 120);
+      g.fillRect(0, 120, 120, 120);
+      g.lineStyle(1.5, 0x3d0202, 0.45);
+      g.strokeRect(0, 0, 120, 120);
+      g.strokeRect(120, 0, 120, 120);
+      g.strokeRect(0, 120, 120, 120);
+      g.strokeRect(120, 120, 120, 120);
+      g.generateTexture('sd-checker-tile', 240, 240);
+      g.destroy();
+    }
+
+    // 5. Tekstur Tile Catur Gedung SMP (120x120px)
+    // Spesifikasi Warna SMP: Terang = #0DD7CA, Gelap = #0C6125
+    if (!this.textures.exists('smp-checker-tile')) {
+      const g = this.make.graphics({ x: 0, y: 0 });
+      g.fillStyle(0x0c6125, 1); // Gelap (#0C6125)
+      g.fillRect(0, 0, 120, 120);
+      g.fillRect(120, 120, 120, 120);
+      g.fillStyle(0x0dd7ca, 1); // Terang (#0DD7CA)
+      g.fillRect(120, 0, 120, 120);
+      g.fillRect(0, 120, 120, 120);
+      g.lineStyle(1.5, 0x063a15, 0.45);
+      g.strokeRect(0, 0, 120, 120);
+      g.strokeRect(120, 0, 120, 120);
+      g.strokeRect(0, 120, 120, 120);
+      g.strokeRect(120, 120, 120, 120);
+      g.generateTexture('smp-checker-tile', 240, 240);
+      g.destroy();
+    }
+
+    // 6. Tekstur Tile Catur Gedung SMA (120x120px)
+    // Spesifikasi Warna SMA: Terang = #FEFEFE, Gelap = #00EAFF
+    if (!this.textures.exists('sma-checker-tile')) {
+      const g = this.make.graphics({ x: 0, y: 0 });
+      g.fillStyle(0x00eaff, 1); // Gelap (#00EAFF)
+      g.fillRect(0, 0, 120, 120);
+      g.fillRect(120, 120, 120, 120);
+      g.fillStyle(0xfefefe, 1); // Terang (#FEFEFE)
+      g.fillRect(120, 0, 120, 120);
+      g.fillRect(0, 120, 120, 120);
+      g.lineStyle(1.5, 0x00b8c9, 0.4);
+      g.strokeRect(0, 0, 120, 120);
+      g.strokeRect(120, 0, 120, 120);
+      g.strokeRect(0, 120, 120, 120);
+      g.strokeRect(120, 120, 120, 120);
+      g.generateTexture('sma-checker-tile', 240, 240);
       g.destroy();
     }
   }

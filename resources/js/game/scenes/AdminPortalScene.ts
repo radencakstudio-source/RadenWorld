@@ -24,6 +24,7 @@
 import Phaser from 'phaser';
 import { Player } from '../entities/Player';
 import { EventBus } from '../core/EventBus';
+import { NetworkManager } from '../core/NetworkManager';
 import { IAvatarCustomization } from '../types';
 
 export class AdminPortalScene extends Phaser.Scene {
@@ -44,6 +45,7 @@ export class AdminPortalScene extends Phaser.Scene {
   private worldPortalZone = { x: 960, y: 1500 };
   private housePortalZone = { x: 1440, y: 1500 };
 
+  private obstacles!: Phaser.Physics.Arcade.StaticGroup;
   private activePrompt: string | null = null;
   private lastStatsEmitTime: number = 0;
   private lastGridX: number = -1;
@@ -77,10 +79,16 @@ export class AdminPortalScene extends Phaser.Scene {
     // 1. Batas fisika ruangan portal admin
     this.physics.world.setBounds(0, 0, this.roomWidth, this.roomHeight);
 
-    // 2. Render interior futuristik Portal Admin
+    // 2. Inisialisasi grup rintangan fisik arcade (Dinding, Konsol, Tahta)
+    this.obstacles = this.physics.add.staticGroup();
+
+    // 3. Berpindah ke room portal admin di server (sehingga karakter hilang dari Open World)
+    NetworkManager.getInstance().switchRoom('admin-' + this.adminToken, 1200, 1080);
+
+    // 4. Render interior futuristik Portal Admin menggunakan aset visual HD
     this.createPortalEnvironment();
 
-    // 3. Spawn karakter Super Admin di karpet tengah
+    // 4. Spawn karakter Super Admin di karpet tengah
     this.spawnSuperAdminPlayer();
 
     // 4. Tombol interaksi keyboard 'E' (abaikan jika sedang mengetik di input chat)
@@ -200,156 +208,242 @@ export class AdminPortalScene extends Phaser.Scene {
    * Menggambar ruangan pusat kendali portal admin berpola catur obsidian & emas
    * dengan skala 1 petak = 120px (Sama persis dengan Safe House & Open World)
    */
+  /**
+   * Menambahkan rintangan tabrakan fisik arcade (Dinding, Konsol, Tahta)
+   */
+  private addGridObstacle(gx: number, gy: number, gw: number, gh: number): void {
+    const pixelW = gw * this.tileSize;
+    const pixelH = gh * this.tileSize;
+    const centerX = gx * this.tileSize + pixelW / 2;
+    const centerY = gy * this.tileSize + pixelH / 2;
+
+    const zone = this.add.zone(centerX, centerY, pixelW, pixelH);
+    this.physics.add.existing(zone, true);
+    if (this.obstacles) {
+      this.obstacles.add(zone);
+    }
+  }
+
+  /**
+   * Merender interior futuristik Ruang Kendali Super Admin RadenWorld menggunakan aset visual HD
+   */
   private createPortalEnvironment(): void {
-    const g = this.add.graphics();
-
-    // 1. LANTAI BERPOLA CATUR OBSIDIAN & EMAS AMBER (Tile Size 120px)
-    const tileSize = this.tileSize; // 120px
-    const darkTile = 0x090d16;   // Hitam Obsidian Pekat
-    const lightTile = 0x172554;  // Biru Obsidian Gelap / Kosmik
-
-    for (let y = 0; y < this.roomHeight; y += tileSize) {
-      for (let x = 0; x < this.roomWidth; x += tileSize) {
-        const isDark = (Math.floor(x / tileSize) + Math.floor(y / tileSize)) % 2 === 0;
-        g.fillStyle(isDark ? darkTile : lightTile, 1);
-        g.fillRect(x, y, tileSize, tileSize);
-
-        // Garis batas grid catur emas tipis
-        g.lineStyle(1, 0xf59e0b, 0.15);
-        g.strokeRect(x, y, tileSize, tileSize);
+    // 1. LANTAI BERPOLA CATUR ADMIN EKSKLUSIF (120x120 px Tile)
+    // Menggunakan aset HD: admin-floor-dark (#0037AE) dan admin-floor-light (#FF00C8)
+    for (let gy = 0; gy < 15; gy++) {
+      for (let gx = 0; gx < 20; gx++) {
+        const isDark = (gx + gy) % 2 === 0;
+        const key = isDark ? 'admin-floor-dark' : 'admin-floor-light';
+        const tile = this.add.image(gx * 120 + 60, gy * 120 + 60, key);
+        tile.setDisplaySize(120, 120);
+        tile.setDepth(-100);
       }
     }
 
-    // 2. DINDING DAN BORDER RUANG KENDALI (Ketebalan 120px / 1 Tile)
-    const wallColor = 0x020617;
-    // Dinding Atas
-    g.fillStyle(wallColor, 1);
-    g.fillRect(0, 0, this.roomWidth, 120);
-    g.lineStyle(3, 0xf59e0b, 0.85);
-    g.strokeRect(0, 118, this.roomWidth, 3);
+    // 2. DINDING BULKHEAD CYBER & RINTANGAN FISIK PERIMETER (Ketebalan 120px)
+    // Dinding Atas (gy=0)
+    const wallTop = this.add.graphics();
+    wallTop.fillStyle(0x020617, 0.96);
+    wallTop.fillRect(0, 0, this.roomWidth, 120);
+    wallTop.lineStyle(4, 0xf59e0b, 1);
+    wallTop.strokeRect(0, 116, this.roomWidth, 4);
+    wallTop.setDepth(110);
+    this.addGridObstacle(0, 0, 20, 1);
 
-    // Dinding Kiri & Kanan
-    g.fillRect(0, 0, 120, this.roomHeight);
-    g.fillRect(this.roomWidth - 120, 0, 120, this.roomHeight);
-    g.lineStyle(3, 0xf59e0b, 0.85);
-    g.strokeRect(118, 0, 3, this.roomHeight);
-    g.strokeRect(this.roomWidth - 120, 0, 3, this.roomHeight);
+    // Dinding Bawah (gy=14)
+    const wallBottom = this.add.graphics();
+    wallBottom.fillStyle(0x020617, 0.96);
+    wallBottom.fillRect(0, this.roomHeight - 120, this.roomWidth, 120);
+    wallBottom.lineStyle(4, 0xf59e0b, 1);
+    wallBottom.strokeRect(0, this.roomHeight - 120, this.roomWidth, 4);
+    wallBottom.setDepth(1800);
+    this.addGridObstacle(0, 14, 20, 1);
 
-    // Dinding Bawah
-    g.fillRect(0, this.roomHeight - 120, this.roomWidth, 120);
-    g.lineStyle(3, 0xf59e0b, 0.85);
-    g.strokeRect(0, this.roomHeight - 120, this.roomWidth, 3);
+    // Dinding Barat (gx=0) & Timur (gx=19)
+    const wallSides = this.add.graphics();
+    wallSides.fillStyle(0x020617, 0.96);
+    wallSides.fillRect(0, 0, 120, this.roomHeight);
+    wallSides.fillRect(this.roomWidth - 120, 0, 120, this.roomHeight);
+    wallSides.lineStyle(4, 0xf59e0b, 1);
+    wallSides.strokeRect(116, 0, 4, this.roomHeight);
+    wallSides.strokeRect(this.roomWidth - 120, 0, 4, this.roomHeight);
+    wallSides.setDepth(110);
+    this.addGridObstacle(0, 0, 1, 15);
+    this.addGridObstacle(19, 0, 1, 15);
 
-    // 3. KARPET EMAS KERAJAAN KE TAHTA RADEN (Tengah X: 1200, Lebar: 240px / 2 Tile)
-    g.fillStyle(0xd97706, 0.35);
-    g.fillRect(1080, 120, 240, 1560);
-    g.lineStyle(3, 0xf59e0b, 0.9);
-    g.strokeRect(1080, 120, 240, 1560);
+    // 3. KARPET EMAS KEKAISARAN (2x1 Karpet Emas.png) - LORONG TENGAH (gx=9..10)
+    // Membentang megah dari gerbang portal (gy=13) hingga kaki tahta (gy=3)
+    for (let gy = 3; gy <= 13; gy++) {
+      const carpet = this.add.image(1200, gy * 120 + 60, 'admin-carpet-gold');
+      carpet.setDisplaySize(240, 120);
+      carpet.setDepth(-50);
+    }
 
-    // 4. TAHTA PENCIPTA (CREATOR'S THRONE) DI (1200, 360)
-    // Platform tahta bertingkat
-    g.fillStyle(0x78350f, 1);
-    g.fillRoundedRect(1040, 270, 320, 170, 16);
-    g.lineStyle(4, 0xfbbf24, 1);
-    g.strokeRoundedRect(1040, 270, 320, 170, 16);
+    // 4. PILAR ENERGI CYBER (1x3 Pilar Cyber.png - 120x360 px)
+    const pillars = [
+      { x: 300, y: 240, gx: 2, gy: 1 },    // NW
+      { x: 2100, y: 240, gx: 17, gy: 1 },  // NE
+      { x: 240, y: 1320, gx: 1.5, gy: 10 }, // SW
+      { x: 2160, y: 1320, gx: 17.5, gy: 10 }, // SE
+    ];
+    pillars.forEach(p => {
+      const pillar = this.add.image(p.x, p.y, 'admin-pillar');
+      pillar.setDisplaySize(120, 360);
+      pillar.setDepth(p.y + 120);
+      this.addGridObstacle(p.gx, p.gy + 1.5, 1, 1.5);
+    });
 
-    // Kursi tahta emas
-    g.fillStyle(0xd97706, 1);
-    g.fillRoundedRect(1120, 295, 160, 120, 12);
-    g.fillStyle(0xf59e0b, 1);
-    g.fillCircle(1200, 340, 26);
+    // 5. BANNER KEAGUNGAN KERAJAAN RADEN (1x2 Banner Raden.png - 120x240 px)
+    const banners = [
+      { x: 840, y: 240 },  // Sebelah kiri tahta
+      { x: 1560, y: 240 }, // Sebelah kanan tahta
+    ];
+    banners.forEach(b => {
+      const banner = this.add.image(b.x, b.y, 'admin-banner');
+      banner.setDisplaySize(120, 240);
+      banner.setDepth(240);
+    });
 
-    this.add.text(1200, 220, '👑 TAHTA PENCIPTA RADEN', {
+    // 6. TAHTA AGUNG PENCIPTA RADEN (3x3 Tahta Raden.png - 360x360 px)
+    const throne = this.add.image(this.throneZone.x, this.throneZone.y, 'admin-throne');
+    throne.setDisplaySize(360, 360);
+    throne.setDepth(this.throneZone.y + 120);
+    throne.setInteractive({ useHandCursor: true });
+    throne.on('pointerdown', () => this.triggerCurrentInteraction());
+    // Obstacle fisik di dasar tahta agar karakter tidak menembus platform
+    this.addGridObstacle(8.5, 2.5, 3, 1.5);
+
+    // 7. FLOATING HOLO-GLOBE RADENWORLD (2x2 Holo Globe.png - 240x240 px)
+    // Terapung di tengah ruangan kendali (x=1200, y=960)
+    const holoGlobe = this.add.image(1200, 960, 'admin-holo-globe');
+    holoGlobe.setDisplaySize(240, 240);
+    holoGlobe.setDepth(960 + 80);
+    holoGlobe.setInteractive({ useHandCursor: true });
+    holoGlobe.on('pointerdown', () => {
+      this.player?.showSpeechBubble('🌍 Holo-Globe: Pantauan Dimensi RadenWorld Terkoneksi Realtime');
+    });
+    // Efek mengapung dinamis
+    this.tweens.add({
+      targets: holoGlobe,
+      y: 948,
+      duration: 2200,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut',
+    });
+    // Obstacle alas proyektor (1x1 petak di tengah)
+    this.addGridObstacle(9.5, 8.5, 1, 1);
+
+    // 8. KONSOL 1: BROADCAST SERVER (2x2 Konsol Broadcast.png - 240x240 px)
+    const consoleBroadcast = this.add.image(this.broadcastConsoleZone.x, this.broadcastConsoleZone.y, 'admin-console-broadcast');
+    consoleBroadcast.setDisplaySize(240, 240);
+    consoleBroadcast.setDepth(this.broadcastConsoleZone.y + 80);
+    consoleBroadcast.setInteractive({ useHandCursor: true });
+    consoleBroadcast.on('pointerdown', () => this.triggerCurrentInteraction());
+    this.addGridObstacle(5, 5, 2, 1);
+    // Efek denyut gelombang siaran
+    this.tweens.add({
+      targets: consoleBroadcast,
+      alpha: 0.92,
+      duration: 900,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut',
+    });
+
+    // 9. KONSOL 2: SENSUS & DATA PEMAIN (2x2 Konsol Database.png - 240x240 px)
+    const consoleDb = this.add.image(this.playersConsoleZone.x, this.playersConsoleZone.y, 'admin-console-database');
+    consoleDb.setDisplaySize(240, 240);
+    consoleDb.setDepth(this.playersConsoleZone.y + 80);
+    consoleDb.setInteractive({ useHandCursor: true });
+    consoleDb.on('pointerdown', () => this.triggerCurrentInteraction());
+    this.addGridObstacle(13, 5, 2, 1);
+    this.tweens.add({
+      targets: consoleDb,
+      alpha: 0.93,
+      duration: 1100,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut',
+    });
+
+    // 10. KONSOL 3: BUFF KILAT GODMODE (2x2 Konsol Godmode.png - 240x240 px)
+    const consoleGodmode = this.add.image(this.godmodeConsoleZone.x, this.godmodeConsoleZone.y, 'admin-console-godmode');
+    consoleGodmode.setDisplaySize(240, 240);
+    consoleGodmode.setDepth(this.godmodeConsoleZone.y + 80);
+    consoleGodmode.setInteractive({ useHandCursor: true });
+    consoleGodmode.on('pointerdown', () => this.triggerCurrentInteraction());
+    this.addGridObstacle(3, 8, 2, 1);
+    this.tweens.add({
+      targets: consoleGodmode,
+      scaleX: 1.03,
+      scaleY: 1.03,
+      duration: 800,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut',
+    });
+
+    // 11. GERBANG PORTAL 1: OPEN WORLD (2x2 Portal World.png - 240x240 px)
+    const portalWorld = this.add.image(this.worldPortalZone.x, this.worldPortalZone.y, 'admin-portal-world');
+    portalWorld.setDisplaySize(240, 240);
+    portalWorld.setDepth(this.worldPortalZone.y + 60);
+    portalWorld.setInteractive({ useHandCursor: true });
+    portalWorld.on('pointerdown', () => this.triggerCurrentInteraction());
+    // Efek putaran kosmis vortex
+    this.tweens.add({
+      targets: portalWorld,
+      scaleX: 1.04,
+      scaleY: 1.04,
+      duration: 1600,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut',
+    });
+
+    // 12. GERBANG PORTAL 2: RUMAH PRIBADI (2x2 Portal House.png - 240x240 px)
+    const portalHouse = this.add.image(this.housePortalZone.x, this.housePortalZone.y, 'admin-portal-house');
+    portalHouse.setDisplaySize(240, 240);
+    portalHouse.setDepth(this.housePortalZone.y + 60);
+    portalHouse.setInteractive({ useHandCursor: true });
+    portalHouse.on('pointerdown', () => this.triggerCurrentInteraction());
+    this.tweens.add({
+      targets: portalHouse,
+      scaleX: 1.04,
+      scaleY: 1.04,
+      duration: 1600,
+      delay: 400,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut',
+    });
+
+    // Label teks futuristik di atas masing-masing konsol & portal
+    const labelStyle = {
       fontFamily: '"Chakra Petch", sans-serif',
-      fontSize: '18px',
+      fontSize: '13px',
       color: '#fef08a',
       fontStyle: 'bold',
       stroke: '#020617',
-      strokeThickness: 5,
-    }).setOrigin(0.5);
-
-    // 5. KONSOL 1: SIARAN PENGUMUMAN SERVER (BROADCAST) DI (720, 600)
-    g.fillStyle(0x1e1b4b, 1);
-    g.fillRoundedRect(620, 545, 200, 110, 12);
-    g.lineStyle(3, 0xa855f7, 0.9);
-    g.strokeRoundedRect(620, 545, 200, 110, 12);
-    this.add.text(720, 600, '📢 BROADCAST\nSERVER', {
-      fontFamily: '"Chakra Petch", sans-serif',
-      fontSize: '14px',
-      color: '#e9d5ff',
-      fontStyle: 'bold',
-      align: 'center',
-    }).setOrigin(0.5);
-
-    // 6. KONSOL 2: SENSUS & DATA PEMAIN DI (1680, 600)
-    g.fillStyle(0x1e1b4b, 1);
-    g.fillRoundedRect(1580, 545, 200, 110, 12);
-    g.lineStyle(3, 0x38bdf8, 0.9);
-    g.strokeRoundedRect(1580, 545, 200, 110, 12);
-    this.add.text(1680, 600, '👥 SENSUS\nDATABASE', {
-      fontFamily: '"Chakra Petch", sans-serif',
-      fontSize: '14px',
-      color: '#bae6fd',
-      fontStyle: 'bold',
-      align: 'center',
-    }).setOrigin(0.5);
-
-    // 7. KONSOL 3: BUFF KILAT GODMODE DI (480, 960)
-    g.fillStyle(0x1e1b4b, 1);
-    g.fillRoundedRect(380, 905, 200, 110, 12);
-    g.lineStyle(3, 0xf59e0b, 0.9);
-    g.strokeRoundedRect(380, 905, 200, 110, 12);
-    this.add.text(480, 960, '⚡ GODMODE\nSPEED 400', {
-      fontFamily: '"Chakra Petch", sans-serif',
-      fontSize: '14px',
-      color: '#fde68a',
-      fontStyle: 'bold',
-      align: 'center',
-    }).setOrigin(0.5);
-
-    // 8. PORTAL 1: MENUJU KE OPEN WORLD DI (960, 1500)
-    const portalWorldG = this.add.graphics();
-    portalWorldG.fillStyle(0x0284c7, 0.45);
-    portalWorldG.fillCircle(960, 1500, 55);
-    portalWorldG.lineStyle(4, 0x38bdf8, 1);
-    portalWorldG.strokeCircle(960, 1500, 55);
-    portalWorldG.lineStyle(3, 0xf59e0b, 0.85);
-    portalWorldG.strokeCircle(960, 1500, 42);
-
-    this.add.text(960, 1500, '🌀 OPEN\nWORLD', {
-      fontFamily: '"Chakra Petch", sans-serif',
-      fontSize: '13px',
-      color: '#e0f2fe',
-      fontStyle: 'bold',
-      align: 'center',
-    }).setOrigin(0.5);
-
-    // 9. PORTAL 2: MENUJU KE RUMAH PRIBADI DI (1440, 1500)
-    const portalHouseG = this.add.graphics();
-    portalHouseG.fillStyle(0x15803d, 0.45);
-    portalHouseG.fillCircle(1440, 1500, 55);
-    portalHouseG.lineStyle(4, 0x4ade80, 1);
-    portalHouseG.strokeCircle(1440, 1500, 55);
-    portalHouseG.lineStyle(3, 0xf59e0b, 0.85);
-    portalHouseG.strokeCircle(1440, 1500, 42);
-
-    this.add.text(1440, 1500, '🏠 SAFE\nHOUSE', {
-      fontFamily: '"Chakra Petch", sans-serif',
-      fontSize: '13px',
-      color: '#dcfce7',
-      fontStyle: 'bold',
-      align: 'center',
-    }).setOrigin(0.5);
+      strokeThickness: 4,
+      align: 'center' as const,
+    };
+    this.add.text(this.throneZone.x, this.throneZone.y - 190, '👑 TAHTA AGUNG PENCIPTA RADEN', { ...labelStyle, fontSize: '16px' }).setOrigin(0.5).setDepth(600);
+    this.add.text(this.broadcastConsoleZone.x, this.broadcastConsoleZone.y - 120, '📢 KONSOL BROADCAST SERVER', labelStyle).setOrigin(0.5).setDepth(800);
+    this.add.text(this.playersConsoleZone.x, this.playersConsoleZone.y - 120, '👥 SENSUS & DATABASE PEMAIN', labelStyle).setOrigin(0.5).setDepth(800);
+    this.add.text(this.godmodeConsoleZone.x, this.godmodeConsoleZone.y - 120, '⚡ REAKTOR GODMODE SPEED 400', labelStyle).setOrigin(0.5).setDepth(1100);
+    this.add.text(this.worldPortalZone.x, this.worldPortalZone.y + 115, '🌀 GERBANG OPEN WORLD', labelStyle).setOrigin(0.5).setDepth(1700);
+    this.add.text(this.housePortalZone.x, this.housePortalZone.y + 115, '🏠 GERBANG RUMAH PRIBADI', labelStyle).setOrigin(0.5).setDepth(1700);
 
     // Header Judul Portal di Bagian Atas
     this.add.text(1200, 60, `⚡ RADENWORLD PUSAT KENDALI SUPER ADMIN [KEY: ${this.adminToken.substring(0, 14)}...] ⚡`, {
       fontFamily: '"Chakra Petch", sans-serif',
-      fontSize: '16px',
+      fontSize: '17px',
       color: '#f59e0b',
       fontStyle: 'bold',
       stroke: '#000000',
-      strokeThickness: 4,
-    }).setOrigin(0.5);
+      strokeThickness: 5,
+    }).setOrigin(0.5).setDepth(500);
   }
 
   /**
@@ -372,6 +466,11 @@ export class AdminPortalScene extends Phaser.Scene {
       this.playerName,
       this.currentAvatar
     );
+
+    // Aktifkan tabrakan fisik arcade agar karakter tidak menembus dinding dan konsol
+    if (this.obstacles) {
+      this.physics.add.collider(this.player, this.obstacles);
+    }
 
     this.cameras.main.setBounds(0, 0, this.roomWidth, this.roomHeight);
     this.cameras.main.setRoundPixels(true);
@@ -407,7 +506,7 @@ export class AdminPortalScene extends Phaser.Scene {
     if (!this.player) return;
 
     this.player.update(time, delta);
-    this.player.setDepth(this.player.y);
+    this.player.setDepth(this.player.y + 60);
 
     const px = this.player.x;
     const py = this.player.y;
@@ -526,6 +625,7 @@ export class AdminPortalScene extends Phaser.Scene {
           window.history.pushState(null, '', '/world');
         }
         EventBus.emit('url-changed', '/world');
+        NetworkManager.getInstance().switchRoom('world', 4800, 4800);
         this.cameras?.main?.stopFollow();
         this.scene.start('WorldScene', {
           name: this.playerName,
@@ -551,6 +651,7 @@ export class AdminPortalScene extends Phaser.Scene {
           window.history.pushState(null, '', housePath);
         }
         EventBus.emit('url-changed', housePath);
+        NetworkManager.getInstance().switchRoom('house-' + safeId, 840, 620);
         this.cameras?.main?.stopFollow();
         this.scene.start('HouseScene', {
           name: this.playerName,

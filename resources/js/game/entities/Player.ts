@@ -267,13 +267,37 @@ export class Player extends Entity {
   }
 
   /**
+   * Mengecek apakah pemain diizinkan bergerak.
+   * Pemain tidak boleh bergerak jika:
+   * 1. Berada di tampilan Lobby (window.location.pathname === '/')
+   * 2. Belum login atau daftar akun (belum tersimpan di raden_player_user)
+   * 3. Sedang dalam dialog NPC atau sedang mengetik di input form
+   */
+  public isMovementLocked(): boolean {
+    if (this.isDialogueActive) return true;
+    if (document.activeElement?.tagName === 'INPUT' || document.activeElement?.tagName === 'TEXTAREA') return true;
+    if (typeof window !== 'undefined' && window.location.pathname === '/') return true;
+
+    try {
+      const u = JSON.parse(localStorage.getItem('raden_player_user') || '{}');
+      if (!u || (!u.id && !u.name)) {
+        return true;
+      }
+    } catch (e) {
+      return true;
+    }
+
+    return false;
+  }
+
+  /**
    * Menggerakkan karakter secara otomatis menuju titik target (Point & Click / Tap-to-move)
    * @param targetX Koordinat X tujuan dalam pixel dunia game
    * @param targetY Koordinat Y tujuan dalam pixel dunia game
    * @param onArrival Callback yang dipanggil saat karakter tiba di tujuan
    */
   public navigateTo(targetX: number, targetY: number, onArrival?: () => void): void {
-    if (this.isDialogueActive) return;
+    if (this.isMovementLocked()) return;
     this.targetDestination = { x: targetX, y: targetY };
     this.onArrivalCallback = onArrival || null;
   }
@@ -301,21 +325,8 @@ export class Player extends Entity {
     // Perbarui ukuran skala chat bubble dan ekspresi mengikuti zoom kamera
     this.updateFloatingElementsScale();
 
-    // Jika sedang dalam dialog NPC aktif, kunci pergerakan karakter sampai selesai
-    if (this.isDialogueActive) {
-      body.setVelocity(0, 0);
-      this.targetDestination = null;
-      this.onArrivalCallback = null;
-      if (this.isMoving) {
-        this.isMoving = false;
-        this.updateAnimation(false);
-      }
-      return;
-    }
-
-    // Jika pengguna sedang fokus mengetik di input chat atau form lain, hentikan pergerakan karakter
-    const isTyping = document.activeElement?.tagName === 'INPUT' || document.activeElement?.tagName === 'TEXTAREA';
-    if (isTyping) {
+    // Jika pergerakan terkunci (Lobby, Belum Login/Daftar, Dialog, Input Ketik), hentikan karakter
+    if (this.isMovementLocked()) {
       body.setVelocity(0, 0);
       this.targetDestination = null;
       this.onArrivalCallback = null;
@@ -427,7 +438,7 @@ export class Player extends Entity {
         if (!this.isAfk) {
           this.setAfk(true, totalAfkSecs);
           this.lastAfkUpdateSeconds = totalAfkSecs;
-          if (this.scene.scene.key === 'WorldScene') {
+          if (this.scene.scene.key === 'WorldScene' || this.scene.scene.key === 'SchoolScene') {
             this.networkManager.sendAfk(true, totalAfkSecs);
           }
         } else if (totalAfkSecs !== this.lastAfkUpdateSeconds) {
@@ -437,9 +448,9 @@ export class Player extends Entity {
       }
     }
 
-    // Hanya kirim sinkronisasi jaringan saat pemain berada di WorldScene (Open World)
-    const inWorld = this.scene.scene.key === 'WorldScene';
-    if (!inWorld) return;
+    // Kirim sinkronisasi jaringan saat pemain berada di WorldScene (Open World) atau SchoolScene (Gedung Sekolah)
+    const canSync = this.scene.scene.key === 'WorldScene' || this.scene.scene.key === 'SchoolScene';
+    if (!canSync) return;
 
     // Sinkronisasi data posisi ke server setiap 50ms saat bergerak
     const moved = Math.abs(this.x - this.lastX) > 1 || Math.abs(this.y - this.lastY) > 1;
@@ -459,6 +470,14 @@ export class Player extends Entity {
       this.lastY = this.y;
       this.networkManager.sendMovement(this.x, this.y, this.currentDirection, false);
     }
+  }
+
+  public getIsMoving(): boolean {
+    return this.isMoving;
+  }
+
+  public getDirection(): Direction {
+    return this.currentDirection;
   }
 
   /**

@@ -67,9 +67,13 @@ io.on('connection', (socket) => {
       }
     }
 
+    const initialRoom = data?.room || 'world';
+    socket.join(initialRoom);
+
     const player = {
       id: socket.id,
       name: playerName,
+      room: initialRoom,
       role: isSuperAdmin ? 'super_admin' : (data.role || 'player'),
       isSuperAdmin: isSuperAdmin,
       avatar: data.avatar || {
@@ -92,22 +96,72 @@ io.on('connection', (socket) => {
 
     players.set(socket.id, player);
 
-    // Kirim snapshot dunia ke pemain yang baru masuk (pastikan tidak memuat self atau duplikat)
+    // Kirim snapshot pemain yang ada di room ini saja
     socket.emit('world:init', {
       selfId: socket.id,
       selfPlayer: player,
-      players: Array.from(players.values()).filter(p => p.id !== socket.id && p.name.toLowerCase() !== playerName.toLowerCase()),
+      room: initialRoom,
+      players: Array.from(players.values()).filter(p => p.id !== socket.id && p.room === initialRoom && p.name.toLowerCase() !== playerName.toLowerCase()),
       monsters: monsters,
       worldBounds: { width: WORLD_WIDTH, height: WORLD_HEIGHT }
     });
 
-    // Siarkan ke seluruh pemain lain bahwa ada pemain baru masuk
-    socket.broadcast.emit('player:joined', player);
+    // Siarkan ke seluruh pemain lain di room yang sama
+    socket.to(initialRoom).emit('player:joined', player);
 
-    console.log(`[Player] ${player.name} (${player.avatar.gender}) [ROLE: ${player.role}] pos=(${player.x}, ${player.y}) bergabung. Online: ${players.size}`);
+    console.log(`[Player] ${player.name} (${player.avatar.gender}) [ROLE: ${player.role}] [ROOM: ${initialRoom}] pos=(${player.x}, ${player.y}) bergabung. Online: ${players.size}`);
   });
 
-  // 2. Event pergerakan posisi pemain
+  // 2. Event perpindahan room antar-area (World, Gedung SD, SMP, SMA, Rumah Pribadi, Admin Portal)
+  socket.on('player:switch_room', (data) => {
+    const player = players.get(socket.id);
+    if (!player) return;
+
+    const oldRoom = player.room || 'world';
+    const newRoom = data?.room || 'world';
+
+    if (typeof data?.x === 'number' && !isNaN(data.x)) player.x = data.x;
+    if (typeof data?.y === 'number' && !isNaN(data.y)) player.y = data.y;
+    if (data?.direction) player.direction = data.direction;
+    player.isMoving = false;
+
+    if (oldRoom !== newRoom) {
+      console.log(`[Room] ${player.name} (${socket.id}) berpindah dari [${oldRoom}] ke [${newRoom}]`);
+
+      // Tinggalkan room lama dan beri tahu pemain di room lama bahwa karakter ini pergi
+      socket.leave(oldRoom);
+      socket.to(oldRoom).emit('player:left', { id: socket.id, name: player.name });
+
+      player.room = newRoom;
+
+      // Bergabung ke socket.io room baru
+      socket.join(newRoom);
+
+      // Siarkan ke pemain di room tujuan bahwa pemain baru telah masuk
+      socket.to(newRoom).emit('player:joined', player);
+    }
+
+    // SELALU kirim daftar pemain yang sudah ada di room tujuan kepada pemain yang baru masuk / re-enter
+    const playersInNewRoom = Array.from(players.values()).filter(p => p.id !== socket.id && p.room === newRoom && p.name.toLowerCase() !== player.name.toLowerCase());
+    socket.emit('room:players', {
+      room: newRoom,
+      players: playersInNewRoom
+    });
+  });
+
+  // Event permintaan daftar pemain aktif dalam room (dipanggil saat scene baru mount atau refresh)
+  socket.on('room:request_players', () => {
+    const player = players.get(socket.id);
+    if (!player) return;
+    const currentRoom = player.room || 'world';
+    const playersInRoom = Array.from(players.values()).filter(p => p.id !== socket.id && p.room === currentRoom && p.name.toLowerCase() !== player.name.toLowerCase());
+    socket.emit('room:players', {
+      room: currentRoom,
+      players: playersInRoom
+    });
+  });
+
+  // 3. Event pergerakan posisi pemain (disiarkan hanya ke pemain di room yang sama)
   socket.on('player:move', (data) => {
     const player = players.get(socket.id);
     if (!player) return;
@@ -117,8 +171,8 @@ io.on('connection', (socket) => {
     if (data.direction) player.direction = data.direction;
     player.isMoving = !!data.isMoving;
 
-    // Siarkan posisi terbaru ke semua pemain lain
-    socket.broadcast.emit('player:moved', {
+    const currentRoom = player.room || 'world';
+    socket.to(currentRoom).emit('player:moved', {
       id: socket.id,
       x: player.x,
       y: player.y,
@@ -129,7 +183,7 @@ io.on('connection', (socket) => {
     });
   });
 
-  // 3. Event pesan obrolan (chat)
+  // 4. Event pesan obrolan (chat)
   socket.on('chat:message', (data) => {
     if (!data || typeof data.text !== 'string' || !data.text.trim()) return;
 
@@ -138,6 +192,7 @@ io.on('connection', (socket) => {
       player = {
         id: socket.id,
         name: (data.senderName || `Pemain_${socket.id.substring(0, 4)}`).trim(),
+        room: 'world',
         role: data.senderRole || 'player',
         isSuperAdmin: Boolean(data.isSuperAdmin || data.senderName?.toUpperCase() === 'RADEN'),
       };
@@ -146,7 +201,7 @@ io.on('connection', (socket) => {
 
     const trimmedText = data.text.trim();
 
-    // Perintah khusus Super Admin /announce
+    // Perintah khusus Super Admin /announce (global ke semua room)
     if (player.isSuperAdmin && trimmedText.startsWith('/announce ')) {
       const announcement = trimmedText.replace('/announce ', '').trim();
       io.emit('chat:broadcast', {
@@ -171,15 +226,18 @@ io.on('connection', (socket) => {
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     };
 
-    io.emit('chat:broadcast', chatPacket);
+    // Chat disiarkan ke pemain di room yang sama
+    const currentRoom = player.room || 'world';
+    io.to(currentRoom).emit('chat:broadcast', chatPacket);
   });
 
-  // 4. Proximity Voice Chat stream (audio packets)
+  // 5. Proximity Voice Chat stream (audio packets hanya untuk pemain di room yang sama)
   socket.on('voice:chunk', (data) => {
     const player = players.get(socket.id);
     if (!player || !data || !data.audio) return;
+    const currentRoom = player.room || 'world';
 
-    socket.broadcast.emit('voice:stream', {
+    socket.to(currentRoom).emit('voice:stream', {
       senderId: socket.id,
       senderName: player.name,
       x: typeof data.x === 'number' ? data.x : player.x,
@@ -190,37 +248,43 @@ io.on('connection', (socket) => {
 
   // Indikator visual ketika pemain sedang berbicara
   socket.on('voice:speaking', (data) => {
-    socket.broadcast.emit('voice:speaking', {
+    const player = players.get(socket.id);
+    const currentRoom = player?.room || 'world';
+    socket.to(currentRoom).emit('voice:speaking', {
       senderId: socket.id,
       isSpeaking: !!data?.isSpeaking,
     });
   });
 
-  // 5. Event pemain disconnect
+  // 6. Event pemain disconnect
   socket.on('disconnect', () => {
     const player = players.get(socket.id);
     if (player) {
-      console.log(`[Player] ${player.name} terputus. Sisa online: ${players.size - 1}`);
+      const currentRoom = player.room || 'world';
+      console.log(`[Player] ${player.name} terputus dari room [${currentRoom}]. Sisa online: ${players.size - 1}`);
       players.delete(socket.id);
-      io.emit('player:left', { id: socket.id, name: player.name });
+      socket.to(currentRoom).emit('player:left', { id: socket.id, name: player.name });
     }
   });
 
-  // 5. Event reaksi ekspresi wajah pemain
+  // 7. Event reaksi ekspresi wajah pemain
   socket.on('player:expression', (data) => {
-    socket.broadcast.emit('player:expression', {
+    const player = players.get(socket.id);
+    const currentRoom = player?.room || 'world';
+    socket.to(currentRoom).emit('player:expression', {
       id: socket.id,
       type: data.type
     });
   });
 
-  // 6. Event status AFK pemain
+  // 8. Event status AFK pemain
   socket.on('player:afk', (data) => {
     const player = players.get(socket.id);
     if (!player) return;
     player.isAfk = !!data?.isAfk;
     player.durationSeconds = data?.durationSeconds || 0;
-    socket.broadcast.emit('player:afk', {
+    const currentRoom = player.room || 'world';
+    socket.to(currentRoom).emit('player:afk', {
       id: socket.id,
       isAfk: player.isAfk,
       durationSeconds: player.durationSeconds

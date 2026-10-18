@@ -108,7 +108,7 @@ export class Player extends Entity {
     hp: number = 100,
     maxHp: number = 100
   ) {
-    // Kecepatan gerak dipercepat ke 360 px/s (3 petak ubin/detik) agar lincah, sigap, dan responsif
+    // Kecepatan gerak disesuaikan ke 380 px/s agar lincah, sigap, dan sinkron dengan animasi langkah
     let effectiveName = name;
     if (!effectiveName || effectiveName === 'Petualang') {
       try {
@@ -116,35 +116,31 @@ export class Player extends Entity {
         if (u.name) effectiveName = u.name;
       } catch (e) {}
     }
-    super(scene, x, y, id, effectiveName, hp, maxHp, 360);
+    super(scene, x, y, id, effectiveName, hp, maxHp, 380);
     this.avatar = avatar;
     this.gender = avatar?.gender === 'female' ? 'female' : 'male';
     this.networkManager = NetworkManager.getInstance();
 
-    // Proporsi Karakter HD: tinggi 177px di dalam grid 1x2 (120x240px)
-    // Pivot stabil di petak ubin 1x1 (120x120px)
+    // Proporsi Karakter 1x2 Grid (1x lebar 120px, 2y tinggi 240px sesuai aset Figma 480x960px)
     this.charHeight = 177;
-    this.charWidth = 119.5;
+    this.charWidth = 120;
     this.setEntityHeight(this.charHeight);
 
-    // Sprite karakter visual: Pose awal Diam Menghadap Depan (bayangan sudah menyatu di aset gambar)
+    // Sprite karakter visual: Pose awal Diam Menghadap Depan, pas di tengah petak 1x2 grid (0, -60)
     const initialKey = `player-${this.gender}-idle-front`;
-    this.sprite = scene.add.sprite(0, 48, initialKey);
-    // Origin di tengah kaki karakter (0.5, 1.0) berdiri tepat di atas bayangan ubin 1x1
-    this.sprite.setOrigin(0.5, 1.0);
+    this.sprite = scene.add.sprite(0, -60, initialKey);
+    this.sprite.setOrigin(0.5, 0.5);
+    this.sprite.setDisplaySize(120, 240);
     this.add(this.sprite);
-
-    // Pastikan setiap pergantian frame animasi mempertahankan rasio aspek alami 100% tanpa glitch
-    this.sprite.on(Phaser.Animations.Events.ANIMATION_UPDATE, () => {
-      this.adjustSpriteScale();
-    });
-    this.adjustSpriteScale();
 
     // 3. Kotak tabrakan fisik Arcade di bagian kaki karakter (1x1 tile)
     const body = this.body as Phaser.Physics.Arcade.Body;
     if (body) {
       body.setSize(70, 36);
       body.setOffset(-35, 12);
+      body.setDrag(0, 0);
+      body.setFriction(0, 0);
+      body.setDamping(false);
     }
 
     this.setupInput(scene);
@@ -266,11 +262,15 @@ export class Player extends Entity {
     return this.avatar;
   }
 
+  private lastAuthCheckTime: number = 0;
+  private isUserAuthedCache: boolean = true;
+  private lastAspectWidth: number = 0;
+
   /**
    * Mengecek apakah pemain diizinkan bergerak.
    * Pemain tidak boleh bergerak jika:
    * 1. Berada di tampilan Lobby (window.location.pathname === '/')
-   * 2. Belum login atau daftar akun (belum tersimpan di raden_player_user)
+   * 2. Belum login atau daftar akun (dicek berkala, bukan setiap frame)
    * 3. Sedang dalam dialog NPC atau sedang mengetik di input form
    */
   public isMovementLocked(): boolean {
@@ -278,16 +278,18 @@ export class Player extends Entity {
     if (document.activeElement?.tagName === 'INPUT' || document.activeElement?.tagName === 'TEXTAREA') return true;
     if (typeof window !== 'undefined' && window.location.pathname === '/') return true;
 
-    try {
-      const u = JSON.parse(localStorage.getItem('raden_player_user') || '{}');
-      if (!u || (!u.id && !u.name)) {
-        return true;
+    const now = Date.now();
+    if (now - this.lastAuthCheckTime > 2500) {
+      this.lastAuthCheckTime = now;
+      try {
+        const u = JSON.parse(localStorage.getItem('raden_player_user') || '{}');
+        this.isUserAuthedCache = Boolean(u && (u.id || u.name));
+      } catch (e) {
+        this.isUserAuthedCache = true;
       }
-    } catch (e) {
-      return true;
     }
 
-    return false;
+    return !this.isUserAuthedCache;
   }
 
   /**
@@ -369,26 +371,31 @@ export class Player extends Entity {
       this.targetDestination = null;
       this.onArrivalCallback = null;
 
-      if (left) {
-        vx -= this.speed;
-        this.currentDirection = 'left';
-      } else if (right) {
-        vx += this.speed;
-        this.currentDirection = 'right';
-      }
+      if (left) vx -= this.speed;
+      else if (right) vx += this.speed;
 
-      if (up) {
-        vy -= this.speed;
-        this.currentDirection = 'up';
-      } else if (down) {
-        vy += this.speed;
-        this.currentDirection = 'down';
-      }
+      if (up) vy -= this.speed;
+      else if (down) vy += this.speed;
 
-      // Normalisasi kecepatan diagonal
+      // Normalisasi kecepatan diagonal dan stabilkan arah hadap (anti-flutter)
       if (vx !== 0 && vy !== 0) {
         vx *= 0.7071;
         vy *= 0.7071;
+        if (this.currentDirection === 'left' && left) {}
+        else if (this.currentDirection === 'right' && right) {}
+        else if (this.currentDirection === 'up' && up) {}
+        else if (this.currentDirection === 'down' && down) {}
+        else {
+          this.currentDirection = left ? 'left' : 'right';
+        }
+      } else if (vx < 0) {
+        this.currentDirection = 'left';
+      } else if (vx > 0) {
+        this.currentDirection = 'right';
+      } else if (vy < 0) {
+        this.currentDirection = 'up';
+      } else if (vy > 0) {
+        this.currentDirection = 'down';
       }
     } else if (this.targetDestination) {
       // 3. Navigasi otomatis Point & Click / Tap-to-move
@@ -408,10 +415,14 @@ export class Player extends Entity {
         vx = Math.cos(angle) * this.speed;
         vy = Math.sin(angle) * this.speed;
 
-        if (Math.abs(dx) > Math.abs(dy)) {
-          this.currentDirection = dx > 0 ? 'right' : 'left';
-        } else {
-          this.currentDirection = dy > 0 ? 'down' : 'up';
+        // Stabilkan sudut hadap agar tidak bolak-balik reset frame animasi di diagonal
+        const diff = Math.abs(dx) - Math.abs(dy);
+        if (Math.abs(diff) > 18) {
+          if (Math.abs(dx) > Math.abs(dy)) {
+            this.currentDirection = dx > 0 ? 'right' : 'left';
+          } else {
+            this.currentDirection = dy > 0 ? 'down' : 'up';
+          }
         }
       }
     }
@@ -503,9 +514,13 @@ export class Player extends Entity {
       }
 
       if (this.currentAnimKey !== animKey || !this.sprite.anims.isPlaying) {
+        const prevAnim = this.sprite.anims.currentAnim;
+        const currentProgress = (prevAnim && this.sprite.anims.isPlaying) ? this.sprite.anims.getProgress() : 0;
         this.currentAnimKey = animKey;
         this.sprite.anims.play(animKey, true);
-        this.adjustSpriteScale();
+        if (currentProgress > 0 && currentProgress < 1) {
+          this.sprite.anims.setProgress(currentProgress);
+        }
       }
     } else {
       if (this.sprite.anims.isPlaying) {
@@ -529,23 +544,16 @@ export class Player extends Entity {
       }
 
       this.sprite.setTexture(idleKey);
-      this.adjustSpriteScale();
+      this.sprite.setDisplaySize(120, 240);
     }
   }
 
   /**
-   * Menyesuaikan ukuran tampilan sprite secara dinamis agar sesuai rasio aspek 100% dari aset asli Figma
-   * Menjaga tinggi karakter 177px dan lebar proporsional (~119.5px) di dalam ubin 1x2 (120x240px)
+   * Menyesuaikan ukuran tampilan sprite secara stabil (1x2 grid: 120x240px)
    */
   private adjustSpriteScale(): void {
     if (!this.sprite) return;
-    const frame = this.sprite.frame;
-    const realH = frame ? (frame.realHeight || frame.height) : 586;
-    const realW = frame ? (frame.realWidth || frame.width) : 395;
-    const aspect = realH > 0 ? (realW / realH) : 0.674;
-    this.charHeight = 177;
-    this.charWidth = Math.round(this.charHeight * aspect * 100) / 100;
-    this.sprite.setDisplaySize(this.charWidth, this.charHeight);
+    this.sprite.setDisplaySize(120, 240);
   }
 
   /**

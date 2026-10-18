@@ -25,6 +25,7 @@ export interface INpcDialogueData {
   name: string;
   role: string;
   avatarType?: 'sage' | 'blacksmith' | 'alchemist' | 'merchant' | 'guard' | 'fisherman' | 'farmer' | 'elder';
+  avatarUrl?: string;
   dialogues: string[];
 }
 
@@ -159,8 +160,18 @@ export const DialogueBox: React.FC = () => {
   const isFirstPage = currentPage === 0;
   const isLastPage = currentPage === totalPages - 1;
 
-  // Render Potret Ilustrasi Avatar Karakter NPC Chibi Imut & Lucu
+  // Render Potret Ilustrasi Avatar Karakter NPC (Mendukung gambar aset asli & fallback SVG Chibi)
   const renderNpcPortrait = () => {
+    if (dialogue.avatarUrl) {
+      return (
+        <img
+          src={dialogue.avatarUrl}
+          alt={dialogue.name}
+          className="w-full h-full object-contain filter drop-shadow-sm"
+        />
+      );
+    }
+
     const avatarType = dialogue.avatarType || 'sage';
 
     switch (avatarType) {

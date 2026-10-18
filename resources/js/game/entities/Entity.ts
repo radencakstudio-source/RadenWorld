@@ -73,6 +73,9 @@ export abstract class Entity extends Phaser.GameObjects.Container {
   /** Tinggi entitas visual untuk penempatan nameTag dan speechBubble (177px sesuai aset karakter HD) */
   protected entityHeight: number = 177;
 
+  /** Cache zoom kamera terakhir agar tidak memicu setScale berulang setiap frame */
+  protected lastCamZoom: number = -1;
+
   /**
    * Konstruktor Inisialisasi Entitas
    * @param scene Phaser Scene tempat entitas dirender
@@ -124,7 +127,7 @@ export abstract class Entity extends Phaser.GameObjects.Container {
     const displayName = isSuperAdmin ? `👑 ${name.toUpperCase()} [ADMIN]` : name;
     const nameColor = isSuperAdmin ? '#f59e0b' : '#ffffff';
 
-    this.nameTag = scene.add.text(0, -145, displayName, {
+    this.nameTag = scene.add.text(0, -165, displayName, {
       fontFamily: '"Chakra Petch", "Plus Jakarta Sans", sans-serif',
       fontSize: '13px',
       color: nameColor,
@@ -168,7 +171,7 @@ export abstract class Entity extends Phaser.GameObjects.Container {
   public setEntityHeight(height: number): void {
     this.entityHeight = height;
     if (this.nameTag) {
-      this.nameTag.setY(-145);
+      this.nameTag.setY(-165);
     }
   }
 
@@ -222,8 +225,8 @@ export abstract class Entity extends Phaser.GameObjects.Container {
       this.speechTimer = null;
     }
 
-    // Posisikan balon tepat di atas kepala dan nameplate (-195px)
-    const bubbleY = -195;
+    // Posisikan balon tepat di atas kepala dan nameplate (-190px)
+    const bubbleY = -190;
     const bubble = this.scene.add.container(0, bubbleY);
 
     const bubbleText = this.scene.add.text(0, 0, message, {
@@ -310,8 +313,8 @@ export abstract class Entity extends Phaser.GameObjects.Container {
       this.expressionTimer = null;
     }
 
-    // Posisi mengambang tepat di atas kepala karakter (-215px)
-    const bubbleY = -215;
+    // Posisi mengambang tepat di atas kepala karakter (-200px)
+    const bubbleY = -200;
     const bubble = this.scene.add.container(0, bubbleY);
 
     const exprSprite = this.scene.add.sprite(0, 0, textureKey);
@@ -366,6 +369,9 @@ export abstract class Entity extends Phaser.GameObjects.Container {
    */
   protected updateFloatingElementsScale(): void {
     const camZoom = this.scene?.cameras?.main?.zoom || 1.0;
+    if (Math.abs(camZoom - this.lastCamZoom) < 0.005) return;
+    this.lastCamZoom = camZoom;
+
     const invScale = 1 / Math.max(0.5, camZoom);
     const targetScale = Math.max(0.75, Math.min(1.85, invScale));
 
@@ -421,7 +427,7 @@ export abstract class Entity extends Phaser.GameObjects.Container {
     }
 
     if (!this.speakingIndicator) {
-      const container = this.scene.add.container(0, -172);
+      const container = this.scene.add.container(0, -190);
 
       const bg = this.scene.add.graphics();
       // Desain badge gelap elegan dengan bingkai neon hijau emerald
@@ -509,8 +515,8 @@ export abstract class Entity extends Phaser.GameObjects.Container {
       this.afkContainer = null;
     }
 
-    // Posisikan badge AFK di atas kepala karakter (y: -170)
-    const container = this.scene.add.container(0, -170);
+    // Posisikan badge AFK di atas kepala karakter (y: -185)
+    const container = this.scene.add.container(0, -185);
 
     const text = this.scene.add.text(0, 0, afkString, {
       fontFamily: '"Chakra Petch", sans-serif',

@@ -220,7 +220,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   ];
 
   const cameraZoomPresets = [
-    { label: 'Jauh / Luas', value: 0.75, desc: 'Melihat area peta lebih lebar' },
+    { label: 'Panorama Luas (80×80)', value: 0.6, desc: 'Melihat kawasan open world 80x80 ekstra luas' },
+    { label: 'Jauh / Luas', value: 0.75, desc: 'Melihat area sekitar lebih lebar' },
     { label: 'Standar Open World', value: 0.9, desc: 'Tampilan proporsional RPG' },
     { label: 'Fokus Karakter', value: 1.15, desc: 'Lebih dekat dengan avatar' },
     { label: 'Detail / Zoom In', value: 1.4, desc: 'Melihat ekspresi & tekstur HD' },

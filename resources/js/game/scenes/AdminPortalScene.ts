@@ -309,7 +309,10 @@ export class AdminPortalScene extends Phaser.Scene {
     throne.setDisplaySize(360, 360);
     throne.setDepth(this.throneZone.y + 120);
     throne.setInteractive({ useHandCursor: true });
-    throne.on('pointerdown', () => this.triggerCurrentInteraction());
+    throne.on('pointerdown', () => {
+      this.player?.showSpeechBubble('👑 Membuka Panel Studio Arsitek RadenWorld...');
+      EventBus.emit('open-creator-studio', { targetMap: 'world' });
+    });
     // Obstacle fisik di dasar tahta agar karakter tidak menembus platform
     this.addGridObstacle(8.5, 2.5, 3, 1.5);
 
@@ -522,9 +525,9 @@ export class AdminPortalScene extends Phaser.Scene {
     let prompt: string | null = null;
     let label = `PORTAL SUPER ADMIN: PUSAT KENDALI (ID: ${this.adminToken})`;
 
-    if (distThrone < 120) {
-      prompt = 'TEKAN [E] / KLIK UNTUK DUDUK DI TAHTA PENCIPTA';
-      label = 'PORTAL ADMIN: TAHTA PENCIPTA';
+    if (distThrone < 180) {
+      prompt = '👑 TEKAN [E] / KLIK TAHTA UNTUK BUKA PANEL ARSITEK PENCIPTA';
+      label = 'PORTAL ADMIN: TAHTA PENCIPTA (ARSITEK STUDIO)';
     } else if (distBroadcast < 110) {
       prompt = 'TEKAN [E] / KLIK UNTUK SIARAN PENGUMUMAN SERVER';
       label = 'PORTAL ADMIN: KONSOL BROADCAST';
@@ -567,9 +570,10 @@ export class AdminPortalScene extends Phaser.Scene {
     const px = this.player.x;
     const py = this.player.y;
 
-    // 1. Tahta Pencipta
-    if (Phaser.Math.Distance.Between(px, py, this.throneZone.x, this.throneZone.y) < 130) {
-      this.player.showSpeechBubble('👑 Bersemayam di Tahta Agung Pencipta RadenWorld.');
+    // 1. Tahta Pencipta (Buka Panel Studio Arsitek RadenWorld)
+    if (Phaser.Math.Distance.Between(px, py, this.throneZone.x, this.throneZone.y) < 200) {
+      this.player.showSpeechBubble('👑 Membuka Panel Studio Arsitek RadenWorld...');
+      EventBus.emit('open-creator-studio', { targetMap: 'world' });
       return;
     }
 

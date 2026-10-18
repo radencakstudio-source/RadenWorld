@@ -30,6 +30,12 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
   const [dots, setDots] = useState('..........');
   const [walkFrame, setWalkFrame] = useState(1);
   const isCompleteRef = useRef(false);
+  const onCompleteRef = useRef(onComplete);
+  const startTimeRef = useRef<number>(Date.now());
+
+  useEffect(() => {
+    onCompleteRef.current = onComplete;
+  }, [onComplete]);
 
   // Animasi titik-titik teks pemuatan
   useEffect(() => {
@@ -39,53 +45,74 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
     return () => clearInterval(dotInterval);
   }, []);
 
-  // Animasi frame kaki cowok berjalan (Walk_Side1 s/d Walk_Side9)
+  // Animasi frame kaki cowok berjalan (MaleWalkSide1 s/d MaleWalkSide8)
   useEffect(() => {
     const walkInterval = setInterval(() => {
-      setWalkFrame((prev) => (prev >= 9 ? 1 : prev + 1));
+      setWalkFrame((prev) => (prev >= 8 ? 1 : prev + 1));
     }, 110);
     return () => clearInterval(walkInterval);
   }, []);
 
-  // Listener event aset phaser & fallback timer halus
+  // Listener event aset Phaser & fallback timer halus yang kebal re-render parent
   useEffect(() => {
-    const startTime = Date.now();
+    startTimeRef.current = Date.now();
+    isCompleteRef.current = false;
+
+    const triggerComplete = () => {
+      if (isCompleteRef.current) return;
+      isCompleteRef.current = true;
+      setProgress(100);
+      setTimeout(() => {
+        if (onCompleteRef.current) {
+          onCompleteRef.current();
+        }
+      }, 250);
+    };
 
     const progressTimer = setInterval(() => {
-      const elapsed = Date.now() - startTime;
+      const elapsed = Date.now() - startTimeRef.current;
       const ratio = Math.min(100, Math.floor((elapsed / durationMs) * 100));
 
       setProgress((prev) => {
         const next = Math.max(prev, ratio);
-        if (next >= 100 && !isCompleteRef.current) {
-          isCompleteRef.current = true;
-          clearInterval(progressTimer);
-          setTimeout(() => {
-            if (onComplete) onComplete();
-          }, 350);
-        }
         return next;
       });
-    }, 40);
+
+      if (ratio >= 100) {
+        clearInterval(progressTimer);
+        triggerComplete();
+      }
+    }, 35);
 
     const handlePhaserProgress = (val: number) => {
       const pct = Math.floor(val * 100);
       setProgress((prev) => Math.max(prev, pct));
+      if (pct >= 100) {
+        clearInterval(progressTimer);
+        triggerComplete();
+      }
     };
 
     const handlePhaserComplete = () => {
-      // Tunggu hingga timer minimal selesai agar user melihat animasi cowok menuju ke cewek
+      // Phaser selesai memuat aset
+      triggerComplete();
     };
+
+    // Hard fallback safety: Dijamin 100% selesai dan tidak akan pernah macet (stuck)
+    const fallbackTimer = setTimeout(() => {
+      triggerComplete();
+    }, durationMs + 350);
 
     EventBus.on('assets-loading-progress', handlePhaserProgress);
     EventBus.on('assets-loading-complete', handlePhaserComplete);
 
     return () => {
       clearInterval(progressTimer);
+      clearTimeout(fallbackTimer);
       EventBus.off('assets-loading-progress', handlePhaserProgress);
       EventBus.off('assets-loading-complete', handlePhaserComplete);
     };
-  }, [durationMs, onComplete]);
+  }, [durationMs]);
 
   // Perhitungan posisi cowok: dari 2% di kiri hingga mencapai cewek (~86% di kanan)
   const boyLeftPercent = 3 + (progress / 100) * 82;
@@ -147,7 +174,7 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
             {/* Bayangan Lantai Cowok */}
             <div className="w-12 h-3 bg-black/40 rounded-full blur-[2px] mb-[-6px]" />
             <img
-              src={`/assets/sprites/characters/Player/Male/MovementSide/Walk_Side${walkFrame}_Male.png`}
+              src={`/assets/sprites/characters/Player/Male/MovementSide/MaleWalkSide${walkFrame}.png`}
               alt="Male Walking"
               className="w-16 sm:w-20 h-20 sm:h-24 object-contain pixelated pointer-events-none drop-shadow-lg"
               onError={(e) => {
@@ -165,7 +192,7 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
             {/* Bayangan Lantai Cewek */}
             <div className="w-12 h-3 bg-black/40 rounded-full blur-[2px] mb-[-6px]" />
             <img
-              src="/assets/sprites/characters/Player/Female/Idle/Front/Front%20Female%20Pink.png"
+              src="/assets/sprites/characters/Player/Female/Idle/Front/Front%20Female.png"
               alt="Female Idle"
               className="w-16 sm:w-20 h-20 sm:h-24 object-contain pixelated pointer-events-none drop-shadow-lg"
             />

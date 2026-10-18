@@ -11,7 +11,7 @@
  * ============================================================================
  */
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { GameCanvas } from './components/GameCanvas';
 import { HomeScreen } from './game/ui/HomeScreen';
 import { HUD } from './game/ui/HUD';
@@ -26,7 +26,12 @@ import { TopUpModal } from './game/ui/TopUpModal';
 import { FriendRequestNotification, IFriendRequest } from './game/ui/FriendRequestNotification';
 import { DialogueBox } from './game/ui/DialogueBox';
 import { LoadingScreen } from './game/ui/LoadingScreen';
+import { CreatorStudioModal } from './game/ui/CreatorStudioModal';
+import { SdSubjectsModal } from './game/ui/SdSubjectsModal';
+import { SchoolGradeSelectModal } from './game/ui/SchoolGradeSelectModal';
+import { SchoolSubjectsModal } from './game/ui/SchoolSubjectsModal';
 import { calculateAgeFromBirthDate } from './game/ui/AuthModal';
+import { SunbeamOverlay } from './game/ui/SunbeamOverlay';
 import { EventBus } from './game/core/EventBus';
 import { SoundManager } from './game/core/SoundManager';
 import { NetworkManager } from './game/core/NetworkManager';
@@ -73,13 +78,13 @@ export const GameApp: React.FC = () => {
     title?: string;
   }>({
     x: initialPath.startsWith('/world')
-      ? (() => { try { const p = JSON.parse(localStorage.getItem('raden_pos_world') || ''); if (p?.x) return p.x; } catch (e) {} return 4800; })()
+      ? (() => { try { const p = JSON.parse(localStorage.getItem('raden_pos_world') || ''); if (p?.x) return p.x; } catch (e) {} return 1380; })()
       : (() => { try { const p = JSON.parse(localStorage.getItem('raden_pos_house_safe-01') || ''); if (p?.x) return p.x; } catch (e) {} return 840; })(),
     y: initialPath.startsWith('/world')
-      ? (() => { try { const p = JSON.parse(localStorage.getItem('raden_pos_world') || ''); if (p?.y) return p.y; } catch (e) {} return 4860; })()
+      ? (() => { try { const p = JSON.parse(localStorage.getItem('raden_pos_world') || ''); if (p?.y) return p.y; } catch (e) {} return 960; })()
       : (() => { try { const p = JSON.parse(localStorage.getItem('raden_pos_house_safe-01') || ''); if (p?.y) return p.y; } catch (e) {} return 620; })(),
-    gridX: initialPath.startsWith('/world') ? 40 : 7,
-    gridY: initialPath.startsWith('/world') ? 40 : 5,
+    gridX: initialPath.startsWith('/world') ? 11 : 7,
+    gridY: initialPath.startsWith('/world') ? 8 : 5,
     level: 1,
     hp: 100,
     maxHp: 100,
@@ -90,7 +95,7 @@ export const GameApp: React.FC = () => {
       } catch (e) {}
       return 'Petualang';
     })(),
-    roomName: initialPath.startsWith('/world') ? 'SANCTUARY CENTRAL PLAZA' : 'RUMAH PRIBADI: RUANG UTAMA',
+    roomName: initialPath.startsWith('/world') ? 'KAWASAN RESIDENSIAL: RUMAH PEMAIN & TAMAN' : 'RUMAH PRIBADI: RUANG UTAMA',
     inHouse: !initialPath.startsWith('/world'),
     privateRoomId: (() => {
       try {
@@ -241,6 +246,22 @@ export const GameApp: React.FC = () => {
 
   // Wardrobe Modal State
   const [isWardrobeOpen, setIsWardrobeOpen] = useState(false);
+  // Panel Arsitek Pencipta (Tahta Agung Raden) State
+  const [isCreatorStudioOpen, setIsCreatorStudioOpen] = useState(false);
+  // Modal Mata Pelajaran Khusus Kelas SD (Legacy)
+  const [isSdSubjectsOpen, setIsSdSubjectsOpen] = useState(false);
+  const [sdDeskType, setSdDeskType] = useState<'guru' | 'siswa'>('guru');
+
+  // Modal Pemilihan Kelas Sekolah (SD 1-6, SMP 1-3, SMA 1-3)
+  const [isGradeSelectOpen, setIsGradeSelectOpen] = useState(false);
+  const [gradeSelectSchoolType, setGradeSelectSchoolType] = useState<'sd' | 'smp' | 'sma'>('sd');
+  const [gradeSelectReturnPos, setGradeSelectReturnPos] = useState<{ x: number; y: number } | null>(null);
+
+  // Modal Mata Pelajaran Sekolah Lucu & Ceria (SD, SMP, SMA)
+  const [isSchoolSubjectsOpen, setIsSchoolSubjectsOpen] = useState(false);
+  const [schoolSubjectsType, setSchoolSubjectsType] = useState<'sd' | 'smp' | 'sma'>('sd');
+  const [schoolSubjectsGrade, setSchoolSubjectsGrade] = useState<number>(1);
+  const [schoolSubjectsDeskType, setSchoolSubjectsDeskType] = useState<'guru' | 'siswa'>('guru');
   const [wardrobeAvatar, setWardrobeAvatar] = useState<IAvatarCustomization>(() => {
     try {
       const saved = localStorage.getItem('raden_player_avatar');
@@ -263,10 +284,11 @@ export const GameApp: React.FC = () => {
       setPlayerStats((prev) => {
         const resolvedName = (stats.name && stats.name !== 'Petualang') ? stats.name : (prev.name || stats.name);
         if (
+          prev.roomName === stats.roomName &&
           prev.gridX === stats.gridX &&
           prev.gridY === stats.gridY &&
-          prev.roomName === stats.roomName &&
           prev.hp === stats.hp &&
+          prev.maxHp === stats.maxHp &&
           prev.inHouse === stats.inHouse &&
           prev.name === resolvedName
         ) {
@@ -365,11 +387,56 @@ export const GameApp: React.FC = () => {
     EventBus.on('new-chat-message', handleChat);
     EventBus.on('open-wardrobe', handleOpenWardrobe);
 
+    const handleOpenCreatorStudio = () => {
+      setIsCreatorStudioOpen(true);
+    };
+    EventBus.on('open-creator-studio', handleOpenCreatorStudio);
+
     const handleInspectProfile = (target: any) => {
       setInspectedPlayer(target);
       setIsProfileOpen(true);
     };
     EventBus.on('inspect-player-profile', handleInspectProfile);
+
+    // Tangani event pembukaan modal Pemilihan Kelas sebelum masuk sekolah (SD, SMP, SMA)
+    const handleOpenGradeSelect = (data: { schoolType: 'sd' | 'smp' | 'sma'; returnX?: number; returnY?: number }) => {
+      sound.playOpenModal();
+      setGradeSelectSchoolType(data?.schoolType || 'sd');
+      if (typeof data?.returnX === 'number' && typeof data?.returnY === 'number') {
+        setGradeSelectReturnPos({ x: data.returnX, y: data.returnY });
+      } else {
+        setGradeSelectReturnPos(null);
+      }
+      setIsGradeSelectOpen(true);
+      EventBus.emit('dialogue-active', true);
+    };
+    EventBus.on('open-school-grade-select', handleOpenGradeSelect);
+
+    // Tangani event pembukaan modal Mata Pelajaran Sekolah (SD, SMP, SMA) dari Meja Guru / Meja Siswa
+    const handleOpenSchoolSubjects = (data?: { schoolType?: 'sd' | 'smp' | 'sma'; grade?: number; deskType?: 'guru' | 'siswa' }) => {
+      sound.playOpenModal();
+      const sType = data?.schoolType || 'sd';
+      const sGrade = (typeof data?.grade === 'number' && data.grade >= 1) ? data.grade : (() => {
+        try {
+          const saved = localStorage.getItem(`raden_school_${sType}_grade`);
+          return saved ? parseInt(saved, 10) : 1;
+        } catch (e) {
+          return 1;
+        }
+      })();
+      setSchoolSubjectsType(sType);
+      setSchoolSubjectsGrade(sGrade);
+      setSchoolSubjectsDeskType(data?.deskType || 'guru');
+      setIsSchoolSubjectsOpen(true);
+      EventBus.emit('dialogue-active', true);
+    };
+    EventBus.on('open-school-subjects', handleOpenSchoolSubjects);
+
+    // Tangani event pembukaan modal Mata Pelajaran khusus SD dari Meja Guru / Meja Siswa (Legacy wrapper)
+    const handleOpenSdSubjects = (data?: { deskType?: 'guru' | 'siswa' }) => {
+      handleOpenSchoolSubjects({ schoolType: 'sd', grade: 1, deskType: data?.deskType || 'guru' });
+    };
+    EventBus.on('open-sd-subjects', handleOpenSdSubjects);
 
     const handleIncomingFriend = (req: IFriendRequest) => {
       console.log('[GameApp] Notifikasi permintaan pertemanan diterima:', req);
@@ -511,6 +578,11 @@ export const GameApp: React.FC = () => {
       EventBus.off('player-stats-updated', handleStats);
       EventBus.off('interaction-prompt', handlePrompt);
       EventBus.off('new-chat-message', handleChat);
+      EventBus.off('open-wardrobe', handleOpenWardrobe);
+      EventBus.off('open-creator-studio', handleOpenCreatorStudio);
+      EventBus.off('open-school-grade-select', handleOpenGradeSelect);
+      EventBus.off('open-school-subjects', handleOpenSchoolSubjects);
+      EventBus.off('open-sd-subjects', handleOpenSdSubjects);
       EventBus.off('incoming-friend-request', handleIncomingFriend);
       EventBus.off('friend-response-result', handleFriendResponse);
     };
@@ -601,6 +673,10 @@ export const GameApp: React.FC = () => {
     });
   };
 
+  const handleLoadingComplete = useCallback(() => {
+    setIsLoadingScreen(false);
+  }, []);
+
   // Memulai game dari Home Screen (setelah Login / Kustomisasi Avatar)
   const handleStartGame = (name: string, avatar: IAvatarCustomization, privateRoomId?: string) => {
     // Tampilkan LoadingScreen animasi retro boy walking to girl saat masuk bermain
@@ -651,6 +727,12 @@ export const GameApp: React.FC = () => {
       inHouse: true,
       privateRoomId: safeRoomId,
     }));
+    EventBus.emit('switch-scene', {
+      scene: 'HouseScene',
+      name,
+      avatar,
+      privateRoomId: safeRoomId,
+    });
     EventBus.emit('join-game', {
       name,
       avatar,
@@ -845,11 +927,17 @@ export const GameApp: React.FC = () => {
       {/* 2D HTML5 Canvas Game Engine (Phaser 3) */}
       <GameCanvas />
 
+      {/* Sinar Cahaya Mentari dari Atas Kiri Nyorot ke Tengah (Bebas Kotak & Kebal Zoom) */}
+      {!isLoadingScreen && gameState === 'playing' && !playerStats.inHouse && (
+        <SunbeamOverlay />
+      )}
+
       {/* 0. LOADING SCREEN SESUAI GAMBAR (COWOK BERJALAN MENUJU KE CEWEK) */}
       {isLoadingScreen && (
         <LoadingScreen
-          onComplete={() => setIsLoadingScreen(false)}
-          serverCode="ASIA - 0001"
+          onComplete={handleLoadingComplete}
+          serverCode={serverCode}
+          durationMs={gameState === 'playing' ? 1200 : 2500}
         />
       )}
 
@@ -946,6 +1034,98 @@ export const GameApp: React.FC = () => {
             isOpen={isWardrobeOpen}
             onClose={() => setIsWardrobeOpen(false)}
             currentAvatar={wardrobeAvatar}
+          />
+
+          {/* Modal Panel Arsitek Pencipta (Tahta Agung Pencipta Raden) */}
+          <CreatorStudioModal
+            isOpen={isCreatorStudioOpen}
+            onClose={() => setIsCreatorStudioOpen(false)}
+          />
+
+          {/* Modal Pemilihan Kelas Sekolah (Sebelum Masuk Gedung SD, SMP, SMA) */}
+          <SchoolGradeSelectModal
+            isOpen={isGradeSelectOpen}
+            schoolType={gradeSelectSchoolType}
+            onClose={() => {
+              sound.playClick();
+              setIsGradeSelectOpen(false);
+              EventBus.emit('dialogue-active', false);
+            }}
+            onSelectGrade={(selectedGrade) => {
+              setIsGradeSelectOpen(false);
+              EventBus.emit('dialogue-active', false);
+              try {
+                localStorage.setItem(`raden_school_${gradeSelectSchoolType}_grade`, selectedGrade.toString());
+              } catch (e) {}
+              EventBus.emit('enter-school-with-grade', {
+                schoolType: gradeSelectSchoolType,
+                grade: selectedGrade,
+                returnX: gradeSelectReturnPos?.x,
+                returnY: gradeSelectReturnPos?.y,
+              });
+            }}
+          />
+
+          {/* Modal Mata Pelajaran Sekolah Lucu & Ceria (SD 1-6, SMP 1-3, SMA 1-3) */}
+          <SchoolSubjectsModal
+            isOpen={isSchoolSubjectsOpen}
+            schoolType={schoolSubjectsType}
+            grade={schoolSubjectsGrade}
+            deskType={schoolSubjectsDeskType}
+            onClose={() => {
+              sound.playClick();
+              setIsSchoolSubjectsOpen(false);
+              EventBus.emit('dialogue-active', false);
+            }}
+            onStudySubject={(subjectName, expEarned) => {
+              sound.playSuccess();
+              setPlayerExp((prev) => {
+                const next = prev + expEarned;
+                try {
+                  const u = JSON.parse(localStorage.getItem('raden_player_user') || '{}');
+                  u.exp = next;
+                  localStorage.setItem('raden_player_user', JSON.stringify(u));
+                } catch (e) {}
+                return next;
+              });
+              EventBus.emit('new-chat-message', {
+                id: `study_msg_${Date.now()}`,
+                sender: schoolSubjectsType.toUpperCase(),
+                text: `✨ Kamu asyik belajar ${subjectName} di ${schoolSubjectsDeskType === 'guru' ? 'Meja Guru' : 'Meja Belajar Siswa'}! (+${expEarned} EXP)`,
+                timestamp: Date.now(),
+                isSystem: true,
+              });
+            }}
+          />
+
+          {/* Modal Mata Pelajaran Khusus SD (Legacy fallback) */}
+          <SdSubjectsModal
+            isOpen={isSdSubjectsOpen}
+            onClose={() => {
+              sound.playClick();
+              setIsSdSubjectsOpen(false);
+              EventBus.emit('dialogue-active', false);
+            }}
+            deskType={sdDeskType}
+            onStudySubject={(subjectName, expEarned) => {
+              sound.playSuccess();
+              setPlayerExp((prev) => {
+                const next = prev + expEarned;
+                try {
+                  const u = JSON.parse(localStorage.getItem('raden_player_user') || '{}');
+                  u.exp = next;
+                  localStorage.setItem('raden_player_user', JSON.stringify(u));
+                } catch (e) {}
+                return next;
+              });
+              EventBus.emit('new-chat-message', {
+                id: `study_msg_${Date.now()}`,
+                sender: 'KELAS SD',
+                text: `📚 Kamu tekun belajar ${subjectName} di ${sdDeskType === 'guru' ? 'Meja Guru' : 'Meja Belajar Siswa'}! (+${expEarned} EXP)`,
+                timestamp: Date.now(),
+                isSystem: true,
+              });
+            }}
           />
 
           {/* Tombol Kontrol Virtual Layar Sentuh HANYA jika Mode Mobile dipilih (Mencegah muncul di mode PC) */}

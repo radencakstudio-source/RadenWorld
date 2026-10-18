@@ -44,6 +44,7 @@ export type SchoolType = 'sd' | 'smp' | 'sma';
 
 export interface ISchoolInitData {
   schoolType: SchoolType;
+  grade?: number;
   name?: string;
   avatar?: IAvatarCustomization;
   returnX?: number;
@@ -55,6 +56,8 @@ interface ISchoolNpc {
   id: string;
   name: string;
   role: string;
+  avatarUrl?: string;
+  avatarType?: 'sage' | 'blacksmith' | 'alchemist' | 'merchant' | 'guard' | 'fisherman' | 'farmer' | 'elder';
   x: number;
   y: number;
   greeting: string;
@@ -69,15 +72,19 @@ export class SchoolScene extends Phaser.Scene {
   private currentAvatar: IAvatarCustomization;
   private playerName: string = 'Petualang';
   private schoolType: SchoolType = 'sd';
+  private grade: number = 1;
   private returnPos = { x: 4800, y: 4800 };
   private fromDoor: boolean = false;
 
   private obstacles!: Phaser.Physics.Arcade.StaticGroup;
 
-  // Dimensi Ruangan Sekolah: 18 x 12 tiles @ 120px = 2160 x 1440 px
-  public readonly roomWidth: number = 2160;
-  public readonly roomHeight: number = 1440;
+  // Dimensi Ruangan Sekolah: Dapat disesuaikan dinamis via Panel Arsitek Tahta Raden
+  public roomWidth: number = 2160;
+  public roomHeight: number = 1440;
   public readonly tileSize: number = 120;
+  private customArchitectPropsGroup: (Phaser.GameObjects.Image | Phaser.GameObjects.GameObject)[] = [];
+  private customArchitectTerrainsGroup: Phaser.GameObjects.Graphics[] = [];
+  private customArchitectTerrainObstacles: Phaser.GameObjects.GameObject[] = [];
 
   // Zona Interaktif
   private exitDoorZone = { x: 1080, y: 1370 };
@@ -85,15 +92,18 @@ export class SchoolScene extends Phaser.Scene {
   private teacherDeskZone = { x: 1080, y: 380 };
   private bookshelfZone = { x: 2060, y: 660 };
   private madingZone = { x: 70, y: 660 };
+  private studentDeskPositions: { x: number; y: number }[] = [];
 
   private activePrompt: string | null = null;
   private lastStatsEmitTime: number = 0;
+  private lastPosSaveTime: number = 0;
   private lastGridX: number = -1;
   private lastGridY: number = -1;
   private isTransitioning: boolean = false;
   private targetZoom: number = 0.95;
 
   private npcs: ISchoolNpc[] = [];
+  private headerBannerText: Phaser.GameObjects.Text | null = null;
 
   constructor() {
     super({ key: 'SchoolScene' });
@@ -117,6 +127,17 @@ export class SchoolScene extends Phaser.Scene {
       this.schoolType = data.schoolType;
     }
 
+    if (typeof data?.grade === 'number' && data.grade >= 1) {
+      this.grade = data.grade;
+    } else {
+      try {
+        const saved = localStorage.getItem(`raden_school_${this.schoolType}_grade`);
+        this.grade = saved ? parseInt(saved, 10) : 1;
+      } catch (e) {
+        this.grade = 1;
+      }
+    }
+
     if (data?.name) {
       this.playerName = data.name;
     } else {
@@ -138,10 +159,22 @@ export class SchoolScene extends Phaser.Scene {
     if (data?.returnX && data?.returnY) {
       this.returnPos = { x: data.returnX, y: data.returnY };
     } else {
-      if (this.schoolType === 'sd') this.returnPos = { x: 14 * 120 + 60, y: 45 * 120 + 60 };
-      else if (this.schoolType === 'smp') this.returnPos = { x: 40 * 120 + 60, y: 18 * 120 + 60 };
-      else this.returnPos = { x: 65 * 120 + 60, y: 45 * 120 + 60 };
+      if (this.schoolType === 'sd') this.returnPos = { x: 50 * 120 + 60, y: 64 * 120 + 60 };
+      else if (this.schoolType === 'smp') this.returnPos = { x: 58 * 120 + 60, y: 64 * 120 + 60 };
+      else this.returnPos = { x: 66 * 120 + 60, y: 64 * 120 + 60 };
     }
+
+    // Muat konfigurasi dimensi sekolah kustom dari Studio Arsitek Tahta Raden
+    try {
+      const saved = localStorage.getItem('raden_architect_school');
+      if (saved) {
+        const cfg = JSON.parse(saved);
+        if (cfg.gridWidth && cfg.gridHeight) {
+          this.roomWidth = cfg.gridWidth * this.tileSize;
+          this.roomHeight = cfg.gridHeight * this.tileSize;
+        }
+      }
+    } catch (e) {}
 
     this.setupSchoolNpcs();
   }
@@ -153,6 +186,8 @@ export class SchoolScene extends Phaser.Scene {
           id: 'npc_guru_sd',
           name: 'Bu Guru Endang',
           role: 'Wali Kelas SD Teladan',
+          avatarUrl: '/assets/sprites/NPC/1x2%20NPC%20GuruSD.png',
+          avatarType: 'sage',
           x: 760,
           y: 380,
           greeting: 'Selamat pagi! Belajar yang rajin dan jangan lupa cuci tangan ya!',
@@ -161,12 +196,14 @@ export class SchoolScene extends Phaser.Scene {
             'Di sini adik-adik belajar berhitung, membaca, budi pekerti, dan bermain dengan gembira bersama teman.',
             'Ingat pesan Ibu: rajin pangkal pandai, hemat pangkal kaya! Selalu hormati orang tua dan bapak ibu guru ya.'
           ],
-          spriteKey: 'npc-sprite',
+          spriteKey: 'npc-guru-sd',
         },
         {
           id: 'npc_siswa_sd',
           name: 'Budi Kecil',
           role: 'Murid Berprestasi SD (Merah Putih)',
+          avatarUrl: '/assets/sprites/NPC/1x2%20NPC%20GuruSD.png',
+          avatarType: 'sage',
           x: 660,
           y: 660,
           greeting: 'Halo Kak! Kakak mau ikut membaca buku di Pojok Baca?',
@@ -175,7 +212,7 @@ export class SchoolScene extends Phaser.Scene {
             'Nanti pas istirahat jam 10 aku mau jajan mie ayam dan es jeruk di luar gerbang sekolah!',
             'Kakak hebat sekali bisa menjelajah seluruh dunia RadenWorld!'
           ],
-          spriteKey: 'npc-sprite',
+          spriteKey: 'npc-guru-sd',
         },
       ];
     } else if (this.schoolType === 'smp') {
@@ -184,6 +221,8 @@ export class SchoolScene extends Phaser.Scene {
           id: 'npc_guru_smp',
           name: 'Pak Guru Haryanto',
           role: 'Guru IPA & Pembina OSIS SMP',
+          avatarUrl: '/assets/sprites/NPC/1x2%20NPC%20GuruSMP.png',
+          avatarType: 'sage',
           x: 760,
           y: 380,
           greeting: 'Selamat datang di SMP! Persiapkan dirimu untuk eksplorasi sains & organisasi!',
@@ -192,12 +231,14 @@ export class SchoolScene extends Phaser.Scene {
             'Masa SMP adalah masa pembentukan karakter dan eksplorasi minat bakat dalam sains, teknologi, dan seni.',
             'Gunakan waktu mudamu sebaik mungkin untuk berorganisasi dan mengasah keterampilan berpikir kritis!'
           ],
-          spriteKey: 'npc-sprite',
+          spriteKey: 'npc-guru-smp',
         },
         {
           id: 'npc_siswa_smp',
           name: 'Siti Rahma',
           role: 'Juara Olimpiade Sains SMP (Biru Putih)',
+          avatarUrl: '/assets/sprites/NPC/1x2%20NPC%20GuruSMP.png',
+          avatarType: 'sage',
           x: 660,
           y: 660,
           greeting: 'Hai! Kami baru saja menyelesaikan praktikum mikroskop di ruang kelas.',
@@ -206,7 +247,7 @@ export class SchoolScene extends Phaser.Scene {
             'Papan tulis hari ini berisi materi persamaan linier dan rumus gaya gravitasi Newton.',
             'Kalau ada soal fisika yang sulit, ayo kita diskusikan bersama di meja belajar!'
           ],
-          spriteKey: 'npc-sprite',
+          spriteKey: 'npc-guru-smp',
         },
       ];
     } else {
@@ -215,6 +256,8 @@ export class SchoolScene extends Phaser.Scene {
           id: 'npc_kepsek_sma',
           name: 'Ibu Dra. Ratna Dewi',
           role: 'Kepala Sekolah SMA Kebangsaan',
+          avatarUrl: '/assets/sprites/NPC/1x2%20NPC%20GuruSMA.png',
+          avatarType: 'sage',
           x: 760,
           y: 380,
           greeting: 'Selamat datang para calon pemimpin masa depan di SMA RadenWorld.',
@@ -223,12 +266,14 @@ export class SchoolScene extends Phaser.Scene {
             'Di bangku SMA ini, integritas, kedisiplinan, dan visi masa depan adalah pilar utama yang terus kita tempa.',
             'Raihlah cita-citamu setinggi langit. Semesta akan membukakan jalan bagi mereka yang berikhtiar sungguh-sungguh.'
           ],
-          spriteKey: 'npc-sprite',
+          spriteKey: 'npc-guru-sma',
         },
         {
           id: 'npc_siswa_sma',
           name: 'Dimas Alamsyah',
           role: 'Ketua OSIS SMA (Abu-Abu Putih)',
+          avatarUrl: '/assets/sprites/NPC/1x2%20NPC%20GuruSMA.png',
+          avatarType: 'sage',
           x: 660,
           y: 660,
           greeting: 'Halo bro! Kami lagi diskusi kelompok persiapan tryout ujian kelulusan.',
@@ -237,7 +282,7 @@ export class SchoolScene extends Phaser.Scene {
             'Selain belajar intensif, kami juga aktif di kegiatan ekstrakurikuler kepemimpinan dan pengabdian masyarakat.',
             'Tetap semangat dan pantang menyerah menggapai kampus impian ya kawan!'
           ],
-          spriteKey: 'npc-sprite',
+          spriteKey: 'npc-guru-sma',
         },
       ];
     }
@@ -296,8 +341,9 @@ export class SchoolScene extends Phaser.Scene {
     // 7. Hubungkan Sinkronisasi Jaringan WebSocket SEBELUM room switch / join
     this.setupMultiplayerListeners();
 
-    // 8. Berpindah ke room sekolah pada WebSocket server (atau join jika refresh mandiri)
-    const schoolRoom = 'school-' + this.schoolType;
+    // 8. Berpindah ke room kelas sekolah pada WebSocket server (atau join jika refresh mandiri)
+    // Logika Room: pemain di kelas berbeda (misal SD 1 vs SD 2) berada di room berbeda dan tidak saling bertemu
+    const schoolRoom = this.getSchoolRoomId();
     if (!this.networkManager.getConnected()) {
       this.networkManager.connect();
       const isSuperAdmin = this.playerName.toUpperCase() === 'RADEN';
@@ -365,6 +411,57 @@ export class SchoolScene extends Phaser.Scene {
     };
     EventBus.on('trigger-interaction', onTriggerInteraction);
 
+    // Tangani pembaruan denah kelas langsung dari Studio Arsitek Tahta Raden
+    const onArchitectConfigUpdated = (data: { mapType: string; config: any }) => {
+      if (data && data.mapType === 'school' && data.config) {
+        if (data.config.gridWidth && data.config.gridHeight) {
+          this.roomWidth = data.config.gridWidth * this.tileSize;
+          this.roomHeight = data.config.gridHeight * this.tileSize;
+          this.physics.world.setBounds(0, 0, this.roomWidth, this.roomHeight);
+          this.cameras.main.setBounds(0, 0, this.roomWidth, this.roomHeight);
+        }
+        this.customArchitectPropsGroup.forEach((obj) => {
+          if (obj && (obj as any).destroy) (obj as any).destroy();
+        });
+        this.customArchitectPropsGroup = [];
+        this.spawnArchitectCustomProps();
+      }
+    };
+    EventBus.on('architect-config-updated', onArchitectConfigUpdated);
+
+    // Tangani pergantian kelas di dalam ruangan (misal dari modal mapel) secara realtime
+    const onGradeSwitched = (data: { schoolType: SchoolType; grade: number }) => {
+      if (!data || data.schoolType !== this.schoolType) return;
+      if (data.grade === this.grade) return;
+
+      console.log(`[SchoolScene] Berpindah kelas dari ${this.grade} ke ${data.grade}`);
+      this.grade = data.grade;
+
+      // 1. Bersihkan seluruh remote player dari kelas sebelumnya
+      this.remotePlayers.forEach((rp) => rp.destroy());
+      this.remotePlayers.clear();
+
+      // 2. Berpindah ke WebSocket room kelas baru (school-{type}-grade-{grade})
+      const newRoom = this.getSchoolRoomId();
+      if (this.player && this.player.active) {
+        this.networkManager.switchRoom(newRoom, this.player.x, this.player.y);
+        this.player.showSpeechBubble(`Pindah ke ${this.getSchoolDisplayName()}! 📚`);
+      }
+
+      // 3. Perbarui teks spanduk sekolah di atas papan tulis
+      if (this.headerBannerText) {
+        this.headerBannerText.setText(this.getSchoolHeaderTitle());
+      }
+
+      // 4. Perbarui lokasi di HUD
+      EventBus.emit('location-updated', this.getSchoolDisplayName());
+
+      // 5. Minta daftar pemain yang ada di kelas baru
+      this.time.delayedCall(200, () => this.networkManager.requestRoomPlayers());
+      this.time.delayedCall(600, () => this.networkManager.requestRoomPlayers());
+    };
+    EventBus.on('school-grade-switched', onGradeSwitched);
+
     // Keyboard 'E' untuk interaksi
     this.input.keyboard?.on('keydown-E', () => {
       if (document.activeElement?.tagName === 'INPUT' || document.activeElement?.tagName === 'TEXTAREA') return;
@@ -405,6 +502,8 @@ export class SchoolScene extends Phaser.Scene {
       EventBus.off('send-chat', onSendChat);
       EventBus.off('trigger-expression', onTriggerExpression);
       EventBus.off('trigger-interaction', onTriggerInteraction);
+      EventBus.off('architect-config-updated', onArchitectConfigUpdated);
+      EventBus.off('school-grade-switched', onGradeSwitched);
       EventBus.emit('interaction-prompt', null);
       if (this.player) {
         this.player.destroy();
@@ -463,7 +562,7 @@ export class SchoolScene extends Phaser.Scene {
     });
   }
 
-  private addGridObstacle(gx: number, gy: number, gw: number, gh: number): void {
+  private addGridObstacle(gx: number, gy: number, gw: number, gh: number): Phaser.GameObjects.Zone {
     const x = gx * this.tileSize;
     const y = gy * this.tileSize;
     const w = gw * this.tileSize;
@@ -471,7 +570,10 @@ export class SchoolScene extends Phaser.Scene {
 
     const zone = this.add.zone(x, y, w, h).setOrigin(0, 0);
     this.physics.add.existing(zone, true);
-    this.obstacles.add(zone);
+    if (this.obstacles) {
+      this.obstacles.add(zone);
+    }
+    return zone;
   }
 
   private addRemotePlayer(p: IPlayerData): void {
@@ -526,16 +628,26 @@ export class SchoolScene extends Phaser.Scene {
     }
   }
 
+  public getSchoolRoomId(): string {
+    return `school-${this.schoolType}-grade-${this.grade}`;
+  }
+
   private getSchoolDisplayName(): string {
-    if (this.schoolType === 'sd') return 'RUANG KELAS SD RADENWORLD';
-    if (this.schoolType === 'smp') return 'RUANG KELAS SMP RADENWORLD';
-    return 'RUANG KELAS SMA RADENWORLD';
+    if (this.schoolType === 'sd') return `RUANG KELAS ${this.grade} SD RADENWORLD`;
+    if (this.schoolType === 'smp') return `RUANG KELAS ${this.grade} SMP (KELAS ${this.grade + 6}) RADENWORLD`;
+    return `RUANG KELAS ${this.grade} SMA (KELAS ${this.grade + 9}) RADENWORLD`;
   }
 
   private getSchoolHeaderTitle(): string {
-    if (this.schoolType === 'sd') return '🏫 SEKOLAH DASAR (SD) RADENWORLD - TINGKAT 1-6';
-    if (this.schoolType === 'smp') return '🏫 SEKOLAH MENENGAH PERTAMA (SMP) RADENWORLD - TINGKAT 7-9';
-    return '🏫 SEKOLAH MENENGAH ATAS (SMA) RADENWORLD - TINGKAT 10-12';
+    if (this.schoolType === 'sd') {
+      const fase = this.grade <= 2 ? 'A' : this.grade <= 4 ? 'B' : 'C';
+      return `🏫 RUANG KELAS ${this.grade} SD (FASE ${fase}) RADENWORLD`;
+    }
+    if (this.schoolType === 'smp') {
+      return `🏫 RUANG KELAS ${this.grade} SMP (KELAS ${this.grade + 6} - FASE D) RADENWORLD`;
+    }
+    const faseSma = this.grade === 1 ? 'E' : 'F';
+    return `🏫 RUANG KELAS ${this.grade} SMA (KELAS ${this.grade + 9} - FASE ${faseSma}) RADENWORLD`;
   }
 
   private getCheckerTextureKey(): string {
@@ -961,7 +1073,7 @@ export class SchoolScene extends Phaser.Scene {
     g.lineStyle(2, 0x38bdf8, 0.9);
     g.strokeRoundedRect(this.roomWidth / 2 - 400, 18, 800, 48, 12);
 
-    this.add.text(this.roomWidth / 2, 42, this.getSchoolHeaderTitle(), {
+    this.headerBannerText = this.add.text(this.roomWidth / 2, 42, this.getSchoolHeaderTitle(), {
       fontFamily: '"Chakra Petch", sans-serif',
       fontSize: '17px',
       color: '#fef08a',
@@ -1040,6 +1152,15 @@ export class SchoolScene extends Phaser.Scene {
     const teacherDesk = this.add.image(1080, 380, 'school-teacher-desk');
     teacherDesk.setDisplaySize(150, 85);
     teacherDesk.setDepth(380);
+    teacherDesk.setInteractive({ useHandCursor: true });
+    teacherDesk.on('pointerdown', () => {
+      if (this.schoolType === 'sd') {
+        EventBus.emit('open-sd-subjects', { deskType: 'guru' });
+        this.player?.showSpeechBubble('Membuka kurikulum mata pelajaran SD di Meja Guru! 📚🎓');
+      } else {
+        this.player?.showSpeechBubble('Mengecek jadwal pelajaran & buku tugas siswa 📝');
+      }
+    });
 
     // Rintangan meja guru agar tidak tertembus
     this.addGridObstacle(8, 3, 2, 1);
@@ -1066,8 +1187,13 @@ export class SchoolScene extends Phaser.Scene {
       { deskGy: 8, deskY: 1020, chairGy: 9, chairY: 1140 }
     ];
 
+    this.studentDeskPositions = [];
+
     deskRowDefs.forEach(row => {
       studentDeskCols.forEach(col => {
+        // Catat koordinat posisi meja siswa untuk deteksi kedekatan interaksi
+        this.studentDeskPositions.push({ x: col.x, y: row.deskY });
+
         // Kursi siswa di belakang meja (di baris grid sendiri)
         const chair = this.add.image(col.x, row.chairY, 'school-student-chair');
         chair.setDisplaySize(70, 70);
@@ -1079,6 +1205,15 @@ export class SchoolScene extends Phaser.Scene {
         desk.setDisplaySize(100, 72);
         desk.setOrigin(0.5, 0.85);
         desk.setDepth(row.deskY);
+        desk.setInteractive({ useHandCursor: true });
+        desk.on('pointerdown', () => {
+          if (this.schoolType === 'sd') {
+            EventBus.emit('open-sd-subjects', { deskType: 'siswa' });
+            this.player?.showSpeechBubble('Membuka buku mata pelajaran di Meja Siswa! 📝📖');
+          } else {
+            this.player?.showSpeechBubble('Duduk rapi di meja belajar untuk membaca buku 📖');
+          }
+        });
 
         // Hanya meja yang memiliki rintangan fisik (kursi bisa dilewati/diduduki)
         this.addGridObstacle(col.gx, row.deskGy, 1, 1);
@@ -1140,17 +1275,153 @@ export class SchoolScene extends Phaser.Scene {
       stroke: '#0a0f1d',
       strokeThickness: 3.5,
     }).setOrigin(0.5);
+
+    // 11. Muat dan spawn seluruh prop kustom dari Studio Arsitek Tahta Raden
+    this.spawnArchitectCustomProps();
+
+    // 12. Muat dan spawn seluruh lapisan lantai / medan kustom
+    this.spawnArchitectCustomTerrains();
+
+    // 13. Sinkronisasi realtime jika konfigurasi diubah di Studio Arsitek Tahta Raden
+    EventBus.on('architect-config-updated', (data: { mapType: string }) => {
+      if (data?.mapType === 'school') {
+        this.spawnArchitectCustomProps();
+        this.spawnArchitectCustomTerrains();
+      }
+    });
+  }
+
+  /**
+   * Menempatkan aset prop visual yang pas dan rata pada petak grid di sekolah
+   */
+  private addGridProp(
+    key: string,
+    gx: number,
+    gy: number,
+    gw: number,
+    gh: number,
+    isObstacle: boolean = true
+  ): Phaser.GameObjects.Image | null {
+    if (!this.textures.exists(key)) return null;
+
+    const pixelW = gw * this.tileSize;
+    const pixelH = gh * this.tileSize;
+    const centerX = gx * this.tileSize + pixelW / 2;
+    const centerY = gy * this.tileSize + pixelH / 2;
+
+    const img = this.add.image(centerX, centerY, key);
+    img.setDisplaySize(pixelW, pixelH);
+    img.setDepth((gy + gh) * this.tileSize);
+
+    if (isObstacle) {
+      this.addGridObstacle(gx, gy + gh - 1, gw, 1);
+    }
+
+    return img;
+  }
+
+  /**
+   * Merender aset-aset kustom yang ditempatkan oleh pengguna melalui Studio Arsitek Tahta Raden
+   */
+  private spawnArchitectCustomProps(): void {
+    try {
+      this.customArchitectPropsGroup.forEach((p: any) => {
+        if (p && p.active && typeof p.destroy === 'function') p.destroy();
+      });
+      this.customArchitectPropsGroup = [];
+
+      const saved = localStorage.getItem('raden_architect_school');
+      if (!saved) return;
+      const cfg = JSON.parse(saved);
+      if (!cfg.customProps || !Array.isArray(cfg.customProps)) return;
+
+      cfg.customProps.forEach((prop: any) => {
+        if (prop.id && String(prop.id).startsWith('def_')) return;
+        const spawned = this.addGridProp(
+          prop.key,
+          prop.gx,
+          prop.gy,
+          prop.gw || 1,
+          prop.gh || 1,
+          prop.isObstacle ?? true
+        );
+        if (spawned) {
+          this.customArchitectPropsGroup.push(spawned);
+        }
+      });
+    } catch (e) {
+      console.warn('[SchoolScene] Gagal memuat custom architect props:', e);
+    }
+  }
+
+  /**
+   * Merender lapisan lantai / medan kustom di sekolah
+   */
+  private spawnArchitectCustomTerrains(): void {
+    try {
+      this.customArchitectTerrainsGroup.forEach(g => {
+        if (g && g.active && typeof g.destroy === 'function') g.destroy();
+      });
+      this.customArchitectTerrainsGroup = [];
+      this.customArchitectTerrainObstacles.forEach(o => {
+        if (o && o.active && typeof o.destroy === 'function') o.destroy();
+      });
+      this.customArchitectTerrainObstacles = [];
+
+      const saved = localStorage.getItem('raden_architect_school');
+      if (!saved) return;
+      const cfg = JSON.parse(saved);
+      if (!cfg.customTerrains || !Array.isArray(cfg.customTerrains)) return;
+
+      const tg = this.add.graphics();
+      tg.setDepth(-85);
+
+      cfg.customTerrains.forEach((t: any) => {
+        if (t.id && String(t.id).startsWith('def_')) return;
+        const x = t.gx * this.tileSize;
+        const y = t.gy * this.tileSize;
+        const w = (t.gw || 1) * this.tileSize;
+        const h = (t.gh || 1) * this.tileSize;
+
+        if (t.type === 'wood') {
+          tg.fillStyle(0x92400e, 0.95);
+          tg.fillRect(x, y, w, h);
+          tg.lineStyle(2, 0x78350f, 0.8);
+          tg.strokeRect(x, y, w, h);
+        } else if (t.type === 'plaza') {
+          tg.fillStyle(0x334155, 0.95);
+          tg.fillRect(x, y, w, h);
+          tg.lineStyle(3, 0xf59e0b, 0.7);
+          tg.strokeRect(x, y, w, h);
+        } else if (t.type === 'dirt') {
+          tg.fillStyle(0x78350f, 0.9);
+          tg.fillRect(x, y, w, h);
+        } else if (t.type === 'water') {
+          tg.fillStyle(0x0284c7, 0.9);
+          tg.fillRect(x, y, w, h);
+          if (t.hasCollision !== false) {
+            const obs = this.addGridObstacle(t.gx, t.gy, t.gw || 1, t.gh || 1);
+            if (obs) this.customArchitectTerrainObstacles.push(obs);
+          }
+        }
+      });
+
+      this.customArchitectTerrainsGroup.push(tg);
+    } catch (e) {
+      console.warn('[SchoolScene] Gagal memuat custom architect terrains:', e);
+    }
   }
 
   private createSchoolNpcs(): void {
     this.npcs.forEach(npc => {
+      // Sprite NPC dengan proporsi 1x2 petak grid (1x lebar 120px, 2y tinggi 240px sesuai aset Figma 480x960px)
       const sprite = this.add.image(npc.x, npc.y, npc.spriteKey);
-      sprite.setDisplaySize(64, 64);
-      sprite.setOrigin(0.5, 1.0);
-      sprite.setDepth(npc.y);
+      sprite.setDisplaySize(120, 240);
+      sprite.setOrigin(0.5, 0.5);
+      sprite.setDepth(npc.y + 120);
 
-      // Nameplate NPC
-      this.add.text(npc.x, npc.y - 74, npc.name, {
+      // Nameplate NPC di atas kepala karakter (tinggi karakter visual ~177px di dalam 1x2 tile)
+      this.add.text(npc.x, npc.y - 105, npc.name, {
         fontFamily: '"Chakra Petch", sans-serif',
         fontSize: '13px',
         color: '#fef08a',
@@ -1158,16 +1429,16 @@ export class SchoolScene extends Phaser.Scene {
         stroke: '#0a0f1d',
         strokeThickness: 3.5,
         resolution: 4,
-      }).setOrigin(0.5).setDepth(npc.y + 1);
+      }).setOrigin(0.5).setDepth(npc.y + 121);
 
-      this.add.text(npc.x, npc.y - 58, `[${npc.role}]`, {
+      this.add.text(npc.x, npc.y - 88, `[${npc.role}]`, {
         fontFamily: '"Chakra Petch", sans-serif',
         fontSize: '10px',
         color: '#38bdf8',
         stroke: '#0a0f1d',
         strokeThickness: 2.5,
         resolution: 4,
-      }).setOrigin(0.5).setDepth(npc.y + 1);
+      }).setOrigin(0.5).setDepth(npc.y + 121);
 
       sprite.setInteractive({ useHandCursor: true });
       sprite.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
@@ -1198,7 +1469,7 @@ export class SchoolScene extends Phaser.Scene {
     this.cameras.main.setBounds(0, 0, this.roomWidth, this.roomHeight);
     this.cameras.main.setRoundPixels(true);
     this.cameras.main.centerOn(spawnX, spawnY);
-    this.cameras.main.startFollow(this.player, false, 0.18, 0.18);
+    this.cameras.main.startFollow(this.player, true, 1.0, 1.0);
     this.smoothZoomTo(0.95);
 
     this.time.delayedCall(400, () => {
@@ -1212,15 +1483,23 @@ export class SchoolScene extends Phaser.Scene {
     this.cameras.main.setRoundPixels(true);
 
     const onWheel = (_pointer: Phaser.Input.Pointer, _gameObjects: any, _deltaX: number, deltaY: number) => {
-      const zoomFactor = deltaY > 0 ? 0.88 : 1.14;
-      this.smoothZoomTo(this.targetZoom * zoomFactor);
+      const zoomFactor = deltaY > 0 ? 0.90 : 1.10;
+      this.targetZoom = Phaser.Math.Clamp(this.targetZoom * zoomFactor, 0.6, 1.8);
     };
     this.input.on('wheel', onWheel);
 
-    const handleZoomIn = () => this.smoothZoomTo(this.targetZoom * 1.18);
-    const handleZoomOut = () => this.smoothZoomTo(this.targetZoom * 0.84);
-    const handleZoomReset = () => this.smoothZoomTo(defaultZoom);
-    const handleZoomSet = (zoom: number) => this.smoothZoomTo(zoom);
+    const handleZoomIn = () => {
+      this.targetZoom = Phaser.Math.Clamp(this.targetZoom * 1.15, 0.6, 1.8);
+    };
+    const handleZoomOut = () => {
+      this.targetZoom = Phaser.Math.Clamp(this.targetZoom * 0.85, 0.6, 1.8);
+    };
+    const handleZoomReset = () => {
+      this.targetZoom = defaultZoom;
+    };
+    const handleZoomSet = (zoom: number) => {
+      this.targetZoom = Phaser.Math.Clamp(zoom, 0.6, 1.8);
+    };
 
     EventBus.on('camera-zoom-in', handleZoomIn);
     EventBus.on('camera-zoom-out', handleZoomOut);
@@ -1243,13 +1522,6 @@ export class SchoolScene extends Phaser.Scene {
 
   private smoothZoomTo(newZoom: number): void {
     this.targetZoom = Phaser.Math.Clamp(newZoom, 0.6, 1.8);
-    this.tweens.killTweensOf(this.cameras.main);
-    this.tweens.add({
-      targets: this.cameras.main,
-      zoom: this.targetZoom,
-      duration: 220,
-      ease: 'Cubic.easeOut',
-    });
   }
 
   private approachAndInteractWithNpc(npc: ISchoolNpc): void {
@@ -1278,7 +1550,8 @@ export class SchoolScene extends Phaser.Scene {
       id: npc.id,
       name: npc.name,
       role: npc.role,
-      avatarType: 'sage',
+      avatarType: npc.avatarType || 'sage',
+      avatarUrl: npc.avatarUrl,
       dialogues: npc.dialogues && npc.dialogues.length > 0 ? npc.dialogues : [npc.greeting],
     });
   }
@@ -1300,6 +1573,13 @@ export class SchoolScene extends Phaser.Scene {
   }
 
   public update(time: number, delta: number): void {
+    // Zoom lerp ultra mulus 60 FPS
+    if (Math.abs(this.cameras.main.zoom - this.targetZoom) > 0.001) {
+      this.cameras.main.setZoom(
+        Phaser.Math.Linear(this.cameras.main.zoom, this.targetZoom, Math.min(1, delta * 0.018))
+      );
+    }
+
     if (!this.player || this.isTransitioning) return;
 
     this.player.update(time, delta);
@@ -1321,6 +1601,15 @@ export class SchoolScene extends Phaser.Scene {
     const distBooks = Phaser.Math.Distance.Between(px, py, this.bookshelfZone.x, this.bookshelfZone.y);
     const distMading = Phaser.Math.Distance.Between(px, py, this.madingZone.x, this.madingZone.y);
 
+    // Cek jarak ke meja belajar siswa terdekat
+    let nearestStudentDeskDist = 9999;
+    for (const dPos of this.studentDeskPositions) {
+      const d = Phaser.Math.Distance.Between(px, py, dPos.x, dPos.y);
+      if (d < nearestStudentDeskDist) {
+        nearestStudentDeskDist = d;
+      }
+    }
+
     let prompt: string | null = null;
 
     if (distExit < 120) {
@@ -1328,7 +1617,9 @@ export class SchoolScene extends Phaser.Scene {
     } else if (distBoard < 130) {
       prompt = 'TEKAN [E] / KLIK UNTUK MEMBACA PAPAN TULIS';
     } else if (distDesk < 120) {
-      prompt = 'TEKAN [E] / KLIK UNTUK MENGECEK MEJA GURU';
+      prompt = `TEKAN [E] / KLIK UNTUK BUKA MATA PELAJARAN KELAS ${this.grade} (MEJA GURU)`;
+    } else if (nearestStudentDeskDist < 100) {
+      prompt = `TEKAN [E] / KLIK UNTUK BELAJAR MATA PELAJARAN KELAS ${this.grade} (MEJA SISWA)`;
     } else if (distBooks < 120) {
       prompt = 'TEKAN [E] / KLIK UNTUK MEMBACA BUKU DI POJOK BACA';
     } else if (distMading < 120) {
@@ -1349,21 +1640,12 @@ export class SchoolScene extends Phaser.Scene {
 
     const gridX = Math.floor(px / this.tileSize);
     const gridY = Math.floor(py / this.tileSize);
-    const gridChanged = gridX !== this.lastGridX || gridY !== this.lastGridY;
-    const periodicTimeout = time - this.lastStatsEmitTime > 1000;
+    const periodicTimeout = time - this.lastStatsEmitTime > 3000;
 
-    if (gridChanged || periodicTimeout) {
+    if (periodicTimeout) {
       this.lastStatsEmitTime = time;
       this.lastGridX = gridX;
       this.lastGridY = gridY;
-
-      // Simpan koordinat posisi di dalam kelas agar tidak ter-reset ke pintu saat browser di-refresh
-      try {
-        localStorage.setItem(
-          `raden_pos_school_${this.schoolType}`,
-          JSON.stringify({ x: Math.round(px), y: Math.round(py) })
-        );
-      } catch (e) {}
 
       EventBus.emit('player-stats-updated', {
         x: Math.round(px),
@@ -1378,6 +1660,16 @@ export class SchoolScene extends Phaser.Scene {
         inHouse: false,
         level: 1,
       });
+    }
+
+    if (time - this.lastPosSaveTime > 5000) {
+      this.lastPosSaveTime = time;
+      try {
+        localStorage.setItem(
+          `raden_pos_school_${this.schoolType}`,
+          JSON.stringify({ x: Math.round(px), y: Math.round(py) })
+        );
+      } catch (e) {}
     }
   }
 
@@ -1400,7 +1692,28 @@ export class SchoolScene extends Phaser.Scene {
 
     // 3. Meja Guru
     if (Phaser.Math.Distance.Between(px, py, this.teacherDeskZone.x, this.teacherDeskZone.y) < 130) {
-      this.player.showSpeechBubble('Mengecek jadwal pelajaran & buku tugas siswa 📝');
+      EventBus.emit('open-school-subjects', {
+        schoolType: this.schoolType,
+        grade: this.grade,
+        deskType: 'guru',
+      });
+      this.player.showSpeechBubble(`Membuka kurikulum mata pelajaran Kelas ${this.grade} di Meja Guru! 📚🎓`);
+      return;
+    }
+
+    // 3b. Barisan Meja Siswa Belajar
+    let nearestDeskDist = 9999;
+    for (const dPos of this.studentDeskPositions) {
+      const d = Phaser.Math.Distance.Between(px, py, dPos.x, dPos.y);
+      if (d < nearestDeskDist) nearestDeskDist = d;
+    }
+    if (nearestDeskDist < 110) {
+      EventBus.emit('open-school-subjects', {
+        schoolType: this.schoolType,
+        grade: this.grade,
+        deskType: 'siswa',
+      });
+      this.player.showSpeechBubble(`Membuka buku mata pelajaran Kelas ${this.grade} di Meja Siswa! 📝📖`);
       return;
     }
 

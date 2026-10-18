@@ -27,11 +27,16 @@ export function createGameConfig(parentContainerId: string = 'game-container'): 
       arcade: {
         gravity: { x: 0, y: 0 },
         debug: false,
+        fps: 60,
       },
     },
     scale: {
       mode: Phaser.Scale.RESIZE,
       autoCenter: Phaser.Scale.CENTER_BOTH,
+    },
+    render: {
+      powerPreference: 'high-performance',
+      batchSize: 4096,
     },
     scene: [BootScene, HouseScene, WorldScene, AdminPortalScene, SchoolScene],
     pixelArt: false,
@@ -39,8 +44,9 @@ export function createGameConfig(parentContainerId: string = 'game-container'): 
     antialias: true,
     antialiasGL: true,
     fps: {
+      min: 30,
       target: 60,
-      forceSetTimeOut: false,
+      smoothStep: false,
     },
     audio: {
       noAudio: true,

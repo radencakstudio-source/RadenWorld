@@ -11,6 +11,10 @@ Route::get('/home/{privateId?}', function ($privateId = null) {
     return view('welcome');
 });
 
+Route::get('/world/popup', function () {
+    return view('pixel_popup');
+});
+
 Route::get('/world/{school?}', function ($school = null) {
     return view('welcome');
 });
@@ -630,5 +634,97 @@ Route::get('/api/game/school/{type}', function ($type) {
     ]);
 });
 
+// ============================================================================
+// API PIXEL BILLBOARD 1920x1080 (/world/popup)
+// ============================================================================
+Route::get('/api/pixel-canvas/claims', function () {
+    $filePath = storage_path('app/pixel_canvas.json');
+    if (file_exists($filePath)) {
+        $content = json_decode(file_get_contents($filePath), true);
+        if (is_array($content)) {
+            return response()->json([
+                'status' => 'success',
+                'claims' => $content['claims'] ?? [],
+                'price_per_pixel' => $content['price_per_pixel'] ?? 500,
+            ]);
+        }
+    }
 
+    return response()->json([
+        'status' => 'success',
+        'claims' => [],
+        'price_per_pixel' => 500,
+    ]);
+});
 
+Route::post('/api/pixel-canvas/claims', function (\Illuminate\Http\Request $request) {
+    $filePath = storage_path('app/pixel_canvas.json');
+    $data = ['claims' => [], 'price_per_pixel' => 500];
+    if (file_exists($filePath)) {
+        $existing = json_decode(file_get_contents($filePath), true);
+        if (is_array($existing)) {
+            $data = $existing;
+        }
+    }
+
+    $newClaim = $request->input('claim');
+    if ($newClaim && is_array($newClaim)) {
+        if (!isset($data['claims']) || !is_array($data['claims'])) {
+            $data['claims'] = [];
+        }
+
+        // Cek jika ID sudah ada maka update, jika tidak append
+        $found = false;
+        foreach ($data['claims'] as $i => $c) {
+            if (isset($c['id']) && isset($newClaim['id']) && $c['id'] === $newClaim['id']) {
+                $data['claims'][$i] = $newClaim;
+                $found = true;
+                break;
+            }
+        }
+        if (!$found) {
+            $data['claims'][] = $newClaim;
+        }
+
+        @file_put_contents($filePath, json_encode($data, JSON_PRETTY_PRINT));
+    }
+
+    return response()->json([
+        'status' => 'success',
+        'claims' => $data['claims'],
+        'price_per_pixel' => $data['price_per_pixel'] ?? 500,
+    ]);
+});
+
+Route::post('/api/pixel-canvas/settings', function (\Illuminate\Http\Request $request) {
+    $filePath = storage_path('app/pixel_canvas.json');
+    $data = ['claims' => [], 'price_per_pixel' => 500];
+    if (file_exists($filePath)) {
+        $existing = json_decode(file_get_contents($filePath), true);
+        if (is_array($existing)) {
+            $data = $existing;
+        }
+    }
+
+    $price = $request->input('price_per_pixel');
+    if (is_numeric($price) && $price > 0) {
+        $data['price_per_pixel'] = intval($price);
+        @file_put_contents($filePath, json_encode($data, JSON_PRETTY_PRINT));
+    }
+
+    return response()->json([
+        'status' => 'success',
+        'price_per_pixel' => $data['price_per_pixel'],
+    ]);
+});
+
+Route::post('/api/pixel-canvas/reset', function () {
+    $filePath = storage_path('app/pixel_canvas.json');
+    $data = ['claims' => [], 'price_per_pixel' => 500];
+    @file_put_contents($filePath, json_encode($data, JSON_PRETTY_PRINT));
+
+    return response()->json([
+        'status' => 'success',
+        'message' => 'Seluruh kanvas iklan telah dikosongkan.',
+    ]);
+});

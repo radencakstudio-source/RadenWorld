@@ -24,10 +24,13 @@ export class HouseScene extends Phaser.Scene {
   private currentAvatar: IAvatarCustomization;
   private playerName: string = 'Petualang';
 
-  // Batas ruangan rumah & ukuran grid (14 x 10 tiles @ 120px)
-  public readonly roomWidth: number = 1680;
-  public readonly roomHeight: number = 1200;
+  // Batas ruangan rumah & ukuran grid: Dapat disesuaikan dinamis via Panel Arsitek Tahta Raden
+  public roomWidth: number = 1680;
+  public roomHeight: number = 1200;
   public readonly tileSize: number = 120;
+  private customArchitectPropsGroup: (Phaser.GameObjects.Image | Phaser.GameObjects.GameObject)[] = [];
+  private customArchitectTerrainsGroup: Phaser.GameObjects.Graphics[] = [];
+  private customArchitectTerrainObstacles: Phaser.GameObjects.GameObject[] = [];
 
   // Objek interaktif & koordinat zona
   private exitDoorZone!: { x: number; y: number; width: number; height: number };
@@ -38,6 +41,7 @@ export class HouseScene extends Phaser.Scene {
 
   private activePrompt: string | null = null;
   private lastStatsEmitTime: number = 0;
+  private lastPosSaveTime: number = 0;
   private lastGridX: number = -1;
   private lastGridY: number = -1;
   private lastRoomLabel: string = '';
@@ -93,6 +97,18 @@ export class HouseScene extends Phaser.Scene {
       const seg = window.location.pathname.replace('/home/', '').trim();
       if (seg) this.privateRoomId = seg;
     }
+
+    // Muat konfigurasi dimensi rumah kustom dari Studio Arsitek Tahta Raden
+    try {
+      const saved = localStorage.getItem('raden_architect_house');
+      if (saved) {
+        const cfg = JSON.parse(saved);
+        if (cfg.gridWidth && cfg.gridHeight) {
+          this.roomWidth = cfg.gridWidth * this.tileSize;
+          this.roomHeight = cfg.gridHeight * this.tileSize;
+        }
+      }
+    } catch (e) {}
   }
 
   public create(): void {
@@ -141,6 +157,24 @@ export class HouseScene extends Phaser.Scene {
       this.triggerCurrentInteraction();
     };
     EventBus.on('trigger-interaction', onTriggerInteraction);
+
+    // Tangani pembaruan denah rumah langsung dari Studio Arsitek Tahta Raden
+    const onArchitectConfigUpdated = (data: { mapType: string; config: any }) => {
+      if (data && data.mapType === 'house' && data.config) {
+        if (data.config.gridWidth && data.config.gridHeight) {
+          this.roomWidth = data.config.gridWidth * this.tileSize;
+          this.roomHeight = data.config.gridHeight * this.tileSize;
+          this.physics.world.setBounds(0, 0, this.roomWidth, this.roomHeight);
+          this.cameras.main.setBounds(0, 0, this.roomWidth, this.roomHeight);
+        }
+        this.customArchitectPropsGroup.forEach((obj) => {
+          if (obj && (obj as any).destroy) (obj as any).destroy();
+        });
+        this.customArchitectPropsGroup = [];
+        this.spawnArchitectCustomProps();
+      }
+    };
+    EventBus.on('architect-config-updated', onArchitectConfigUpdated);
 
     // 5. Tombol interaksi keyboard 'E'
     this.input.keyboard?.on('keydown-E', () => {
@@ -200,6 +234,7 @@ export class HouseScene extends Phaser.Scene {
       EventBus.off('trigger-expression', onTriggerExpression);
       EventBus.off('local-player-speaking', onLocalSpeaking);
       EventBus.off('trigger-interaction', onTriggerInteraction);
+      EventBus.off('architect-config-updated', onArchitectConfigUpdated);
       EventBus.emit('interaction-prompt', null);
       if (this.player) {
         this.player.destroy();
@@ -212,25 +247,33 @@ export class HouseScene extends Phaser.Scene {
   }
 
   /**
-   * Kontrol zoom kamera yang halus menggunakan tween (Scroll Wheel, Keyboard +/-, HUD buttons)
+   * Kontrol zoom kamera yang halus & responsif 60 FPS (Scroll Wheel, Keyboard +/-, HUD buttons)
    */
   private setupCameraZoomControls(defaultZoom: number = 1.0): void {
     this.targetZoom = defaultZoom;
     this.cameras.main.setZoom(defaultZoom);
     this.cameras.main.setRoundPixels(true);
 
-    // 1. Mouse wheel smooth zoom
+    // 1. Mouse wheel zoom instan & mulus
     const onWheel = (_pointer: Phaser.Input.Pointer, _gameObjects: any, _deltaX: number, deltaY: number) => {
-      const zoomFactor = deltaY > 0 ? 0.88 : 1.14;
-      this.smoothZoomTo(this.targetZoom * zoomFactor);
+      const zoomFactor = deltaY > 0 ? 0.90 : 1.10;
+      this.targetZoom = Phaser.Math.Clamp(this.targetZoom * zoomFactor, 0.6, 2.0);
     };
     this.input.on('wheel', onWheel);
 
     // 2. Event dari UI HUD / Keyboard
-    const handleZoomIn = () => this.smoothZoomTo(this.targetZoom * 1.18);
-    const handleZoomOut = () => this.smoothZoomTo(this.targetZoom * 0.84);
-    const handleZoomReset = () => this.smoothZoomTo(defaultZoom);
-    const handleZoomSet = (zoom: number) => this.smoothZoomTo(zoom);
+    const handleZoomIn = () => {
+      this.targetZoom = Phaser.Math.Clamp(this.targetZoom * 1.15, 0.6, 2.0);
+    };
+    const handleZoomOut = () => {
+      this.targetZoom = Phaser.Math.Clamp(this.targetZoom * 0.85, 0.6, 2.0);
+    };
+    const handleZoomReset = () => {
+      this.targetZoom = defaultZoom;
+    };
+    const handleZoomSet = (zoom: number) => {
+      this.targetZoom = Phaser.Math.Clamp(zoom, 0.6, 2.0);
+    };
 
     EventBus.on('camera-zoom-in', handleZoomIn);
     EventBus.on('camera-zoom-out', handleZoomOut);
@@ -253,13 +296,6 @@ export class HouseScene extends Phaser.Scene {
 
   private smoothZoomTo(newZoom: number): void {
     this.targetZoom = Phaser.Math.Clamp(newZoom, 0.6, 2.0);
-    this.tweens.killTweensOf(this.cameras.main);
-    this.tweens.add({
-      targets: this.cameras.main,
-      zoom: this.targetZoom,
-      duration: 220,
-      ease: 'Cubic.easeOut',
-    });
   }
 
   /**
@@ -419,6 +455,123 @@ export class HouseScene extends Phaser.Scene {
       stroke: '#0a0f1d',
       strokeThickness: 3,
     }).setOrigin(0.5);
+
+    // 6. Muat dan spawn seluruh prop kustom rumah dari Studio Arsitek Tahta Raden
+    this.spawnArchitectCustomProps();
+
+    // 7. Muat dan spawn seluruh lapisan lantai / medan kustom rumah
+    this.spawnArchitectCustomTerrains();
+
+    // 8. Sinkronisasi realtime jika konfigurasi diubah di Studio Arsitek Tahta Raden
+    EventBus.on('architect-config-updated', (data: { mapType: string }) => {
+      if (data?.mapType === 'house') {
+        this.spawnArchitectCustomProps();
+        this.spawnArchitectCustomTerrains();
+      }
+    });
+  }
+
+  /**
+   * Menempatkan aset prop visual yang pas dan rata pada petak grid di dalam rumah
+   */
+  private addGridProp(
+    key: string,
+    gx: number,
+    gy: number,
+    gw: number,
+    gh: number,
+    isObstacle: boolean = true
+  ): Phaser.GameObjects.Image | null {
+    if (!this.textures.exists(key)) return null;
+
+    const pixelW = gw * this.tileSize;
+    const pixelH = gh * this.tileSize;
+    const centerX = gx * this.tileSize + pixelW / 2;
+    const centerY = gy * this.tileSize + pixelH / 2;
+
+    const img = this.add.image(centerX, centerY, key);
+    img.setDisplaySize(pixelW, pixelH);
+    img.setDepth((gy + gh) * this.tileSize);
+
+    return img;
+  }
+
+  /**
+   * Merender aset-aset kustom yang ditempatkan oleh pengguna melalui Studio Arsitek Tahta Raden
+   */
+  private spawnArchitectCustomProps(): void {
+    try {
+      this.customArchitectPropsGroup.forEach((p: any) => {
+        if (p && p.active && typeof p.destroy === 'function') p.destroy();
+      });
+      this.customArchitectPropsGroup = [];
+
+      const saved = localStorage.getItem('raden_architect_house');
+      if (!saved) return;
+      const cfg = JSON.parse(saved);
+      if (!cfg.customProps || !Array.isArray(cfg.customProps)) return;
+
+      cfg.customProps.forEach((prop: any) => {
+        if (prop.id && String(prop.id).startsWith('def_')) return;
+        const spawned = this.addGridProp(
+          prop.key,
+          prop.gx,
+          prop.gy,
+          prop.gw || 1,
+          prop.gh || 1,
+          prop.isObstacle ?? true
+        );
+        if (spawned) {
+          this.customArchitectPropsGroup.push(spawned);
+        }
+      });
+    } catch (e) {
+      console.warn('[HouseScene] Gagal memuat custom architect props:', e);
+    }
+  }
+
+  /**
+   * Merender lapisan lantai kustom di dalam rumah
+   */
+  private spawnArchitectCustomTerrains(): void {
+    try {
+      this.customArchitectTerrainsGroup.forEach(g => {
+        if (g && g.active && typeof g.destroy === 'function') g.destroy();
+      });
+      this.customArchitectTerrainsGroup = [];
+
+      const saved = localStorage.getItem('raden_architect_house');
+      if (!saved) return;
+      const cfg = JSON.parse(saved);
+      if (!cfg.customTerrains || !Array.isArray(cfg.customTerrains)) return;
+
+      const tg = this.add.graphics();
+      tg.setDepth(-85);
+
+      cfg.customTerrains.forEach((t: any) => {
+        if (t.id && String(t.id).startsWith('def_')) return;
+        const x = t.gx * this.tileSize;
+        const y = t.gy * this.tileSize;
+        const w = (t.gw || 1) * this.tileSize;
+        const h = (t.gh || 1) * this.tileSize;
+
+        if (t.type === 'wood') {
+          tg.fillStyle(0x92400e, 0.95);
+          tg.fillRect(x, y, w, h);
+          tg.lineStyle(2, 0x78350f, 0.8);
+          tg.strokeRect(x, y, w, h);
+        } else if (t.type === 'plaza') {
+          tg.fillStyle(0x334155, 0.95);
+          tg.fillRect(x, y, w, h);
+          tg.lineStyle(3, 0xf59e0b, 0.7);
+          tg.strokeRect(x, y, w, h);
+        }
+      });
+
+      this.customArchitectTerrainsGroup.push(tg);
+    } catch (e) {
+      console.warn('[HouseScene] Gagal memuat custom architect terrains:', e);
+    }
   }
 
   /**
@@ -468,7 +621,7 @@ export class HouseScene extends Phaser.Scene {
     this.cameras.main.setBounds(0, 0, this.roomWidth, this.roomHeight);
     this.cameras.main.setRoundPixels(true);
     this.cameras.main.centerOn(startX, startY);
-    this.cameras.main.startFollow(this.player, false, 0.18, 0.18);
+    this.cameras.main.startFollow(this.player, true, 1.0, 1.0);
     this.smoothZoomTo(1.0);
 
     // Emit koordinat dan stats langsung saat spawn agar HUD terisi seketika
@@ -495,6 +648,13 @@ export class HouseScene extends Phaser.Scene {
   }
 
   public update(time: number, delta: number): void {
+    // Zoom lerp ultra mulus 60 FPS
+    if (Math.abs(this.cameras.main.zoom - this.targetZoom) > 0.001) {
+      this.cameras.main.setZoom(
+        Phaser.Math.Linear(this.cameras.main.zoom, this.targetZoom, Math.min(1, delta * 0.018))
+      );
+    }
+
     if (!this.player || this.isTransitioning || (typeof window !== 'undefined' && window.location.pathname === '/')) return;
 
     this.player.update(time, delta);
@@ -541,17 +701,19 @@ export class HouseScene extends Phaser.Scene {
 
     const gridX = Math.floor(px / this.tileSize);
     const gridY = Math.floor(py / this.tileSize);
-    const gridChanged = gridX !== this.lastGridX || gridY !== this.lastGridY;
     const labelChanged = roomLabel !== this.lastRoomLabel;
-    const periodicTimeout = time - this.lastStatsEmitTime > 1000;
+    const periodicTimeout = time - this.lastStatsEmitTime > 3000;
 
-    if (gridChanged || labelChanged || periodicTimeout) {
+    if (labelChanged || periodicTimeout) {
       this.lastStatsEmitTime = time;
       this.lastGridX = gridX;
       this.lastGridY = gridY;
       this.lastRoomLabel = roomLabel;
       this.emitStats(px, py, roomLabel);
+    }
 
+    if (time - this.lastPosSaveTime > 5000) {
+      this.lastPosSaveTime = time;
       try {
         localStorage.setItem(
           `raden_pos_house_${this.privateRoomId}`,
@@ -607,7 +769,7 @@ export class HouseScene extends Phaser.Scene {
         window.history.pushState(null, '', '/world');
       }
       EventBus.emit('url-changed', '/world');
-      NetworkManager.getInstance().switchRoom('world', 4800, 5800);
+      NetworkManager.getInstance().switchRoom('world', 1380, 960);
       this.cameras?.main?.stopFollow();
       this.scene.start('WorldScene', {
         name: this.playerName,

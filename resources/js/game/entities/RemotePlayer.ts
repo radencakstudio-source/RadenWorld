@@ -68,15 +68,16 @@ export class RemotePlayer extends Entity {
     this.targetY = y;
     this.lastPacketTime = Date.now();
 
-    // Proporsi Karakter HD: w = ~119.5px x h = 177px, di dalam grid 1x2 (120x240px)
+    // Proporsi Karakter 1x2 Grid: w = 120px x h = 240px (sesuai aset Figma 480x960px)
     this.charHeight = 177;
-    this.charWidth = 119.5;
+    this.charWidth = 120;
     this.setEntityHeight(this.charHeight);
 
-    // Sprite karakter visual: Pose Diam Menghadap Depan (bayangan sudah menyatu di aset)
+    // Sprite karakter visual: Pose Diam Menghadap Depan, pas di tengah petak 1x2 grid (0, -60)
     const initialKey = `player-${this.gender}-idle-front`;
-    this.sprite = scene.add.sprite(0, 48, initialKey);
-    this.sprite.setOrigin(0.5, 1.0);
+    this.sprite = scene.add.sprite(0, -60, initialKey);
+    this.sprite.setOrigin(0.5, 0.5);
+    this.sprite.setDisplaySize(120, 240);
     this.add(this.sprite);
 
     this.sprite.on(Phaser.Animations.Events.ANIMATION_UPDATE, () => {
@@ -217,18 +218,11 @@ export class RemotePlayer extends Entity {
   }
 
   /**
-   * Menyesuaikan ukuran tampilan sprite secara dinamis agar sesuai rasio aspek 100% dari aset asli Figma
-   * Menjaga tinggi karakter 177px dan lebar proporsional (~119.5px) di dalam ubin 1x2 (120x240px)
+   * Menyesuaikan ukuran tampilan sprite secara stabil (1x2 grid: 120x240px)
    */
   private adjustSpriteScale(): void {
     if (!this.sprite) return;
-    const frame = this.sprite.frame;
-    const realH = frame ? (frame.realHeight || frame.height) : 586;
-    const realW = frame ? (frame.realWidth || frame.width) : 395;
-    const aspect = realH > 0 ? (realW / realH) : 0.674;
-    this.charHeight = 177;
-    this.charWidth = Math.round(this.charHeight * aspect * 100) / 100;
-    this.sprite.setDisplaySize(this.charWidth, this.charHeight);
+    this.sprite.setDisplaySize(120, 240);
   }
 
   /**

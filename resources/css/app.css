@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Quicksand:wght@500;600;700&display=swap');
 @import 'tailwindcss';
 
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
@@ -9,6 +10,11 @@
 
 @theme {
     --font-sans: 'Plus Jakarta Sans', system-ui, sans-serif;
+    --font-cute: 'Fredoka', 'Quicksand', system-ui, cursive, sans-serif;
+}
+
+.font-cute {
+    font-family: 'Fredoka', 'Quicksand', 'Nunito', cursive, sans-serif;
 }
 
 /* Custom Game Styles */
@@ -71,4 +77,62 @@ html, body {
     -ms-overflow-style: none;
     scrollbar-width: none;
 }
+
+/* Clean, elegant theme-matched scrollbars for light school modals */
+.school-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e1 #f8fafc;
+}
+.school-scrollbar::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+.school-scrollbar::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 9999px;
+}
+.school-scrollbar::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 9999px;
+}
+.school-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+.school-scrollbar-amber {
+    scrollbar-width: thin;
+    scrollbar-color: #f59e0b #fef3c7;
+}
+.school-scrollbar-amber::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+.school-scrollbar-amber::-webkit-scrollbar-track {
+    background: #fef9c3;
+    border-radius: 9999px;
+}
+.school-scrollbar-amber::-webkit-scrollbar-thumb {
+    background: #f59e0b;
+    border-radius: 9999px;
+}
+.school-scrollbar-amber::-webkit-scrollbar-thumb:hover {
+    background: #d97706;
+}
+
+/* Animasi bernapas halus sorotan sinar mentari */
+@keyframes sunbeamPulse {
+    0% {
+        opacity: 0.68;
+        transform: scale(1.0);
+    }
+    100% {
+        opacity: 0.95;
+        transform: scale(1.02);
+    }
+}
+.animate-sunbeam {
+    animation: sunbeamPulse 6s ease-in-out infinite alternate;
+    transform-origin: top left;
+}
+
 

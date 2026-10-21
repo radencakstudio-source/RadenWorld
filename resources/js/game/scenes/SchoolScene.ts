@@ -38,6 +38,7 @@ import { Player } from '../entities/Player';
 import { RemotePlayer } from '../entities/RemotePlayer';
 import { NetworkManager } from '../core/NetworkManager';
 import { EventBus } from '../core/EventBus';
+import { SoundManager } from '../core/SoundManager';
 import { IAvatarCustomization, IPlayerData } from '../types';
 
 export type SchoolType = 'sd' | 'smp' | 'sma';
@@ -476,7 +477,15 @@ export class SchoolScene extends Phaser.Scene {
 
       const wx = pointer.worldX;
       const wy = pointer.worldY;
-      if (wx < 100 || wx > this.roomWidth - 100 || wy < 100 || wy > this.roomHeight - 100) return;
+
+      if (!this.isLocationWalkable(wx, wy)) {
+        this.spawnBlockedFeedback(wx, wy);
+        SoundManager.getInstance().playError();
+        if (this.player && this.player.active) {
+          this.player.showSpeechBubble('🚫 Lokasi terhalang & tidak bisa dijangkau!', 1300);
+        }
+        return;
+      }
 
       if (this.player && this.player.active) {
         this.spawnTapRipple(wx, wy);
@@ -536,6 +545,13 @@ export class SchoolScene extends Phaser.Scene {
       const remote = this.remotePlayers.get(data.id);
       if (remote && remote.active) {
         remote.setNetworkState(data.x, data.y, data.direction, data.isMoving);
+      }
+    });
+
+    this.networkManager.onPlayerJumped((data) => {
+      const remote = this.remotePlayers.get(data.id);
+      if (remote && remote.active) {
+        remote.triggerJump(data.jumpCount);
       }
     });
 
@@ -1569,6 +1585,53 @@ export class SchoolScene extends Phaser.Scene {
       duration: 350,
       ease: 'Cubic.easeOut',
       onComplete: () => circle.destroy(),
+    });
+  }
+
+  public isLocationWalkable(wx: number, wy: number): boolean {
+    if (wx < 100 || wx > this.roomWidth - 100 || wy < 100 || wy > this.roomHeight - 100) {
+      return false;
+    }
+    if (this.obstacles) {
+      const list = this.obstacles.getChildren();
+      const margin = 18;
+      for (let i = 0; i < list.length; i++) {
+        const item = list[i] as any;
+        if (!item || !item.body) continue;
+        const b = item.body as Phaser.Physics.Arcade.StaticBody;
+        if (
+          wx >= b.x - margin &&
+          wx <= b.x + b.width + margin &&
+          wy >= b.y - margin &&
+          wy <= b.y + b.height + margin
+        ) {
+          return false;
+        }
+      }
+    }
+    return true;
+  }
+
+  private spawnBlockedFeedback(x: number, y: number): void {
+    const gfx = this.add.graphics();
+    gfx.setDepth(y + 999);
+    gfx.fillStyle(0x7f1d1d, 0.45);
+    gfx.fillEllipse(x, y, 32, 16);
+    gfx.lineStyle(2, 0xef4444, 0.95);
+    gfx.strokeCircle(x, y - 6, 16);
+    gfx.lineStyle(2.5, 0xf87171, 0.95);
+    gfx.lineBetween(x - 9, y - 15, x + 9, y + 3);
+    gfx.fillStyle(0xffffff, 0.9);
+    gfx.fillCircle(x, y - 6, 2.5);
+
+    this.tweens.add({
+      targets: gfx,
+      scaleX: 1.25,
+      scaleY: 1.25,
+      alpha: 0,
+      duration: 450,
+      ease: 'Cubic.easeOut',
+      onComplete: () => gfx.destroy(),
     });
   }
 

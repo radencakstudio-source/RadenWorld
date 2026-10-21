@@ -20,8 +20,15 @@ import { Entity } from './Entity';
 import { IAvatarCustomization, Direction } from '../types';
 import { NetworkManager } from '../core/NetworkManager';
 import { EventBus } from '../core/EventBus';
+import { CharacterController } from '../controllers/CharacterController';
 
 export class Player extends Entity {
+  /** Controller modular pergerakan, lompat 2.5D dengan garis titik jatuh, dan mancing */
+  private controller!: CharacterController;
+
+  /** Offset ketinggian visual Z saat melompat */
+  private visualYOffset: number = 0;
+
   /** Data kustomisasi avatar pemain */
   private avatar: IAvatarCustomization;
 
@@ -144,6 +151,7 @@ export class Player extends Entity {
     }
 
     this.setupInput(scene);
+    this.controller = new CharacterController(this, scene);
 
     // Tangani kehilangan fokus jendela (buka aplikasi lain / switch tab) agar tidak freeze
     scene.game.events.on(Phaser.Core.Events.BLUR, () => {
@@ -217,8 +225,8 @@ export class Player extends Entity {
     if (this.isAfk) {
       this.setAfk(false);
       this.lastAfkUpdateSeconds = 0;
-      if (this.scene.scene.key === 'WorldScene') {
-        this.networkManager.sendAfk(false);
+      if (this.scene.scene.key === 'WorldScene' || this.scene.scene.key === 'SchoolScene') {
+        this.networkManager.sendAfk(false, 0);
       }
     }
   }
@@ -292,6 +300,131 @@ export class Player extends Entity {
     return !this.isUserAuthedCache;
   }
 
+  public getController(): CharacterController {
+    return this.controller;
+  }
+
+  public getSpeed(): number {
+    return this.speed;
+  }
+
+  public getCursors(): Phaser.Types.Input.Keyboard.CursorKeys {
+    return this.cursors;
+  }
+
+  public getKeysWASD() {
+    return this.keysWASD;
+  }
+
+  public setDirection(dir: Direction): void {
+    this.currentDirection = dir;
+  }
+
+  private currentSquashX: number = 1.0;
+  private currentSquashY: number = 1.0;
+  private whiteFlashTimer: Phaser.Time.TimerEvent | null = null;
+
+  /**
+   * Memicu efek kilat siluet putih pada avatar selama sepersekian detik saat melompat
+   */
+  public triggerJumpWhiteFlash(durationMs: number = 160): void {
+    if (!this.sprite || !this.sprite.active || !this.scene) return;
+
+    if (this.whiteFlashTimer) {
+      this.whiteFlashTimer.remove();
+      this.whiteFlashTimer = null;
+    }
+
+    // Set siluet putih murni pada avatar sprite
+    (this.sprite as any).setTintFill(0xffffff);
+
+    this.whiteFlashTimer = this.scene.time.delayedCall(durationMs, () => {
+      if (this.sprite && this.sprite.active) {
+        this.sprite.clearTint();
+      }
+      this.whiteFlashTimer = null;
+    });
+  }
+
+  /**
+   * Mengatur deformasi squash & stretch ala Mario (Squishy Avatar)
+   * Menjamin titik tumpu kaki selalu berjangkar stabil di lantai (feet anchor)
+   * @param sx Skala lebar horizontal (squash/stretch)
+   * @param sy Skala tinggi vertikal (squash/stretch)
+   */
+  public setSquashStretch(sx: number, sy: number): void {
+    this.currentSquashX = sx;
+    this.currentSquashY = sy;
+    this.applySpriteTransform();
+  }
+
+  /**
+   * Mengaplikasikan ukuran tampilan sprite dengan memperhitungkan visualYOffset dan squash/stretch
+   */
+  public applySpriteTransform(): void {
+    if (!this.sprite) return;
+    const baseW = 120;
+    const baseH = 240;
+    const curW = baseW * this.currentSquashX;
+    const curH = baseH * this.currentSquashY;
+    const feetY = 60 + this.visualYOffset;
+
+    this.sprite.setDisplaySize(curW, curH);
+    this.sprite.y = feetY - curH / 2;
+  }
+
+  /**
+   * Mengatur ketinggian visual Z karakter (saat melompat ke udara)
+   * Menggeser sprite dan elemen kepala secara harmonis tanpa merusak koordinat fisik tubuh
+   */
+  public setVisualYOffset(offsetY: number): void {
+    this.visualYOffset = offsetY;
+    this.applySpriteTransform();
+    if (this.nameTag) {
+      this.nameTag.y = -165 + offsetY;
+    }
+    if (this.speechBubble) {
+      this.speechBubble.y = -this.entityHeight - 50 + offsetY;
+    }
+    if (this.expressionBubble) {
+      const hasSpeech = Boolean(this.speechBubble && this.speechBubble.active);
+      this.expressionBubble.y = (hasSpeech ? -this.entityHeight - 125 : -this.entityHeight - 85) + offsetY;
+    }
+    if (this.speakingIndicator) {
+      this.speakingIndicator.y = -this.entityHeight - 40 + offsetY;
+    }
+    if (this.afkContainer) {
+      this.afkContainer.y = -185 + offsetY;
+    }
+  }
+
+  public getVisualYOffset(): number {
+    return this.visualYOffset;
+  }
+
+  /** Memicu lompatan karakter melalui CharacterController */
+  public jump(): boolean {
+    return this.controller ? this.controller.jump() : false;
+  }
+
+  /** Memulai memancing melalui CharacterController */
+  public startFishing(): boolean {
+    return this.controller ? this.controller.startFishing() : false;
+  }
+
+  /** Menghentikan memancing */
+  public stopFishing(message?: string): void {
+    this.controller?.stopFishing(message);
+  }
+
+  public isJumping(): boolean {
+    return this.controller ? this.controller.getIsJumping() : false;
+  }
+
+  public isFishing(): boolean {
+    return this.controller ? this.controller.getFishingState() !== 'none' : false;
+  }
+
   /**
    * Menggerakkan karakter secara otomatis menuju titik target (Point & Click / Tap-to-move)
    * @param targetX Koordinat X tujuan dalam pixel dunia game
@@ -300,16 +433,14 @@ export class Player extends Entity {
    */
   public navigateTo(targetX: number, targetY: number, onArrival?: () => void): void {
     if (this.isMovementLocked()) return;
-    this.targetDestination = { x: targetX, y: targetY };
-    this.onArrivalCallback = onArrival || null;
+    this.controller.navigateTo(targetX, targetY, onArrival);
   }
 
   /**
    * Membatalkan pergerakan otomatis point-and-click
    */
   public stopNavigation(): void {
-    this.targetDestination = null;
-    this.onArrivalCallback = null;
+    this.controller?.stopNavigation();
   }
 
   /** Alias kompatibilitas untuk pembatalan navigasi */
@@ -327,11 +458,9 @@ export class Player extends Entity {
     // Perbarui ukuran skala chat bubble dan ekspresi mengikuti zoom kamera
     this.updateFloatingElementsScale();
 
-    // Jika pergerakan terkunci (Lobby, Belum Login/Daftar, Dialog, Input Ketik), hentikan karakter
+    // Jika pergerakan terkunci (Lobby, Belum Login/Daftar, Dialog, Input Ketik, Mancing), tahan karakter
     if (this.isMovementLocked()) {
       body.setVelocity(0, 0);
-      this.targetDestination = null;
-      this.onArrivalCallback = null;
       this.joystickVector = null;
       if (this.isMoving) {
         this.isMoving = false;
@@ -340,107 +469,24 @@ export class Player extends Entity {
           this.networkManager.sendMovement(this.x, this.y, this.currentDirection, false);
         }
       }
+      this.controller.update(time, delta);
       return;
     }
 
-    let vx = 0;
-    let vy = 0;
-
-    const left = Boolean(this.cursors?.left?.isDown || this.keysWASD?.A?.isDown);
-    const right = Boolean(this.cursors?.right?.isDown || this.keysWASD?.D?.isDown);
-    const up = Boolean(this.cursors?.up?.isDown || this.keysWASD?.W?.isDown);
-    const down = Boolean(this.cursors?.down?.isDown || this.keysWASD?.S?.isDown);
-
-    const hasManualInput = left || right || up || down;
-
-    if (this.joystickVector && (Math.abs(this.joystickVector.x) > 0.05 || Math.abs(this.joystickVector.y) > 0.05)) {
-      // 1. Input Analog Joystick Virtual (360° Touch)
-      this.targetDestination = null;
-      this.onArrivalCallback = null;
-
-      vx = this.joystickVector.x * this.speed;
-      vy = this.joystickVector.y * this.speed;
-
-      if (Math.abs(vx) > Math.abs(vy)) {
-        this.currentDirection = vx > 0 ? 'right' : 'left';
-      } else {
-        this.currentDirection = vy > 0 ? 'down' : 'up';
-      }
-    } else if (hasManualInput) {
-      // 2. Input Keyboard PC (WASD & Panah)
-      this.targetDestination = null;
-      this.onArrivalCallback = null;
-
-      if (left) vx -= this.speed;
-      else if (right) vx += this.speed;
-
-      if (up) vy -= this.speed;
-      else if (down) vy += this.speed;
-
-      // Normalisasi kecepatan diagonal dan stabilkan arah hadap (anti-flutter)
-      if (vx !== 0 && vy !== 0) {
-        vx *= 0.7071;
-        vy *= 0.7071;
-        if (this.currentDirection === 'left' && left) {}
-        else if (this.currentDirection === 'right' && right) {}
-        else if (this.currentDirection === 'up' && up) {}
-        else if (this.currentDirection === 'down' && down) {}
-        else {
-          this.currentDirection = left ? 'left' : 'right';
-        }
-      } else if (vx < 0) {
-        this.currentDirection = 'left';
-      } else if (vx > 0) {
-        this.currentDirection = 'right';
-      } else if (vy < 0) {
-        this.currentDirection = 'up';
-      } else if (vy > 0) {
-        this.currentDirection = 'down';
-      }
-    } else if (this.targetDestination) {
-      // 3. Navigasi otomatis Point & Click / Tap-to-move
-      const dx = this.targetDestination.x - this.x;
-      const dy = this.targetDestination.y - this.y;
-      const dist = Math.hypot(dx, dy);
-
-      if (dist <= 12) {
-        this.targetDestination = null;
-        vx = 0;
-        vy = 0;
-        const cb = this.onArrivalCallback;
-        this.onArrivalCallback = null;
-        if (cb) cb();
-      } else {
-        const angle = Math.atan2(dy, dx);
-        vx = Math.cos(angle) * this.speed;
-        vy = Math.sin(angle) * this.speed;
-
-        // Stabilkan sudut hadap agar tidak bolak-balik reset frame animasi di diagonal
-        const diff = Math.abs(dx) - Math.abs(dy);
-        if (Math.abs(diff) > 18) {
-          if (Math.abs(dx) > Math.abs(dy)) {
-            this.currentDirection = dx > 0 ? 'right' : 'left';
-          } else {
-            this.currentDirection = dy > 0 ? 'down' : 'up';
-          }
-        }
-      }
-    }
-
-    body.setVelocity(vx, vy);
-
-    const nowMoving = vx !== 0 || vy !== 0;
+    // Jalankan siklus pergerakan, lompat 2.5D, dan mancing melalui CharacterController
+    const moveRes = this.controller.update(time, delta);
+    const nowMoving = moveRes.isMoving;
     const directionChanged = this.currentDirection !== this.lastDirection;
     const movementStateChanged = nowMoving !== this.isMoving;
 
-    if (movementStateChanged || (nowMoving && directionChanged)) {
+    if (movementStateChanged || directionChanged) {
       this.isMoving = nowMoving;
       this.lastDirection = this.currentDirection;
       this.updateAnimation(nowMoving);
     }
 
     // Deteksi Inaktivitas / AFK (1 menit = 60 detik tidak bergerak & tidak berbuat apa-apa)
-    if (nowMoving || hasManualInput || this.joystickVector) {
+    if (nowMoving || this.isJumping() || this.isFishing()) {
       this.resetActivity();
     } else {
       const idleTimeMs = Date.now() - this.lastActivityTime;
@@ -455,6 +501,9 @@ export class Player extends Entity {
         } else if (totalAfkSecs !== this.lastAfkUpdateSeconds) {
           this.lastAfkUpdateSeconds = totalAfkSecs;
           this.setAfk(true, totalAfkSecs);
+          if (this.scene.scene.key === 'WorldScene' || this.scene.scene.key === 'SchoolScene') {
+            this.networkManager.sendAfk(true, totalAfkSecs);
+          }
         }
       }
     }
@@ -544,7 +593,7 @@ export class Player extends Entity {
       }
 
       this.sprite.setTexture(idleKey);
-      this.sprite.setDisplaySize(120, 240);
+      this.applySpriteTransform();
     }
   }
 
@@ -552,8 +601,7 @@ export class Player extends Entity {
    * Menyesuaikan ukuran tampilan sprite secara stabil (1x2 grid: 120x240px)
    */
   private adjustSpriteScale(): void {
-    if (!this.sprite) return;
-    this.sprite.setDisplaySize(120, 240);
+    this.applySpriteTransform();
   }
 
   /**

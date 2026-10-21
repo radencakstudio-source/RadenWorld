@@ -16,6 +16,7 @@
 import Phaser from 'phaser';
 import { Entity } from './Entity';
 import { IAvatarCustomization, Direction } from '../types';
+import { SoundManager } from '../core/SoundManager';
 
 export class RemotePlayer extends Entity {
   /** Data kustomisasi avatar pemain lain */
@@ -94,6 +95,88 @@ export class RemotePlayer extends Entity {
     }
   }
 
+  private isJumping: boolean = false;
+  private currentJumpZ: number = 0;
+  private jumpVelocityZ: number = 0;
+
+  private currentSquashX: number = 1.0;
+  private currentSquashY: number = 1.0;
+  private whiteFlashTimer: Phaser.Time.TimerEvent | null = null;
+  private landingSquashTween: Phaser.Tweens.Tween | null = null;
+
+  private lastAfkTickTime: number = 0;
+
+  /**
+   * Memicu efek kilat siluet putih pada avatar remote player saat melompat
+   */
+  public triggerJumpWhiteFlash(durationMs: number = 160): void {
+    if (!this.sprite || !this.sprite.active || !this.scene) return;
+
+    if (this.whiteFlashTimer) {
+      this.whiteFlashTimer.remove();
+      this.whiteFlashTimer = null;
+    }
+
+    (this.sprite as any).setTintFill(0xffffff);
+
+    this.whiteFlashTimer = this.scene.time.delayedCall(durationMs, () => {
+      if (this.sprite && this.sprite.active) {
+        this.sprite.clearTint();
+      }
+      this.whiteFlashTimer = null;
+    });
+  }
+
+  public setSquashStretch(sx: number, sy: number): void {
+    this.currentSquashX = sx;
+    this.currentSquashY = sy;
+    this.applySpriteTransform();
+  }
+
+  public applySpriteTransform(): void {
+    if (!this.sprite) return;
+    const baseW = 120;
+    const baseH = 240;
+    const curW = baseW * this.currentSquashX;
+    const curH = baseH * this.currentSquashY;
+    const feetY = 60 - Math.max(0, this.currentJumpZ);
+
+    this.sprite.setDisplaySize(curW, curH);
+    this.sprite.y = feetY - curH / 2;
+  }
+
+  /**
+   * Memicu visual lompatan ketika pemain lain melompat (Multiplayer Jump)
+   */
+  public triggerJump(jumpCount: number = 1): void {
+    this.isJumping = true;
+    if (jumpCount === 1) {
+      this.currentJumpZ = Math.max(0, this.currentJumpZ);
+      this.jumpVelocityZ = 640;
+    } else {
+      this.jumpVelocityZ = 540;
+      this.showSpeechBubble('⭐ Double Jump!', 750);
+    }
+    SoundManager.getInstance().playJump(jumpCount === 2);
+
+    this.triggerJumpWhiteFlash(150);
+
+    if (this.landingSquashTween) {
+      this.landingSquashTween.stop();
+      this.landingSquashTween = null;
+    }
+    this.currentSquashX = 1.22;
+    this.currentSquashY = 0.80;
+    this.setSquashStretch(this.currentSquashX, this.currentSquashY);
+    this.scene.time.delayedCall(42, () => {
+      if (this.isJumping) {
+        this.currentSquashX = 0.82;
+        this.currentSquashY = 1.24;
+        this.setSquashStretch(this.currentSquashX, this.currentSquashY);
+      }
+    });
+  }
+
   /**
    * Menerima pembaruan status posisi dan pergerakan dari WebSocket server
    */
@@ -153,6 +236,82 @@ export class RemotePlayer extends Entity {
       this.playWalkAnimation();
     } else {
       this.playIdlePose();
+    }
+
+    // Update timer durasi AFK remote player secara realtime detik per detik
+    if (this.isAfk) {
+      if (this.lastAfkTickTime === 0) this.lastAfkTickTime = time;
+      if (time - this.lastAfkTickTime >= 1000) {
+        this.lastAfkTickTime = time;
+        this.setAfk(true, (this as any).afkDurationSeconds + 1);
+      }
+    } else {
+      this.lastAfkTickTime = 0;
+    }
+
+    // 3. Update animasi melompat visual remote player
+    if (this.isJumping) {
+      const dt = Math.min(0.05, delta / 1000);
+      this.jumpVelocityZ += -1400 * dt;
+      this.currentJumpZ += this.jumpVelocityZ * dt;
+
+      // Update Deformasi Squishy Mario dinamis selama remote player di udara
+      let targetSx = 1.0;
+      let targetSy = 1.0;
+      if (this.jumpVelocityZ > 120) {
+        targetSx = 0.84;
+        targetSy = 1.20;
+      } else if (this.jumpVelocityZ < -160) {
+        targetSx = 0.90;
+        targetSy = 1.12;
+      } else {
+        targetSx = 1.02;
+        targetSy = 0.98;
+      }
+
+      this.currentSquashX += (targetSx - this.currentSquashX) * Math.min(1.0, dt * 14);
+      this.currentSquashY += (targetSy - this.currentSquashY) * Math.min(1.0, dt * 14);
+      this.applySpriteTransform();
+
+      if (this.nameTag) this.nameTag.y = -165 - Math.max(0, this.currentJumpZ);
+      if (this.speechBubble) this.speechBubble.y = -this.charHeight - 50 - Math.max(0, this.currentJumpZ);
+
+      // Sentuh tanah / selesai melompat
+      if (this.currentJumpZ <= 0 && this.jumpVelocityZ <= 0) {
+        this.isJumping = false;
+        this.currentJumpZ = 0;
+        this.jumpVelocityZ = 0;
+        if (this.nameTag) this.nameTag.y = -165;
+        if (this.speechBubble) this.speechBubble.y = -this.charHeight - 50;
+
+        // EFEK SQUISHY MENDARAT ALA MARIO (Impact Squash & Springy Bounce Recoil)
+        this.currentSquashX = 1.28;
+        this.currentSquashY = 0.74;
+        this.setSquashStretch(this.currentSquashX, this.currentSquashY);
+
+        if (this.landingSquashTween) {
+          this.landingSquashTween.stop();
+        }
+        const squashTarget = { sx: 1.28, sy: 0.74 };
+        this.landingSquashTween = this.scene.tweens.add({
+          targets: squashTarget,
+          sx: 1.0,
+          sy: 1.0,
+          duration: 170,
+          ease: 'Back.easeOut',
+          onUpdate: () => {
+            this.currentSquashX = squashTarget.sx;
+            this.currentSquashY = squashTarget.sy;
+            this.setSquashStretch(squashTarget.sx, squashTarget.sy);
+          },
+          onComplete: () => {
+            this.currentSquashX = 1.0;
+            this.currentSquashY = 1.0;
+            this.setSquashStretch(1.0, 1.0);
+            this.landingSquashTween = null;
+          },
+        });
+      }
     }
   }
 
@@ -221,8 +380,7 @@ export class RemotePlayer extends Entity {
    * Menyesuaikan ukuran tampilan sprite secara stabil (1x2 grid: 120x240px)
    */
   private adjustSpriteScale(): void {
-    if (!this.sprite) return;
-    this.sprite.setDisplaySize(120, 240);
+    this.applySpriteTransform();
   }
 
   /**

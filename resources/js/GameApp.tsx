@@ -30,12 +30,16 @@ import { CreatorStudioModal } from './game/ui/CreatorStudioModal';
 import { SdSubjectsModal } from './game/ui/SdSubjectsModal';
 import { SchoolGradeSelectModal } from './game/ui/SchoolGradeSelectModal';
 import { SchoolSubjectsModal } from './game/ui/SchoolSubjectsModal';
+import { FishingMinigame } from './game/ui/FishingMinigame';
+import { Hotbar } from './game/ui/Hotbar';
+import { InventoryModal } from './game/ui/InventoryModal';
 import { calculateAgeFromBirthDate } from './game/ui/AuthModal';
 import { SunbeamOverlay } from './game/ui/SunbeamOverlay';
 import { EventBus } from './game/core/EventBus';
 import { SoundManager } from './game/core/SoundManager';
 import { NetworkManager } from './game/core/NetworkManager';
 import { IAvatarCustomization, IChatMessage } from './game/types';
+import { IFishData } from './game/controllers/CharacterController';
 
 export const GameApp: React.FC = () => {
   // Check initial URL pathname
@@ -147,6 +151,18 @@ export const GameApp: React.FC = () => {
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isGuideOpen, setIsGuideOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isBackpackOpen, setIsBackpackOpen] = useState(false);
+
+  // Listener event bus buka tas (dari tombol TAS mobile atau shortcut)
+  useEffect(() => {
+    const handleToggleBackpack = () => {
+      setIsBackpackOpen((prev) => !prev);
+    };
+    EventBus.on('open-backpack', handleToggleBackpack);
+    return () => {
+      EventBus.off('open-backpack', handleToggleBackpack);
+    };
+  }, []);
 
   // Profile Attribute States
   const [playerBio, setPlayerBio] = useState<string>(() => {
@@ -262,6 +278,10 @@ export const GameApp: React.FC = () => {
   const [schoolSubjectsType, setSchoolSubjectsType] = useState<'sd' | 'smp' | 'sma'>('sd');
   const [schoolSubjectsGrade, setSchoolSubjectsGrade] = useState<number>(1);
   const [schoolSubjectsDeskType, setSchoolSubjectsDeskType] = useState<'guru' | 'siswa'>('guru');
+  // Minigame Memancing Interaktif Bergaya Stardew Valley
+  const [fishingMinigameData, setFishingMinigameData] = useState<IFishData | null>(null);
+  const [isFishingMinigameOpen, setIsFishingMinigameOpen] = useState(false);
+
   const [wardrobeAvatar, setWardrobeAvatar] = useState<IAvatarCustomization>(() => {
     try {
       const saved = localStorage.getItem('raden_player_avatar');
@@ -430,7 +450,15 @@ export const GameApp: React.FC = () => {
       setIsSchoolSubjectsOpen(true);
       EventBus.emit('dialogue-active', true);
     };
-    EventBus.on('open-school-subjects', handleOpenSchoolSubjects);
+    // Tangani event pembukaan Minigame Memancing Interaktif Stardew Valley
+    const handleOpenFishingMinigame = (data: { fish: IFishData }) => {
+      if (data?.fish) {
+        sound.playOpenModal();
+        setFishingMinigameData(data.fish);
+        setIsFishingMinigameOpen(true);
+      }
+    };
+    EventBus.on('open-fishing-minigame', handleOpenFishingMinigame);
 
     // Tangani event pembukaan modal Mata Pelajaran khusus SD dari Meja Guru / Meja Siswa (Legacy wrapper)
     const handleOpenSdSubjects = (data?: { deskType?: 'guru' | 'siswa' }) => {
@@ -582,6 +610,7 @@ export const GameApp: React.FC = () => {
       EventBus.off('open-creator-studio', handleOpenCreatorStudio);
       EventBus.off('open-school-grade-select', handleOpenGradeSelect);
       EventBus.off('open-school-subjects', handleOpenSchoolSubjects);
+      EventBus.off('open-fishing-minigame', handleOpenFishingMinigame);
       EventBus.off('open-sd-subjects', handleOpenSdSubjects);
       EventBus.off('incoming-friend-request', handleIncomingFriend);
       EventBus.off('friend-response-result', handleFriendResponse);
@@ -974,6 +1003,20 @@ export const GameApp: React.FC = () => {
             onOpenTopUp={() => setIsTopUpOpen(true)}
           />
 
+          {/* Mini Hotbar 6-Slot di Tengah Bawah Layar */}
+          <Hotbar
+            onOpenBackpack={() => setIsBackpackOpen(!isBackpackOpen)}
+            isBackpackOpen={isBackpackOpen}
+          />
+
+          {/* Modal Tas Inventaris Lengkap 30 Slot (Buka dengan [B] atau klik tombol Tas) */}
+          <InventoryModal
+            isOpen={isBackpackOpen}
+            onClose={() => setIsBackpackOpen(false)}
+            gold={playerGold}
+            diamonds={playerDiamonds}
+          />
+
           <ProfileModal
             isOpen={isProfileOpen}
             onClose={() => {
@@ -1125,6 +1168,24 @@ export const GameApp: React.FC = () => {
                 timestamp: Date.now(),
                 isSystem: true,
               });
+            }}
+          />
+
+          {/* Minigame Memancing Interaktif Bergaya Stardew Valley */}
+          <FishingMinigame
+            isOpen={isFishingMinigameOpen}
+            fishData={fishingMinigameData}
+            onSuccess={(fish) => {
+              setIsFishingMinigameOpen(false);
+              EventBus.emit('fishing-minigame-success', { fish });
+            }}
+            onFailed={() => {
+              setIsFishingMinigameOpen(false);
+              EventBus.emit('fishing-minigame-failed');
+            }}
+            onClose={() => {
+              setIsFishingMinigameOpen(false);
+              EventBus.emit('fishing-minigame-failed');
             }}
           />
 

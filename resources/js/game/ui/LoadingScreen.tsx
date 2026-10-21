@@ -171,17 +171,17 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
             className="absolute bottom-0 -mb-1 flex flex-col items-center transition-[left] ease-linear duration-75"
             style={{ left: `${boyLeftPercent}%`, transform: 'translateX(-50%)' }}
           >
-            {/* Bayangan Lantai Cowok */}
-            <div className="w-12 h-3 bg-black/40 rounded-full blur-[2px] mb-[-6px]" />
             <img
               src={`/assets/sprites/characters/Player/Male/MovementSide/MaleWalkSide${walkFrame}.png`}
               alt="Male Walking"
-              className="w-16 sm:w-20 h-20 sm:h-24 object-contain pixelated pointer-events-none drop-shadow-lg"
+              className="relative z-10 w-16 sm:w-20 h-20 sm:h-24 object-contain pixelated pointer-events-none"
               onError={(e) => {
                 // Fallback jika frame gagal dimuat
                 (e.target as HTMLImageElement).src = '/assets/sprites/characters/Player/Male/Idle/Front/Front%20Male.png';
               }}
             />
+            {/* Bayangan Lantai Cowok (di bawah kaki) */}
+            <div className="w-12 h-2.5 bg-black/40 rounded-full blur-[2px] -mt-2" />
           </div>
 
           {/* Cewek Berdiri di Sisi Kanan Menunggu Cowok */}
@@ -189,13 +189,13 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
             className="absolute bottom-0 -mb-1 flex flex-col items-center"
             style={{ left: '88%', transform: 'translateX(-50%)' }}
           >
-            {/* Bayangan Lantai Cewek */}
-            <div className="w-12 h-3 bg-black/40 rounded-full blur-[2px] mb-[-6px]" />
             <img
               src="/assets/sprites/characters/Player/Female/Idle/Front/Front%20Female.png"
               alt="Female Idle"
-              className="w-16 sm:w-20 h-20 sm:h-24 object-contain pixelated pointer-events-none drop-shadow-lg"
+              className="relative z-10 w-16 sm:w-20 h-20 sm:h-24 object-contain pixelated pointer-events-none"
             />
+            {/* Bayangan Lantai Cewek (di bawah kaki) */}
+            <div className="w-12 h-2.5 bg-black/40 rounded-full blur-[2px] -mt-2" />
           </div>
         </div>
 

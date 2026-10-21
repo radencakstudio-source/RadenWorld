@@ -21,11 +21,12 @@
  */
 
 import React from 'react';
-import { IAvatarCustomization } from '../types';
+import { IAvatarCustomization, Direction } from '../types';
 import { Server, MessageSquare, Zap, User, Mic, MicOff, Settings, Globe, ArrowRightLeft, Coins, Gem, Plus, Sun, Moon, Sunset, ZoomIn, ZoomOut, RotateCcw, Map, MapPin, Compass, Maximize2, ChevronDown, ChevronUp, X, Navigation, Building2 } from 'lucide-react';
 import { EventBus } from '../core/EventBus';
 import { SoundManager } from '../core/SoundManager';
 import { VoiceManager } from '../core/VoiceManager';
+import { WorldMapSvg } from './WorldMapSvg';
 
 export const cleanServerCode = (code?: string | null): string => {
   if (!code) return 'Asia 1';
@@ -44,6 +45,7 @@ interface HUDProps {
     y: number;
     gridX?: number;
     gridY?: number;
+    direction?: Direction;
     name: string;
     avatar?: IAvatarCustomization;
     roomName?: string;
@@ -430,72 +432,14 @@ export const HUD: React.FC<HUDProps> = ({
                   className="w-[184px] h-[184px] bg-[#001026] border-x border-b border-neutral-800 rounded-b-lg p-1 relative overflow-hidden shadow-2xl backdrop-blur-md cursor-pointer group hover:border-amber-500/50 transition-colors"
                   title="Klik untuk membuka Peta Penuh & Panduan Wilayah"
                 >
-                  {/* SVG Peta Presisi Blueprint 80x80 - 100% Sinkron dengan Dunia Game Sebenarnya */}
-                  <svg
-                    viewBox="0 0 80 80"
+                  {/* Peta Mini WorldMapSvg Presisi & Kaya Visual Mirip Dunia Asli */}
+                  <WorldMapSvg
+                    playerGridX={gridX}
+                    playerGridY={gridY}
+                    playerDirection={stats?.direction || 'down'}
+                    isMini={true}
                     className="w-full h-full rounded"
-                    preserveAspectRatio="none"
-                  >
-                    {/* 1. Latar Belakang Lautan (#00A2F3) */}
-                    <rect x="0" y="0" width="80" height="80" fill="#00A2F3" />
-
-                    {/* 2. Daratan Hijau Utama (0..80, 0..64) */}
-                    <rect x="0" y="0" width="80" height="64" fill="#15803d" />
-
-                    {/* 3. Trotoar Keliling Alun-Alun Plaza (Garis Trotoar Tanpa Fill Area) */}
-                    <rect x="21" y="21" width="38" height="39" fill="none" stroke="#94a3b8" strokeWidth="0.8" />
-
-                    {/* 4. Jaringan Jalan Raya Aspal Charcoal (Sesuai WorldScene) */}
-                    {/* Jalan Vertikal Barat (gx: 19..20) */}
-                    <rect x="19" y="13" width="2" height="54" fill="#1e293b" />
-                    {/* Jalan Vertikal Timur (gx: 59..60) */}
-                    <rect x="59" y="13" width="2" height="54" fill="#1e293b" />
-                    {/* Jalan Horizontal Utara (gy: 13..14) */}
-                    <rect x="0" y="13" width="80" height="2" fill="#1e293b" />
-                    {/* Jalan Horizontal Utara Plaza (gy: 19..20) */}
-                    <rect x="19" y="19" width="42" height="2" fill="#1e293b" />
-                    {/* Jalan Horizontal Selatan Plaza (gy: 60..61) */}
-                    <rect x="19" y="60" width="42" height="2" fill="#1e293b" />
-                    {/* Jalan Horizontal Selatan (gy: 66..67) */}
-                    <rect x="0" y="66" width="80" height="2" fill="#1e293b" />
-
-                    {/* Marka Jalan Kuning Putus-Putus */}
-                    <line x1="20" y1="13" x2="20" y2="67" stroke="#fbbf24" strokeWidth="0.2" strokeDasharray="1,1" />
-                    <line x1="60" y1="13" x2="60" y2="67" stroke="#fbbf24" strokeWidth="0.2" strokeDasharray="1,1" />
-                    <line x1="0" y1="14" x2="80" y2="14" stroke="#fbbf24" strokeWidth="0.2" strokeDasharray="1,1" />
-                    <line x1="0" y1="67" x2="80" y2="67" stroke="#fbbf24" strokeWidth="0.2" strokeDasharray="1,1" />
-
-                    {/* 5. Lautan Timur (gx: 63..79, gy: 17..63) & 3 Dermaga Trotoar */}
-                    <rect x="63" y="17" width="17" height="47" fill="#00A2F3" />
-                    {/* Dermaga 1 (gx: 63..73, gy: 26..27) */}
-                    <rect x="63" y="26" width="11" height="2" fill="#e2e8f0" stroke="#94a3b8" strokeWidth="0.2" rx="0.2" />
-                    {/* Dermaga 2 (gx: 63..73, gy: 39..40) */}
-                    <rect x="63" y="39" width="11" height="2" fill="#e2e8f0" stroke="#94a3b8" strokeWidth="0.2" rx="0.2" />
-                    {/* Dermaga 3 (gx: 63..73, gy: 53..54) */}
-                    <rect x="63" y="53" width="11" height="2" fill="#e2e8f0" stroke="#94a3b8" strokeWidth="0.2" rx="0.2" />
-
-                    {/* 6. Kawasan Pantai Pasir Selatan */}
-                    {/* Teluk Pantai Tengah (gx: 23..56, gy: 64..69) */}
-                    <rect x="23" y="64" width="34" height="6" fill="#f59e0b" opacity="0.95" />
-                    {/* Hamparan Pantai Utama (gx: 1..78, gy: 70..78) */}
-                    <rect x="1" y="70" width="78" height="9" fill="#eab308" opacity="0.95" />
-                    {/* Samudra Selatan Lepas (gy: 79) */}
-                    <rect x="0" y="79" width="80" height="1" fill="#0284c7" />
-                  </svg>
-
-                  {/* Marker Posisi Pemain (Solid, Diam & Tidak Berkedip) */}
-                  <div
-                    className="absolute -translate-x-1/2 -translate-y-1/2 pointer-events-none z-10 transition-all duration-300 ease-out"
-                    style={{
-                      left: `${Math.max(4, Math.min(96, (gridX / 80) * 100))}%`,
-                      top: `${Math.max(4, Math.min(96, (gridY / 80) * 100))}%`,
-                    }}
-                  >
-                    {/* Titik Inti Pemain Solid Tanpa Efek Berkedip */}
-                    <div className="w-3 h-3 rounded-full bg-amber-400 ring-2 ring-white shadow-[0_0_8px_rgba(0,0,0,0.8)] relative flex items-center justify-center">
-                      <div className="w-1 h-1 rounded-full bg-black" />
-                    </div>
-                  </div>
+                  />
 
                   {/* Petunjuk Kompas Mata Angin (U, T, S, B) */}
                   <div className="absolute top-1 left-1/2 -translate-x-1/2 text-[8px] font-black font-mono text-amber-300/90 pointer-events-none drop-shadow">
@@ -547,6 +491,22 @@ export const HUD: React.FC<HUDProps> = ({
               <div className="flex items-center gap-2">
                 <span className="px-1.5 py-0.5 rounded bg-neutral-900 border border-neutral-700 text-amber-300 font-mono text-[10px]">E</span>
                 <span>Interaksi / Bicara</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="px-1.5 py-0.5 rounded bg-neutral-900 border border-neutral-700 text-amber-300 font-mono text-[10px]">SPASI</span>
+                <span>Lompat</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="px-1.5 py-0.5 rounded bg-neutral-900 border border-neutral-700 text-amber-300 font-mono text-[10px]">F</span>
+                <span>Mancing</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="px-1.5 py-0.5 rounded bg-neutral-900 border border-neutral-700 text-amber-300 font-mono text-[10px]">B</span>
+                <span>Buka Tas</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="px-1.5 py-0.5 rounded bg-neutral-900 border border-neutral-700 text-amber-300 font-mono text-[10px]">1 - 6</span>
+                <span>Slot Hotbar</span>
               </div>
               <div className="flex items-center gap-2">
                 <span className="px-1.5 py-0.5 rounded bg-neutral-900 border border-neutral-700 text-amber-300 font-mono text-[10px]">/</span>
@@ -643,48 +603,15 @@ export const HUD: React.FC<HUDProps> = ({
 
             {/* Konten Peta Besar */}
             <div className="p-4 flex flex-col items-center gap-3">
-              <div className="w-[340px] h-[340px] md:w-[420px] md:h-[420px] bg-[#001026] border border-neutral-800 rounded-xl relative overflow-hidden shadow-inner">
-                {/* SVG Peta Presisi Blueprint 80x80 */}
-                <svg
-                  viewBox="0 0 80 80"
+              <div className="w-[340px] h-[340px] md:w-[440px] md:h-[440px] bg-[#001026] border border-neutral-800 rounded-xl relative overflow-hidden shadow-2xl">
+                {/* SVG Peta WorldMapSvg Representasi Visual Dunia Asli Lengkap */}
+                <WorldMapSvg
+                  playerGridX={gridX}
+                  playerGridY={gridY}
+                  playerDirection={stats?.direction || 'down'}
+                  isMini={false}
                   className="w-full h-full rounded"
-                  preserveAspectRatio="none"
-                >
-                  <rect x="0" y="0" width="80" height="80" fill="#00A2F3" />
-                  <rect x="0" y="0" width="80" height="64" fill="#15803d" />
-                  {/* Trotoar Keliling Alun-Alun Plaza (Garis Trotoar Tanpa Fill Area) */}
-                  <rect x="21" y="21" width="38" height="39" fill="none" stroke="#94a3b8" strokeWidth="0.8" />
-                  <rect x="19" y="13" width="2" height="54" fill="#1e293b" />
-                  <rect x="59" y="13" width="2" height="54" fill="#1e293b" />
-                  <rect x="0" y="13" width="80" height="2" fill="#1e293b" />
-                  <rect x="19" y="19" width="42" height="2" fill="#1e293b" />
-                  <rect x="19" y="60" width="42" height="2" fill="#1e293b" />
-                  <rect x="0" y="66" width="80" height="2" fill="#1e293b" />
-                  <line x1="20" y1="13" x2="20" y2="67" stroke="#fbbf24" strokeWidth="0.2" strokeDasharray="1,1" />
-                  <line x1="60" y1="13" x2="60" y2="67" stroke="#fbbf24" strokeWidth="0.2" strokeDasharray="1,1" />
-                  <line x1="0" y1="14" x2="80" y2="14" stroke="#fbbf24" strokeWidth="0.2" strokeDasharray="1,1" />
-                  <line x1="0" y1="67" x2="80" y2="67" stroke="#fbbf24" strokeWidth="0.2" strokeDasharray="1,1" />
-                  <rect x="63" y="17" width="17" height="47" fill="#00A2F3" />
-                  <rect x="63" y="26" width="11" height="2" fill="#e2e8f0" stroke="#94a3b8" strokeWidth="0.2" rx="0.2" />
-                  <rect x="63" y="39" width="11" height="2" fill="#e2e8f0" stroke="#94a3b8" strokeWidth="0.2" rx="0.2" />
-                  <rect x="63" y="53" width="11" height="2" fill="#e2e8f0" stroke="#94a3b8" strokeWidth="0.2" rx="0.2" />
-                  <rect x="23" y="64" width="34" height="6" fill="#f59e0b" opacity="0.95" />
-                  <rect x="1" y="70" width="78" height="9" fill="#eab308" opacity="0.95" />
-                  <rect x="0" y="79" width="80" height="1" fill="#0284c7" />
-                </svg>
-
-                {/* Marker Posisi Pemain (Solid, Diam & Tidak Berkedip) */}
-                <div
-                  className="absolute -translate-x-1/2 -translate-y-1/2 pointer-events-none z-10 transition-all duration-300 ease-out"
-                  style={{
-                    left: `${Math.max(4, Math.min(96, (gridX / 80) * 100))}%`,
-                    top: `${Math.max(4, Math.min(96, (gridY / 80) * 100))}%`,
-                  }}
-                >
-                  <div className="w-4 h-4 rounded-full bg-amber-400 ring-2 ring-white shadow-[0_0_8px_rgba(0,0,0,0.8)] relative flex items-center justify-center">
-                    <div className="w-1.5 h-1.5 rounded-full bg-black" />
-                  </div>
-                </div>
+                />
 
                 {/* Kompas */}
                 <div className="absolute top-2 left-1/2 -translate-x-1/2 text-[10px] font-black font-mono text-amber-300 pointer-events-none drop-shadow">

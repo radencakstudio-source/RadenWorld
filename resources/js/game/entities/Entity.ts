@@ -266,6 +266,11 @@ export abstract class Entity extends Phaser.GameObjects.Container {
     this.add(bubble);
     this.speechBubble = bubble;
 
+    // Jika balon ekspresi sedang aktif bersamaan, pastikan posisinya di atas balon teks agar tidak tertutup
+    if (this.expressionBubble && this.expressionBubble.active) {
+      this.expressionBubble.y = -290;
+    }
+
     // Skala awal menyesuaikan tingkat zoom kamera secara terbalik (Inverse Scale: Zoom out -> bubble perbesar, Zoom in -> bubble perkecil)
     const camZoom = this.scene.cameras?.main?.zoom || 1.0;
     const invScale = 1 / Math.max(0.5, camZoom);
@@ -313,8 +318,10 @@ export abstract class Entity extends Phaser.GameObjects.Container {
       this.expressionTimer = null;
     }
 
-    // Posisi mengambang tepat di atas kepala karakter (-200px)
-    const bubbleY = -200;
+    // Posisi mengambang tepat di atas kepala karakter & di atas balon bicara agar tidak tertutup teks
+    // Jika balon teks sedang aktif (seperti saat ikan menyambar), posisikan di atasnya (-290px)
+    const hasSpeech = Boolean(this.speechBubble && this.speechBubble.active);
+    const bubbleY = hasSpeech ? -290 : -250;
     const bubble = this.scene.add.container(0, bubbleY);
 
     const exprSprite = this.scene.add.sprite(0, 0, textureKey);

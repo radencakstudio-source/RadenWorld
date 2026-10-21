@@ -277,6 +277,18 @@ io.on('connection', (socket) => {
     });
   });
 
+  // 7b. Event lompat pemain (Multiplayer Jump Sync)
+  socket.on('player:jump', (data) => {
+    const player = players.get(socket.id);
+    const currentRoom = player?.room || 'world';
+    socket.to(currentRoom).emit('player:jumped', {
+      id: socket.id,
+      jumpCount: data?.jumpCount || 1,
+      x: typeof data?.x === 'number' ? data.x : player?.x,
+      y: typeof data?.y === 'number' ? data.y : player?.y,
+    });
+  });
+
   // 8. Event status AFK pemain
   socket.on('player:afk', (data) => {
     const player = players.get(socket.id);

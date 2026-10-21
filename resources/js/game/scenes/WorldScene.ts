@@ -54,6 +54,7 @@ import { Player } from '../entities/Player';
 import { RemotePlayer } from '../entities/RemotePlayer';
 import { NetworkManager } from '../core/NetworkManager';
 import { EventBus } from '../core/EventBus';
+import { SoundManager } from '../core/SoundManager';
 import { IPlayerData, IChatMessage, IWorldInitData, IAvatarCustomization } from '../types';
 
 interface INpcConfig {
@@ -239,6 +240,14 @@ export class WorldScene extends Phaser.Scene {
       }
     });
 
+    // Dengar aksi lompat dari pemain lain di Open World (Multiplayer Jump Sync)
+    this.networkManager.onPlayerJumped((data) => {
+      const remote = this.remotePlayers.get(data.id);
+      if (remote && remote.active && remote.scene) {
+        remote.triggerJump(data.jumpCount);
+      }
+    });
+
     // Indikator visual Proximity Voice Chat
     const onSpeakingStatus = (data: { senderId: string; isSpeaking: boolean }) => {
       const remote = this.remotePlayers.get(data.senderId);
@@ -269,14 +278,24 @@ export class WorldScene extends Phaser.Scene {
 
       const wx = pointer.worldX;
       const wy = pointer.worldY;
-      if (wx < 100 || wx > this.worldWidth - 100 || wy < 100 || wy > this.worldHeight - 100) return;
 
-      // Cek apakah klik dekat dengan NPC (toleransi tap)
+      // Cek apakah klik dekat dengan NPC (toleransi tap interaksi)
       for (const npc of this.npcs) {
         if (Phaser.Math.Distance.Between(wx, wy, npc.x, npc.y) < 70) {
           this.approachAndInteractWithNpc(npc);
           return;
         }
+      }
+
+      // Validasi apakah titik yang di-klik/tap DAPAT DIJANGKAU (Walkable / Bebas Rintangan & Lautan)
+      if (!this.isLocationWalkable(wx, wy)) {
+        // Lokasi terhalang atau tidak dapat dijangkau -> TOLAK PERGERAKAN!
+        this.spawnBlockedFeedback(wx, wy);
+        SoundManager.getInstance().playError();
+        if (this.player && this.player.active) {
+          this.player.showSpeechBubble('🚫 Lokasi terhalang & tidak bisa dijangkau!', 1300);
+        }
+        return;
       }
 
       // Pergerakan jalan biasa menuju titik grid yang di-tap/klik
@@ -405,6 +424,26 @@ export class WorldScene extends Phaser.Scene {
   private createWorldEnvironment(): void {
     const ts = this.tileSize; // 120
 
+    // 0. BUFFER LAUT & PENYANGGA DI LUAR GRID DUNIA (Mencegah layar hitam kosong saat kamera fokus di pojok)
+    const buf = 2400;
+    // Samudra tak bertepi di lapisan paling bawah luar grid
+    this.add.tileSprite(
+      this.worldWidth / 2,
+      this.worldHeight / 2,
+      this.worldWidth + buf * 2,
+      this.worldHeight + buf * 2,
+      'water-checker-tile'
+    ).setDepth(-110);
+
+    // Penyangga daratan rumput di sisi Barat & Utara
+    this.add.tileSprite(
+      (this.worldWidth / 2) - buf / 2,
+      (this.worldHeight / 2) - buf / 2,
+      this.worldWidth + buf,
+      this.worldHeight + buf,
+      'world-checker-tile'
+    ).setDepth(-105);
+
     // 1. DASAR DUNIA: RUMPUT HIJAU SEGAR (world-checker-tile, 9600x9600 px)
     this.add.tileSprite(
       this.worldWidth / 2,
@@ -413,6 +452,104 @@ export class WorldScene extends Phaser.Scene {
       this.worldHeight,
       'world-checker-tile'
     ).setDepth(-100);
+
+    // ========================================================================
+    // TEMBOK PEMBATAS BENTENG & PENAHAN OMBAK DI POJOK DAN SEPANJANG BATAS GRID
+    // (Permintaan Pengguna: Di luar grid & pojok kiri-kanan kasih tembok agar kamera tetap fokus di tengah)
+    // ========================================================================
+    const wallG = this.add.graphics();
+    wallG.setDepth(10);
+
+    // a. Tembok Benteng Batu Utara (y = 0..48 px, x = 0..9600 px)
+    wallG.fillStyle(0x1e293b, 1.0); // Slate gelap pondasi
+    wallG.fillRect(0, 0, this.worldWidth, 48);
+    wallG.fillStyle(0x334155, 1.0); // Dinding batu
+    wallG.fillRect(0, 6, this.worldWidth, 36);
+    wallG.fillStyle(0x475569, 1.0); // Parapet atas
+    wallG.fillRect(0, 0, this.worldWidth, 8);
+    // Crenels (Gerigi benteng)
+    for (let x = 0; x < this.worldWidth; x += 60) {
+      wallG.fillStyle(0x64748b, 1.0);
+      wallG.fillRect(x, -6, 30, 8);
+    }
+
+    // b. Tembok Benteng Batu Barat (x = 0..48 px, y = 0..9600 px)
+    wallG.fillStyle(0x1e293b, 1.0);
+    wallG.fillRect(0, 0, 48, this.worldHeight);
+    wallG.fillStyle(0x334155, 1.0);
+    wallG.fillRect(6, 0, 36, this.worldHeight);
+    wallG.fillStyle(0x475569, 1.0);
+    wallG.fillRect(0, 0, 8, this.worldHeight);
+    for (let y = 0; y < this.worldHeight; y += 60) {
+      wallG.fillStyle(0x64748b, 1.0);
+      wallG.fillRect(-6, y, 8, 30);
+    }
+
+    // c. Palang Pembatas Dermaga & Pelampung Bahari Timur (x = 9550 px)
+    for (let y = 0; y < this.worldHeight; y += 120) {
+      wallG.fillStyle(0xb45309, 1.0); // Tiang kayu pasak dermaga
+      wallG.fillRect(this.worldWidth - 36, y + 20, 16, 80);
+      wallG.fillStyle(0xd97706, 0.85); // Tali palang
+      wallG.fillRect(this.worldWidth - 40, y + 55, 24, 6);
+      // Pelampung laut oranye menyala
+      wallG.fillStyle(0xf97316, 1.0);
+      wallG.fillCircle(this.worldWidth - 28, y + 60, 10);
+      wallG.fillStyle(0xffffff, 1.0);
+      wallG.fillCircle(this.worldWidth - 28, y + 60, 4);
+    }
+
+    // d. Palang Pembatas Samudra Selatan (y = 9550 px)
+    for (let x = 0; x < this.worldWidth; x += 120) {
+      wallG.fillStyle(0xb45309, 1.0);
+      wallG.fillRect(x + 20, this.worldHeight - 36, 80, 16);
+      wallG.fillStyle(0xd97706, 0.85);
+      wallG.fillRect(x + 55, this.worldHeight - 40, 6, 24);
+      wallG.fillStyle(0xf97316, 1.0);
+      wallG.fillCircle(x + 60, this.worldHeight - 28, 10);
+      wallG.fillStyle(0xffffff, 1.0);
+      wallG.fillCircle(x + 60, this.worldHeight - 28, 4);
+    }
+
+    // e. 4 Menara Pengawas Benteng di Tiap Sudut Pojok Peta
+    const corners = [
+      { x: 0, y: 0, name: 'BENTENG BARAT LAUT' },
+      { x: this.worldWidth, y: 0, name: 'BENTENG TIMUR LAUT' },
+      { x: 0, y: this.worldHeight, name: 'BENTENG BARAT DAYA' },
+      { x: this.worldWidth, y: this.worldHeight, name: 'MERCUSUAR TENGGARA' },
+    ];
+    corners.forEach((c) => {
+      wallG.fillStyle(0x0f172a, 1.0);
+      wallG.fillCircle(c.x, c.y, 75);
+      wallG.fillStyle(0x334155, 1.0);
+      wallG.fillCircle(c.x, c.y, 65);
+      wallG.fillStyle(0x475569, 1.0);
+      wallG.fillCircle(c.x, c.y, 50);
+      wallG.fillStyle(0xf59e0b, 1.0); // Lentera Emas
+      wallG.fillCircle(c.x, c.y, 14);
+    });
+
+    // Tambahkan Rintangan Fisik Statis (Collider) di Sepanjang 4 Tembok Pembatas
+    if (this.obstacles) {
+      // Dinding Utara
+      const topWallZone = this.add.zone(this.worldWidth / 2, 24, this.worldWidth, 54);
+      this.physics.add.existing(topWallZone, true);
+      this.obstacles.add(topWallZone);
+
+      // Dinding Barat
+      const leftWallZone = this.add.zone(24, this.worldHeight / 2, 54, this.worldHeight);
+      this.physics.add.existing(leftWallZone, true);
+      this.obstacles.add(leftWallZone);
+
+      // Dinding Timur
+      const rightWallZone = this.add.zone(this.worldWidth - 24, this.worldHeight / 2, 54, this.worldHeight);
+      this.physics.add.existing(rightWallZone, true);
+      this.obstacles.add(rightWallZone);
+
+      // Dinding Selatan
+      const btmWallZone = this.add.zone(this.worldWidth / 2, this.worldHeight - 24, this.worldWidth, 54);
+      this.physics.add.existing(btmWallZone, true);
+      this.obstacles.add(btmWallZone);
+    }
 
     // 2. TIMUR BAHARI & SAMUDRA SELATAN: LAUTAN ASLI BLUEPRINT (#00A2F3) DENGAN EFEK RIAK OMBAK BERKILAU
     // 100% Menyatu, Bebas Sambungan Kotak, Bebas Grid, 60 FPS WebGL
@@ -955,6 +1092,122 @@ export class WorldScene extends Phaser.Scene {
     });
   }
 
+  /**
+   * Memvalidasi apakah suatu titik koordinat (wx, wy) dapat dijangkau dan dapat diinjak:
+   * 1. Berada di dalam batas map dunia (120px margin dari batas terluar 9600x9600)
+   * 2. Bukan perairan laut dalam (Lautan Timur di luar 3 dermaga, Samudra Selatan, laut sudut)
+   * 3. Tidak bertabrakan dengan rintangan fisik apapun (Gedung, Tiang Lampu, Rintangan Arsitek, Statik Collider)
+   */
+  public isLocationWalkable(wx: number, wy: number): boolean {
+    const ts = this.tileSize; // 120
+
+    // 1. Batas luar dunia game (1 petak batas pengaman luar)
+    if (wx < 120 || wx > this.worldWidth - 120 || wy < 120 || wy > this.worldHeight - 120) {
+      return false;
+    }
+
+    const gx = Math.floor(wx / ts);
+    const gy = Math.floor(wy / ts);
+
+    // 2. Perairan Lautan (Deep Ocean Water):
+    // a. Lautan Timur (gx: 63..79, gy: 17..63)
+    // Cek apakah pemain mengklik salah satu dari 3 Dermaga:
+    // Dermaga 1: gx 63..73, gy 26..27
+    // Dermaga 2: gx 63..73, gy 39..40
+    // Dermaga 3: gx 63..73, gy 53..54
+    const isOnPier = (gx >= 63 && gx <= 73) && (
+      (gy >= 26 && gy <= 27) ||
+      (gy >= 39 && gy <= 40) ||
+      (gy >= 53 && gy <= 54)
+    );
+
+    if (gx >= 63 && gy >= 17 && gy <= 63 && !isOnPier) {
+      return false;
+    }
+
+    // b. Pojok Laut Timur Laut (gx: 79, gy: 0..10)
+    if (gx >= 79 && gy <= 10) {
+      return false;
+    }
+
+    // c. Samudra Selatan Paling Bawah (gy >= 79)
+    if (gy >= 79) {
+      return false;
+    }
+
+    // d. Perairan sudut kiri dan kanan Pantai Selatan (gx: 0 atau gx >= 79 pada gy >= 70)
+    if ((gx <= 0 || gx >= 79) && gy >= 70) {
+      return false;
+    }
+
+    // 3. Tabrakan dengan Grup Rintangan Fisik (Hitbox Obstacles & Lampu Jalan)
+    if (this.obstacles) {
+      const obstaclesList = this.obstacles.getChildren();
+      // Margin batas tubuh karakter (~18px)
+      const margin = 18;
+      for (let i = 0; i < obstaclesList.length; i++) {
+        const item = obstaclesList[i] as any;
+        if (!item || !item.body) continue;
+        const b = item.body as Phaser.Physics.Arcade.StaticBody;
+        if (
+          wx >= b.x - margin &&
+          wx <= b.x + b.width + margin &&
+          wy >= b.y - margin &&
+          wy <= b.y + b.height + margin
+        ) {
+          return false;
+        }
+      }
+    }
+
+    // 4. Custom Architect Terrain Obstacles
+    if (this.customArchitectTerrainObstacles && this.customArchitectTerrainObstacles.length > 0) {
+      for (const obs of this.customArchitectTerrainObstacles) {
+        const b = (obs as any).body as Phaser.Physics.Arcade.StaticBody;
+        if (b && wx >= b.x - 18 && wx <= b.x + b.width + 18 && wy >= b.y - 18 && wy <= b.y + b.height + 18) {
+          return false;
+        }
+      }
+    }
+
+    return true;
+  }
+
+  /**
+   * Menampilkan feedback visual terhalang (Red Ring & 🚫 Sign) saat klik/tap lokasi tak terjangkau
+   */
+  private spawnBlockedFeedback(x: number, y: number): void {
+    const gfx = this.add.graphics();
+    gfx.setDepth(y + 999);
+
+    // Bayangan merah gelap di lantai
+    gfx.fillStyle(0x7f1d1d, 0.45);
+    gfx.fillEllipse(x, y, 32, 16);
+
+    // Lingkaran merah peringatan berdenyut
+    gfx.lineStyle(2, 0xef4444, 0.95);
+    gfx.strokeCircle(x, y - 6, 16);
+
+    // Garis diagonal silang tanda larangan 🚫
+    gfx.lineStyle(2.5, 0xf87171, 0.95);
+    gfx.lineBetween(x - 9, y - 15, x + 9, y + 3);
+
+    // Titik pusat tanda silang
+    gfx.fillStyle(0xffffff, 0.9);
+    gfx.fillCircle(x, y - 6, 2.5);
+
+    // Efek tween getar dan memudar
+    this.tweens.add({
+      targets: gfx,
+      scaleX: 1.25,
+      scaleY: 1.25,
+      alpha: 0,
+      duration: 450,
+      ease: 'Cubic.easeOut',
+      onComplete: () => gfx.destroy(),
+    });
+  }
+
   private interactWithNpc(npcData: INpcConfig): void {
     EventBus.emit('open-dialogue', {
       id: npcData.id,
@@ -1015,7 +1268,15 @@ export class WorldScene extends Phaser.Scene {
       this.physics.add.collider(this.player, this.obstacles);
     }
 
-    this.cameras.main.setBounds(0, 0, this.worldWidth, this.worldHeight);
+    // Perluas batas kamera dengan margin 1600px di luar grid dunia (80x80)
+    // agar kamera SELALU fokus tepat di tengah layar meskipun karakter berada di pojok/ujung peta
+    const cameraMargin = 1600;
+    this.cameras.main.setBounds(
+      -cameraMargin,
+      -cameraMargin,
+      this.worldWidth + cameraMargin * 2,
+      this.worldHeight + cameraMargin * 2
+    );
     this.cameras.main.setRoundPixels(true);
     this.cameras.main.centerOn(spawnX, spawnY);
     this.cameras.main.startFollow(this.player, true, 1.0, 1.0);
@@ -1131,6 +1392,22 @@ export class WorldScene extends Phaser.Scene {
       const remote = this.remotePlayers.get(data.id);
       if (remote && remote.active) {
         remote.setAfk(data.isAfk, data.durationSeconds);
+      }
+    });
+
+    this.networkManager.onPlayerJumped((data) => {
+      if (!this.sys || !this.sys.displayList || !this.scene.isActive()) return;
+      const remote = this.remotePlayers.get(data.id);
+      if (remote && remote.active) {
+        remote.triggerJump(data.jumpCount);
+      }
+    });
+
+    this.networkManager.onPlayerExpression((data) => {
+      if (!this.sys || !this.sys.displayList || !this.scene.isActive()) return;
+      const remote = this.remotePlayers.get(data.id);
+      if (remote && remote.active) {
+        remote.triggerExpression(data.type);
       }
     });
   }
@@ -1288,6 +1565,19 @@ export class WorldScene extends Phaser.Scene {
           break;
         }
       }
+
+      if (!prompt) {
+        const gx = Math.floor(px / this.tileSize);
+        const gy = Math.floor(py / this.tileSize);
+        const isPierOrWaterfront = (
+          (gx >= 61 && gx <= 74 && gy >= 23 && gy <= 56) ||
+          (gy >= 68 && gy <= 78)
+        );
+        const isNearFountain = Math.hypot(px - 4800, py - 4800) <= 260;
+        if (isPierOrWaterfront || isNearFountain) {
+          prompt = 'TEKAN [F] / SENTUH MANCING UNTUK MEMANCING';
+        }
+      }
     }
 
     if (prompt !== this.activePrompt) {
@@ -1311,6 +1601,7 @@ export class WorldScene extends Phaser.Scene {
         y: Math.round(py),
         gridX,
         gridY,
+        direction: this.player.getDirection(),
         hp: this.player.getHealth(),
         maxHp: this.player.getMaxHealth(),
         name: this.player.getEntityName(),

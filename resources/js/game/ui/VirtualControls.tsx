@@ -14,7 +14,7 @@
  */
 
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { Zap } from 'lucide-react';
+import { Zap, ArrowUp, Fish, Backpack } from 'lucide-react';
 import { EventBus } from '../core/EventBus';
 import { SoundManager } from '../core/SoundManager';
 
@@ -175,33 +175,106 @@ export const VirtualControls: React.FC<VirtualControlsProps> = ({
       </div>
 
       {/* ================================================================ */}
-      {/* KANAN BAWAH: TOMBOL INTERAKSI [AKSI] TUNGGAL BULAT               */}
+      {/* KANAN BAWAH: TOMBOL AKSI, LOMPAT & MANCING MOBILE                */}
       {/* ================================================================ */}
-      <div className="pointer-events-auto select-none touch-none pb-1 pr-1">
-        <button
-          type="button"
-          onTouchStart={(e) => {
-            e.preventDefault();
-            sound.playClick();
-            onActionPress();
-          }}
-          onClick={(e) => {
-            e.preventDefault();
-            sound.playClick();
-            onActionPress();
-          }}
-          className={`w-18 h-18 md:w-20 md:h-20 rounded-full flex flex-col items-center justify-center font-black cursor-pointer transition-all select-none active:scale-90 ${
-            isActionActive
-              ? 'bg-gradient-to-b from-amber-300 to-amber-500 border-2 border-white ring-4 ring-amber-300 animate-pulse shadow-[0_0_25px_rgba(245,158,11,0.8)] scale-105'
-              : 'bg-gradient-to-b from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 border-2 border-amber-300 shadow-[0_4px_20px_rgba(245,158,11,0.35)]'
-          }`}
-          title={isActionActive ? 'Sentuh untuk Berbicara / Interaksi' : 'Tombol Aksi'}
-        >
-          <Zap className={`w-6 h-6 md:w-7 md:h-7 stroke-[2.5] ${isActionActive ? 'fill-black text-black' : 'fill-black text-black'}`} />
-          <span className="text-[11px] md:text-xs font-black tracking-widest leading-none mt-1 text-black uppercase">
-            AKSI
-          </span>
-        </button>
+      <div className="pointer-events-auto select-none touch-none pb-2 pr-2 relative flex items-end">
+        {/* Diamond / Arc Action Cluster Ergonomis */}
+        <div className="relative w-52 h-44 flex items-end justify-end">
+          
+          {/* 1. Tombol Tas Cepat Mobile (Kiri Atas Cluster) */}
+          <button
+            type="button"
+            onTouchStart={(e) => {
+              e.preventDefault();
+              sound.playClick();
+              EventBus.emit('open-backpack');
+            }}
+            onClick={(e) => {
+              e.preventDefault();
+              sound.playClick();
+              EventBus.emit('open-backpack');
+            }}
+            className="absolute top-2 left-2 w-11 h-11 rounded-full bg-neutral-900/95 border-2 border-amber-400/80 text-amber-300 flex flex-col items-center justify-center font-black cursor-pointer shadow-xl shadow-black/80 active:scale-90 transition-transform"
+            title="Buka Tas [B]"
+          >
+            <Backpack className="w-4 h-4 stroke-[2.5]" />
+            <span className="text-[7.5px] font-black tracking-wider leading-none mt-0.5">TAS</span>
+          </button>
+
+          {/* 2. Tombol Mancing Mobile (Dukungan Tahan untuk Menimbang Lemparan / Hold to Cast) */}
+          <button
+            type="button"
+            onTouchStart={(e) => {
+              e.preventDefault();
+              sound.playClick();
+              EventBus.emit('fishing-charge-start');
+            }}
+            onTouchEnd={(e) => {
+              e.preventDefault();
+              EventBus.emit('fishing-charge-release');
+            }}
+            onMouseDown={(e) => {
+              e.preventDefault();
+              sound.playClick();
+              EventBus.emit('fishing-charge-start');
+            }}
+            onMouseUp={(e) => {
+              e.preventDefault();
+              EventBus.emit('fishing-charge-release');
+            }}
+            className="absolute bottom-16 left-9 w-14 h-14 rounded-full bg-gradient-to-b from-sky-500/90 to-sky-900/95 border-2 border-sky-300 text-white flex flex-col items-center justify-center font-black cursor-pointer shadow-xl shadow-sky-950/60 active:scale-90 active:border-white transition-all"
+            title="Tahan untuk Menimbang Lemparan Kail (F)"
+          >
+            <Fish className="w-5 h-5 stroke-[2.5]" />
+            <span className="text-[7.5px] font-black tracking-wider leading-none mt-0.5">MANCING</span>
+          </button>
+
+          {/* 3. Tombol Lompat Mobile (Retro Spring Jump Mario) */}
+          <button
+            type="button"
+            onTouchStart={(e) => {
+              e.preventDefault();
+              sound.playClick();
+              EventBus.emit('player-jump');
+            }}
+            onClick={(e) => {
+              e.preventDefault();
+              sound.playClick();
+              EventBus.emit('player-jump');
+            }}
+            className="absolute top-1 right-20 w-14 h-14 rounded-full bg-gradient-to-b from-amber-400/90 to-amber-700/95 border-2 border-amber-300 text-neutral-950 flex flex-col items-center justify-center font-black cursor-pointer shadow-xl shadow-amber-950/60 active:scale-90 active:border-white transition-all"
+            title="Lompat / Double Jump (Spasi)"
+          >
+            <ArrowUp className="w-6 h-6 stroke-[3]" />
+            <span className="text-[7.5px] font-black tracking-wider leading-none mt-0.5 text-neutral-950 font-black">LOMPAT</span>
+          </button>
+
+          {/* 4. Tombol Interaksi [AKSI] Utama (Besar & Nyaman di Jangkauan Ibu Jari Kanan) */}
+          <button
+            type="button"
+            onTouchStart={(e) => {
+              e.preventDefault();
+              sound.playClick();
+              onActionPress();
+            }}
+            onClick={(e) => {
+              e.preventDefault();
+              sound.playClick();
+              onActionPress();
+            }}
+            className={`absolute bottom-0 right-0 w-[72px] h-[72px] rounded-full flex flex-col items-center justify-center font-black cursor-pointer transition-all select-none active:scale-90 shadow-2xl ${
+              isActionActive
+                ? 'bg-gradient-to-b from-amber-300 via-amber-400 to-amber-500 border-3 border-white ring-4 ring-amber-300 animate-pulse shadow-[0_0_35px_rgba(245,158,11,0.95)] scale-105'
+                : 'bg-gradient-to-b from-amber-400 to-amber-600 hover:from-amber-300 hover:to-amber-500 border-2 border-amber-300 shadow-[0_6px_25px_rgba(245,158,11,0.4)]'
+            }`}
+            title={isActionActive ? 'Sentuh untuk Berbicara / Interaksi' : 'Tombol Aksi [E]'}
+          >
+            <Zap className="w-7 h-7 stroke-[2.5] fill-black text-black" />
+            <span className="text-[11px] font-black tracking-widest leading-none mt-1 text-black uppercase">
+              AKSI
+            </span>
+          </button>
+        </div>
       </div>
     </div>
   );

@@ -272,4 +272,202 @@ export class SoundManager {
       });
     } catch (e) {}
   }
+
+  /** Efek suara karakter melompat ke udara (Mario Style Retro Spring Boing) */
+  public playJump(isDoubleJump: boolean = false): void {
+    if (this.isMuted) return;
+    const ctx = this.initCtx();
+    if (!ctx) return;
+    try {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      
+      if (isDoubleJump) {
+        // Nada lebih tinggi & melengking ceria untuk Double Jump (360Hz -> 920Hz)
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(360, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(920, ctx.currentTime + 0.16);
+      } else {
+        // Nada khas Mario Jump (sweep kenyal dari 160Hz ke 640Hz)
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(160, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(640, ctx.currentTime + 0.18);
+      }
+
+      const dur = isDoubleJump ? 0.16 : 0.18;
+      const vol = this.masterVolume * this.sfxVolume * (isDoubleJump ? 0.09 : 0.12);
+      gain.gain.setValueAtTime(vol, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur);
+      
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + dur);
+    } catch (e) {}
+  }
+
+  /** Efek suara koin emas / jual ikan (Retro Coin Chime) */
+  public playCoin(): void {
+    if (this.isMuted) return;
+    const ctx = this.initCtx();
+    if (!ctx) return;
+    try {
+      const now = ctx.currentTime;
+      // Duet nada B5 (987.77Hz) & E6 (1318.51Hz) khas koin Mario
+      const osc1 = ctx.createOscillator();
+      const gain1 = ctx.createGain();
+      osc1.type = 'sine';
+      osc1.frequency.setValueAtTime(987.77, now);
+      const vol1 = this.masterVolume * this.sfxVolume * 0.12;
+      gain1.gain.setValueAtTime(vol1, now);
+      gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+      osc1.connect(gain1);
+      gain1.connect(ctx.destination);
+      osc1.start(now);
+      osc1.stop(now + 0.08);
+
+      const osc2 = ctx.createOscillator();
+      const gain2 = ctx.createGain();
+      osc2.type = 'sine';
+      osc2.frequency.setValueAtTime(1318.51, now + 0.07);
+      const vol2 = this.masterVolume * this.sfxVolume * 0.14;
+      gain2.gain.setValueAtTime(vol2, now + 0.07);
+      gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+      osc2.connect(gain2);
+      gain2.connect(ctx.destination);
+      osc2.start(now + 0.07);
+      osc2.stop(now + 0.35);
+    } catch (e) {}
+  }
+
+  /** Efek suara konsumsi item / gunakan alat */
+  public playItemUse(): void {
+    if (this.isMuted) return;
+    const ctx = this.initCtx();
+    if (!ctx) return;
+    try {
+      const now = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(480, now);
+      osc.frequency.exponentialRampToValueAtTime(780, now + 0.12);
+      const vol = this.masterVolume * this.sfxVolume * 0.1;
+      gain.gain.setValueAtTime(vol, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.12);
+    } catch (e) {}
+  }
+
+  /** Efek suara mendarat ke lantai (Landing Thud) */
+  public playLand(): void {
+    if (this.isMuted) return;
+    const ctx = this.initCtx();
+    if (!ctx) return;
+    try {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(140, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(35, ctx.currentTime + 0.09);
+      const vol = this.masterVolume * this.sfxVolume * 0.14;
+      gain.gain.setValueAtTime(vol, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.09);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.09);
+    } catch (e) {}
+  }
+
+  /** Efek suara melempar kail pancing (Rod Cast Whoosh) */
+  public playFishCast(): void {
+    if (this.isMuted) return;
+    const ctx = this.initCtx();
+    if (!ctx) return;
+    try {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(350, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(950, ctx.currentTime + 0.12);
+      const vol = this.masterVolume * this.sfxVolume * 0.1;
+      gain.gain.setValueAtTime(vol, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.12);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.12);
+    } catch (e) {}
+  }
+
+  /** Efek suara ikan menyambar umpan (Bite Alert) */
+  public playFishBite(): void {
+    if (this.isMuted) return;
+    const ctx = this.initCtx();
+    if (!ctx) return;
+    try {
+      const now = ctx.currentTime;
+      [880, 1174].forEach((freq, idx) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(freq, now + idx * 0.06);
+        const vol = this.masterVolume * this.sfxVolume * 0.08;
+        gain.gain.setValueAtTime(vol, now + idx * 0.06);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.06 + 0.08);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now + idx * 0.06);
+        osc.stop(now + idx * 0.06 + 0.08);
+      });
+    } catch (e) {}
+  }
+
+  /** Efek cipratan air (Water Splash) */
+  public playFishSplash(): void {
+    if (this.isMuted) return;
+    const ctx = this.initCtx();
+    if (!ctx) return;
+    try {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(400, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(150, ctx.currentTime + 0.15);
+      const vol = this.masterVolume * this.sfxVolume * 0.12;
+      gain.gain.setValueAtTime(vol, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.15);
+    } catch (e) {}
+  }
+
+  /** Efek suara gagal / error / ikan lepas */
+  public playError(): void {
+    if (this.isMuted) return;
+    const ctx = this.initCtx();
+    if (!ctx) return;
+    try {
+      const now = ctx.currentTime;
+      [240, 160].forEach((freq, idx) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(freq, now + idx * 0.08);
+        const vol = this.masterVolume * this.sfxVolume * 0.1;
+        gain.gain.setValueAtTime(vol, now + idx * 0.08);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.08 + 0.12);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now + idx * 0.08);
+        osc.stop(now + idx * 0.08 + 0.12);
+      });
+    } catch (e) {}
+  }
 }

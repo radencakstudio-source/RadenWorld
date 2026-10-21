@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Keyboard, MousePointer, MessageSquare, Box, Code2 } from 'lucide-react';
+import { X, Keyboard, MousePointer, MessageSquare, Box, Code2, ArrowUp, Fish, Backpack } from 'lucide-react';
 
 interface ControlGuideProps {
   isOpen: boolean;
@@ -58,6 +58,54 @@ export const ControlGuide: React.FC<ControlGuideProps> = ({ isOpen, onClose, con
                   <>Dekati objek/NPC lalu sentuh tombol bulat <strong>[AKSI]</strong> di kanan bawah layar untuk berdialog atau masuk ruangan.</>
                 ) : (
                   <>Dekati objek/NPC lalu tekan tombol <kbd className="px-1.5 py-0.5 bg-neutral-800 rounded text-neutral-200 font-mono">E</kbd> atau klik mouse pada objek.</>
+                )}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-start gap-3 bg-[#0e0e0e] p-3 rounded-xl border border-neutral-800">
+            <div className="p-2 rounded-lg bg-neutral-900 text-sky-400 shrink-0">
+              <Fish className="w-4 h-4" />
+            </div>
+            <div>
+              <div className="font-bold text-white mb-0.5">Memancing (Hanya di Perairan)</div>
+              <p className="text-neutral-400 leading-relaxed">
+                {isMobile ? (
+                  <>Hadapkan karakter ke arah perairan (Dermaga, Tepi Laut, Pantai Selatan, atau Air Mancur Plaza), lalu sentuh tombol <strong>[MANCING]</strong>. Sentuh lagi saat tanda seru <strong className="text-amber-400">(!)</strong> muncul untuk strike.</>
+                ) : (
+                  <>Hadapkan karakter ke arah air lalu tekan tombol <kbd className="px-1.5 py-0.5 bg-neutral-800 rounded text-neutral-200 font-mono">F</kbd>. Hanya bisa memancing di perairan sah (Dermaga, Tepi Laut Timur, Ombak Pantai Selatan, atau Air Mancur Plaza). Dilarang memancing di daratan kering atau dalam gedung.</>
+                )}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-start gap-3 bg-[#0e0e0e] p-3 rounded-xl border border-neutral-800">
+            <div className="p-2 rounded-lg bg-neutral-900 text-amber-400 shrink-0">
+              <ArrowUp className="w-4 h-4" />
+            </div>
+            <div>
+              <div className="font-bold text-white mb-0.5">Lompat 2.5D & Indikator Titik Jatuh</div>
+              <p className="text-neutral-400 leading-relaxed">
+                {isMobile ? (
+                  <>Sentuh tombol <strong>[LOMPAT]</strong> untuk melompat ke udara. Garis bidik lingkaran putus-putus dan garis panduan vertikal akan mengikuti posisi karakter secara langsung.</>
+                ) : (
+                  <>Tekan tombol <kbd className="px-1.5 py-0.5 bg-neutral-800 rounded text-neutral-200 font-mono">Spasi</kbd> untuk melompat. Garis indikator titik pendaratan di lantai akan mengikuti gerakan karakter secara realtime baik saat diam maupun sambil berjalan.</>
+                )}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-start gap-3 bg-[#0e0e0e] p-3 rounded-xl border border-neutral-800">
+            <div className="p-2 rounded-lg bg-neutral-900 text-amber-400 shrink-0">
+              <Backpack className="w-4 h-4" />
+            </div>
+            <div>
+              <div className="font-bold text-white mb-0.5">Tas Inventaris & Mini Hotbar</div>
+              <p className="text-neutral-400 leading-relaxed">
+                {isMobile ? (
+                  <>Sentuh tombol <strong>[TAS]</strong> di samping analog atau di mini hotbar bawah untuk melihat tas 30 slot, menjual ikan, dan mengonsumsi makanan.</>
+                ) : (
+                  <>Tekan tombol <kbd className="px-1.5 py-0.5 bg-neutral-800 rounded text-neutral-200 font-mono">B</kbd> untuk membuka Tas 30 Slot. Gunakan angka <kbd className="px-1.5 py-0.5 bg-neutral-800 rounded text-neutral-200 font-mono">1</kbd> s/d <kbd className="px-1.5 py-0.5 bg-neutral-800 rounded text-neutral-200 font-mono">6</kbd> untuk memilih slot di Mini Hotbar.</>
                 )}
               </p>
             </div>

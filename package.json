@@ -5,8 +5,8 @@
     "scripts": {
         "build": "vite build",
         "dev": "vite --host 0.0.0.0",
-        "game-server": "node server/game-server.js",
-        "dev:all": "concurrently -n \"LARAVEL,VITE,SERVER\" -c \"red,cyan,green\" \"php artisan serve --host=0.0.0.0 --port=8000\" \"vite --host 0.0.0.0\" \"node server/game-server.js\""
+        "game-server": "node --watch server/game-server.js",
+        "dev:all": "concurrently -n \"LARAVEL,VITE,SERVER\" -c \"red,cyan,green\" \"php artisan serve --host=0.0.0.0 --port=8000\" \"vite --host 0.0.0.0\" \"node --watch server/game-server.js\""
     },
     "devDependencies": {
         "@tailwindcss/vite": "^4.0.0",

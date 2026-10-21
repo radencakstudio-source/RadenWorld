@@ -65,6 +65,7 @@ export class NetworkManager {
     playerAfk: ((data: { id: string; isAfk: boolean; durationSeconds: number }) => void)[];
     friendRequest: ((data: any) => void)[];
     friendResponse: ((data: any) => void)[];
+    playerJumped: ((data: { id: string; jumpCount: number; x: number; y: number }) => void)[];
   } = {
     worldInit: [],
     playerJoined: [],
@@ -77,6 +78,7 @@ export class NetworkManager {
     playerAfk: [],
     friendRequest: [],
     friendResponse: [],
+    playerJumped: [],
   };
 
   /** Konstruktor privat untuk mencegah pembuatan instansi ganda (Singleton) */
@@ -251,6 +253,11 @@ export class NetworkManager {
     this.socket.off('player:afk');
     this.socket.off('friend:request_received');
     this.socket.off('friend:response_result');
+    this.socket.off('player:jumped');
+
+    this.socket.on('player:jumped', (data: { id: string; jumpCount: number; x: number; y: number }) => {
+      this.listeners.playerJumped.forEach((cb) => cb(data));
+    });
 
     this.socket.on('world:init', (data: IWorldInitData) => {
       this.listeners.worldInit.forEach((cb) => cb(data));
@@ -443,6 +450,22 @@ export class NetworkManager {
   }
 
   /**
+   * Mengirim sinyal lompat pemain ke server
+   */
+  public sendJump(jumpCount: number = 1, x?: number, y?: number): void {
+    if (!this.socket || !this.isConnected) return;
+    this.socket.emit('player:jump', { jumpCount, x, y });
+  }
+
+  /**
+   * Mendaftarkan callback saat pemain lain melompat
+   */
+  public onPlayerJumped(callback: (data: { id: string; jumpCount: number; x: number; y: number }) => void): void {
+    this.listeners.playerJumped = [callback];
+    this.bindSocketListeners();
+  }
+
+  /**
    * Mengirim chunk rekaman suara untuk Proximity Voice Chat (Radius ±5 petak)
    */
   public sendVoiceChunk(audio: ArrayBuffer | Blob, x: number, y: number): void {
@@ -547,6 +570,8 @@ export class NetworkManager {
     const preservedFriendRequest = this.listeners.friendRequest || [];
     const preservedFriendResponse = this.listeners.friendResponse || [];
     const preservedPlayerAfk = this.listeners.playerAfk || [];
+    const preservedPlayerJumped = this.listeners.playerJumped || [];
+    const preservedPlayerExpression = this.listeners.playerExpression || [];
 
     this.listeners = {
       worldInit: [],
@@ -554,12 +579,13 @@ export class NetworkManager {
       playerMoved: [],
       playerLeft: [],
       chatBroadcast: [],
-      playerExpression: [],
+      playerExpression: preservedPlayerExpression,
       voiceStream: preservedVoiceStream,
       voiceSpeaking: preservedVoiceSpeaking,
       playerAfk: preservedPlayerAfk,
       friendRequest: preservedFriendRequest,
       friendResponse: preservedFriendResponse,
+      playerJumped: preservedPlayerJumped,
     };
 
     if (this.socket) {
@@ -568,9 +594,7 @@ export class NetworkManager {
       this.socket.off('player:moved');
       this.socket.off('player:left');
       this.socket.off('chat:broadcast');
-      this.socket.off('player:expression');
-      this.socket.off('player:afk');
-      // Jangan matikan voice:stream, voice:speaking, friend:request_received, friend:response_result
+      // Jangan matikan player:jumped, player:expression, voice:stream, voice:speaking, friend:request_received, friend:response_result
     }
   }
 

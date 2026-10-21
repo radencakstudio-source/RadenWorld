@@ -2,6 +2,7 @@ export type Gender = 'male' | 'female';
 export type HatType = 'none' | 'adventurer' | 'knight' | 'bandana' | 'wizard' | 'crown';
 export type Direction = 'up' | 'down' | 'left' | 'right';
 export type CharacterClass = 'warrior' | 'mage' | 'ranger' | 'cleric';
+export type JumpVisualStage = 'none' | 'charge' | 'jump' | 'inAir' | 'landing';
 
 export interface IAvatarCustomization {
   gender: Gender;

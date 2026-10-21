@@ -318,7 +318,7 @@ export const SchoolGradeSelectModal: React.FC<SchoolGradeSelectModalProps> = ({
   const isFewGrades = schoolType === 'smp' || schoolType === 'sma';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-3 sm:p-5 font-cute animate-in fade-in duration-150">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-3 sm:p-5 font-cute animate-in fade-in duration-150">
       <div
         className={`w-full ${
           isFewGrades ? 'max-w-5xl' : 'max-w-4xl'
@@ -599,7 +599,7 @@ export const SchoolGradeSelectModal: React.FC<SchoolGradeSelectModalProps> = ({
         {/* POP-UP OVERLAY: DETAIL MATA PELAJARAN (Saat Ikon Info Diklik)      */}
         {/* ================================================================== */}
         {infoGrade !== null && activeInfoOption && (
-          <div className="absolute inset-0 z-30 bg-black/40 backdrop-blur-xs p-3 sm:p-5 flex items-center justify-center animate-in fade-in duration-150">
+          <div className="absolute inset-0 z-30 bg-black/60 p-3 sm:p-5 flex items-center justify-center animate-in fade-in duration-150">
             <div className="w-full max-w-xl bg-white border-2 border-neutral-800 rounded-2xl shadow-xl overflow-hidden flex flex-col max-h-[85vh] text-neutral-900 animate-in zoom-in-95 duration-150">
               
               {/* Header Info */}

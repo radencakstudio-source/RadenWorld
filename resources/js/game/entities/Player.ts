@@ -17,14 +17,18 @@
 
 import Phaser from 'phaser';
 import { Entity } from './Entity';
-import { IAvatarCustomization, Direction } from '../types';
+import { IAvatarCustomization, Direction, JumpVisualStage } from '../types';
 import { NetworkManager } from '../core/NetworkManager';
 import { EventBus } from '../core/EventBus';
+import { InventoryManager, IInventoryItem } from '../core/InventoryManager';
 import { CharacterController } from '../controllers/CharacterController';
 
 export class Player extends Entity {
   /** Controller modular pergerakan, lompat 2.5D dengan garis titik jatuh, dan mancing */
   private controller!: CharacterController;
+
+  /** Tahap visual animasi lompat saat ini ('none' | 'charge' | 'jump' | 'inAir' | 'landing') */
+  private jumpVisualStage: JumpVisualStage = 'none';
 
   /** Offset ketinggian visual Z saat melompat */
   private visualYOffset: number = 0;
@@ -94,6 +98,18 @@ export class Player extends Entity {
   /** Detik terakhir saat teks AFK diperbarui */
   private lastAfkUpdateSeconds: number = 0;
 
+  /** Kontainer visual item yang sedang dipegang di tangan karakter */
+  private heldItemContainer: Phaser.GameObjects.Container | null = null;
+
+  /** Teks visual emoji/ikon item yang dipegang */
+  private heldItemText: Phaser.GameObjects.Text | null = null;
+
+  /** Data item yang sedang dipegang saat ini */
+  private currentHeldItem: IInventoryItem | null = null;
+
+  /** Nilai dasar offset Y item yang dipegang */
+  private heldItemBaseY: number = -35;
+
   /**
    * Konstruktor Karakter Pemain Lokal
    * @param scene Phaser Scene aktif
@@ -139,6 +155,17 @@ export class Player extends Entity {
     this.sprite.setOrigin(0.5, 0.5);
     this.sprite.setDisplaySize(120, 240);
     this.add(this.sprite);
+
+    // Kontainer visual item yang dipegang di tangan (selain kategori alat)
+    this.heldItemContainer = scene.add.container(0, 0);
+    this.heldItemText = scene.add.text(0, 0, '', {
+      fontSize: '28px',
+      align: 'center',
+      resolution: 3,
+    }).setOrigin(0.5, 0.5);
+    this.heldItemContainer.add(this.heldItemText);
+    this.heldItemContainer.setVisible(false);
+    this.add(this.heldItemContainer);
 
     // 3. Kotak tabrakan fisik Arcade di bagian kaki karakter (1x1 tile)
     const body = this.body as Phaser.Physics.Arcade.Body;
@@ -205,16 +232,26 @@ export class Player extends Entity {
     window.addEventListener('keydown', onUserAction);
     window.addEventListener('pointerdown', onUserAction);
 
+    // Sinkronisasi item yang dipegang saat inventaris / hotbar diperbarui
+    const onInventoryUpdated = () => {
+      this.updateHeldItem();
+    };
+    EventBus.on('inventory-updated', onInventoryUpdated);
+
     this.once(Phaser.GameObjects.Events.DESTROY, () => {
       window.removeEventListener('keydown', onUserAction);
       window.removeEventListener('pointerdown', onUserAction);
       EventBus.off('dialogue-active', onDialogueActive);
       EventBus.off('joystick-move', onJoystickMove);
       EventBus.off('joystick-end', onJoystickEnd);
+      EventBus.off('inventory-updated', onInventoryUpdated);
     });
 
     this.lastX = x;
     this.lastY = y;
+
+    // Perbarui visual item yang dipegang pertama kali
+    this.updateHeldItem();
   }
 
   /**
@@ -317,7 +354,75 @@ export class Player extends Entity {
   }
 
   public setDirection(dir: Direction): void {
+    const changed = this.currentDirection !== dir;
     this.currentDirection = dir;
+    if (changed) {
+      if (this.jumpVisualStage !== 'none') {
+        this.updateJumpVisual();
+      }
+      this.updateHeldItemPosition();
+    }
+  }
+
+  public getJumpVisualStage(): JumpVisualStage {
+    return this.jumpVisualStage;
+  }
+
+  /**
+   * Mengatur tahap animasi visual lompat ('none' | 'charge' | 'jump' | 'inAir' | 'landing')
+   */
+  public setJumpVisualStage(stage: JumpVisualStage): void {
+    if (this.jumpVisualStage === stage) return;
+    this.jumpVisualStage = stage;
+    if (stage !== 'none') {
+      this.updateJumpVisual();
+    } else {
+      this.currentSquashX = 1.0;
+      this.currentSquashY = 1.0;
+      this.applySpriteTransform();
+      this.updateAnimation(this.isMoving);
+    }
+  }
+
+  /**
+   * Memperbarui tekstur visual sprite sesuai tahap lompat (Charge, Jump, InAir, Landing)
+   * Mendukung penuh gender Male & Female dan semua arah (Front, Back, Side)
+   */
+  public updateJumpVisual(): void {
+    if (!this.sprite || this.jumpVisualStage === 'none') return;
+
+    if (this.sprite.anims && this.sprite.anims.isPlaying) {
+      this.sprite.anims.stop();
+    }
+    this.currentAnimKey = '';
+
+    // Arah hadap: 'front' (down), 'back' (up), 'side' (left / right)
+    let dirKey: 'front' | 'back' | 'side' = 'front';
+    if (this.currentDirection === 'up') {
+      dirKey = 'back';
+      this.sprite.setFlipX(false);
+    } else if (this.currentDirection === 'down') {
+      dirKey = 'front';
+      this.sprite.setFlipX(false);
+    } else if (this.currentDirection === 'left') {
+      dirKey = 'side';
+      this.sprite.setFlipX(true);
+    } else if (this.currentDirection === 'right') {
+      dirKey = 'side';
+      this.sprite.setFlipX(false);
+    }
+
+    let stageSubKey = 'takeoff';
+    if (this.jumpVisualStage === 'charge') stageSubKey = 'charge';
+    else if (this.jumpVisualStage === 'jump') stageSubKey = 'takeoff';
+    else if (this.jumpVisualStage === 'inAir') stageSubKey = 'air';
+    else if (this.jumpVisualStage === 'landing') stageSubKey = 'landing';
+
+    const textureKey = `player-${this.gender}-jump-${stageSubKey}-${dirKey}`;
+    if (this.scene.textures.exists(textureKey) && this.sprite.texture.key !== textureKey) {
+      this.sprite.setTexture(textureKey);
+    }
+    this.applySpriteTransform();
   }
 
   private currentSquashX: number = 1.0;
@@ -326,6 +431,7 @@ export class Player extends Entity {
 
   /**
    * Memicu efek kilat siluet putih pada avatar selama sepersekian detik saat melompat
+   * Kompatibel penuh Phaser 3 & Phaser 4 tanpa log deprecation warning
    */
   public triggerJumpWhiteFlash(durationMs: number = 160): void {
     if (!this.sprite || !this.sprite.active || !this.scene) return;
@@ -336,11 +442,19 @@ export class Player extends Entity {
     }
 
     // Set siluet putih murni pada avatar sprite
-    (this.sprite as any).setTintFill(0xffffff);
+    this.sprite.setTint(0xffffff);
+    if (typeof (this.sprite as any).setTintMode === 'function') {
+      const fillMode = (Phaser as any).TintModes?.FILL ?? 1;
+      (this.sprite as any).setTintMode(fillMode);
+    }
 
     this.whiteFlashTimer = this.scene.time.delayedCall(durationMs, () => {
       if (this.sprite && this.sprite.active) {
         this.sprite.clearTint();
+        if (typeof (this.sprite as any).setTintMode === 'function') {
+          const normalMode = (Phaser as any).TintModes?.NORMAL ?? 0;
+          (this.sprite as any).setTintMode(normalMode);
+        }
       }
       this.whiteFlashTimer = null;
     });
@@ -359,10 +473,24 @@ export class Player extends Entity {
   }
 
   /**
+   * Mengembalikan bentuk skala karakter ke proporsi normal 1.0x (bebas distorsi)
+   */
+  public resetSquashStretch(): void {
+    this.currentSquashX = 1.0;
+    this.currentSquashY = 1.0;
+    this.applySpriteTransform();
+  }
+
+  /**
    * Mengaplikasikan ukuran tampilan sprite dengan memperhitungkan visualYOffset dan squash/stretch
    */
   public applySpriteTransform(): void {
     if (!this.sprite) return;
+    // Jika sedang di tanah (bukan melompat), pastikan skala squash/stretch selalu normal 1.0
+    if (this.jumpVisualStage === 'none') {
+      this.currentSquashX = 1.0;
+      this.currentSquashY = 1.0;
+    }
     const baseW = 120;
     const baseH = 240;
     const curW = baseW * this.currentSquashX;
@@ -395,6 +523,9 @@ export class Player extends Entity {
     }
     if (this.afkContainer) {
       this.afkContainer.y = -185 + offsetY;
+    }
+    if (this.heldItemContainer && this.heldItemContainer.visible) {
+      this.updateHeldItemPosition();
     }
   }
 
@@ -482,7 +613,18 @@ export class Player extends Entity {
     if (movementStateChanged || directionChanged) {
       this.isMoving = nowMoving;
       this.lastDirection = this.currentDirection;
-      this.updateAnimation(nowMoving);
+      if (this.jumpVisualStage !== 'none') {
+        this.updateJumpVisual();
+      } else {
+        this.updateAnimation(nowMoving);
+      }
+      this.updateHeldItemPosition();
+    }
+
+    // Animasi ayunan langkah / pernapasan alami item yang dipegang
+    if (this.heldItemContainer && this.heldItemContainer.visible) {
+      const bob = nowMoving ? Math.sin(time * 0.016) * 2.5 : Math.sin(time * 0.004) * 1.0;
+      this.heldItemContainer.y = this.heldItemBaseY + bob;
     }
 
     // Deteksi Inaktivitas / AFK (1 menit = 60 detik tidak bergerak & tidak berbuat apa-apa)
@@ -544,7 +686,14 @@ export class Player extends Entity {
    * Mengatur animasi berjalan (Movement) dan pose diam (Idle) sesuai arah hadap
    */
   private updateAnimation(moving: boolean): void {
-    if (!this.sprite || !this.sprite.anims) return;
+    if (!this.sprite) return;
+
+    if (this.jumpVisualStage !== 'none') {
+      this.updateJumpVisual();
+      return;
+    }
+
+    if (!this.sprite.anims) return;
 
     if (moving) {
       let animKey = `player-${this.gender}-walk-down`;
@@ -611,5 +760,110 @@ export class Player extends Entity {
   public triggerExpression(type: 'normal' | 'smile' | 'shock' | 'angry'): void {
     const textureKey = `expr-${this.gender}-${type}`;
     this.showExpressionReaction(textureKey);
+  }
+
+  /**
+   * Mengambil data item yang sedang dipegang di tangan saat ini
+   */
+  public getHeldItem(): IInventoryItem | null {
+    return this.currentHeldItem;
+  }
+
+  /**
+   * Memperbarui item yang sedang dipegang oleh karakter dari inventaris aktif.
+   * Hanya menampilkan item jika BUKAN terkategori 'tool' (alat).
+   */
+  public updateHeldItem(): void {
+    if (!this.heldItemContainer || !this.scene) return;
+    const inv = InventoryManager.getInstance();
+    const item = inv.getActiveItem();
+    this.currentHeldItem = item;
+
+    // Syarat: hanya item yang BUKAN terkategori 'tool' (alat)
+    if (!item || item.category === 'tool') {
+      this.heldItemContainer.setVisible(false);
+      return;
+    }
+
+    this.heldItemContainer.setVisible(true);
+    if (this.heldItemText) {
+      this.heldItemText.setText(item.icon || '📦');
+    }
+    this.updateHeldItemPosition();
+  }
+
+  /**
+   * Mengatur posisi dan kedalaman (layer) item yang dipegang sesuai spesifikasi:
+   * 1. Samping Kanan (jika hadap depan / 'down')
+   * 2. Di Kiri (jika hadap belakang / 'up')
+   * 3. Di Depan (jika avatar hadap kiri / 'left')
+   * 4. Di Belakang (jika avatar hadap kanan / 'right')
+   */
+  public updateHeldItemPosition(): void {
+    if (!this.heldItemContainer || !this.sprite) return;
+
+    this.heldItemBaseY = -35 + this.visualYOffset;
+    let targetX = 0;
+    let inFront = true;
+    let rotation = 0;
+
+    switch (this.currentDirection) {
+      case 'down':
+        // Samping kanan (jika hadap depan)
+        targetX = 40;
+        inFront = true;
+        rotation = 0;
+        break;
+      case 'up':
+        // Di kiri (jika hadap belakang)
+        targetX = -40;
+        inFront = false;
+        rotation = 0;
+        break;
+      case 'left':
+        // Di depan (jika avatar hadap kiri)
+        targetX = -44;
+        inFront = true;
+        rotation = -0.15;
+        break;
+      case 'right':
+        // Di belakang (jika avatar hadap kanan)
+        targetX = -32;
+        inFront = false;
+        rotation = 0.15;
+        break;
+    }
+
+    this.heldItemContainer.setPosition(targetX, this.heldItemBaseY);
+    this.heldItemContainer.setRotation(rotation);
+
+    // Atur urutan layer (Z-order) di dalam kontainer karakter terhadap sprite
+    this.updateHeldItemLayer(inFront);
+  }
+
+  /**
+   * Mengatur apakah item berada di depan atau di belakang tubuh karakter (this.sprite)
+   */
+  private updateHeldItemLayer(inFront: boolean): void {
+    if (!this.heldItemContainer || !this.sprite) return;
+    const spriteIdx = this.getIndex(this.sprite);
+    const itemIdx = this.getIndex(this.heldItemContainer);
+
+    if (inFront) {
+      // Pastikan item dirender setelah sprite (di depan tubuh)
+      if (itemIdx < spriteIdx) {
+        this.moveTo(this.heldItemContainer, spriteIdx);
+      }
+    } else {
+      // Pastikan item dirender sebelum sprite (di belakang tubuh)
+      if (itemIdx > spriteIdx) {
+        this.moveTo(this.heldItemContainer, spriteIdx);
+      }
+    }
+
+    // Pastikan nameTag tetap berada di posisi paling atas kontainer
+    if (this.nameTag) {
+      this.bringToTop(this.nameTag);
+    }
   }
 }

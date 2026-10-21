@@ -25,10 +25,12 @@ import Phaser from 'phaser';
 import { Player } from '../entities/Player';
 import { EventBus } from '../core/EventBus';
 import { NetworkManager } from '../core/NetworkManager';
+import { CameraController } from '../controllers/CameraController';
 import { IAvatarCustomization } from '../types';
 
 export class AdminPortalScene extends Phaser.Scene {
   public player!: Player;
+  public cameraController!: CameraController;
   private playerName: string = 'RADEN';
   private currentAvatar!: IAvatarCustomization;
   private adminToken: string = 'raden-master-key';
@@ -88,7 +90,10 @@ export class AdminPortalScene extends Phaser.Scene {
     // 4. Render interior futuristik Portal Admin menggunakan aset visual HD
     this.createPortalEnvironment();
 
-    // 4. Spawn karakter Super Admin di karpet tengah
+    // 5. Setup kontrol kamera zoom via CameraController
+    this.setupCameraZoomControls(1.1);
+
+    // 6. Spawn karakter Super Admin di karpet tengah
     this.spawnSuperAdminPlayer();
 
     // 4. Tombol interaksi keyboard 'E' (abaikan jika sedang mengetik di input chat)
@@ -147,9 +152,6 @@ export class AdminPortalScene extends Phaser.Scene {
     this.events.on('shutdown', cleanupScene);
     this.events.on('destroy', cleanupScene);
 
-    // 7. Kontrol Kamera Zoom In & Zoom Out
-    this.setupCameraZoomControls(1.1);
-
     // Beritahu HUD lokasi saat ini
     EventBus.emit('location-updated', `PORTAL SUPER ADMIN: PUSAT KENDALI (ID: ${this.adminToken})`);
   }
@@ -157,51 +159,26 @@ export class AdminPortalScene extends Phaser.Scene {
   private targetZoom: number = 1.0;
 
   /**
-   * Menyiapkan listener zoom kamera halus (Scroll Wheel, Keyboard, HUD buttons)
+   * Menyiapkan kontrol kamera via CameraController
    */
-  private setupCameraZoomControls(defaultZoom: number = 1.0): void {
+  private setupCameraZoomControls(defaultZoom: number = 1.1): void {
     this.targetZoom = defaultZoom;
-    this.cameras.main.setZoom(defaultZoom);
-    this.cameras.main.setRoundPixels(true);
-
-    // 1. Mouse wheel smooth zoom
-    const onWheel = (_pointer: Phaser.Input.Pointer, _gameObjects: any, _deltaX: number, deltaY: number) => {
-      const zoomFactor = deltaY > 0 ? 0.88 : 1.14;
-      this.smoothZoomTo(this.targetZoom * zoomFactor);
-    };
-    this.input.on('wheel', onWheel);
-
-    // 2. Event dari UI HUD / Keyboard
-    const handleZoomIn = () => this.smoothZoomTo(this.targetZoom * 1.18);
-    const handleZoomOut = () => this.smoothZoomTo(this.targetZoom * 0.84);
-    const handleZoomReset = () => this.smoothZoomTo(defaultZoom);
-
-    EventBus.on('camera-zoom-in', handleZoomIn);
-    EventBus.on('camera-zoom-out', handleZoomOut);
-    EventBus.on('camera-zoom-reset', handleZoomReset);
-
-    this.input.keyboard?.on('keydown-PLUS', handleZoomIn);
-    this.input.keyboard?.on('keydown-NUMPAD_ADD', handleZoomIn);
-    this.input.keyboard?.on('keydown-MINUS', handleZoomOut);
-    this.input.keyboard?.on('keydown-NUMPAD_SUBTRACT', handleZoomOut);
-
-    this.events.on('shutdown', () => {
-      this.input.off('wheel', onWheel);
-      EventBus.off('camera-zoom-in', handleZoomIn);
-      EventBus.off('camera-zoom-out', handleZoomOut);
-      EventBus.off('camera-zoom-reset', handleZoomReset);
-    });
+    if (!this.cameraController) {
+      this.cameraController = new CameraController(this, {
+        defaultZoom,
+        minZoom: 0.6,
+        maxZoom: 2.0,
+        zoomLerpSpeed: 0.12,
+      });
+    } else {
+      this.cameraController.setupZoomControls({ defaultZoom });
+      this.cameraController.smoothZoomTo(defaultZoom);
+    }
   }
 
-  private smoothZoomTo(newZoom: number): void {
+  public smoothZoomTo(newZoom: number): void {
     this.targetZoom = Phaser.Math.Clamp(newZoom, 0.6, 2.0);
-    this.tweens.killTweensOf(this.cameras.main);
-    this.tweens.add({
-      targets: this.cameras.main,
-      zoom: this.targetZoom,
-      duration: 220,
-      ease: 'Cubic.easeOut',
-    });
+    this.cameraController?.smoothZoomTo(newZoom);
   }
 
   /**
@@ -475,11 +452,13 @@ export class AdminPortalScene extends Phaser.Scene {
       this.physics.add.collider(this.player, this.obstacles);
     }
 
-    this.cameras.main.setBounds(0, 0, this.roomWidth, this.roomHeight);
-    this.cameras.main.setRoundPixels(true);
-    this.cameras.main.centerOn(spawnX, spawnY);
-    this.cameras.main.startFollow(this.player, false, 0.18, 0.18);
-    this.cameras.main.setZoom(1.0);
+    if (!this.cameraController) {
+      this.setupCameraZoomControls(1.1);
+    }
+    this.cameraController.setBounds(0, 0, this.roomWidth, this.roomHeight);
+    this.cameraController.centerOn(spawnX, spawnY);
+    this.cameraController.follow(this.player, true, 0.18, 0.18);
+    this.smoothZoomTo(1.1);
 
     this.emitStats(spawnX, spawnY, `PORTAL SUPER ADMIN: PUSAT KENDALI (ID: ${this.adminToken})`);
 
@@ -506,6 +485,7 @@ export class AdminPortalScene extends Phaser.Scene {
   }
 
   public update(time: number, delta: number): void {
+    this.cameraController?.update(time, delta);
     if (!this.player) return;
 
     this.player.update(time, delta);

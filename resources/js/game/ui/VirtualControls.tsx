@@ -35,7 +35,17 @@ export const VirtualControls: React.FC<VirtualControlsProps> = ({
   const [isDragging, setIsDragging] = useState(false);
   const activePointerIdRef = useRef<number | null>(null);
   const joystickBaseRef = useRef<HTMLDivElement>(null);
+  const lastJumpTimeRef = useRef<number>(0);
   const sound = SoundManager.getInstance();
+
+  const handleJumpPress = useCallback((e: React.SyntheticEvent) => {
+    e.preventDefault();
+    const now = Date.now();
+    if (now - lastJumpTimeRef.current < 200) return;
+    lastJumpTimeRef.current = now;
+    sound.playClick();
+    EventBus.emit('player-jump');
+  }, [sound]);
 
   const maxRadius = 42;
 
@@ -232,16 +242,8 @@ export const VirtualControls: React.FC<VirtualControlsProps> = ({
           {/* 3. Tombol Lompat Mobile (Retro Spring Jump Mario) */}
           <button
             type="button"
-            onTouchStart={(e) => {
-              e.preventDefault();
-              sound.playClick();
-              EventBus.emit('player-jump');
-            }}
-            onClick={(e) => {
-              e.preventDefault();
-              sound.playClick();
-              EventBus.emit('player-jump');
-            }}
+            onTouchStart={handleJumpPress}
+            onClick={handleJumpPress}
             className="absolute top-1 right-20 w-14 h-14 rounded-full bg-gradient-to-b from-amber-400/90 to-amber-700/95 border-2 border-amber-300 text-neutral-950 flex flex-col items-center justify-center font-black cursor-pointer shadow-xl shadow-amber-950/60 active:scale-90 active:border-white transition-all"
             title="Lompat / Double Jump (Spasi)"
           >

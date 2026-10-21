@@ -17,10 +17,12 @@ import Phaser from 'phaser';
 import { Player } from '../entities/Player';
 import { EventBus } from '../core/EventBus';
 import { NetworkManager } from '../core/NetworkManager';
+import { CameraController } from '../controllers/CameraController';
 import { IAvatarCustomization } from '../types';
 
 export class HouseScene extends Phaser.Scene {
   private player: Player | null = null;
+  public cameraController!: CameraController;
   private currentAvatar: IAvatarCustomization;
   private playerName: string = 'Petualang';
 
@@ -121,7 +123,10 @@ export class HouseScene extends Phaser.Scene {
     // 3. Render tata ruang interior rumah berpola catur 120x120px
     this.createHouseInterior();
 
-    // 4. Spawn karakter pemain di tengah ruang tamu rumah
+    // 4. Kontrol Kamera Zoom In & Zoom Out Halus (CameraController)
+    this.setupCameraZoomControls(1.0);
+
+    // 5. Spawn karakter pemain di tengah ruang tamu rumah
     this.spawnPlayerInHouse();
 
     // 4. Hubungkan event ganti avatar dari lemari
@@ -198,9 +203,6 @@ export class HouseScene extends Phaser.Scene {
       }
     });
 
-    // 6. Kontrol Kamera Zoom In & Zoom Out Halus (Tween)
-    this.setupCameraZoomControls(1.0);
-
     // Beritahu HUD lokasi saat ini
     EventBus.emit('location-updated', 'RUMAH PRIBADI: RUANG UTAMA');
 
@@ -251,51 +253,22 @@ export class HouseScene extends Phaser.Scene {
    */
   private setupCameraZoomControls(defaultZoom: number = 1.0): void {
     this.targetZoom = defaultZoom;
-    this.cameras.main.setZoom(defaultZoom);
-    this.cameras.main.setRoundPixels(true);
-
-    // 1. Mouse wheel zoom instan & mulus
-    const onWheel = (_pointer: Phaser.Input.Pointer, _gameObjects: any, _deltaX: number, deltaY: number) => {
-      const zoomFactor = deltaY > 0 ? 0.90 : 1.10;
-      this.targetZoom = Phaser.Math.Clamp(this.targetZoom * zoomFactor, 0.6, 2.0);
-    };
-    this.input.on('wheel', onWheel);
-
-    // 2. Event dari UI HUD / Keyboard
-    const handleZoomIn = () => {
-      this.targetZoom = Phaser.Math.Clamp(this.targetZoom * 1.15, 0.6, 2.0);
-    };
-    const handleZoomOut = () => {
-      this.targetZoom = Phaser.Math.Clamp(this.targetZoom * 0.85, 0.6, 2.0);
-    };
-    const handleZoomReset = () => {
-      this.targetZoom = defaultZoom;
-    };
-    const handleZoomSet = (zoom: number) => {
-      this.targetZoom = Phaser.Math.Clamp(zoom, 0.6, 2.0);
-    };
-
-    EventBus.on('camera-zoom-in', handleZoomIn);
-    EventBus.on('camera-zoom-out', handleZoomOut);
-    EventBus.on('camera-zoom-reset', handleZoomReset);
-    EventBus.on('camera-zoom-set', handleZoomSet);
-
-    this.input.keyboard?.on('keydown-PLUS', handleZoomIn);
-    this.input.keyboard?.on('keydown-NUMPAD_ADD', handleZoomIn);
-    this.input.keyboard?.on('keydown-MINUS', handleZoomOut);
-    this.input.keyboard?.on('keydown-NUMPAD_SUBTRACT', handleZoomOut);
-
-    this.events.on('shutdown', () => {
-      this.input.off('wheel', onWheel);
-      EventBus.off('camera-zoom-in', handleZoomIn);
-      EventBus.off('camera-zoom-out', handleZoomOut);
-      EventBus.off('camera-zoom-reset', handleZoomReset);
-      EventBus.off('camera-zoom-set', handleZoomSet);
-    });
+    if (!this.cameraController) {
+      this.cameraController = new CameraController(this, {
+        defaultZoom,
+        minZoom: 0.6,
+        maxZoom: 2.0,
+        zoomLerpSpeed: 0.12,
+      });
+    } else {
+      this.cameraController.setupZoomControls({ defaultZoom });
+      this.cameraController.smoothZoomTo(defaultZoom);
+    }
   }
 
-  private smoothZoomTo(newZoom: number): void {
+  public smoothZoomTo(newZoom: number): void {
     this.targetZoom = Phaser.Math.Clamp(newZoom, 0.6, 2.0);
+    this.cameraController?.smoothZoomTo(newZoom);
   }
 
   /**
@@ -618,10 +591,12 @@ export class HouseScene extends Phaser.Scene {
       100
     );
 
-    this.cameras.main.setBounds(0, 0, this.roomWidth, this.roomHeight);
-    this.cameras.main.setRoundPixels(true);
-    this.cameras.main.centerOn(startX, startY);
-    this.cameras.main.startFollow(this.player, true, 1.0, 1.0);
+    if (!this.cameraController) {
+      this.setupCameraZoomControls(1.0);
+    }
+    this.cameraController.setBounds(0, 0, this.roomWidth, this.roomHeight);
+    this.cameraController.centerOn(startX, startY);
+    this.cameraController.follow(this.player, true, 1.0, 1.0);
     this.smoothZoomTo(1.0);
 
     // Emit koordinat dan stats langsung saat spawn agar HUD terisi seketika
@@ -648,12 +623,8 @@ export class HouseScene extends Phaser.Scene {
   }
 
   public update(time: number, delta: number): void {
-    // Zoom lerp ultra mulus 60 FPS
-    if (Math.abs(this.cameras.main.zoom - this.targetZoom) > 0.001) {
-      this.cameras.main.setZoom(
-        Phaser.Math.Linear(this.cameras.main.zoom, this.targetZoom, Math.min(1, delta * 0.018))
-      );
-    }
+    // Zoom lerp ultra mulus 60 FPS via CameraController
+    this.cameraController?.update(time, delta);
 
     if (!this.player || this.isTransitioning || (typeof window !== 'undefined' && window.location.pathname === '/')) return;
 

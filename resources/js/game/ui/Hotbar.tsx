@@ -20,9 +20,10 @@ import { Backpack } from 'lucide-react';
 interface HotbarProps {
   onOpenBackpack: () => void;
   isBackpackOpen?: boolean;
+  isFullMapOpen?: boolean;
 }
 
-export const Hotbar: React.FC<HotbarProps> = ({ onOpenBackpack, isBackpackOpen = false }) => {
+export const Hotbar: React.FC<HotbarProps> = ({ onOpenBackpack, isBackpackOpen = false, isFullMapOpen: propIsFullMapOpen }) => {
   const inv = InventoryManager.getInstance();
   const sound = SoundManager.getInstance();
 
@@ -30,6 +31,19 @@ export const Hotbar: React.FC<HotbarProps> = ({ onOpenBackpack, isBackpackOpen =
   const [activeSlot, setActiveSlot] = useState<number>(inv.getActiveSlotIndex());
   const [totalItemCount, setTotalItemCount] = useState<number>(inv.getItemCount());
   const [hoveredItem, setHoveredItem] = useState<{ item: IInventoryItem; index: number } | null>(null);
+  const [isFullMapOpen, setIsFullMapOpen] = useState<boolean>(false);
+  const [draggedSlot, setDraggedSlot] = useState<number | null>(null);
+  const [dragOverSlot, setDragOverSlot] = useState<number | null>(null);
+
+  useEffect(() => {
+    const handleMapToggle = (open: boolean) => {
+      setIsFullMapOpen(open);
+    };
+    EventBus.on('full-map-toggled', handleMapToggle);
+    return () => {
+      EventBus.off('full-map-toggled', handleMapToggle);
+    };
+  }, []);
 
   useEffect(() => {
     const handleUpdate = () => {
@@ -63,8 +77,55 @@ export const Hotbar: React.FC<HotbarProps> = ({ onOpenBackpack, isBackpackOpen =
   }, [inv, sound, onOpenBackpack]);
 
   const handleSelectSlot = (idx: number) => {
+    if (activeSlot === idx) {
+      const item = hotbarItems[idx];
+      if (item && item.usable && item.category === 'consumable') {
+        inv.useItem(idx);
+        return;
+      }
+    }
     inv.setActiveSlotIndex(idx);
     sound.playClick();
+  };
+
+  const handleDragStart = (e: React.DragEvent, slotIdx: number) => {
+    if (!hotbarItems[slotIdx]) {
+      e.preventDefault();
+      return;
+    }
+    setDraggedSlot(slotIdx);
+    e.dataTransfer.setData('text/plain', slotIdx.toString());
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e: React.DragEvent, slotIdx: number) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    if (dragOverSlot !== slotIdx) {
+      setDragOverSlot(slotIdx);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent, targetSlotIdx: number) => {
+    e.preventDefault();
+    const sourceSlotStr = e.dataTransfer.getData('text/plain');
+    const sourceSlot = draggedSlot ?? (sourceSlotStr !== '' ? parseInt(sourceSlotStr, 10) : null);
+
+    setDraggedSlot(null);
+    setDragOverSlot(null);
+
+    if (sourceSlot !== null && !isNaN(sourceSlot) && sourceSlot !== targetSlotIdx) {
+      const success = inv.moveItem(sourceSlot, targetSlotIdx);
+      if (success) {
+        sound.playClick();
+        inv.setActiveSlotIndex(targetSlotIdx);
+      }
+    }
+  };
+
+  const handleDragEnd = () => {
+    setDraggedSlot(null);
+    setDragOverSlot(null);
   };
 
   const getRarityBorder = (rarity?: string) => {
@@ -79,6 +140,11 @@ export const Hotbar: React.FC<HotbarProps> = ({ onOpenBackpack, isBackpackOpen =
         return 'border-neutral-800';
     }
   };
+
+  // Sembunyikan hotbar saat peta dunia atlas di-maximize agar tidak menimpa peta
+  if (isFullMapOpen || propIsFullMapOpen) {
+    return null;
+  }
 
   return (
     <aside
@@ -107,19 +173,33 @@ export const Hotbar: React.FC<HotbarProps> = ({ onOpenBackpack, isBackpackOpen =
         <div className="flex items-center gap-1">
           {hotbarItems.map((item, idx) => {
             const isActive = activeSlot === idx;
+            const isDragging = draggedSlot === idx;
+            const isDragOver = dragOverSlot === idx;
+
             return (
               <button
                 key={idx}
                 type="button"
+                draggable={Boolean(item)}
+                onDragStart={(e) => handleDragStart(e, idx)}
+                onDragOver={(e) => handleDragOver(e, idx)}
+                onDrop={(e) => handleDrop(e, idx)}
+                onDragEnd={handleDragEnd}
                 onClick={() => handleSelectSlot(idx)}
                 onMouseEnter={() => item && setHoveredItem({ item, index: idx })}
                 onMouseLeave={() => setHoveredItem(null)}
-                className={`relative w-11 h-11 sm:w-12 sm:h-12 rounded-md flex items-center justify-center transition-colors cursor-pointer ${
-                  isActive
-                    ? 'bg-amber-400/20 border border-amber-400'
+                className={`relative w-11 h-11 sm:w-12 sm:h-12 rounded-md flex items-center justify-center transition-all ${
+                  item ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'
+                } ${
+                  isDragging ? 'opacity-30 border-dashed border-amber-400 scale-95' : ''
+                } ${
+                  isDragOver
+                    ? 'border-2 border-amber-400 bg-amber-400/30 scale-105 shadow-[0_0_12px_rgba(251,191,36,0.6)] z-10'
+                    : isActive
+                    ? 'bg-amber-400/20 border-2 border-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.3)]'
                     : 'bg-neutral-900 hover:bg-neutral-850 border border-neutral-800 hover:border-neutral-700'
-                } ${item ? getRarityBorder(item.rarity) : ''}`}
-                title={item ? `${item.name} [Slot ${idx + 1}]` : `Slot ${idx + 1}`}
+                } ${item && !isDragOver && !isActive ? getRarityBorder(item.rarity) : ''}`}
+                title={item ? `${item.name} [Slot ${idx + 1}] - Drag untuk memindahkan` : `Slot ${idx + 1}`}
               >
                 {/* Nomor Slot Hotkey */}
                 <span

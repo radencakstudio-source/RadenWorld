@@ -39,6 +39,7 @@ import { RemotePlayer } from '../entities/RemotePlayer';
 import { NetworkManager } from '../core/NetworkManager';
 import { EventBus } from '../core/EventBus';
 import { SoundManager } from '../core/SoundManager';
+import { CameraController } from '../controllers/CameraController';
 import { IAvatarCustomization, IPlayerData } from '../types';
 
 export type SchoolType = 'sd' | 'smp' | 'sma';
@@ -70,6 +71,7 @@ export class SchoolScene extends Phaser.Scene {
   private player: Player | null = null;
   private remotePlayers: Map<string, RemotePlayer> = new Map();
   private networkManager: NetworkManager;
+  public cameraController!: CameraController;
   private currentAvatar: IAvatarCustomization;
   private playerName: string = 'Petualang';
   private schoolType: SchoolType = 'sd';
@@ -331,6 +333,9 @@ export class SchoolScene extends Phaser.Scene {
         }
       } catch (e) {}
     }
+
+    // Setup kamera sebelum spawn player
+    this.setupCameraZoomControls(0.95);
 
     // 6. Spawn Karakter Pemain
     this.spawnPlayerInSchool(spawnX, spawnY);
@@ -1482,10 +1487,12 @@ export class SchoolScene extends Phaser.Scene {
       100
     );
 
-    this.cameras.main.setBounds(0, 0, this.roomWidth, this.roomHeight);
-    this.cameras.main.setRoundPixels(true);
-    this.cameras.main.centerOn(spawnX, spawnY);
-    this.cameras.main.startFollow(this.player, true, 1.0, 1.0);
+    if (!this.cameraController) {
+      this.setupCameraZoomControls(0.95);
+    }
+    this.cameraController.setBounds(0, 0, this.roomWidth, this.roomHeight);
+    this.cameraController.centerOn(spawnX, spawnY);
+    this.cameraController.follow(this.player, true, 1.0, 1.0);
     this.smoothZoomTo(0.95);
 
     this.time.delayedCall(400, () => {
@@ -1495,49 +1502,22 @@ export class SchoolScene extends Phaser.Scene {
 
   private setupCameraZoomControls(defaultZoom: number = 0.95): void {
     this.targetZoom = defaultZoom;
-    this.cameras.main.setZoom(defaultZoom);
-    this.cameras.main.setRoundPixels(true);
-
-    const onWheel = (_pointer: Phaser.Input.Pointer, _gameObjects: any, _deltaX: number, deltaY: number) => {
-      const zoomFactor = deltaY > 0 ? 0.90 : 1.10;
-      this.targetZoom = Phaser.Math.Clamp(this.targetZoom * zoomFactor, 0.6, 1.8);
-    };
-    this.input.on('wheel', onWheel);
-
-    const handleZoomIn = () => {
-      this.targetZoom = Phaser.Math.Clamp(this.targetZoom * 1.15, 0.6, 1.8);
-    };
-    const handleZoomOut = () => {
-      this.targetZoom = Phaser.Math.Clamp(this.targetZoom * 0.85, 0.6, 1.8);
-    };
-    const handleZoomReset = () => {
-      this.targetZoom = defaultZoom;
-    };
-    const handleZoomSet = (zoom: number) => {
-      this.targetZoom = Phaser.Math.Clamp(zoom, 0.6, 1.8);
-    };
-
-    EventBus.on('camera-zoom-in', handleZoomIn);
-    EventBus.on('camera-zoom-out', handleZoomOut);
-    EventBus.on('camera-zoom-reset', handleZoomReset);
-    EventBus.on('camera-zoom-set', handleZoomSet);
-
-    this.input.keyboard?.on('keydown-PLUS', handleZoomIn);
-    this.input.keyboard?.on('keydown-NUMPAD_ADD', handleZoomIn);
-    this.input.keyboard?.on('keydown-MINUS', handleZoomOut);
-    this.input.keyboard?.on('keydown-NUMPAD_SUBTRACT', handleZoomOut);
-
-    this.events.on('shutdown', () => {
-      this.input.off('wheel', onWheel);
-      EventBus.off('camera-zoom-in', handleZoomIn);
-      EventBus.off('camera-zoom-out', handleZoomOut);
-      EventBus.off('camera-zoom-reset', handleZoomReset);
-      EventBus.off('camera-zoom-set', handleZoomSet);
-    });
+    if (!this.cameraController) {
+      this.cameraController = new CameraController(this, {
+        defaultZoom,
+        minZoom: 0.6,
+        maxZoom: 1.8,
+        zoomLerpSpeed: 0.12,
+      });
+    } else {
+      this.cameraController.setupZoomControls({ defaultZoom });
+      this.cameraController.smoothZoomTo(defaultZoom);
+    }
   }
 
-  private smoothZoomTo(newZoom: number): void {
+  public smoothZoomTo(newZoom: number): void {
     this.targetZoom = Phaser.Math.Clamp(newZoom, 0.6, 1.8);
+    this.cameraController?.smoothZoomTo(newZoom);
   }
 
   private approachAndInteractWithNpc(npc: ISchoolNpc): void {
@@ -1636,12 +1616,8 @@ export class SchoolScene extends Phaser.Scene {
   }
 
   public update(time: number, delta: number): void {
-    // Zoom lerp ultra mulus 60 FPS
-    if (Math.abs(this.cameras.main.zoom - this.targetZoom) > 0.001) {
-      this.cameras.main.setZoom(
-        Phaser.Math.Linear(this.cameras.main.zoom, this.targetZoom, Math.min(1, delta * 0.018))
-      );
-    }
+    // Zoom lerp ultra mulus 60 FPS via CameraController
+    this.cameraController?.update(time, delta);
 
     if (!this.player || this.isTransitioning) return;
 

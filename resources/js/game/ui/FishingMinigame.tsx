@@ -228,7 +228,7 @@ export const FishingMinigame: React.FC<FishingMinigameProps> = ({
   }, [fishData, onSuccess, onFailed, sound]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs select-none touch-none pointer-events-auto font-['Chakra_Petch'] animate-fade-in">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 select-none touch-none pointer-events-auto font-['Chakra_Petch'] animate-fade-in">
       {/* Bingkai Panel Bergaya Stardew Valley Retro */}
       <div className="relative bg-[#1c1917] border-3 border-amber-600 rounded-2xl p-4 shadow-[0_12px_40px_rgba(0,0,0,0.85)] text-neutral-100 flex flex-col items-center">
         {/* Tombol Tutup / Batalkan */}

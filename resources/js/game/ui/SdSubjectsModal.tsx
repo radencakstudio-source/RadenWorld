@@ -1259,7 +1259,7 @@ export const SdSubjectsModal: React.FC<SdSubjectsModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-3 sm:p-5 font-cute animate-in fade-in duration-150">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-3 sm:p-5 font-cute animate-in fade-in duration-150">
       <div className="w-full max-w-5xl bg-white border-2 border-neutral-800 rounded-3xl shadow-2xl flex flex-col max-h-[92vh] overflow-hidden text-neutral-800 relative">
         
         {/* ================================================================== */}

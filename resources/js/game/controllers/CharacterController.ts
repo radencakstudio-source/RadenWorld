@@ -35,7 +35,7 @@
 
 import Phaser from 'phaser';
 import { Player } from '../entities/Player';
-import { Direction } from '../types';
+import { Direction, JumpVisualStage } from '../types';
 import { EventBus } from '../core/EventBus';
 import { SoundManager } from '../core/SoundManager';
 import { NetworkManager } from '../core/NetworkManager';
@@ -136,15 +136,21 @@ export class CharacterController {
   // PARAMETER SISTEM LOMPAT (JUMPING SYSTEM) - FISIKA MARIO RETRO
   // ==========================================================================
   private isJumping: boolean = false;
+  private isCharging: boolean = false;
   private jumpCount: number = 0;
   private readonly maxJumps: number = 2; // Mendukung Lompat 2x (Double Jump)
   private currentJumpZ: number = 0; // Ketinggian visual Z saat ini dalam pixel
   private jumpVelocityZ: number = 0; // Kecepatan vertikal ke atas (px/detik)
   private readonly jumpGravityZ: number = -1400; // Gravitasi lompatan retro responsif
-  private readonly jumpLaunchVz: number = 640; // Kecepatan awal lompat pertama (~146px ketinggian puncak)
-  private readonly doubleJumpLaunchVz: number = 540; // Dorongan ekstra lompat kedua di udara (melambung dari Z saat ini)
+  private readonly jumpLaunchVz: number = 660; // Kecepatan awal lompat pertama (~155px ketinggian puncak)
+  private readonly doubleJumpLaunchVz: number = 560; // Dorongan ekstra lompat kedua di udara (melambung dari Z saat ini)
   private jumpLaunchVx: number = 0;
   private jumpLaunchVy: number = 0;
+
+  // Timer transisi visual tahap lompatan (Charge -> Jump -> InAir -> Landing)
+  private chargeTimer: Phaser.Time.TimerEvent | null = null;
+  private inAirTimer: Phaser.Time.TimerEvent | null = null;
+  private landingTimer: Phaser.Time.TimerEvent | null = null;
 
   // Pelacakan terhalang rintangan saat navigasi otomatis (Anti-stuck pada dinding/objek)
   private lastNavPosX: number = 0;
@@ -327,6 +333,9 @@ export class CharacterController {
       this.landingDustGraphics?.destroy();
       this.crystalGraphics?.destroy();
       this.fishingGraphics?.destroy();
+      if (this.chargeTimer) this.chargeTimer.remove();
+      if (this.inAirTimer) this.inAirTimer.remove();
+      if (this.landingTimer) this.landingTimer.remove();
     });
   }
 
@@ -338,10 +347,15 @@ export class CharacterController {
 
   // ==========================================================================
   // IMPLEMENTASI SISTEM LOMPAT (JUMPING)
+  // Lompatan 1 (4 Tahap): 1. Charge -> 2. Jump -> 3. InAir -> 4. Landing
+  // Lompatan 2 (3 Tahap): 1. Jump -> 2. InAir -> 3. Landing
   // ==========================================================================
 
+  // Waktu peluncuran lompatan terakhir (untuk debounce double jump saat spam)
+  private lastLaunchTime: number = 0;
+
   /**
-   * Memicu aksi lompat karakter (Mendukung Lompat Tinggi Mario & Double Jump di Udara)
+   * Memicu aksi lompat karakter (Mendukung Lompat Pertama 4-Tahap & Double Jump 3-Tahap)
    */
   public jump(): boolean {
     // Tidak boleh lompat jika sedang mancing atau pergerakan terkunci
@@ -354,75 +368,154 @@ export class CharacterController {
       return false;
     }
 
-    this.jumpCount++;
-    this.isJumping = true;
-    this.actionState = 'jumping';
+    // Jika sedang dalam masa charge persiapan lompat 1, tahan agar tidak dobel input sebelum lepas landas
+    if (this.isCharging) {
+      return false;
+    }
 
-    // Rekam momentum gerakan horizontal
-    const body = this.player.body as Phaser.Physics.Arcade.Body;
-    this.jumpLaunchVx = body ? body.velocity.x : 0;
-    this.jumpLaunchVy = body ? body.velocity.y : 0;
+    // Jika sedang dalam pose landing recovery, batalkan dan kembalikan bentuk skala normal
+    if (this.landingSquashTween) {
+      this.landingSquashTween.stop();
+      this.landingSquashTween = null;
+      this.player.resetSquashStretch();
+    }
+    if (this.landingTimer) {
+      this.landingTimer.remove();
+      this.landingTimer = null;
+    }
 
-    const sprite = (this.player as any).sprite as Phaser.GameObjects.Image;
+    if (this.jumpCount === 0) {
+      // ======================================================================
+      // LOMPATAN PERTAMA (4 TAHAP)
+      // 1. Charge dulu di tanah
+      // 2. Animasi Jump saat sebelum lompat max tertinggi (Subtle Stretch)
+      // 3. Saat sampai atas baru animasi InAir sampai turun
+      // 4. Saat hampir menyentuh ground pakai animasi Landing sampai menyentuh ground
+      // ======================================================================
+      this.jumpCount = 1;
+      this.isJumping = true;
+      this.isCharging = true;
+      this.actionState = 'jumping';
+      this.currentJumpZ = 0;
+      this.jumpVelocityZ = 0;
+      this.player.setVisualYOffset(0);
 
-    if (this.jumpCount === 1) {
-      // 1. Lompat Pertama dari Tanah: Meluncur tinggi & lofty ala Mario (Ketinggian ~146px)
-      this.currentJumpZ = Math.max(0, this.currentJumpZ);
-      this.jumpVelocityZ = this.jumpLaunchVz;
-      this.sound.playJump(false);
-    } else if (this.jumpCount === 2) {
-      // 2. Double Jump: Berikan dorongan vertikal segar LAGI langsung dari ketinggian melayang saat ini!
-      this.jumpVelocityZ = this.doubleJumpLaunchVz;
+      // Rekam momentum gerakan horizontal
+      const body = this.player.body as Phaser.Physics.Arcade.Body;
+      this.jumpLaunchVx = body ? body.velocity.x : 0;
+      this.jumpLaunchVy = body ? body.velocity.y : 0;
+
+      // Bersihkan timer lama jika ada
+      if (this.chargeTimer) this.chargeTimer.remove();
+
+      // 1. TAHAP CHARGE DULU: Karakter jongkok persiapan di tanah
+      this.player.setJumpVisualStage('charge');
+
+      // Efek Squishy Halus: Sedikit crouch kompresi wajar (~5%)
+      this.currentSquashX = 1.05;
+      this.currentSquashY = 0.95;
+      this.player.setSquashStretch(this.currentSquashX, this.currentSquashY);
+
+      // Durasi charge yang pas dan mantap (~160ms)
+      this.chargeTimer = this.scene.time.delayedCall(160, () => {
+        this.isCharging = false;
+        if (!this.isJumping) return;
+
+        this.lastLaunchTime = this.scene.time.now;
+
+        // 2. TAHAP JUMP: Lepas landas melesat ke atas menuju max tertinggi
+        this.currentJumpZ = 0;
+        this.jumpVelocityZ = this.jumpLaunchVz; // 660 px/s
+        this.sound.playJump(false);
+        this.player.setJumpVisualStage('jump');
+
+        // Efek Squishy Halus: Angkat vertikal melesat (stretch 5%)
+        this.currentSquashX = 0.96;
+        this.currentSquashY = 1.05;
+        this.player.setSquashStretch(this.currentSquashX, this.currentSquashY);
+
+        // SINKRONISASI JARINGAN MULTIPLAYER KE SERVER
+        NetworkManager.getInstance().sendJump(1, this.player.x, this.player.y);
+
+        // Flash putih sekejap dan hembusan debu lepas landas
+        this.player.triggerJumpWhiteFlash(150);
+        this.triggerLandingDust(this.player.x, this.player.y + 12);
+
+        EventBus.emit('player-jump-started', {
+          x: this.player.x,
+          y: this.player.y,
+          jumpCount: 1,
+          jumpZ: this.currentJumpZ,
+        });
+      });
+
+      return true;
+    } else if (this.jumpCount === 1) {
+      // ======================================================================
+      // LOMPATAN KEDUA / DOUBLE JUMP (3 TAHAP: Jump -> InAir -> Landing)
+      // Tanpa tahap charge, langsung dorongan takeoff di udara!
+      // ======================================================================
+      // Anti-spam protection: Karakter harus sudah benar-benar di udara
+      // (ketinggian Z > 10px dan minimal 100ms setelah peluncuran lompat pertama)
+      const now = this.scene.time.now;
+      if (this.currentJumpZ < 10 || (now - this.lastLaunchTime < 100)) {
+        return false;
+      }
+
+      this.jumpCount = 2;
+      this.isJumping = true;
+      this.isCharging = false;
+      this.actionState = 'jumping';
+
+      if (this.chargeTimer) {
+        this.chargeTimer.remove();
+        this.chargeTimer = null;
+      }
+
+      // 1. TAHAP JUMP LANGSUNG DI UDARA (Dorongan vertikal kedua)
+      this.jumpVelocityZ = this.doubleJumpLaunchVz; // 560 px/s
       this.sound.playJump(true);
+      this.player.setJumpVisualStage('jump');
+
+      // Efek Squishy Halus: Dorongan vertikal kedua (stretch 5%)
+      this.currentSquashX = 0.96;
+      this.currentSquashY = 1.05;
+      this.player.setSquashStretch(this.currentSquashX, this.currentSquashY);
 
       // Partikel kabut/riak udara di bawah kaki di ketinggian melayang saat ini
       this.triggerLandingDust(this.player.x, this.player.y - this.currentJumpZ + 12);
       this.player.showSpeechBubble('⭐ Double Jump!', 750);
+
+      // SINKRONISASI JARINGAN MULTIPLAYER KE SERVER
+      NetworkManager.getInstance().sendJump(2, this.player.x, this.player.y);
+      this.player.triggerJumpWhiteFlash(150);
+
+      EventBus.emit('player-jump-started', {
+        x: this.player.x,
+        y: this.player.y,
+        jumpCount: 2,
+        jumpZ: this.currentJumpZ,
+      });
+
+      return true;
     }
 
-    // SINKRONISASI JARINGAN MULTIPLAYER KE SERVER
-    NetworkManager.getInstance().sendJump(this.jumpCount, this.player.x, this.player.y);
-
-    // EFEK SILUET PUTIH PADA AVATAR (Flash Putih sekejap saat melompat)
-    this.player.triggerJumpWhiteFlash(150);
-
-    // EFEK DEFORMASI SQUISHY ALA MARIO (Takeoff Crouch Squash & Rocket Stretch)
-    if (this.landingSquashTween) {
-      this.landingSquashTween.stop();
-      this.landingSquashTween = null;
-    }
-    // Step 1: Squash kompresi crouching saat menghentak tanah (~40ms)
-    this.currentSquashX = 1.22;
-    this.currentSquashY = 0.80;
-    this.player.setSquashStretch(this.currentSquashX, this.currentSquashY);
-
-    // Step 2: Melesat stretch vertikal ke udara saat meluncur naik
-    this.scene.time.delayedCall(42, () => {
-      if (this.isJumping) {
-        this.currentSquashX = 0.82;
-        this.currentSquashY = 1.24;
-        this.player.setSquashStretch(this.currentSquashX, this.currentSquashY);
-      }
-    });
-
-    // Memicu hembusan partikel debu kaki saat lepas landas
-    this.triggerLandingDust(this.player.x, this.player.y + 12);
-
-    EventBus.emit('player-jump-started', {
-      x: this.player.x,
-      y: this.player.y,
-      jumpCount: this.jumpCount,
-      jumpZ: this.currentJumpZ,
-    });
-
-    return true;
+    return false;
   }
 
   /**
-   * Update frame per frame untuk fisika vertikal gravitasi lompat (Mario Squishy Physics)
+   * Update frame per frame untuk fisika vertikal gravitasi lompat,
+   * transisi tahap visual dinamis sesuai ketinggian & kecepatan vertikal,
+   * serta deformasi Squishy Mario (Squash & Stretch) yang proporsional dan halus
    */
   private updateJump(time: number, delta: number): void {
     if (!this.isJumping) return;
+
+    if (this.isCharging) {
+      // Tahap 1: Karakter masih di tanah bersiap melompat (Charge Crouch)
+      this.drawLandingIndicator();
+      return;
+    }
 
     const dt = Math.min(0.05, delta / 1000); // delta waktu dalam detik
 
@@ -433,31 +526,57 @@ export class CharacterController {
     // Geser elemen visual karakter ke atas (Z visual offset)
     this.player.setVisualYOffset(-Math.max(0, this.currentJumpZ));
 
-    // Update Deformasi Squishy Mario dinamis selama di udara
-    let targetSx = 1.0;
-    let targetSy = 1.0;
-    if (this.jumpVelocityZ > 120) {
-      // Sedang melesat tinggi ke atas (Rocket Stretch)
-      targetSx = 0.84;
-      targetSy = 1.20;
-    } else if (this.jumpVelocityZ < -160) {
-      // Sedang meluncur jatuh ke bawah (Falling Stretch)
-      targetSx = 0.90;
-      targetSy = 1.12;
-    } else {
-      // Puncak lengkungan melayang tenang di udara (Apex)
-      targetSx = 1.02;
-      targetSy = 0.98;
-    }
-
-    this.currentSquashX += (targetSx - this.currentSquashX) * Math.min(1.0, dt * 14);
-    this.currentSquashY += (targetSy - this.currentSquashY) * Math.min(1.0, dt * 14);
-    this.player.setSquashStretch(this.currentSquashX, this.currentSquashY);
-
     // Gambar garis indikator pendaratan yang 100% mulus (smooth tanpa flickering/geser)
     this.drawLandingIndicator();
 
-    // Cek jika sudah mendarat di tanah (currentJumpZ <= 0 dan kecepatan vertikal sedang turun)
+    // ========================================================================
+    // EVALUASI TAHAPAN LOMPAT & EFEK SQUISHY HALUS BERDASARKAN FISIKA
+    // 2. Animasi jump saat sebelum lompat max tertinggi (Vz > 40 px/s)
+    // 3. Saat sampai atas baru animasi inAir sampai turun (Apex & Descent)
+    // 4. Saat hampir menyentuh ground pakai animasi landing (Z <= 40 px saat turun)
+    // ========================================================================
+    let targetStage: JumpVisualStage = 'inAir';
+    let targetSx = 1.0;
+    let targetSy = 1.0;
+
+    if (this.jumpVelocityZ > 40) {
+      // 2. TAHAP JUMP: Meluncur naik sebelum mencapai titik tertinggi (Subtle Stretch)
+      targetStage = 'jump';
+      targetSx = 0.96;
+      targetSy = 1.05;
+    } else if (this.currentJumpZ > 40 || this.jumpVelocityZ >= 0) {
+      // 3. TAHAP INAIR: Saat sampai atas (Puncak / Apex) sampai meluncur turun
+      targetStage = 'inAir';
+      if (Math.abs(this.jumpVelocityZ) <= 100) {
+        // Melayang tenang di puncak lengkungan tertinggi (Proporsi Asli Alami)
+        targetSx = 1.0;
+        targetSy = 1.0;
+      } else {
+        // Sedang meluncur jatuh ke bawah (Falling halus)
+        targetSx = 0.98;
+        targetSy = 1.03;
+      }
+    } else {
+      // 4. TAHAP LANDING: Saat hampir menyentuh ground (Z <= 40 px dan sedang meluncur turun)
+      targetStage = 'landing';
+      targetSx = 1.03;
+      targetSy = 0.97;
+    }
+
+    // Terapkan tahap visual sprite jika ada pergantian
+    if (this.player.getJumpVisualStage() !== targetStage) {
+      this.player.setJumpVisualStage(targetStage);
+    }
+
+    // Terapkan interpolasi Deformasi Squishy halus selama di udara
+    this.currentSquashX += (targetSx - this.currentSquashX) * Math.min(1.0, dt * 12);
+    this.currentSquashY += (targetSy - this.currentSquashY) * Math.min(1.0, dt * 12);
+    this.player.setSquashStretch(this.currentSquashX, this.currentSquashY);
+
+    // ========================================================================
+    // SENTUH TANAH (TOUCHDOWN / IMPACT PENDARATAN)
+    // Karakter menyentuh tanah dan menyerap hentakan dengan Squishy Recoil halus
+    // ========================================================================
     if (this.currentJumpZ <= 0 && this.jumpVelocityZ <= 0) {
       this.isJumping = false;
       this.jumpCount = 0; // Reset counter lompat saat mendarat
@@ -475,21 +594,24 @@ export class CharacterController {
       // Mainkan efek suara mendarat (Thud)
       this.sound.playLand();
 
-      // EFEK SQUISHY MENDARAT ALA MARIO (Impact Squash & Springy Bounce Recoil)
-      this.currentSquashX = 1.28;
-      this.currentSquashY = 0.74;
+      // Karakter tetap di animasi Landing saat menapak tanah
+      this.player.setJumpVisualStage('landing');
+
+      // EFEK SQUISHY MENDARAT HALUS (Impact Squash wajar 6-7%)
+      this.currentSquashX = 1.07;
+      this.currentSquashY = 0.93;
       this.player.setSquashStretch(this.currentSquashX, this.currentSquashY);
 
       if (this.landingSquashTween) {
         this.landingSquashTween.stop();
       }
-      const squashTarget = { sx: 1.28, sy: 0.74 };
+      const squashTarget = { sx: 1.07, sy: 0.93 };
       this.landingSquashTween = this.scene.tweens.add({
         targets: squashTarget,
         sx: 1.0,
         sy: 1.0,
-        duration: 170,
-        ease: 'Back.easeOut',
+        duration: 120,
+        ease: 'Quad.easeOut',
         onUpdate: () => {
           this.currentSquashX = squashTarget.sx;
           this.currentSquashY = squashTarget.sy;
@@ -498,8 +620,12 @@ export class CharacterController {
         onComplete: () => {
           this.currentSquashX = 1.0;
           this.currentSquashY = 1.0;
-          this.player.setSquashStretch(1.0, 1.0);
+          this.player.resetSquashStretch();
           this.landingSquashTween = null;
+          // Kembali ke pose jalan/idle setelah benturan pendaratan selesai
+          if (!this.isJumping) {
+            this.player.setJumpVisualStage('none');
+          }
         },
       });
 

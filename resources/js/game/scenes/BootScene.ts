@@ -59,6 +59,19 @@ export class BootScene extends Phaser.Scene {
       this.load.image(`player-male-walk-back-${i}`, `/assets/sprites/characters/Player/Male/MovementBack/MaleWalkBack${i}.png`);
       this.load.image(`player-male-walk-side-${i}`, `/assets/sprites/characters/Player/Male/MovementSide/MaleWalkSide${i}.png`);
     }
+    // Animasi Lompat Male (Charge, Lompat/Takeoff, Di Udara/InAir, Landing)
+    this.load.image('player-male-jump-charge-front', '/assets/sprites/characters/Player/Male/Lompat/Charge/Front/MaleJumpCharge%20Front.png');
+    this.load.image('player-male-jump-charge-back', '/assets/sprites/characters/Player/Male/Lompat/Charge/Back/MaleJumpChargeBack.png');
+    this.load.image('player-male-jump-charge-side', '/assets/sprites/characters/Player/Male/Lompat/Charge/Side/MaleJumpChargeSide.png');
+    this.load.image('player-male-jump-takeoff-front', '/assets/sprites/characters/Player/Male/Lompat/Lompat/Front/MaleJumpFront.png');
+    this.load.image('player-male-jump-takeoff-back', '/assets/sprites/characters/Player/Male/Lompat/Lompat/Back/MaleJumpBack.png');
+    this.load.image('player-male-jump-takeoff-side', '/assets/sprites/characters/Player/Male/Lompat/Lompat/Side/MaleJumpSide.png');
+    this.load.image('player-male-jump-air-front', '/assets/sprites/characters/Player/Male/Lompat/Di%20Udara/Front/MaleJumpAirFront.png');
+    this.load.image('player-male-jump-air-back', '/assets/sprites/characters/Player/Male/Lompat/Di%20Udara/Back/MaleJumpAirBack.png');
+    this.load.image('player-male-jump-air-side', '/assets/sprites/characters/Player/Male/Lompat/Di%20Udara/Side/MaleJumpAirSide.png');
+    this.load.image('player-male-jump-landing-front', '/assets/sprites/characters/Player/Male/Lompat/Landing/Front/MaleJumpLandingFront.png');
+    this.load.image('player-male-jump-landing-back', '/assets/sprites/characters/Player/Male/Lompat/Landing/Back/MaleJumpLandingBack.png');
+    this.load.image('player-male-jump-landing-side', '/assets/sprites/characters/Player/Male/Lompat/Landing/Side/MaleJumpLandingSide.png');
 
     // 2. Aset Karakter Female (Perempuan)
     // Idle (Front, Back, Side)
@@ -71,6 +84,19 @@ export class BootScene extends Phaser.Scene {
       this.load.image(`player-female-walk-back-${i}`, `/assets/sprites/characters/Player/Female/MovementBack/FemaleWalkBack${i}.png`);
       this.load.image(`player-female-walk-side-${i}`, `/assets/sprites/characters/Player/Female/MovementSide/FemaleWalkSide${i}.png`);
     }
+    // Animasi Lompat Female (Charge, Lompat/Takeoff, Di Udara/InAir, Landing)
+    this.load.image('player-female-jump-charge-front', '/assets/sprites/characters/Player/Female/Lompat/Charge/Front/FemaleJumpCharge%20Front.png');
+    this.load.image('player-female-jump-charge-back', '/assets/sprites/characters/Player/Female/Lompat/Charge/Back/FemaleJumpChargeBack.png');
+    this.load.image('player-female-jump-charge-side', '/assets/sprites/characters/Player/Female/Lompat/Charge/Side/FemaleJumpChargeSide.png');
+    this.load.image('player-female-jump-takeoff-front', '/assets/sprites/characters/Player/Female/Lompat/Lompat/Front/FemaleJumpFront.png');
+    this.load.image('player-female-jump-takeoff-back', '/assets/sprites/characters/Player/Female/Lompat/Lompat/Back/FemaleJumpBack.png');
+    this.load.image('player-female-jump-takeoff-side', '/assets/sprites/characters/Player/Female/Lompat/Lompat/Side/FemaleJumpSide.png');
+    this.load.image('player-female-jump-air-front', '/assets/sprites/characters/Player/Female/Lompat/Di%20Udara/Front/FemaleJumpAirFront.png');
+    this.load.image('player-female-jump-air-back', '/assets/sprites/characters/Player/Female/Lompat/Di%20Udara/Back/FemaleJumpAirBack.png');
+    this.load.image('player-female-jump-air-side', '/assets/sprites/characters/Player/Female/Lompat/Di%20Udara/Side/FemaleJumpAirSide.png');
+    this.load.image('player-female-jump-landing-front', '/assets/sprites/characters/Player/Female/Lompat/Landing/Front/FemaleJumpLandingFront.png');
+    this.load.image('player-female-jump-landing-back', '/assets/sprites/characters/Player/Female/Lompat/Landing/Back/FemaleJumpLandingBack.png');
+    this.load.image('player-female-jump-landing-side', '/assets/sprites/characters/Player/Female/Lompat/Landing/Side/FemaleJumpLandingSide.png');
 
     // Avatar Portret HD
     this.load.image('player-male-avatar', '/assets/sprites/characters/Player/Male/MaleAvatar.png');

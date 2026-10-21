@@ -381,9 +381,26 @@ export class InventoryManager {
       return false;
     }
 
-    const temp = this.items[fromIndex];
-    this.items[fromIndex] = this.items[toIndex];
-    this.items[toIndex] = temp;
+    const source = this.items[fromIndex];
+    const target = this.items[toIndex];
+
+    // Jika item sama dan bisa distack, gabungkan jumlahnya
+    if (source && target && source.id === target.id && target.quantity < target.maxStack) {
+      const spaceLeft = target.maxStack - target.quantity;
+      const transferQty = Math.min(spaceLeft, source.quantity);
+      target.quantity += transferQty;
+      source.quantity -= transferQty;
+
+      if (source.quantity <= 0) {
+        this.items[fromIndex] = null;
+      }
+      this.saveToStorage();
+      return true;
+    }
+
+    // Tukar slot (swap)
+    this.items[fromIndex] = target;
+    this.items[toIndex] = source;
     this.saveToStorage();
     return true;
   }

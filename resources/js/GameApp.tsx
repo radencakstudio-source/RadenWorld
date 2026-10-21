@@ -1001,6 +1001,12 @@ export const GameApp: React.FC = () => {
             gold={playerGold}
             diamonds={playerDiamonds}
             onOpenTopUp={() => setIsTopUpOpen(true)}
+            friendsList={friendsList}
+            onInspectPlayer={(p) => {
+              setInspectedPlayer(p);
+              setIsProfileOpen(true);
+            }}
+            onAddFriend={(targetId, targetName) => handleAddFriend(targetId, targetName)}
           />
 
           {/* Mini Hotbar 6-Slot di Tengah Bawah Layar */}

@@ -55,6 +55,7 @@ import { RemotePlayer } from '../entities/RemotePlayer';
 import { NetworkManager } from '../core/NetworkManager';
 import { EventBus } from '../core/EventBus';
 import { SoundManager } from '../core/SoundManager';
+import { CameraController } from '../controllers/CameraController';
 import { IPlayerData, IChatMessage, IWorldInitData, IAvatarCustomization } from '../types';
 
 interface INpcConfig {
@@ -74,6 +75,7 @@ export class WorldScene extends Phaser.Scene {
   private player: Player | null = null;
   private remotePlayers: Map<string, RemotePlayer> = new Map();
   private networkManager: NetworkManager;
+  public cameraController!: CameraController;
 
   // Luas Peta Dunia Terbuka: Tepat 80x80 petak grid @ 120px = 9600x9600 pixel
   public worldWidth: number = 9600;
@@ -331,10 +333,7 @@ export class WorldScene extends Phaser.Scene {
       this.pendingAvatar = savedAv;
     }
 
-    // Spawn karakter lokal
-    this.spawnLocalPlayer(this.pendingPlayerName, this.pendingAvatar, this.spawnNearHouseDoor);
-
-    // Setup kamera zoom
+    // Setup kamera zoom & controller terlebih dahulu sebelum spawn player
     let initialZoom = 0.9;
     try {
       const s = JSON.parse(localStorage.getItem('raden_game_settings') || '{}');
@@ -343,6 +342,9 @@ export class WorldScene extends Phaser.Scene {
       }
     } catch (e) { }
     this.setupCameraZoomControls(initialZoom);
+
+    // Spawn karakter lokal
+    this.spawnLocalPlayer(this.pendingPlayerName, this.pendingAvatar, this.spawnNearHouseDoor);
 
     // Cleanup saat shutdown
     const cleanupScene = () => {
@@ -379,41 +381,22 @@ export class WorldScene extends Phaser.Scene {
 
   private setupCameraZoomControls(defaultZoom: number = 0.9): void {
     this.targetZoom = defaultZoom;
-    this.cameras.main.setZoom(defaultZoom);
-    this.cameras.main.setRoundPixels(true);
-
-    const onWheel = (_pointer: Phaser.Input.Pointer, _gameObjects: any, _deltaX: number, deltaY: number) => {
-      const zoomFactor = deltaY > 0 ? 0.90 : 1.10;
-      this.targetZoom = Phaser.Math.Clamp(this.targetZoom * zoomFactor, 0.45, 1.8);
-    };
-    this.input.on('wheel', onWheel);
-
-    const handleZoomIn = () => { this.targetZoom = Phaser.Math.Clamp(this.targetZoom * 1.15, 0.45, 1.8); };
-    const handleZoomOut = () => { this.targetZoom = Phaser.Math.Clamp(this.targetZoom * 0.85, 0.45, 1.8); };
-    const handleZoomReset = () => { this.targetZoom = defaultZoom; };
-    const handleZoomSet = (zoom: number) => { this.targetZoom = Phaser.Math.Clamp(zoom, 0.45, 1.8); };
-
-    EventBus.on('camera-zoom-in', handleZoomIn);
-    EventBus.on('camera-zoom-out', handleZoomOut);
-    EventBus.on('camera-zoom-reset', handleZoomReset);
-    EventBus.on('camera-zoom-set', handleZoomSet);
-
-    this.input.keyboard?.on('keydown-PLUS', handleZoomIn);
-    this.input.keyboard?.on('keydown-NUMPAD_ADD', handleZoomIn);
-    this.input.keyboard?.on('keydown-MINUS', handleZoomOut);
-    this.input.keyboard?.on('keydown-NUMPAD_SUBTRACT', handleZoomOut);
-
-    this.events.on('shutdown', () => {
-      this.input.off('wheel', onWheel);
-      EventBus.off('camera-zoom-in', handleZoomIn);
-      EventBus.off('camera-zoom-out', handleZoomOut);
-      EventBus.off('camera-zoom-reset', handleZoomReset);
-      EventBus.off('camera-zoom-set', handleZoomSet);
-    });
+    if (!this.cameraController) {
+      this.cameraController = new CameraController(this, {
+        defaultZoom,
+        minZoom: 0.45,
+        maxZoom: 1.8,
+        zoomLerpSpeed: 0.12,
+      });
+    } else {
+      this.cameraController.setupZoomControls({ defaultZoom });
+      this.cameraController.smoothZoomTo(defaultZoom);
+    }
   }
 
-  private smoothZoomTo(newZoom: number): void {
+  public smoothZoomTo(newZoom: number): void {
     this.targetZoom = Phaser.Math.Clamp(newZoom, 0.45, 1.8);
+    this.cameraController?.smoothZoomTo(newZoom);
   }
 
   /**
@@ -1270,16 +1253,18 @@ export class WorldScene extends Phaser.Scene {
 
     // Perluas batas kamera dengan margin 1600px di luar grid dunia (80x80)
     // agar kamera SELALU fokus tepat di tengah layar meskipun karakter berada di pojok/ujung peta
+    if (!this.cameraController) {
+      this.setupCameraZoomControls(0.9);
+    }
     const cameraMargin = 1600;
-    this.cameras.main.setBounds(
+    this.cameraController.setBounds(
       -cameraMargin,
       -cameraMargin,
       this.worldWidth + cameraMargin * 2,
       this.worldHeight + cameraMargin * 2
     );
-    this.cameras.main.setRoundPixels(true);
-    this.cameras.main.centerOn(spawnX, spawnY);
-    this.cameras.main.startFollow(this.player, true, 1.0, 1.0);
+    this.cameraController.centerOn(spawnX, spawnY);
+    this.cameraController.follow(this.player, true, 1.0, 1.0);
     this.smoothZoomTo(0.9);
 
     this.networkManager.connect();
@@ -1460,10 +1445,8 @@ export class WorldScene extends Phaser.Scene {
   }
 
   public update(time: number, delta: number): void {
-    // Interpolasi zoom kamera halus
-    if (this.cameras.main && Math.abs(this.cameras.main.zoom - this.targetZoom) > 0.002) {
-      this.cameras.main.zoom = Phaser.Math.Linear(this.cameras.main.zoom, this.targetZoom, 0.12);
-    }
+    // Interpolasi zoom kamera halus via CameraController
+    this.cameraController?.update(time, delta);
 
     // Animasi Riak & Ombak Air Laut Mengalir (Fluid Waves & Sparkling Caustics 60 FPS)
     const t = time * 0.001;

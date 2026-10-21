@@ -1210,7 +1210,7 @@ export const CreatorStudioModal: React.FC<CreatorStudioModalProps> = ({ isOpen, 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/85 backdrop-blur-md p-2 md:p-4 select-none font-sans text-slate-100 overflow-hidden">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 p-2 md:p-4 select-none font-sans text-slate-100 overflow-hidden">
       {/* Toast Notifikasi Sims */}
       {saveToast && (
         <div className="fixed top-5 left-1/2 -translate-x-1/2 z-[120] px-5 py-2.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-400 text-slate-950 font-bold text-xs md:text-sm shadow-2xl flex items-center gap-2.5 border border-emerald-200 animate-bounce">
@@ -1508,7 +1508,7 @@ export const CreatorStudioModal: React.FC<CreatorStudioModalProps> = ({ isOpen, 
         >
           {/* HUD KURSOR & STATUS SEKTOR */}
           <div className="absolute top-3 left-4 z-30 flex items-center gap-3 text-[11px] font-mono pointer-events-none">
-            <div className="px-2.5 py-1 rounded-xl bg-slate-900/90 border border-slate-800 text-slate-300 backdrop-blur-sm flex items-center gap-2 shadow-lg">
+            <div className="px-2.5 py-1 rounded-xl bg-slate-900/90 border border-slate-800 text-slate-300 flex items-center gap-2 shadow-lg">
               <div className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
               <span>
                 Peta: <strong className="text-emerald-400 uppercase">{selectedMap}</strong> ({currentConfig.gridWidth}×{currentConfig.gridHeight} Petak)
@@ -1516,11 +1516,11 @@ export const CreatorStudioModal: React.FC<CreatorStudioModalProps> = ({ isOpen, 
             </div>
 
             {hoveredGridCell ? (
-              <div className="px-2.5 py-1 rounded-xl bg-slate-900/90 border border-emerald-500/50 text-emerald-300 font-bold backdrop-blur-sm shadow-lg">
+              <div className="px-2.5 py-1 rounded-xl bg-slate-900/90 border border-emerald-500/50 text-emerald-300 font-bold shadow-lg">
                 Grid ({hoveredGridCell.gx}, {hoveredGridCell.gy}) • {hoveredGridCell.gx * 120}px, {hoveredGridCell.gy * 120}px
               </div>
             ) : (
-              <div className="px-2.5 py-1 rounded-xl bg-slate-900/80 border border-slate-800 text-slate-400 backdrop-blur-sm">
+              <div className="px-2.5 py-1 rounded-xl bg-slate-900/80 border border-slate-800 text-slate-400">
                 Arahkan kursor ke petak kanvas
               </div>
             )}
@@ -1716,7 +1716,7 @@ export const CreatorStudioModal: React.FC<CreatorStudioModalProps> = ({ isOpen, 
                   )}
 
                   {/* THUMBNAIL GAMBAR ASET */}
-                  <div className="relative w-full h-full flex items-center justify-center p-0.5 bg-slate-900/50 backdrop-blur-xs">
+                  <div className="relative w-full h-full flex items-center justify-center p-0.5 bg-slate-900/50">
                     {prop.imageSrc ? (
                       <img
                         src={prop.imageSrc}

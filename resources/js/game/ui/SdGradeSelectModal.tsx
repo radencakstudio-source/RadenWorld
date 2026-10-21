@@ -140,7 +140,7 @@ export const SdGradeSelectModal: React.FC<SdGradeSelectModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-3 sm:p-5 font-cute animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-3 sm:p-5 font-cute animate-in fade-in duration-200">
       <div className="w-full max-w-2xl bg-gradient-to-b from-amber-50 via-white to-orange-50 border-4 border-amber-300 rounded-[32px] shadow-2xl shadow-amber-950/20 flex flex-col max-h-[92vh] overflow-hidden text-neutral-800 relative">
         
         {/* Header Ceria */}

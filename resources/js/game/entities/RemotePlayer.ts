@@ -15,7 +15,7 @@
 
 import Phaser from 'phaser';
 import { Entity } from './Entity';
-import { IAvatarCustomization, Direction } from '../types';
+import { IAvatarCustomization, Direction, JumpVisualStage } from '../types';
 import { SoundManager } from '../core/SoundManager';
 
 export class RemotePlayer extends Entity {
@@ -93,11 +93,24 @@ export class RemotePlayer extends Entity {
       body.moves = false;
       body.enable = false;
     }
+
+    this.once(Phaser.GameObjects.Events.DESTROY, () => {
+      if (this.chargeTimer) this.chargeTimer.remove();
+      if (this.inAirTimer) this.inAirTimer.remove();
+      if (this.landingTimer) this.landingTimer.remove();
+      if (this.whiteFlashTimer) this.whiteFlashTimer.remove();
+    });
   }
 
   private isJumping: boolean = false;
+  private isCharging: boolean = false;
   private currentJumpZ: number = 0;
   private jumpVelocityZ: number = 0;
+  private jumpVisualStage: JumpVisualStage = 'none';
+
+  private chargeTimer: Phaser.Time.TimerEvent | null = null;
+  private inAirTimer: Phaser.Time.TimerEvent | null = null;
+  private landingTimer: Phaser.Time.TimerEvent | null = null;
 
   private currentSquashX: number = 1.0;
   private currentSquashY: number = 1.0;
@@ -106,8 +119,65 @@ export class RemotePlayer extends Entity {
 
   private lastAfkTickTime: number = 0;
 
+  public getJumpVisualStage(): JumpVisualStage {
+    return this.jumpVisualStage;
+  }
+
+  public setJumpVisualStage(stage: JumpVisualStage): void {
+    this.jumpVisualStage = stage;
+    if (stage !== 'none') {
+      this.updateJumpVisual();
+    } else {
+      this.currentSquashX = 1.0;
+      this.currentSquashY = 1.0;
+      this.applySpriteTransform();
+      if (this.isMoving) {
+        this.playWalkAnimation();
+      } else {
+        this.playIdlePose();
+      }
+    }
+  }
+
+  public updateJumpVisual(): void {
+    if (!this.sprite || this.jumpVisualStage === 'none') return;
+
+    if (this.sprite.anims && this.sprite.anims.isPlaying) {
+      this.sprite.anims.stop();
+    }
+    this.currentAnimKey = '';
+
+    let dirKey: 'front' | 'back' | 'side' = 'front';
+    if (this.currentDirection === 'up') {
+      dirKey = 'back';
+      this.sprite.setFlipX(false);
+    } else if (this.currentDirection === 'down') {
+      dirKey = 'front';
+      this.sprite.setFlipX(false);
+    } else if (this.currentDirection === 'left') {
+      dirKey = 'side';
+      this.sprite.setFlipX(true);
+    } else if (this.currentDirection === 'right') {
+      dirKey = 'side';
+      this.sprite.setFlipX(false);
+    }
+
+    let stageSubKey = 'takeoff';
+    if (this.jumpVisualStage === 'charge') stageSubKey = 'charge';
+    else if (this.jumpVisualStage === 'jump') stageSubKey = 'takeoff';
+    else if (this.jumpVisualStage === 'inAir') stageSubKey = 'air';
+    else if (this.jumpVisualStage === 'landing') stageSubKey = 'landing';
+
+    const textureKey = `player-${this.gender}-jump-${stageSubKey}-${dirKey}`;
+    if (this.scene.textures.exists(textureKey) && this.sprite.texture.key !== textureKey) {
+      this.sprite.setTexture(textureKey);
+    }
+    this.applySpriteTransform();
+  }
+
   /**
    * Memicu efek kilat siluet putih pada avatar remote player saat melompat
+   * Kompatibel penuh Phaser 3 & Phaser 4 tanpa log deprecation warning
    */
   public triggerJumpWhiteFlash(durationMs: number = 160): void {
     if (!this.sprite || !this.sprite.active || !this.scene) return;
@@ -117,11 +187,19 @@ export class RemotePlayer extends Entity {
       this.whiteFlashTimer = null;
     }
 
-    (this.sprite as any).setTintFill(0xffffff);
+    this.sprite.setTint(0xffffff);
+    if (typeof (this.sprite as any).setTintMode === 'function') {
+      const fillMode = (Phaser as any).TintModes?.FILL ?? 1;
+      (this.sprite as any).setTintMode(fillMode);
+    }
 
     this.whiteFlashTimer = this.scene.time.delayedCall(durationMs, () => {
       if (this.sprite && this.sprite.active) {
         this.sprite.clearTint();
+        if (typeof (this.sprite as any).setTintMode === 'function') {
+          const normalMode = (Phaser as any).TintModes?.NORMAL ?? 0;
+          (this.sprite as any).setTintMode(normalMode);
+        }
       }
       this.whiteFlashTimer = null;
     });
@@ -133,8 +211,18 @@ export class RemotePlayer extends Entity {
     this.applySpriteTransform();
   }
 
+  public resetSquashStretch(): void {
+    this.currentSquashX = 1.0;
+    this.currentSquashY = 1.0;
+    this.applySpriteTransform();
+  }
+
   public applySpriteTransform(): void {
     if (!this.sprite) return;
+    if (this.jumpVisualStage === 'none') {
+      this.currentSquashX = 1.0;
+      this.currentSquashY = 1.0;
+    }
     const baseW = 120;
     const baseH = 240;
     const curW = baseW * this.currentSquashX;
@@ -146,35 +234,64 @@ export class RemotePlayer extends Entity {
   }
 
   /**
-   * Memicu visual lompatan ketika pemain lain melompat (Multiplayer Jump)
+   * Memicu visual lompatan ketika pemain lain melompat (Multiplayer Jump Sync)
+   * Lompatan 1 (4 Tahap): Charge -> Jump -> InAir -> Landing
+   * Lompatan 2 (3 Tahap): Jump -> InAir -> Landing
    */
   public triggerJump(jumpCount: number = 1): void {
-    this.isJumping = true;
-    if (jumpCount === 1) {
-      this.currentJumpZ = Math.max(0, this.currentJumpZ);
-      this.jumpVelocityZ = 640;
-    } else {
-      this.jumpVelocityZ = 540;
-      this.showSpeechBubble('⭐ Double Jump!', 750);
-    }
-    SoundManager.getInstance().playJump(jumpCount === 2);
-
-    this.triggerJumpWhiteFlash(150);
-
+    if (this.chargeTimer) this.chargeTimer.remove();
+    if (this.landingTimer) this.landingTimer.remove();
     if (this.landingSquashTween) {
       this.landingSquashTween.stop();
       this.landingSquashTween = null;
+      this.resetSquashStretch();
     }
-    this.currentSquashX = 1.22;
-    this.currentSquashY = 0.80;
-    this.setSquashStretch(this.currentSquashX, this.currentSquashY);
-    this.scene.time.delayedCall(42, () => {
-      if (this.isJumping) {
-        this.currentSquashX = 0.82;
-        this.currentSquashY = 1.24;
-        this.setSquashStretch(this.currentSquashX, this.currentSquashY);
-      }
-    });
+
+    this.isJumping = true;
+
+    if (jumpCount === 1) {
+      // 1. Lompat Pertama (4 Tahap: Charge dulu di tanah)
+      this.isCharging = true;
+      this.currentJumpZ = 0;
+      this.jumpVelocityZ = 0;
+      this.setJumpVisualStage('charge');
+
+      // Efek Squishy Halus: Sedikit crouch kompresi wajar (~5%)
+      this.currentSquashX = 1.05;
+      this.currentSquashY = 0.95;
+      this.applySpriteTransform();
+
+      // Durasi charge terlihat jelas (~160ms)
+      this.chargeTimer = this.scene.time.delayedCall(160, () => {
+        this.isCharging = false;
+        if (!this.isJumping) return;
+
+        // 2. Tahap Jump: Lepas landas melesat ke atas menuju max tertinggi
+        this.currentJumpZ = 0;
+        this.jumpVelocityZ = 660;
+        SoundManager.getInstance().playJump(false);
+        this.triggerJumpWhiteFlash(150);
+        this.setJumpVisualStage('jump');
+
+        // Rocket Stretch halus saat lepas landas
+        this.currentSquashX = 0.96;
+        this.currentSquashY = 1.05;
+        this.applySpriteTransform();
+      });
+    } else {
+      // 2. Double Jump (3 Tahap: Jump langsung di udara)
+      this.isCharging = false;
+      this.jumpVelocityZ = 560;
+      this.showSpeechBubble('⭐ Double Jump!', 750);
+      SoundManager.getInstance().playJump(true);
+      this.triggerJumpWhiteFlash(150);
+      this.setJumpVisualStage('jump');
+
+      // Rocket Stretch halus dorongan kedua
+      this.currentSquashX = 0.96;
+      this.currentSquashY = 1.05;
+      this.applySpriteTransform();
+    }
   }
 
   /**
@@ -223,7 +340,9 @@ export class RemotePlayer extends Entity {
 
     const shouldWalk = this.isMoving && !isStationary && !isPacketStale;
 
-    if (shouldWalk) {
+    if (this.jumpVisualStage !== 'none') {
+      this.updateJumpVisual();
+    } else if (shouldWalk) {
       if (this.isAfk) {
         this.setAfk(false);
       }
@@ -249,28 +368,49 @@ export class RemotePlayer extends Entity {
       this.lastAfkTickTime = 0;
     }
 
-    // 3. Update animasi melompat visual remote player
-    if (this.isJumping) {
+    // 3. Update animasi melompat visual remote player dengan Squishy Mario Physics
+    if (this.isCharging) {
+      this.currentJumpZ = 0;
+      this.applySpriteTransform();
+    } else if (this.isJumping) {
       const dt = Math.min(0.05, delta / 1000);
       this.jumpVelocityZ += -1400 * dt;
       this.currentJumpZ += this.jumpVelocityZ * dt;
 
-      // Update Deformasi Squishy Mario dinamis selama remote player di udara
+      // Evaluasi tahapan lompat berdasarkan fisika vertikal
+      let targetStage: JumpVisualStage = 'inAir';
       let targetSx = 1.0;
       let targetSy = 1.0;
-      if (this.jumpVelocityZ > 120) {
-        targetSx = 0.84;
-        targetSy = 1.20;
-      } else if (this.jumpVelocityZ < -160) {
-        targetSx = 0.90;
-        targetSy = 1.12;
+
+      if (this.jumpVelocityZ > 40) {
+        // Meluncur naik sebelum mencapai max tertinggi (Subtle Stretch)
+        targetStage = 'jump';
+        targetSx = 0.96;
+        targetSy = 1.05;
+      } else if (this.currentJumpZ > 40 || this.jumpVelocityZ >= 0) {
+        // Saat sampai atas (Apex) sampai meluncur turun
+        targetStage = 'inAir';
+        if (Math.abs(this.jumpVelocityZ) <= 100) {
+          targetSx = 1.0;
+          targetSy = 1.0;
+        } else {
+          targetSx = 0.98;
+          targetSy = 1.03;
+        }
       } else {
-        targetSx = 1.02;
-        targetSy = 0.98;
+        // Saat hampir menyentuh ground (Z <= 40 px saat turun)
+        targetStage = 'landing';
+        targetSx = 1.03;
+        targetSy = 0.97;
       }
 
-      this.currentSquashX += (targetSx - this.currentSquashX) * Math.min(1.0, dt * 14);
-      this.currentSquashY += (targetSy - this.currentSquashY) * Math.min(1.0, dt * 14);
+      if (this.jumpVisualStage !== targetStage) {
+        this.setJumpVisualStage(targetStage);
+      }
+
+      // Terapkan interpolasi Deformasi Squishy halus selama di udara
+      this.currentSquashX += (targetSx - this.currentSquashX) * Math.min(1.0, dt * 12);
+      this.currentSquashY += (targetSy - this.currentSquashY) * Math.min(1.0, dt * 12);
       this.applySpriteTransform();
 
       if (this.nameTag) this.nameTag.y = -165 - Math.max(0, this.currentJumpZ);
@@ -284,21 +424,26 @@ export class RemotePlayer extends Entity {
         if (this.nameTag) this.nameTag.y = -165;
         if (this.speechBubble) this.speechBubble.y = -this.charHeight - 50;
 
-        // EFEK SQUISHY MENDARAT ALA MARIO (Impact Squash & Springy Bounce Recoil)
-        this.currentSquashX = 1.28;
-        this.currentSquashY = 0.74;
+        SoundManager.getInstance().playLand();
+
+        // Tetap di landing pose saat impact tanah
+        this.setJumpVisualStage('landing');
+
+        // EFEK SQUISHY MENDARAT HALUS (Impact Squash wajar 6-7%)
+        this.currentSquashX = 1.07;
+        this.currentSquashY = 0.93;
         this.setSquashStretch(this.currentSquashX, this.currentSquashY);
 
         if (this.landingSquashTween) {
           this.landingSquashTween.stop();
         }
-        const squashTarget = { sx: 1.28, sy: 0.74 };
+        const squashTarget = { sx: 1.07, sy: 0.93 };
         this.landingSquashTween = this.scene.tweens.add({
           targets: squashTarget,
           sx: 1.0,
           sy: 1.0,
-          duration: 170,
-          ease: 'Back.easeOut',
+          duration: 120,
+          ease: 'Quad.easeOut',
           onUpdate: () => {
             this.currentSquashX = squashTarget.sx;
             this.currentSquashY = squashTarget.sy;
@@ -307,8 +452,11 @@ export class RemotePlayer extends Entity {
           onComplete: () => {
             this.currentSquashX = 1.0;
             this.currentSquashY = 1.0;
-            this.setSquashStretch(1.0, 1.0);
+            this.resetSquashStretch();
             this.landingSquashTween = null;
+            if (!this.isJumping) {
+              this.setJumpVisualStage('none');
+            }
           },
         });
       }

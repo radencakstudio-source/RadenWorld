@@ -237,6 +237,19 @@ export class NetworkManager {
     this.connect(customUrl);
   }
 
+  /** Daftar pemain aktif di server saat ini */
+  private serverPlayers: Map<string, IPlayerData> = new Map();
+
+  public getServerPlayers(): IPlayerData[] {
+    return Array.from(this.serverPlayers.values());
+  }
+
+  private emitServerPlayersUpdated(): void {
+    const list = Array.from(this.serverPlayers.values());
+    EventBus.emit('server-players-updated', list);
+    EventBus.emit('player-count-updated', Math.max(1, list.length));
+  }
+
   private bindSocketListeners(): void {
     if (!this.socket) return;
 
@@ -260,10 +273,26 @@ export class NetworkManager {
     });
 
     this.socket.on('world:init', (data: IWorldInitData) => {
+      this.serverPlayers.clear();
+      if (data.selfPlayer) {
+        this.serverPlayers.set(data.selfPlayer.id, data.selfPlayer);
+      }
+      if (Array.isArray(data.players)) {
+        data.players.forEach((p) => this.serverPlayers.set(p.id, p));
+      }
+      this.emitServerPlayersUpdated();
       this.listeners.worldInit.forEach((cb) => cb(data));
     });
 
     this.socket.on('room:players', (data: { room: string; players: IPlayerData[] }) => {
+      const myId = this.getSocketId();
+      const me = myId ? this.serverPlayers.get(myId) : null;
+      this.serverPlayers.clear();
+      if (me) this.serverPlayers.set(me.id, me);
+      if (Array.isArray(data.players)) {
+        data.players.forEach((p) => this.serverPlayers.set(p.id, p));
+      }
+      this.emitServerPlayersUpdated();
       this.listeners.worldInit.forEach((cb) => cb({
         selfId: this.getSocketId() || '',
         selfPlayer: null as any,
@@ -274,6 +303,8 @@ export class NetworkManager {
     });
 
     this.socket.on('player:joined', (player: IPlayerData) => {
+      this.serverPlayers.set(player.id, player);
+      this.emitServerPlayersUpdated();
       this.listeners.playerJoined.forEach((cb) => cb(player));
     });
 
@@ -282,6 +313,8 @@ export class NetworkManager {
     });
 
     this.socket.on('player:left', (data) => {
+      this.serverPlayers.delete(data.id);
+      this.emitServerPlayersUpdated();
       this.listeners.playerLeft.forEach((cb) => cb(data));
     });
 
@@ -363,8 +396,28 @@ export class NetworkManager {
     room: string = 'world'
   ): void {
     this.lastJoinData = { name, avatar, role, isSuperAdmin, x, y, direction, gold, diamonds, room };
-    if (!this.socket || !this.isConnected) return;
     const isSuper = isSuperAdmin || role === 'super_admin' || name.toUpperCase() === 'RADEN';
+
+    const myId = this.getSocketId() || 'local-me';
+    this.serverPlayers.set(myId, {
+      id: myId,
+      name,
+      avatar,
+      x: typeof x === 'number' && !isNaN(x) ? x : 4800,
+      y: typeof y === 'number' && !isNaN(y) ? y : 4860,
+      direction: direction || 'down',
+      isMoving: false,
+      hp: 100,
+      maxHp: 100,
+      level: 1,
+      role: isSuper ? 'super_admin' : (role || 'player'),
+      isSuperAdmin: isSuper,
+      gold: typeof gold === 'number' ? gold : (isSuper ? 999999 : 2500),
+      diamonds: typeof diamonds === 'number' ? diamonds : (isSuper ? 99999 : 50),
+    });
+    this.emitServerPlayersUpdated();
+
+    if (!this.socket || !this.isConnected) return;
     this.socket.emit('player:join', {
       name,
       avatar,

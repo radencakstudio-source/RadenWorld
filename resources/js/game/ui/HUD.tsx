@@ -414,10 +414,10 @@ export const HUD: React.FC<HUDProps> = ({
         </div>
 
         {/* KANAN ATAS: CONTAINER UANG, SERVER, SETTINGS, & PETA DUNIA (MINIMAP 1 BARIS DENGAN SETTINGS) */}
-        <div className="pointer-events-auto flex items-start gap-1.5 flex-wrap justify-end select-none">
+        <div className="pointer-events-none flex items-start gap-1.5 flex-wrap justify-end select-none">
           {/* KOIN EMAS (Bisa Diperoleh Dari Aktivitas) */}
           <div
-            className="h-10 flex items-center gap-1.5 px-3 rounded-md bg-black border border-neutral-800 text-amber-400 select-none shadow-sm shrink-0"
+            className="pointer-events-auto h-10 flex items-center gap-1.5 px-3 rounded-md bg-black border border-neutral-800 text-amber-400 select-none shadow-sm shrink-0"
             title="Koin Emas (Bisa diperoleh dari jelajah, quest & aktivitas)"
           >
             <Coins className="w-4 h-4 text-amber-400 shrink-0" />
@@ -435,7 +435,7 @@ export const HUD: React.FC<HUDProps> = ({
               sound.playClick();
               onOpenTopUp?.();
             }}
-            className="h-10 flex items-center gap-1.5 pl-2.5 pr-1.5 rounded-md bg-black border border-neutral-800 text-cyan-400 select-none shadow-sm group hover:border-cyan-500/50 transition-colors cursor-pointer shrink-0"
+            className="pointer-events-auto h-10 flex items-center gap-1.5 pl-2.5 pr-1.5 rounded-md bg-black border border-neutral-800 text-cyan-400 select-none shadow-sm group hover:border-cyan-500/50 transition-colors cursor-pointer shrink-0"
             title="Berlian (Klik untuk Top Up)"
           >
             <Gem className="w-4 h-4 text-cyan-400 fill-cyan-400/20 shrink-0" />
@@ -465,7 +465,7 @@ export const HUD: React.FC<HUDProps> = ({
               sound.playClick();
               onOpenServerModal?.();
             }}
-            className="h-10 flex items-center gap-2 px-3 rounded-md bg-black border border-neutral-800 hover:border-amber-400 text-neutral-200 transition-colors cursor-pointer group shrink-0"
+            className="pointer-events-auto h-10 flex items-center gap-2 px-3 rounded-md bg-black border border-neutral-800 hover:border-amber-400 text-neutral-200 transition-colors cursor-pointer group shrink-0"
             title="Klik untuk Melihat Daftar Server & Pindah Realm"
           >
             <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
@@ -491,7 +491,7 @@ export const HUD: React.FC<HUDProps> = ({
                 sound.playClick();
                 onOpenSettings();
               }}
-              className="h-10 w-10 rounded-md bg-black border border-neutral-800 text-neutral-300 hover:text-amber-400 hover:border-amber-400 flex items-center justify-center transition-colors cursor-pointer shrink-0"
+              className="pointer-events-auto h-10 w-10 rounded-md bg-black border border-neutral-800 text-neutral-300 hover:text-amber-400 hover:border-amber-400 flex items-center justify-center transition-colors cursor-pointer shrink-0"
               title="Pengaturan Game & Konfigurasi IP Server"
             >
               <Settings className="w-4 h-4" />
@@ -500,7 +500,7 @@ export const HUD: React.FC<HUDProps> = ({
 
           {/* UI PETA / MINIMAP: 1 BARIS DENGAN PENGATURAN, DI SEBELAH KANAN PENGATURAN */}
           {!stats.inHouse && (
-            <div className="flex flex-col items-end shrink-0">
+            <div className="pointer-events-auto flex flex-col items-end shrink-0">
               {/* Header Peta Mini (Sejajar 1 Baris dengan Pengaturan) */}
               <div className="h-10 flex items-center justify-between w-[184px] px-2.5 bg-black border-x border-t border-b border-neutral-800 rounded-t-md text-[10px] font-bold text-neutral-300 shadow-sm">
                 <div className="flex items-center gap-1.5 text-amber-400">

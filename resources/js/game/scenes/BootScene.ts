@@ -141,6 +141,14 @@ export class BootScene extends Phaser.Scene {
     this.load.image('trash-logam', '/assets/maps/World/Assets/1x2%20TongSampahDaurUlangLogam.png');
     this.load.image('trash-b3', '/assets/maps/World/Assets/1x2%20TongSampahDaurUlangB3.png');
     this.load.image('popup-billboard', '/assets/maps/World/Assets/10X10%20Popup.png');
+    // Aset Tembok & Ground Tile Open World (/assets/maps/World/Ground/Tile/)
+    this.load.image('tile-wall-dark', '/assets/maps/World/Ground/Tile/DarkWall.png');
+    this.load.image('tile-wall-light', '/assets/maps/World/Ground/Tile/LightWall.png');
+    this.load.image('tile-wall-top-dark', '/assets/maps/World/Ground/Tile/DarkWall_WithTop.png');
+    this.load.image('tile-wall-top-light', '/assets/maps/World/Ground/Tile/LightWall_WithTop.png');
+    this.load.image('tile-ground-dark', '/assets/maps/World/Ground/Tile/GroundGelap.png');
+    this.load.image('tile-ground-light', '/assets/maps/World/Ground/Tile/GroundTerang.png');
+
     this.load.image('tile-trotoar-alunalun', '/assets/maps/World/Assets/1X1%20Trotoar%20Alunalun.png');
     this.load.image('trotoar-2', '/assets/maps/World/Assets/1X1%20Trotoar2.png');
     this.load.image('tile-trotoar-3', '/assets/maps/World/Assets/1X1%20Trotoar2.png');
@@ -423,50 +431,256 @@ export class BootScene extends Phaser.Scene {
       g.destroy();
     }
 
-    // Tekstur Ombak & Riak Air Laut Dinamis (Seamless Water Wave Ripple - 360x360)
+    // Tekstur Tembok Catur (2x2 @ 120px = 240x240) untuk Open World
+    // 1. Tembok Atas Utara (tile-wall-dark & tile-wall-light)
+    if (!this.textures.exists('wall-top-checker') && this.textures.exists('tile-wall-dark') && this.textures.exists('tile-wall-light')) {
+      try {
+        const darkImg = this.textures.get('tile-wall-dark').getSourceImage() as HTMLImageElement;
+        const lightImg = this.textures.get('tile-wall-light').getSourceImage() as HTMLImageElement;
+        const canvas = document.createElement('canvas');
+        canvas.width = 240;
+        canvas.height = 240;
+        const ctx = canvas.getContext('2d');
+        if (ctx && darkImg && lightImg) {
+          ctx.drawImage(darkImg, 0, 0, 120, 120);
+          ctx.drawImage(lightImg, 120, 0, 120, 120);
+          ctx.drawImage(lightImg, 0, 120, 120, 120);
+          ctx.drawImage(darkImg, 120, 120, 120, 120);
+          this.textures.addCanvas('wall-top-checker', canvas);
+        }
+      } catch (e) {
+        console.warn('[BootScene] Gagal membuat tekstur wall-top-checker:', e);
+      }
+    }
+
+    // 2. Tembok Samping Barat (tile-wall-top-dark & tile-wall-top-light)
+    if (!this.textures.exists('wall-side-checker') && this.textures.exists('tile-wall-top-dark') && this.textures.exists('tile-wall-top-light')) {
+      try {
+        const darkTopImg = this.textures.get('tile-wall-top-dark').getSourceImage() as HTMLImageElement;
+        const lightTopImg = this.textures.get('tile-wall-top-light').getSourceImage() as HTMLImageElement;
+        const canvas = document.createElement('canvas');
+        canvas.width = 240;
+        canvas.height = 240;
+        const ctx = canvas.getContext('2d');
+        if (ctx && darkTopImg && lightTopImg) {
+          ctx.drawImage(darkTopImg, 0, 0, 120, 120);
+          ctx.drawImage(lightTopImg, 120, 0, 120, 120);
+          ctx.drawImage(lightTopImg, 0, 120, 120, 120);
+          ctx.drawImage(darkTopImg, 120, 120, 120, 120);
+          this.textures.addCanvas('wall-side-checker', canvas);
+        }
+      } catch (e) {
+        console.warn('[BootScene] Gagal membuat tekstur wall-side-checker:', e);
+      }
+    }
+
+    // Tekstur Ombak & Riak Air Laut Dinamis HD (Seamless Water Wave Ripple - 480x480)
     if (!this.textures.exists('water-wave-tile')) {
       const canvas = document.createElement('canvas');
-      canvas.width = 360;
-      canvas.height = 360;
+      canvas.width = 480;
+      canvas.height = 480;
       const ctx = canvas.getContext('2d');
       if (ctx) {
-        ctx.clearRect(0, 0, 360, 360);
+        ctx.clearRect(0, 0, 480, 480);
 
-        // Helper untuk menggambar riak ombak melengkung halus yang seamless
-        const drawRipple = (cx: number, cy: number, w: number, h: number, alpha: number) => {
-          ctx.save();
-          ctx.beginPath();
-          ctx.moveTo(cx - w / 2, cy);
-          ctx.bezierCurveTo(cx - w / 4, cy - h, cx + w / 4, cy + h, cx + w / 2, cy);
-          ctx.strokeStyle = `rgba(255, 255, 255, ${alpha})`;
-          ctx.lineWidth = 3;
-          ctx.lineCap = 'round';
-          ctx.stroke();
+        const drawWave = (cx: number, cy: number, w: number, h: number, alpha: number) => {
+          const drawAt = (ox: number, oy: number) => {
+            ctx.save();
+            // a. Bayangan biru tua kedalaman di bawah gelombang (3D depth)
+            ctx.beginPath();
+            ctx.moveTo(ox - w / 2, oy + 4);
+            ctx.bezierCurveTo(ox - w / 4, oy - h + 4, ox + w / 4, oy + h + 4, ox + w / 2, oy + 4);
+            ctx.strokeStyle = `rgba(2, 132, 199, ${alpha * 0.40})`;
+            ctx.lineWidth = 4.5;
+            ctx.lineCap = 'round';
+            ctx.stroke();
 
-          // Pendaran kilau air (caustic highlight) di puncak riak
-          ctx.beginPath();
-          ctx.arc(cx - w * 0.1, cy - h * 0.35, 2.5, 0, Math.PI * 2);
-          ctx.fillStyle = `rgba(224, 248, 255, ${alpha * 1.2})`;
-          ctx.fill();
-          ctx.restore();
+            // b. Tubuh gelombang biru muda kristal transparan (translucent azure swell)
+            ctx.beginPath();
+            ctx.moveTo(ox - w / 2, oy);
+            ctx.bezierCurveTo(ox - w / 4, oy - h, ox + w / 4, oy + h, ox + w / 2, oy);
+            ctx.strokeStyle = `rgba(125, 211, 252, ${alpha * 0.65})`;
+            ctx.lineWidth = 4.0;
+            ctx.lineCap = 'round';
+            ctx.stroke();
+
+            // c. Puncak buih putih berkilau (crisp white frothy crest)
+            ctx.beginPath();
+            ctx.moveTo(ox - w / 2 + 3, oy);
+            ctx.bezierCurveTo(ox - w / 4, oy - h * 0.9, ox + w / 4, oy + h * 0.9, ox + w / 2 - 3, oy);
+            ctx.strokeStyle = `rgba(255, 255, 255, ${alpha * 0.95})`;
+            ctx.lineWidth = 2.4;
+            ctx.lineCap = 'round';
+            ctx.stroke();
+
+            // d. Percikan buih laut lembut (sea foam particles)
+            ctx.fillStyle = `rgba(240, 249, 255, ${alpha * 0.85})`;
+            ctx.beginPath();
+            ctx.arc(ox - w * 0.22, oy - h * 0.4, 1.8, 0, Math.PI * 2);
+            ctx.arc(ox + w * 0.18, oy + h * 0.35, 1.6, 0, Math.PI * 2);
+            ctx.arc(ox + w * 0.35, oy + h * 0.15, 1.4, 0, Math.PI * 2);
+            ctx.fill();
+
+            // e. Bintang kilau pantulan sinar matahari (4-point sunlight glimmer sparkle)
+            const sx = ox - w * 0.06;
+            const sy = oy - h * 0.35;
+            ctx.fillStyle = `rgba(255, 255, 255, ${alpha * 1.0})`;
+            ctx.beginPath();
+            ctx.moveTo(sx, sy - 4);
+            ctx.lineTo(sx + 1.2, sy);
+            ctx.lineTo(sx + 4, sy);
+            ctx.lineTo(sx + 1.2, sy);
+            ctx.lineTo(sx, sy + 4);
+            ctx.lineTo(sx - 1.2, sy);
+            ctx.lineTo(sx - 4, sy);
+            ctx.lineTo(sx - 1.2, sy);
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.restore();
+          };
+
+          drawAt(cx, cy);
+          if (cx - w / 2 < 0) drawAt(cx + 480, cy);
+          if (cx + w / 2 > 480) drawAt(cx - 480, cy);
+          if (cy - h < 0) drawAt(cx, cy + 480);
+          if (cy + h > 480) drawAt(cx, cy - 480);
         };
 
-        // Buat baris riak ombak berselang-seling yang tersebar merata & seamless
-        const ripples = [
-          { cx: 90, cy: 45, w: 90, h: 8, alpha: 0.55 },
-          { cx: 270, cy: 45, w: 85, h: 7, alpha: 0.50 },
-          { cx: 180, cy: 135, w: 100, h: 9, alpha: 0.60 },
-          { cx: 340, cy: 135, w: 70, h: 6, alpha: 0.45 },
-          { cx: 20, cy: 135, w: 70, h: 6, alpha: 0.45 },
-          { cx: 90, cy: 225, w: 95, h: 8, alpha: 0.52 },
-          { cx: 270, cy: 225, w: 90, h: 8, alpha: 0.58 },
-          { cx: 180, cy: 315, w: 85, h: 7, alpha: 0.48 },
-          { cx: 350, cy: 315, w: 65, h: 6, alpha: 0.42 },
-          { cx: 10, cy: 315, w: 65, h: 6, alpha: 0.42 },
+        const waveList = [
+          { cx: 80, cy: 35, w: 110, h: 9, a: 0.70 },
+          { cx: 280, cy: 45, w: 100, h: 8, a: 0.60 },
+          { cx: 430, cy: 30, w: 80, h: 7, a: 0.65 },
+
+          { cx: 180, cy: 105, w: 125, h: 10, a: 0.75 },
+          { cx: 360, cy: 115, w: 90, h: 8, a: 0.55 },
+          { cx: 30, cy: 120, w: 75, h: 7, a: 0.60 },
+
+          { cx: 100, cy: 180, w: 105, h: 9, a: 0.65 },
+          { cx: 270, cy: 170, w: 120, h: 10, a: 0.72 },
+          { cx: 440, cy: 190, w: 85, h: 7, a: 0.58 },
+
+          { cx: 190, cy: 250, w: 115, h: 9, a: 0.70 },
+          { cx: 350, cy: 240, w: 100, h: 8, a: 0.62 },
+          { cx: 40, cy: 260, w: 90, h: 8, a: 0.65 },
+
+          { cx: 120, cy: 320, w: 120, h: 10, a: 0.75 },
+          { cx: 290, cy: 330, w: 95, h: 8, a: 0.58 },
+          { cx: 450, cy: 315, w: 80, h: 7, a: 0.55 },
+
+          { cx: 210, cy: 395, w: 130, h: 10, a: 0.72 },
+          { cx: 380, cy: 405, w: 85, h: 7, a: 0.55 },
+          { cx: 50, cy: 400, w: 95, h: 8, a: 0.62 },
+
+          { cx: 140, cy: 460, w: 100, h: 8, a: 0.62 },
+          { cx: 310, cy: 455, w: 115, h: 9, a: 0.70 },
         ];
 
-        ripples.forEach(r => drawRipple(r.cx, r.cy, r.w, r.h, r.alpha));
+        waveList.forEach(w => drawWave(w.cx, w.cy, w.w, w.h, w.a));
         this.textures.addCanvas('water-wave-tile', canvas);
+      }
+    }
+
+    // Tekstur Kaustik Cahaya Tropis & Riak Sekunder (water-wave-caustic - 480x480 Seamless)
+    if (!this.textures.exists('water-wave-caustic')) {
+      const canvas = document.createElement('canvas');
+      canvas.width = 480;
+      canvas.height = 480;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.clearRect(0, 0, 480, 480);
+
+        const drawCausticRing = (cx: number, cy: number, rx: number, ry: number, a: number) => {
+          const drawAt = (ox: number, oy: number) => {
+            ctx.save();
+            ctx.beginPath();
+            ctx.ellipse(ox, oy, rx, ry, Math.PI * 0.12, 0, Math.PI * 2);
+            ctx.strokeStyle = `rgba(186, 230, 253, ${a * 0.40})`;
+            ctx.lineWidth = 2.4;
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.ellipse(ox + 1.5, oy - 1.5, rx * 0.85, ry * 0.85, Math.PI * 0.12, 0, Math.PI * 2);
+            ctx.strokeStyle = `rgba(255, 255, 255, ${a * 0.65})`;
+            ctx.lineWidth = 1.4;
+            ctx.stroke();
+            ctx.restore();
+          };
+          drawAt(cx, cy);
+          if (cx - rx < 0) drawAt(cx + 480, cy);
+          if (cx + rx > 480) drawAt(cx - 480, cy);
+          if (cy - ry < 0) drawAt(cx, cy + 480);
+          if (cy + ry > 480) drawAt(cx, cy - 480);
+        };
+
+        const causticList = [
+          { cx: 60, cy: 70, rx: 34, ry: 18, a: 0.55 },
+          { cx: 220, cy: 50, rx: 42, ry: 20, a: 0.60 },
+          { cx: 380, cy: 80, rx: 36, ry: 16, a: 0.50 },
+          { cx: 140, cy: 160, rx: 44, ry: 22, a: 0.65 },
+          { cx: 300, cy: 180, rx: 38, ry: 19, a: 0.55 },
+          { cx: 450, cy: 150, rx: 32, ry: 15, a: 0.50 },
+          { cx: 70, cy: 270, rx: 40, ry: 20, a: 0.60 },
+          { cx: 230, cy: 290, rx: 46, ry: 24, a: 0.70 },
+          { cx: 390, cy: 260, rx: 35, ry: 17, a: 0.52 },
+          { cx: 150, cy: 380, rx: 42, ry: 21, a: 0.62 },
+          { cx: 320, cy: 400, rx: 36, ry: 18, a: 0.58 },
+          { cx: 460, cy: 370, rx: 30, ry: 14, a: 0.48 },
+          { cx: 80, cy: 450, rx: 38, ry: 19, a: 0.55 },
+          { cx: 250, cy: 460, rx: 44, ry: 22, a: 0.64 },
+        ];
+
+        causticList.forEach(c => drawCausticRing(c.cx, c.cy, c.rx, c.ry, c.a));
+        this.textures.addCanvas('water-wave-caustic', canvas);
+      }
+    }
+
+    // Tekstur Buih Gulungan Ombak Pantai (water-shoreline-surf - 480x80)
+    if (!this.textures.exists('water-shoreline-surf')) {
+      const canvas = document.createElement('canvas');
+      canvas.width = 480;
+      canvas.height = 80;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.clearRect(0, 0, 480, 80);
+
+        // Lapisan basah pasir (wet sand backwash)
+        ctx.fillStyle = 'rgba(140, 115, 62, 0.35)';
+        ctx.fillRect(0, 0, 480, 24);
+
+        // Buih ombak putih tebal berbusa (foaming shore surf)
+        for (let x = 0; x < 480; x += 32) {
+          ctx.beginPath();
+          ctx.arc(x + 16, 26, 20, Math.PI, 0, false);
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.92)';
+          ctx.fill();
+
+          ctx.beginPath();
+          ctx.arc(x + 16, 28, 14, Math.PI, 0, false);
+          ctx.fillStyle = 'rgba(224, 242, 254, 0.65)';
+          ctx.fill();
+
+          // Gelembung buih kecil
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+          ctx.beginPath();
+          ctx.arc(x + 8, 18, 3, 0, Math.PI * 2);
+          ctx.arc(x + 22, 16, 2.5, 0, Math.PI * 2);
+          ctx.arc(x + 14, 12, 2, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        // Garis batas buih renda tajam (lacy foam crest)
+        ctx.beginPath();
+        for (let x = 0; x <= 480; x += 16) {
+          const y = 30 + Math.sin(x * 0.12) * 5;
+          if (x === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 3.5;
+        ctx.stroke();
+
+        this.textures.addCanvas('water-shoreline-surf', canvas);
       }
     }
 

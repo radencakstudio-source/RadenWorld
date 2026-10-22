@@ -59,7 +59,8 @@ export class CameraController {
 
   constructor(scene: Phaser.Scene, options: ICameraControllerOptions = {}) {
     this.scene = scene;
-    this.camera = options.camera || scene.cameras.main;
+    const initialCam = options.camera || scene.cameras?.main;
+    this.camera = initialCam && (initialCam as any)._bounds ? initialCam : (scene.cameras?.main || null as any);
 
     this.defaultZoom = options.defaultZoom ?? 1.0;
     this.currentTargetZoom = this.defaultZoom;
@@ -67,8 +68,11 @@ export class CameraController {
     this.maxZoom = options.maxZoom ?? 2.0;
     this.zoomLerpSpeed = options.zoomLerpSpeed ?? 0.12;
 
-    this.camera.setZoom(this.defaultZoom);
-    this.camera.setRoundPixels(options.roundPixels !== false);
+    const cam = this.getCamera();
+    if (cam) {
+      cam.setZoom(this.defaultZoom);
+      cam.setRoundPixels(options.roundPixels !== false);
+    }
 
     if (options.bounds) {
       this.setBounds(options.bounds.x, options.bounds.y, options.bounds.width, options.bounds.height);
@@ -94,6 +98,31 @@ export class CameraController {
     this.scene.events.once(Phaser.Scenes.Events.DESTROY, cleanup);
   }
 
+  /**
+   * Mengambil referensi kamera aktif yang valid (menghindari error jika kamera lama sudah didestroy saat scene restart)
+   */
+  public getCamera(): Phaser.Cameras.Scene2D.Camera | null {
+    if (this.camera && this.camera.scene && (this.camera as any)._bounds) {
+      return this.camera;
+    }
+    // Jika kamera saat ini sudah null / destroyed, coba ambil kamera utama aktif dari scene
+    if (this.scene?.cameras?.main && (this.scene.cameras.main as any)._bounds) {
+      this.camera = this.scene.cameras.main;
+      return this.camera;
+    }
+    return null;
+  }
+
+  /**
+   * Mengaitkan instance kamera baru secara eksplisit jika scene direstart
+   */
+  public setCamera(camera: Phaser.Cameras.Scene2D.Camera): this {
+    if (camera && (camera as any)._bounds) {
+      this.camera = camera;
+    }
+    return this;
+  }
+
   // ==========================================================================
   // PENGATURAN TARGET & BOUNDS
   // ==========================================================================
@@ -111,11 +140,16 @@ export class CameraController {
     lerpX: number = 1.0,
     lerpY: number = 1.0
   ): this {
-    if (!this.camera || !target) return this;
+    const cam = this.getCamera();
+    if (!cam || !target) return this;
     this.followTarget = target;
     this.isFollowing = true;
-    this.camera.setRoundPixels(roundPixels);
-    this.camera.startFollow(target, roundPixels, lerpX, lerpY);
+    try {
+      cam.setRoundPixels(roundPixels);
+      cam.startFollow(target, roundPixels, lerpX, lerpY);
+    } catch (e) {
+      console.warn('[CameraController] follow target failed:', e);
+    }
     return this;
   }
 
@@ -123,8 +157,12 @@ export class CameraController {
    * Menghentikan kamera mengikuti target
    */
   public stopFollow(): this {
-    if (!this.camera) return this;
-    this.camera.stopFollow();
+    const cam = this.getCamera();
+    if (cam) {
+      try {
+        cam.stopFollow();
+      } catch (e) {}
+    }
     this.followTarget = null;
     this.isFollowing = false;
     return this;
@@ -134,8 +172,13 @@ export class CameraController {
    * Mengatur batas area gerak kamera di dunia game (Bounds)
    */
   public setBounds(x: number, y: number, width: number, height: number): this {
-    if (!this.camera) return this;
-    this.camera.setBounds(x, y, width, height);
+    const cam = this.getCamera();
+    if (!cam || !(cam as any)._bounds) return this;
+    try {
+      cam.setBounds(x, y, width, height);
+    } catch (e) {
+      console.warn('[CameraController] setBounds failed:', e);
+    }
     return this;
   }
 
@@ -143,8 +186,13 @@ export class CameraController {
    * Memusatkan pandangan kamera secara instan ke koordinat dunia (x, y)
    */
   public centerOn(x: number, y: number): this {
-    if (!this.camera) return this;
-    this.camera.centerOn(x, y);
+    const cam = this.getCamera();
+    if (!cam) return this;
+    try {
+      cam.centerOn(x, y);
+    } catch (e) {
+      console.warn('[CameraController] centerOn failed:', e);
+    }
     return this;
   }
 
@@ -168,7 +216,12 @@ export class CameraController {
     if (typeof options.maxZoom === 'number') this.maxZoom = options.maxZoom;
 
     this.currentTargetZoom = this.defaultZoom;
-    this.camera.setZoom(this.defaultZoom);
+    const cam = this.getCamera();
+    if (cam) {
+      try {
+        cam.setZoom(this.defaultZoom);
+      } catch (e) {}
+    }
 
     // 1. Mouse Scroll Wheel Zooming
     if (options.enableWheel !== false && !this.onWheelHandler) {
@@ -180,7 +233,7 @@ export class CameraController {
         const zoomFactor = deltaY > 0 ? 0.90 : 1.10;
         this.smoothZoomTo(this.currentTargetZoom * zoomFactor);
       };
-      this.scene.input.on(Phaser.Input.Events.POINTER_WHEEL, this.onWheelHandler);
+      this.scene.input?.on(Phaser.Input.Events.POINTER_WHEEL, this.onWheelHandler);
     }
 
     // 2. EventBus Listeners (Sync dari Tombol HUD / UI MiniMap)
@@ -202,7 +255,7 @@ export class CameraController {
     }
 
     // 3. Tombol Keyboard (+ / - / Numpad)
-    if (options.enableKeyboard !== false && this.scene.input.keyboard && this.keyboardHandlers.size === 0) {
+    if (options.enableKeyboard !== false && this.scene.input?.keyboard && this.keyboardHandlers.size === 0) {
       const handlePlus = () => {
         if (this.isTyping()) return;
         this.zoomIn();
@@ -241,8 +294,11 @@ export class CameraController {
    */
   public setZoom(zoom: number, immediate: boolean = false): this {
     this.currentTargetZoom = Phaser.Math.Clamp(zoom, this.minZoom, this.maxZoom);
-    if (immediate && this.camera) {
-      this.camera.setZoom(this.currentTargetZoom);
+    const cam = this.getCamera();
+    if (immediate && cam) {
+      try {
+        cam.setZoom(this.currentTargetZoom);
+      } catch (e) {}
     }
     return this;
   }
@@ -278,7 +334,8 @@ export class CameraController {
   }
 
   public getZoom(): number {
-    return this.camera ? this.camera.zoom : this.currentTargetZoom;
+    const cam = this.getCamera();
+    return cam ? cam.zoom : this.currentTargetZoom;
   }
 
   public getTargetZoom(): number {
@@ -293,8 +350,11 @@ export class CameraController {
    * Mengguncang kamera dengan intensitas tertentu (Camera Shake)
    */
   public shake(durationMs: number = 200, intensity: number = 0.01): this {
-    if (this.camera) {
-      this.camera.shake(durationMs, intensity);
+    const cam = this.getCamera();
+    if (cam) {
+      try {
+        cam.shake(durationMs, intensity);
+      } catch (e) {}
     }
     return this;
   }
@@ -303,8 +363,11 @@ export class CameraController {
    * Kilatan cahaya layar (Camera Flash)
    */
   public flash(durationMs: number = 250, r: number = 255, g: number = 255, b: number = 255): this {
-    if (this.camera) {
-      this.camera.flash(durationMs, r, g, b);
+    const cam = this.getCamera();
+    if (cam) {
+      try {
+        cam.flash(durationMs, r, g, b);
+      } catch (e) {}
     }
     return this;
   }
@@ -319,12 +382,19 @@ export class CameraController {
     b: number = 0,
     callback?: () => void
   ): this {
-    if (this.camera) {
-      this.camera.fade(durationMs, r, g, b, false, (_cam: any, progress: number) => {
-        if (progress >= 1 && callback) {
-          callback();
-        }
-      });
+    const cam = this.getCamera();
+    if (cam) {
+      try {
+        cam.fade(durationMs, r, g, b, false, (_cam: any, progress: number) => {
+          if (progress >= 1 && callback) {
+            callback();
+          }
+        });
+      } catch (e) {
+        if (callback) callback();
+      }
+    } else if (callback) {
+      callback();
     }
     return this;
   }
@@ -333,12 +403,19 @@ export class CameraController {
    * Mengembalikan layar dari pudar ke terang (Camera Fade In)
    */
   public fadeIn(durationMs: number = 400, callback?: () => void): this {
-    if (this.camera) {
-      this.camera.fadeIn(durationMs, 0, 0, 0, (_cam: any, progress: number) => {
-        if (progress >= 1 && callback) {
-          callback();
-        }
-      });
+    const cam = this.getCamera();
+    if (cam) {
+      try {
+        cam.fadeIn(durationMs, 0, 0, 0, (_cam: any, progress: number) => {
+          if (progress >= 1 && callback) {
+            callback();
+          }
+        });
+      } catch (e) {
+        if (callback) callback();
+      }
+    } else if (callback) {
+      callback();
     }
     return this;
   }
@@ -353,20 +430,32 @@ export class CameraController {
     ease: string = 'Power2',
     callback?: () => void
   ): this {
-    if (!this.camera) return this;
+    const cam = this.getCamera();
+    if (!cam) {
+      if (callback) callback();
+      return this;
+    }
     const wasFollowing = this.isFollowing;
     if (wasFollowing) {
-      this.camera.stopFollow();
+      try {
+        cam.stopFollow();
+      } catch (e) {}
     }
 
-    this.camera.pan(x, y, durationMs, ease, false, (_cam: any, progress: number) => {
-      if (progress >= 1) {
-        if (wasFollowing && this.followTarget) {
-          this.camera.startFollow(this.followTarget, true, 1.0, 1.0);
+    try {
+      cam.pan(x, y, durationMs, ease, false, (_cam: any, progress: number) => {
+        if (progress >= 1) {
+          if (wasFollowing && this.followTarget) {
+            try {
+              cam.startFollow(this.followTarget, true, 1.0, 1.0);
+            } catch (e) {}
+          }
+          if (callback) callback();
         }
-        if (callback) callback();
-      }
-    });
+      });
+    } catch (e) {
+      if (callback) callback();
+    }
 
     return this;
   }
@@ -379,12 +468,15 @@ export class CameraController {
    * Dijalankan pada game loop scene (60 FPS) untuk menghaluskan pergerakan zoom
    */
   public update(_time: number, delta: number): void {
-    if (!this.camera) return;
+    const cam = this.getCamera();
+    if (!cam) return;
 
     // Interpolasi zoom halus eksponensial berbasis delta waktu
-    if (Math.abs(this.camera.zoom - this.currentTargetZoom) > 0.001) {
+    if (Math.abs(cam.zoom - this.currentTargetZoom) > 0.001) {
       const step = Math.min(1, Math.max(0.01, delta * this.zoomLerpSpeed * 0.15));
-      this.camera.setZoom(Phaser.Math.Linear(this.camera.zoom, this.currentTargetZoom, step));
+      try {
+        cam.setZoom(Phaser.Math.Linear(cam.zoom, this.currentTargetZoom, step));
+      } catch (e) {}
     }
   }
 
@@ -422,5 +514,6 @@ export class CameraController {
 
     this.followTarget = null;
     this.isFollowing = false;
+    this.camera = null as any;
   }
 }

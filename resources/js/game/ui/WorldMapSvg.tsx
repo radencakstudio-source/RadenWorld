@@ -141,9 +141,6 @@ export const WorldMapSvg: React.FC<WorldMapSvgProps> = ({
       {/* Lautan Kristal Timur (gx: 63..80, gy: 17..64) */}
       <rect x="63" y="17" width="17" height="47" fill="#00a2f3" />
 
-      {/* Pojok Laut Timur Laut (gx: 79..80, gy: 0..11) */}
-      <rect x="79" y="0" width="1" height="11" fill="#00a2f3" />
-
       {/* Garis batas petak air laut halus */}
       <rect x="63" y="17" width="17" height="47" fill="url(#gridOverlayPattern)" opacity="0.5" />
 
@@ -174,12 +171,10 @@ export const WorldMapSvg: React.FC<WorldMapSvgProps> = ({
       {/*    Membentang dari gx: 23..56, gy: 64..69 */}
       <rect x="23" y="64" width="34" height="6" fill="url(#beachTilePattern)" />
 
-      {/* b. Hamparan Utama Pantai Pasir Selatan (mainBeachX=1, mainBeachY=70, mainBeachW=78, mainBeachH=9) */}
-      {/*    Membentang dari gx: 1..78, gy: 70..78 */}
-      <rect x="1" y="70" width="78" height="9" fill="url(#beachTilePattern)" />
+      {/* b. Hamparan Utama Pantai Pasir Selatan (gx: 0..78, gy: 70..78) */}
+      <rect x="0" y="70" width="79" height="9" fill="url(#beachTilePattern)" />
 
-      {/* c. Air Laut Sisi Kiri & Kanan Pantai Selatan (gx: 0 dan gx: 79 di gy: 70..78) */}
-      <rect x="0" y="70" width="1" height="9" fill="#00a2f3" />
+      {/* c. Air Laut Sisi Kanan Pantai Selatan (gx: 79 di gy: 70..78) */}
       <rect x="79" y="70" width="1" height="9" fill="#00a2f3" />
 
       {/* d. Samudra Selatan Paling Bawah (gy: 79, gx: 0..79, w: 80, h: 1) */}
@@ -187,9 +182,9 @@ export const WorldMapSvg: React.FC<WorldMapSvgProps> = ({
 
       {/* Garis Buih Putih Ombak di Pertemuan Pasir & Samudra Selatan (gy: 79) */}
       <line
-        x1="1"
+        x1="0"
         y1="79"
-        x2="79"
+        x2="80"
         y2="79"
         stroke="#ffffff"
         strokeWidth="0.3"

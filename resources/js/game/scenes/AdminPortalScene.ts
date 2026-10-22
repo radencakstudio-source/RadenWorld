@@ -147,6 +147,10 @@ export class AdminPortalScene extends Phaser.Scene {
         this.player.destroy();
         this.player = null as any;
       }
+      if (this.cameraController) {
+        this.cameraController.destroy();
+        this.cameraController = null as any;
+      }
     };
 
     this.events.on('shutdown', cleanupScene);
@@ -163,17 +167,16 @@ export class AdminPortalScene extends Phaser.Scene {
    */
   private setupCameraZoomControls(defaultZoom: number = 1.1): void {
     this.targetZoom = defaultZoom;
-    if (!this.cameraController) {
-      this.cameraController = new CameraController(this, {
-        defaultZoom,
-        minZoom: 0.6,
-        maxZoom: 2.0,
-        zoomLerpSpeed: 0.12,
-      });
-    } else {
-      this.cameraController.setupZoomControls({ defaultZoom });
-      this.cameraController.smoothZoomTo(defaultZoom);
+    if (this.cameraController) {
+      this.cameraController.destroy();
+      this.cameraController = null as any;
     }
+    this.cameraController = new CameraController(this, {
+      defaultZoom,
+      minZoom: 0.6,
+      maxZoom: 2.0,
+      zoomLerpSpeed: 0.12,
+    });
   }
 
   public smoothZoomTo(newZoom: number): void {

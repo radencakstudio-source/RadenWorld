@@ -124,9 +124,10 @@ export class WorldScene extends Phaser.Scene {
     speedY: number;
   }[] = [];
 
-  // Efek Riak Ombak Air Laut Dinamis
+  // Efek Riak Ombak Air Laut Dinamis & Buih Ombak Pantai
   private waterWaves1: Phaser.GameObjects.TileSprite[] = [];
   private waterWaves2: Phaser.GameObjects.TileSprite[] = [];
+  private shorelineSurfs: { sprite: Phaser.GameObjects.TileSprite; baseY: number }[] = [];
 
   constructor() {
     super({ key: 'WorldScene' });
@@ -151,8 +152,9 @@ export class WorldScene extends Phaser.Scene {
   }
 
   public create(): void {
-    // 1. Batas fisika dunia 9600x9600 px (80x80 petak @ 120px)
-    this.physics.world.setBounds(0, 0, this.worldWidth, this.worldHeight);
+    // 1. Batas fisika dunia diperlebar mencakup buffer (2400px) agar koridor jalan bisa dilewati ke luar
+    const buf = 2400;
+    this.physics.world.setBounds(-buf, -buf, this.worldWidth + buf * 2, this.worldHeight + buf * 2);
 
     // 2. Inisialisasi grup rintangan fisik statis
     this.obstacles = this.physics.add.staticGroup();
@@ -289,9 +291,11 @@ export class WorldScene extends Phaser.Scene {
         }
       }
 
-      // Validasi apakah titik yang di-klik/tap DAPAT DIJANGKAU (Walkable / Bebas Rintangan & Lautan)
-      if (!this.isLocationWalkable(wx, wy)) {
-        // Lokasi terhalang atau tidak dapat dijangkau -> TOLAK PERGERAKAN!
+      // Validasi & cari titik tujuan yang aman dan dapat dijangkau
+      let dest = this.findClosestWalkablePoint(wx, wy);
+
+      if (!dest) {
+        // Lokasi terhalang total dan tidak ada jalur yang bisa dijangkau
         this.spawnBlockedFeedback(wx, wy);
         SoundManager.getInstance().playError();
         if (this.player && this.player.active) {
@@ -300,10 +304,23 @@ export class WorldScene extends Phaser.Scene {
         return;
       }
 
+      // Jika klik sangat dekat ke posisi pemain (misal di badan atau dekat kaki),
+      // dorong sedikit ke arah klik agar navigasi tetap merespon dan kristal muncul
+      const distToPlayer = Phaser.Math.Distance.Between(this.player.x, this.player.y, dest.x, dest.y);
+      if (distToPlayer < 24) {
+        const angle = Phaser.Math.Angle.Between(this.player.x, this.player.y, wx, wy);
+        const pushDist = 36;
+        const pushedX = this.player.x + Math.cos(angle) * pushDist;
+        const pushedY = this.player.y + Math.sin(angle) * pushDist;
+        if (this.isLocationWalkable(pushedX, pushedY)) {
+          dest = { x: pushedX, y: pushedY };
+        }
+      }
+
       // Pergerakan jalan biasa menuju titik grid yang di-tap/klik
       if (this.player && this.player.active) {
-        this.spawnTapRipple(wx, wy);
-        this.player.navigateTo(wx, wy);
+        this.spawnTapRipple(dest.x, dest.y);
+        this.player.navigateTo(dest.x, dest.y);
       }
     });
 
@@ -373,6 +390,12 @@ export class WorldScene extends Phaser.Scene {
       this.waterWaves1 = [];
       this.waterWaves2.forEach((w) => { if (w && w.active) w.destroy(); });
       this.waterWaves2 = [];
+      this.shorelineSurfs.forEach((s) => { if (s && s.sprite && s.sprite.active) s.sprite.destroy(); });
+      this.shorelineSurfs = [];
+      if (this.cameraController) {
+        this.cameraController.destroy();
+        this.cameraController = null as any;
+      }
     };
 
     this.events.on('shutdown', cleanupScene);
@@ -381,17 +404,16 @@ export class WorldScene extends Phaser.Scene {
 
   private setupCameraZoomControls(defaultZoom: number = 0.9): void {
     this.targetZoom = defaultZoom;
-    if (!this.cameraController) {
-      this.cameraController = new CameraController(this, {
-        defaultZoom,
-        minZoom: 0.45,
-        maxZoom: 1.8,
-        zoomLerpSpeed: 0.12,
-      });
-    } else {
-      this.cameraController.setupZoomControls({ defaultZoom });
-      this.cameraController.smoothZoomTo(defaultZoom);
+    if (this.cameraController) {
+      this.cameraController.destroy();
+      this.cameraController = null as any;
     }
+    this.cameraController = new CameraController(this, {
+      defaultZoom,
+      minZoom: 0.45,
+      maxZoom: 1.8,
+      zoomLerpSpeed: 0.12,
+    });
   }
 
   public smoothZoomTo(newZoom: number): void {
@@ -418,129 +440,153 @@ export class WorldScene extends Phaser.Scene {
       'water-checker-tile'
     ).setDepth(-110);
 
-    // Penyangga daratan rumput di sisi Barat & Utara
+    // 1. DASAR DUNIA: RUMPUT HIJAU SEGAR (world-checker-tile)
+    // Memenuhi seluruh dunia + buffer dengan origin (0, 0) di (-buf, -buf)
+    // Karena -buf = -2400 adalah kelipatan tepat dari ukuran tile catur (240px),
+    // seluruh grid catur di dalam peta maupun di luar peta (termasuk kanan atas)
+    // terpasang 100% presisi sempurna tanpa pergeseran (offset) dan tanpa garis sambungan (seam)!
     this.add.tileSprite(
-      (this.worldWidth / 2) - buf / 2,
-      (this.worldHeight / 2) - buf / 2,
-      this.worldWidth + buf,
-      this.worldHeight + buf,
+      -buf,
+      -buf,
+      this.worldWidth + buf * 2,
+      this.worldHeight + buf * 2,
       'world-checker-tile'
-    ).setDepth(-105);
-
-    // 1. DASAR DUNIA: RUMPUT HIJAU SEGAR (world-checker-tile, 9600x9600 px)
-    this.add.tileSprite(
-      this.worldWidth / 2,
-      this.worldHeight / 2,
-      this.worldWidth,
-      this.worldHeight,
-      'world-checker-tile'
-    ).setDepth(-100);
+    ).setOrigin(0, 0).setDepth(-100);
 
     // ========================================================================
-    // TEMBOK PEMBATAS BENTENG & PENAHAN OMBAK DI POJOK DAN SEPANJANG BATAS GRID
-    // (Permintaan Pengguna: Di luar grid & pojok kiri-kanan kasih tembok agar kamera tetap fokus di tengah)
+    // TEMBOK PEMBATAS DUNIA MENYELURUH SAMPAI KE UJUNG LUAR (OUTER BOUNDS)
+    // Sesuai permintaan pengguna: Tembok membentang keluar penuh, bukan cuman garis 1 petak
+    // - Tembok Atas Utara (DarkWall & LightWall) membentang dari y = -buf s/d y = 120
+    // - Tembok Samping Barat (DarkWall_WithTop & LightWall_WithTop) membentang dari x = -buf s/d x = 120
     // ========================================================================
-    const wallG = this.add.graphics();
-    wallG.setDepth(10);
+    this.ensureWallTextures();
+    this.ensureWaterTextures();
 
-    // a. Tembok Benteng Batu Utara (y = 0..48 px, x = 0..9600 px)
-    wallG.fillStyle(0x1e293b, 1.0); // Slate gelap pondasi
-    wallG.fillRect(0, 0, this.worldWidth, 48);
-    wallG.fillStyle(0x334155, 1.0); // Dinding batu
-    wallG.fillRect(0, 6, this.worldWidth, 36);
-    wallG.fillStyle(0x475569, 1.0); // Parapet atas
-    wallG.fillRect(0, 0, this.worldWidth, 8);
-    // Crenels (Gerigi benteng)
-    for (let x = 0; x < this.worldWidth; x += 60) {
-      wallG.fillStyle(0x64748b, 1.0);
-      wallG.fillRect(x, -6, 30, 8);
+    // a. Tembok Atas Utara: Memenuhi seluruh area Utara dari luar map (y: -buf s/d ts) sepanjang lebar dunia + buffer
+    if (this.textures.exists('wall-top-checker')) {
+      this.add.tileSprite(
+        -buf,
+        -buf,
+        this.worldWidth + buf * 2,
+        buf + ts,
+        'wall-top-checker'
+      ).setOrigin(0, 0).setDepth(10);
+    } else {
+      for (let gy = -20; gy <= 0; gy++) {
+        for (let gx = -20; gx < 80 + 20; gx++) {
+          const isDark = (gx + gy) % 2 === 0;
+          const key = isDark ? 'tile-wall-dark' : 'tile-wall-light';
+          this.add.image(gx * ts, gy * ts, key).setOrigin(0, 0).setDepth(10);
+        }
+      }
     }
 
-    // b. Tembok Benteng Batu Barat (x = 0..48 px, y = 0..9600 px)
-    wallG.fillStyle(0x1e293b, 1.0);
-    wallG.fillRect(0, 0, 48, this.worldHeight);
-    wallG.fillStyle(0x334155, 1.0);
-    wallG.fillRect(6, 0, 36, this.worldHeight);
-    wallG.fillStyle(0x475569, 1.0);
-    wallG.fillRect(0, 0, 8, this.worldHeight);
-    for (let y = 0; y < this.worldHeight; y += 60) {
-      wallG.fillStyle(0x64748b, 1.0);
-      wallG.fillRect(-6, y, 8, 30);
+    // b. Tembok Samping Barat: Memenuhi area Barat luar map (x: -buf s/d ts)
+    // Dibuat terbuka pada koridor jalan (gy: 11..16 dan gy: 64..69).
+    // PENTING: Tembok Barat HANYA sampai gy: 63! Di bawah koridor 2 (gy >= 70) adalah
+    // Pantai Pasir Selatan dan Samudra Selatan yang bebas terbuka tanpa dinding pembatas!
+    if (this.textures.exists('wall-side-checker')) {
+      // Seksi 1: Atas Koridor 1 (gy: 1..10)
+      this.add.tileSprite(-buf, ts, buf + ts, 10 * ts, 'wall-side-checker')
+        .setOrigin(0, 0).setDepth(10);
+      // Seksi 2: Antara Koridor 1 dan Koridor 2 (gy: 17..63)
+      this.add.tileSprite(-buf, 17 * ts, buf + ts, 47 * ts, 'wall-side-checker')
+        .setOrigin(0, 0).setDepth(10);
+    } else {
+      for (let gy = 1; gy <= 63; gy++) {
+        if (gy >= 11 && gy <= 16) continue;
+        for (let gx = -20; gx <= 0; gx++) {
+          const isDark = (gx + gy) % 2 === 0;
+          const key = isDark ? 'tile-wall-top-dark' : 'tile-wall-top-light';
+          this.add.image(gx * ts, gy * ts, key).setOrigin(0, 0).setDepth(10);
+        }
+      }
     }
 
-    // c. Palang Pembatas Dermaga & Pelampung Bahari Timur (x = 9550 px)
-    for (let y = 0; y < this.worldHeight; y += 120) {
-      wallG.fillStyle(0xb45309, 1.0); // Tiang kayu pasak dermaga
-      wallG.fillRect(this.worldWidth - 36, y + 20, 16, 80);
-      wallG.fillStyle(0xd97706, 0.85); // Tali palang
-      wallG.fillRect(this.worldWidth - 40, y + 55, 24, 6);
-      // Pelampung laut oranye menyala
-      wallG.fillStyle(0xf97316, 1.0);
-      wallG.fillCircle(this.worldWidth - 28, y + 60, 10);
-      wallG.fillStyle(0xffffff, 1.0);
-      wallG.fillCircle(this.worldWidth - 28, y + 60, 4);
-    }
-
-    // d. Palang Pembatas Samudra Selatan (y = 9550 px)
-    for (let x = 0; x < this.worldWidth; x += 120) {
-      wallG.fillStyle(0xb45309, 1.0);
-      wallG.fillRect(x + 20, this.worldHeight - 36, 80, 16);
-      wallG.fillStyle(0xd97706, 0.85);
-      wallG.fillRect(x + 55, this.worldHeight - 40, 6, 24);
-      wallG.fillStyle(0xf97316, 1.0);
-      wallG.fillCircle(x + 60, this.worldHeight - 28, 10);
-      wallG.fillStyle(0xffffff, 1.0);
-      wallG.fillCircle(x + 60, this.worldHeight - 28, 4);
-    }
-
-    // e. 4 Menara Pengawas Benteng di Tiap Sudut Pojok Peta
-    const corners = [
-      { x: 0, y: 0, name: 'BENTENG BARAT LAUT' },
-      { x: this.worldWidth, y: 0, name: 'BENTENG TIMUR LAUT' },
-      { x: 0, y: this.worldHeight, name: 'BENTENG BARAT DAYA' },
-      { x: this.worldWidth, y: this.worldHeight, name: 'MERCUSUAR TENGGARA' },
-    ];
-    corners.forEach((c) => {
-      wallG.fillStyle(0x0f172a, 1.0);
-      wallG.fillCircle(c.x, c.y, 75);
-      wallG.fillStyle(0x334155, 1.0);
-      wallG.fillCircle(c.x, c.y, 65);
-      wallG.fillStyle(0x475569, 1.0);
-      wallG.fillCircle(c.x, c.y, 50);
-      wallG.fillStyle(0xf59e0b, 1.0); // Lentera Emas
-      wallG.fillCircle(c.x, c.y, 14);
-    });
-
-    // Tambahkan Rintangan Fisik Statis (Collider) di Sepanjang 4 Tembok Pembatas
+    // Tambahkan Rintangan Fisik Statis (Collider) di Sepanjang Tembok & Batas Wilayah
     if (this.obstacles) {
-      // Dinding Utara
-      const topWallZone = this.add.zone(this.worldWidth / 2, 24, this.worldWidth, 54);
+      // Dinding Utara Tebal (Dari -buf sampai ts = 120px)
+      const topWallZone = this.add.zone(this.worldWidth / 2, (ts - buf) / 2, this.worldWidth + buf * 2, buf + ts);
       this.physics.add.existing(topWallZone, true);
       this.obstacles.add(topWallZone);
 
-      // Dinding Barat
-      const leftWallZone = this.add.zone(24, this.worldHeight / 2, 54, this.worldHeight);
-      this.physics.add.existing(leftWallZone, true);
-      this.obstacles.add(leftWallZone);
+      // Dinding Barat Tebal (Seksi 1 & 2; Seksi 3 tidak ada karena gy >= 70 adalah pantai dan laut bebas)
+      const leftWallZone1 = this.add.zone((ts - buf) / 2, ts + (10 * ts) / 2, buf + ts, 10 * ts);
+      this.physics.add.existing(leftWallZone1, true);
+      this.obstacles.add(leftWallZone1);
 
-      // Dinding Timur
-      const rightWallZone = this.add.zone(this.worldWidth - 24, this.worldHeight / 2, 54, this.worldHeight);
-      this.physics.add.existing(rightWallZone, true);
-      this.obstacles.add(rightWallZone);
+      const leftWallZone2 = this.add.zone((ts - buf) / 2, 17 * ts + (47 * ts) / 2, buf + ts, 47 * ts);
+      this.physics.add.existing(leftWallZone2, true);
+      this.obstacles.add(leftWallZone2);
 
-      // Dinding Selatan
-      const btmWallZone = this.add.zone(this.worldWidth / 2, this.worldHeight - 24, this.worldWidth, 54);
-      this.physics.add.existing(btmWallZone, true);
-      this.obstacles.add(btmWallZone);
+      // Dinding Timur (Dibagi 3 segmen agar koridor jalan terus ke arah laut)
+      const rightWallZone1 = this.add.zone(this.worldWidth - 24, (11 * ts) / 2, 54, 11 * ts);
+      this.physics.add.existing(rightWallZone1, true);
+      this.obstacles.add(rightWallZone1);
+
+      const rightWallZone2 = this.add.zone(this.worldWidth - 24, 17 * ts + (47 * ts) / 2, 54, 47 * ts);
+      this.physics.add.existing(rightWallZone2, true);
+      this.obstacles.add(rightWallZone2);
+
+      const rightWallZone3 = this.add.zone(this.worldWidth - 24, 70 * ts + (10 * ts) / 2, 54, 10 * ts);
+      this.physics.add.existing(rightWallZone3, true);
+      this.obstacles.add(rightWallZone3);
+
+      // Pembatas Tepi Samping Koridor Jalan di Laut Timur (mencegah tercebur dari samping trotoar ke laut dalam)
+      // Koridor 1 Timur:
+      const eastEdge1Top = this.add.zone(this.worldWidth + buf / 2, 11 * ts - 20, buf, 40);
+      this.physics.add.existing(eastEdge1Top, true);
+      this.obstacles.add(eastEdge1Top);
+      const eastEdge1Btm = this.add.zone(this.worldWidth + buf / 2, 17 * ts + 20, buf, 40);
+      this.physics.add.existing(eastEdge1Btm, true);
+      this.obstacles.add(eastEdge1Btm);
+      const eastStop1 = this.add.zone(this.worldWidth + ts + 24, 14 * ts, 48, 6 * ts);
+      this.physics.add.existing(eastStop1, true);
+      this.obstacles.add(eastStop1);
+
+      // Koridor 2 Timur:
+      const eastEdge2Top = this.add.zone(this.worldWidth + buf / 2, 64 * ts - 20, buf, 40);
+      this.physics.add.existing(eastEdge2Top, true);
+      this.obstacles.add(eastEdge2Top);
+      const eastEdge2Btm = this.add.zone(this.worldWidth + buf / 2, 70 * ts + 20, buf, 40);
+      this.physics.add.existing(eastEdge2Btm, true);
+      this.obstacles.add(eastEdge2Btm);
+      const eastStop2 = this.add.zone(this.worldWidth + ts + 24, 67 * ts, 48, 6 * ts);
+      this.physics.add.existing(eastStop2, true);
+      this.obstacles.add(eastStop2);
+
+      // Pembatas Ujung Koridor Jalan di Barat Luar
+      const westStop1 = this.add.zone(-2 * ts - 24, 14 * ts, 48, 6 * ts);
+      this.physics.add.existing(westStop1, true);
+      this.obstacles.add(westStop1);
+      const westStop2 = this.add.zone(-2 * ts - 24, 67 * ts, 48, 6 * ts);
+      this.physics.add.existing(westStop2, true);
+      this.obstacles.add(westStop2);
+
+      // Pembatas Ujung Barat Pantai Selatan (sejajar batas koridor jalan barat gx: -2)
+      const westBeachStop = this.add.zone(-2 * ts - 24, 74.5 * ts, 48, 9 * ts);
+      this.physics.add.existing(westBeachStop, true);
+      this.obstacles.add(westBeachStop);
+
+      // Pembatas Tepi Samudra Selatan (mencegah pemain tercebur ke laut dari pasir pantai)
+      const southOceanZone = this.add.zone(
+        this.worldWidth / 2,
+        79 * ts + 60,
+        this.worldWidth + buf * 2,
+        120
+      );
+      this.physics.add.existing(southOceanZone, true);
+      this.obstacles.add(southOceanZone);
     }
 
-    // 2. TIMUR BAHARI & SAMUDRA SELATAN: LAUTAN ASLI BLUEPRINT (#00A2F3) DENGAN EFEK RIAK OMBAK BERKILAU
+    // 2. TIMUR BAHARI & SAMUDRA SELATAN: LAUTAN ASLI BLUEPRINT (#00A2F3) DENGAN EFEK RIAK OMBAK BERKILAU HD
     // 100% Menyatu, Bebas Sambungan Kotak, Bebas Grid, 60 FPS WebGL
     this.waterWaves1 = [];
     this.waterWaves2 = [];
+    this.shorelineSurfs = [];
 
     const addWaterArea = (x: number, y: number, w: number, h: number) => {
-      // Dasar Warna Biru Laut Asli Blueprint
+      // Dasar Warna Biru Laut Asli Blueprint (#00A2F3)
       this.add.tileSprite(
         x + w / 2,
         y + h / 2,
@@ -549,7 +595,7 @@ export class WorldScene extends Phaser.Scene {
         'water-checker-tile'
       ).setDepth(-98);
 
-      // Lapisan Riak Ombak 1: Gelombang mengalir horizontal berirama
+      // Lapisan Riak Ombak 1: Gelombang mengalir horizontal berirama HD (Crest, Droplets, Glimmer)
       if (this.textures.exists('water-wave-tile')) {
         const wave1 = this.add.tileSprite(
           x + w / 2,
@@ -559,20 +605,22 @@ export class WorldScene extends Phaser.Scene {
           'water-wave-tile'
         )
           .setDepth(-97)
-          .setAlpha(0.65);
+          .setAlpha(0.72);
         this.waterWaves1.push(wave1);
+      }
 
-        // Lapisan Riak Ombak 2: Gelombang caustics pelengkap kontra-arah
+      // Lapisan Riak Ombak 2: Gelombang kaustik cahaya kristal pelengkap kontra-arah HD
+      if (this.textures.exists('water-wave-caustic')) {
         const wave2 = this.add.tileSprite(
           x + w / 2,
           y + h / 2,
           w,
           h,
-          'water-wave-tile'
+          'water-wave-caustic'
         )
           .setDepth(-96)
-          .setAlpha(0.40)
-          .setScale(1.25, 1.25);
+          .setAlpha(0.52)
+          .setScale(1.15, 1.15);
         this.waterWaves2.push(wave2);
       }
     };
@@ -580,8 +628,8 @@ export class WorldScene extends Phaser.Scene {
     // Lautan Kristal Timur (gx: 63..79, gy: 17..63)
     addWaterArea(63 * ts, 17 * ts, 17 * ts, 47 * ts);
 
-    // Pojok Laut Timur Laut (gx: 79, gy: 0..10)
-    addWaterArea(79 * ts, 0, ts, 11 * ts);
+    // Samudra Bebas Luar Timur (Hanya membentang dari Koridor 1 gy: 11 ke bawah, bukan di kanan atas)
+    addWaterArea(this.worldWidth, 11 * ts, buf, (this.worldHeight + buf) - 11 * ts);
 
     // 3. SELATAN PANTAI: PANTAI PASIR KEEMASAN
     // Teluk Pantai Tengah (gx: 23..56, gy: 64..69)
@@ -589,69 +637,89 @@ export class WorldScene extends Phaser.Scene {
     const coveY = 64 * ts;
     const coveW = 34 * ts;
     const coveH = 6 * ts;
-    this.add.tileSprite(
-      coveX + coveW / 2,
-      coveY + coveH / 2,
+    const coveSprite = this.add.tileSprite(
+      coveX,
+      coveY,
       coveW,
       coveH,
       'beach-checker-tile'
-    ).setDepth(-98);
+    ).setOrigin(0, 0).setDepth(-98);
+    // gx: 23 adalah kolom ganjil (23 * 120 = 2760px). Agar pola catur menyatu 100%
+    // presisi dengan grid catur dunia dan pantai selatan utama, tilePositionX digeser 120px:
+    coveSprite.tilePositionX = 120;
+    coveSprite.tilePositionY = 0;
 
-    // Hamparan Pantai Selatan Utama (gx: 1..78, gy: 70..78)
-    const mainBeachX = 1 * ts;
+    // Hamparan Pantai Selatan Utama (gy: 70..78)
+    // Membentang bebas dari buffer barat (-buf) sampai batas timur (79 * ts)
+    const mainBeachX = -buf;
     const mainBeachY = 70 * ts;
-    const mainBeachW = 78 * ts;
+    const mainBeachW = buf + 79 * ts;
     const mainBeachH = 9 * ts;
     this.add.tileSprite(
-      mainBeachX + mainBeachW / 2,
-      mainBeachY + mainBeachH / 2,
+      mainBeachX,
+      mainBeachY,
       mainBeachW,
       mainBeachH,
       'beach-checker-tile'
-    ).setDepth(-98);
+    ).setOrigin(0, 0).setDepth(-98);
 
-    // Samudra Selatan Paling Bawah (gy: 79, gx: 0..79)
-    addWaterArea(0, 79 * ts, this.worldWidth, ts);
-
-    // Air Laut di Sisi Kiri & Kanan Pantai Selatan (gx: 0 dan gx: 79 di gy: 70..78)
-    addWaterArea(0, 70 * ts, ts, 9 * ts);
+    // Air Laut di Sisi Kanan Pantai Selatan (gx: 79 di gy: 70..78)
     addWaterArea(79 * ts, 70 * ts, ts, 9 * ts);
 
-    // 4. JALAN RAYA ASPAL (ROAD NETWORK 100% SESUAI BLUEPRINT)
-    // a. Jalan Horizontal Barat Laut (gy: 13..14, gx: 0..18)
-    for (let gx = 0; gx <= 18; gx++) {
-      this.add.image(gx * ts, 13 * ts, 'road-horizontal').setOrigin(0, 0).setDepth(-96);
+    // Samudra Selatan Paling Bawah (gy: 79) membentang penuh dari barat (-buf) ke timur (worldWidth + buf)
+    addWaterArea(-buf, 79 * ts, this.worldWidth + buf * 2, ts);
+
+    // Samudra Bebas Luar Selatan (Buffer Samudra Selatan tak bertepi dari barat ke timur)
+    addWaterArea(-buf, this.worldHeight, this.worldWidth + buf * 2, buf);
+
+    // Gulungan Buih Ombak Pasir Pantai Selatan (Tidal Foam Surf di gy: 79)
+    if (this.textures.exists('water-shoreline-surf')) {
+      const surfSouthW = this.worldWidth + buf * 2;
+      const surfSouth = this.add.tileSprite(
+        this.worldWidth / 2,
+        79 * ts + 15,
+        surfSouthW,
+        60,
+        'water-shoreline-surf'
+      ).setDepth(-94);
+      this.shorelineSurfs.push({ sprite: surfSouth, baseY: 79 * ts + 15 });
     }
-    // b. Jalan Horizontal Timur Laut (gy: 13..14, gx: 61..79)
-    for (let gx = 61; gx <= 79; gx++) {
-      this.add.image(gx * ts, 13 * ts, 'road-horizontal').setOrigin(0, 0).setDepth(-96);
+
+    // 4. JALAN RAYA ASPAL (ROAD NETWORK 100% SESUAI BLUEPRINT)
+    // a. Jalan Horizontal Barat Laut (gy: 13..14, gx: -20..18) - tembus ke buffer barat luar
+    for (let gx = -20; gx <= 18; gx++) {
+      this.add.image(gx * ts, 13 * ts, 'road-horizontal').setOrigin(0, 0).setDepth(-95);
+    }
+    // b. Jalan Horizontal Timur Laut (gy: 13..14, gx: 61..100) - terus membentang ke samudra timur
+    for (let gx = 61; gx <= 100; gx++) {
+      this.add.image(gx * ts, 13 * ts, 'road-horizontal').setOrigin(0, 0).setDepth(-95);
     }
     // c. Jalan Horizontal Utara Central Plaza (gy: 19..20, gx: 21..58)
     for (let gx = 21; gx <= 58; gx++) {
-      this.add.image(gx * ts, 19 * ts, 'road-horizontal').setOrigin(0, 0).setDepth(-96);
+      this.add.image(gx * ts, 19 * ts, 'road-horizontal').setOrigin(0, 0).setDepth(-95);
     }
     // d. Jalan Horizontal Selatan Central Plaza (gy: 60..61, gx: 21..58)
     for (let gx = 21; gx <= 58; gx++) {
-      this.add.image(gx * ts, 60 * ts, 'road-horizontal').setOrigin(0, 0).setDepth(-96);
+      this.add.image(gx * ts, 60 * ts, 'road-horizontal').setOrigin(0, 0).setDepth(-95);
     }
-    // e. Jalan Horizontal Barat Daya (gy: 66..67, gx: 0..18)
-    for (let gx = 0; gx <= 18; gx++) {
-      this.add.image(gx * ts, 66 * ts, 'road-horizontal').setOrigin(0, 0).setDepth(-96);
+    // e. Jalan Horizontal Barat Daya (gy: 66..67, gx: -20..18) - tembus ke buffer barat luar
+    for (let gx = -20; gx <= 18; gx++) {
+      this.add.image(gx * ts, 66 * ts, 'road-horizontal').setOrigin(0, 0).setDepth(-95);
     }
-    // f. Jalan Horizontal Tenggara (gy: 66..67, gx: 61..79)
-    for (let gx = 61; gx <= 79; gx++) {
-      this.add.image(gx * ts, 66 * ts, 'road-horizontal').setOrigin(0, 0).setDepth(-96);
+    // f. Jalan Horizontal Tenggara (gy: 66..67, gx: 61..100) - terus membentang ke samudra timur
+    for (let gx = 61; gx <= 100; gx++) {
+      this.add.image(gx * ts, 66 * ts, 'road-horizontal').setOrigin(0, 0).setDepth(-95);
     }
 
     // g. Jalan Vertikal Barat (gx: 19..20, gy: 15..18, 21..59, 62..65)
-    for (let gy = 15; gy <= 18; gy++) this.add.image(19 * ts, gy * ts, 'road-vertical').setOrigin(0, 0).setDepth(-96);
-    for (let gy = 21; gy <= 59; gy++) this.add.image(19 * ts, gy * ts, 'road-vertical').setOrigin(0, 0).setDepth(-96);
-    for (let gy = 62; gy <= 65; gy++) this.add.image(19 * ts, gy * ts, 'road-vertical').setOrigin(0, 0).setDepth(-96);
+    for (let gy = 15; gy <= 18; gy++) this.add.image(19 * ts, gy * ts, 'road-vertical').setOrigin(0, 0).setDepth(-95);
+    for (let gy = 21; gy <= 59; gy++) this.add.image(19 * ts, gy * ts, 'road-vertical').setOrigin(0, 0).setDepth(-95);
+    for (let gy = 62; gy <= 65; gy++) this.add.image(19 * ts, gy * ts, 'road-vertical').setOrigin(0, 0).setDepth(-95);
 
     // h. Jalan Vertikal Timur (gx: 59..60, gy: 15..18, 21..59, 62..65)
-    for (let gy = 15; gy <= 18; gy++) this.add.image(59 * ts, gy * ts, 'road-vertical').setOrigin(0, 0).setDepth(-96);
-    for (let gy = 21; gy <= 59; gy++) this.add.image(59 * ts, gy * ts, 'road-vertical').setOrigin(0, 0).setDepth(-96);
-    for (let gy = 62; gy <= 65; gy++) this.add.image(59 * ts, gy * ts, 'road-vertical').setOrigin(0, 0).setDepth(-96);
+    for (let gy = 15; gy <= 18; gy++) this.add.image(59 * ts, gy * ts, 'road-vertical').setOrigin(0, 0).setDepth(-95);
+    for (let gy = 21; gy <= 59; gy++) this.add.image(59 * ts, gy * ts, 'road-vertical').setOrigin(0, 0).setDepth(-95);
+    for (let gy = 62; gy <= 65; gy++) this.add.image(59 * ts, gy * ts, 'road-vertical').setOrigin(0, 0).setDepth(-95);
 
     // i. 8 Persimpangan Jalan (2x2 JalanTengah, 240x240 px)
     const intersections = [
@@ -661,7 +729,7 @@ export class WorldScene extends Phaser.Scene {
       { gx: 19, gy: 66 }, { gx: 59, gy: 66 },
     ];
     intersections.forEach(ix => {
-      this.add.image(ix.gx * ts, ix.gy * ts, 'road-intersection').setOrigin(0, 0).setDepth(-96);
+      this.add.image(ix.gx * ts, ix.gy * ts, 'road-intersection').setOrigin(0, 0).setDepth(-95);
     });
 
     // 5. TROTOAR 1, TROTOAR EDGE & TROTOAR 2 (100% SESUAI BLUEPRINT)
@@ -682,15 +750,15 @@ export class WorldScene extends Phaser.Scene {
     };
 
     // A. Barat Laut (NW Sidewalks):
-    // Sisi Atas / Utara (gy: 11..12):
-    for (let gx = 0; gx <= 20; gx++) addTrotoarH(gx, 12);
+    // Sisi Atas / Utara (gy: 11..12) - membentang keluar barat (gx: -20):
+    for (let gx = -20; gx <= 20; gx++) addTrotoarH(gx, 12);
     addTrotoarEdge(21, 12, 0);
-    for (let gx = 0; gx <= 22; gx++) addTrotoar2(gx, 11);
+    for (let gx = -20; gx <= 22; gx++) addTrotoar2(gx, 11);
 
-    // Sisi Bawah / Selatan (gy: 15..16):
-    for (let gx = 0; gx <= 17; gx++) addTrotoarH(gx, 15);
+    // Sisi Bawah / Selatan (gy: 15..16) - membentang keluar barat (gx: -20):
+    for (let gx = -20; gx <= 17; gx++) addTrotoarH(gx, 15);
     addTrotoarEdge(18, 15, 0);
-    for (let gx = 0; gx <= 17; gx++) addTrotoar2(gx, 16);
+    for (let gx = -20; gx <= 17; gx++) addTrotoar2(gx, 16);
     addTrotoar2(17, 16);
 
     for (let gy = 16; gy <= 64; gy++) addTrotoarV(18, gy);
@@ -701,15 +769,15 @@ export class WorldScene extends Phaser.Scene {
     for (let gy = 12; gy <= 17; gy++) addTrotoar2(22, gy);
 
     // B. Timur Laut (NE Sidewalks):
-    // Sisi Atas / Utara (gy: 11..12):
-    for (let gx = 59; gx <= 79; gx++) addTrotoarH(gx, 12);
+    // Sisi Atas / Utara (gy: 11..12) - terus membentang ke laut timur (gx: 100):
+    for (let gx = 59; gx <= 100; gx++) addTrotoarH(gx, 12);
     addTrotoarEdge(58, 12, 270);
-    for (let gx = 57; gx <= 79; gx++) addTrotoar2(gx, 11);
+    for (let gx = 57; gx <= 100; gx++) addTrotoar2(gx, 11);
 
-    // Sisi Bawah / Selatan (gy: 15..16):
-    for (let gx = 62; gx <= 79; gx++) addTrotoarH(gx, 15);
+    // Sisi Bawah / Selatan (gy: 15..16) - terus membentang ke laut timur (gx: 100):
+    for (let gx = 62; gx <= 100; gx++) addTrotoarH(gx, 15);
     addTrotoarEdge(61, 15, 270);
-    for (let gx = 62; gx <= 79; gx++) addTrotoar2(gx, 16);
+    for (let gx = 62; gx <= 100; gx++) addTrotoar2(gx, 16);
 
     for (let gy = 13; gy <= 17; gy++) addTrotoarV(58, gy);
     addTrotoarEdge(58, 18, 90);
@@ -746,21 +814,21 @@ export class WorldScene extends Phaser.Scene {
     addTrotoarEdge(58, 68, 180);
 
     // F. Barat Daya (SW Sidewalks gy: 64..69):
-    for (let gx = 0; gx <= 17; gx++) addTrotoarH(gx, 65);
+    for (let gx = -20; gx <= 17; gx++) addTrotoarH(gx, 65);
     addTrotoarEdge(18, 65, 90);
-    for (let gx = 0; gx <= 17; gx++) addTrotoar2(gx, 64);
+    for (let gx = -20; gx <= 17; gx++) addTrotoar2(gx, 64);
     addTrotoar2(17, 64);
 
-    for (let gx = 0; gx <= 20; gx++) addTrotoarH(gx, 68);
-    for (let gx = 0; gx <= 22; gx++) addTrotoar2(gx, 69);
+    for (let gx = -20; gx <= 20; gx++) addTrotoarH(gx, 68);
+    for (let gx = -20; gx <= 22; gx++) addTrotoar2(gx, 69);
 
     // G. Tenggara (SE Sidewalks gy: 64..69):
-    for (let gx = 62; gx <= 79; gx++) addTrotoarH(gx, 65);
+    for (let gx = 62; gx <= 100; gx++) addTrotoarH(gx, 65);
     addTrotoarEdge(61, 65, 180);
-    for (let gx = 62; gx <= 79; gx++) addTrotoar2(gx, 64);
+    for (let gx = 62; gx <= 100; gx++) addTrotoar2(gx, 64);
 
-    for (let gx = 59; gx <= 79; gx++) addTrotoarH(gx, 68);
-    for (let gx = 57; gx <= 79; gx++) addTrotoar2(gx, 69);
+    for (let gx = 59; gx <= 100; gx++) addTrotoarH(gx, 68);
+    for (let gx = 57; gx <= 100; gx++) addTrotoar2(gx, 69);
 
     // H. Promenade Laut Timur & 3 Dermaga Trotoar 2:
     // Trotoar 1 Vertikal (gx: 61) lurus sempurna tanpa lubang/terpotong dari utara ke selatan
@@ -785,8 +853,7 @@ export class WorldScene extends Phaser.Scene {
     this.addGridObstacle(74, 26, 6, 2);
     this.addGridObstacle(74, 39, 6, 2);
     this.addGridObstacle(74, 53, 6, 2);
-    this.addGridObstacle(0, 79, 80, 1);
-    this.addGridObstacle(0, 70, 1, 9);
+    this.addGridObstacle(-2, 79, 83, 1);
     this.addGridObstacle(79, 70, 1, 9);
 
     // 7. LAMPU JALAN (PROP-LAMPU 1X3) SESUAI BLUEPRINT
@@ -1084,15 +1151,35 @@ export class WorldScene extends Phaser.Scene {
   public isLocationWalkable(wx: number, wy: number): boolean {
     const ts = this.tileSize; // 120
 
-    // 1. Batas luar dunia game (1 petak batas pengaman luar)
-    if (wx < 120 || wx > this.worldWidth - 120 || wy < 120 || wy > this.worldHeight - 120) {
-      return false;
+    // Cek apakah posisi berada dalam koridor jalan & trotoar terbuka
+    // Koridor 1 (Barat Laut / Timur Laut): gy 11..16 (wy: 1320 s/d 2040)
+    // Koridor 2 (Barat Daya / Tenggara): gy 64..69 (wy: 7680 s/d 8400)
+    const isRoadCorridor1 = wy >= 11 * ts && wy < 17 * ts;
+    const isRoadCorridor2 = wy >= 64 * ts && wy < 70 * ts;
+    const isRoadCorridor = isRoadCorridor1 || isRoadCorridor2;
+    const isBeach = wy >= 70 * ts && wy < 79 * ts;
+
+    if (isRoadCorridor || isBeach) {
+      // Pada koridor jalan & pantai, pemain bisa berjalan bebas dari buffer barat (-2 petak) sampai batas timur (+1 petak)
+      if (wx < -2 * ts || wx > (this.worldWidth + ts)) {
+        return false;
+      }
+    } else {
+      // 1. Batas luar dunia game standar (1 petak batas pengaman luar)
+      if (wx < 120 || wx > this.worldWidth - 120 || wy < 120 || wy > this.worldHeight - 120) {
+        return false;
+      }
     }
 
     const gx = Math.floor(wx / ts);
     const gy = Math.floor(wy / ts);
 
     // 2. Perairan Lautan (Deep Ocean Water):
+    // Jika berada di luar grid dunia 80x80: di luar koridor jalan dan pantai semuanya adalah laut/void terlarang
+    if (gx < 0 || gx >= 80) {
+      if (!isRoadCorridor && !isBeach) return false;
+    }
+
     // a. Lautan Timur (gx: 63..79, gy: 17..63)
     // Cek apakah pemain mengklik salah satu dari 3 Dermaga:
     // Dermaga 1: gx 63..73, gy 26..27
@@ -1104,22 +1191,17 @@ export class WorldScene extends Phaser.Scene {
       (gy >= 53 && gy <= 54)
     );
 
-    if (gx >= 63 && gy >= 17 && gy <= 63 && !isOnPier) {
+    if (gx >= 63 && gx < 80 && gy >= 17 && gy <= 63 && !isOnPier) {
       return false;
     }
 
-    // b. Pojok Laut Timur Laut (gx: 79, gy: 0..10)
-    if (gx >= 79 && gy <= 10) {
-      return false;
-    }
-
-    // c. Samudra Selatan Paling Bawah (gy >= 79)
+    // b. Samudra Selatan Paling Bawah (gy >= 79)
     if (gy >= 79) {
       return false;
     }
 
-    // d. Perairan sudut kiri dan kanan Pantai Selatan (gx: 0 atau gx >= 79 pada gy >= 70)
-    if ((gx <= 0 || gx >= 79) && gy >= 70) {
+    // c. Perairan sudut kanan Pantai Selatan (gx >= 79 pada gy >= 70)
+    if (gx >= 79 && gy >= 70) {
       return false;
     }
 
@@ -1157,11 +1239,317 @@ export class WorldScene extends Phaser.Scene {
   }
 
   /**
+   * Menemukan titik walkable terdekat dari posisi pemain menuju titik target.
+   * Jika titik target berada di dalam tembok/rintangan atau di luar batas dunia,
+   * secara cerdas menarik titik target mundur di sepanjang garis pandang pemain
+   * hingga menemukan area yang aman diinjak.
+   */
+  public findClosestWalkablePoint(targetX: number, targetY: number): { x: number; y: number } | null {
+    if (this.isLocationWalkable(targetX, targetY)) {
+      return { x: targetX, y: targetY };
+    }
+
+    if (!this.player || !this.player.active) return null;
+
+    const px = this.player.x;
+    const py = this.player.y;
+    const dist = Phaser.Math.Distance.Between(px, py, targetX, targetY);
+    if (dist <= 1) return null;
+
+    // Mundur dari targetX, targetY ke arah posisi pemain mencari titik valid pertama
+    const steps = Math.min(80, Math.max(10, Math.ceil(dist / 14)));
+    for (let i = 1; i <= steps; i++) {
+      const t = 1 - (i / steps);
+      const testX = px + (targetX - px) * t;
+      const testY = py + (targetY - py) * t;
+      if (this.isLocationWalkable(testX, testY)) {
+        return { x: testX, y: testY };
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Memastikan tekstur catur 2x2 untuk Tembok Atas dan Tembok Samping tersedia di runtime
+   */
+  private ensureWallTextures(): void {
+    if (!this.textures.exists('wall-top-checker') && this.textures.exists('tile-wall-dark') && this.textures.exists('tile-wall-light')) {
+      try {
+        const darkImg = this.textures.get('tile-wall-dark').getSourceImage() as HTMLImageElement;
+        const lightImg = this.textures.get('tile-wall-light').getSourceImage() as HTMLImageElement;
+        const canvas = document.createElement('canvas');
+        canvas.width = 240;
+        canvas.height = 240;
+        const ctx = canvas.getContext('2d');
+        if (ctx && darkImg && lightImg) {
+          ctx.drawImage(darkImg, 0, 0, 120, 120);
+          ctx.drawImage(lightImg, 120, 0, 120, 120);
+          ctx.drawImage(lightImg, 0, 120, 120, 120);
+          ctx.drawImage(darkImg, 120, 120, 120, 120);
+          this.textures.addCanvas('wall-top-checker', canvas);
+        }
+      } catch (e) {
+        console.warn('[WorldScene] Gagal membuat tekstur wall-top-checker:', e);
+      }
+    }
+
+    if (!this.textures.exists('wall-side-checker') && this.textures.exists('tile-wall-top-dark') && this.textures.exists('tile-wall-top-light')) {
+      try {
+        const darkTopImg = this.textures.get('tile-wall-top-dark').getSourceImage() as HTMLImageElement;
+        const lightTopImg = this.textures.get('tile-wall-top-light').getSourceImage() as HTMLImageElement;
+        const canvas = document.createElement('canvas');
+        canvas.width = 240;
+        canvas.height = 240;
+        const ctx = canvas.getContext('2d');
+        if (ctx && darkTopImg && lightTopImg) {
+          ctx.drawImage(darkTopImg, 0, 0, 120, 120);
+          ctx.drawImage(lightTopImg, 120, 0, 120, 120);
+          ctx.drawImage(lightTopImg, 0, 120, 120, 120);
+          ctx.drawImage(darkTopImg, 120, 120, 120, 120);
+          this.textures.addCanvas('wall-side-checker', canvas);
+        }
+      } catch (e) {
+        console.warn('[WorldScene] Gagal membuat tekstur wall-side-checker:', e);
+      }
+    }
+  }
+
+  /**
+   * Menghasilkan tekstur ombak HD alami, kaustik kristal, dan buih pantai untuk perairan Lautan Timur & Samudra Selatan
+   */
+  private ensureWaterTextures(): void {
+    // 1. Tekstur Ombak Samudra HD (water-wave-tile - 480x480 Seamless)
+    try {
+      if (this.textures.exists('water-wave-tile')) {
+        this.textures.remove('water-wave-tile');
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = 480;
+      canvas.height = 480;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.clearRect(0, 0, 480, 480);
+
+        const drawWave = (cx: number, cy: number, w: number, h: number, alpha: number) => {
+          const drawAt = (ox: number, oy: number) => {
+            ctx.save();
+            // a. Bayangan biru tua kedalaman di bawah gelombang (3D depth)
+            ctx.beginPath();
+            ctx.moveTo(ox - w / 2, oy + 4);
+            ctx.bezierCurveTo(ox - w / 4, oy - h + 4, ox + w / 4, oy + h + 4, ox + w / 2, oy + 4);
+            ctx.strokeStyle = `rgba(2, 132, 199, ${alpha * 0.40})`;
+            ctx.lineWidth = 4.5;
+            ctx.lineCap = 'round';
+            ctx.stroke();
+
+            // b. Tubuh gelombang biru muda kristal transparan (translucent azure swell)
+            ctx.beginPath();
+            ctx.moveTo(ox - w / 2, oy);
+            ctx.bezierCurveTo(ox - w / 4, oy - h, ox + w / 4, oy + h, ox + w / 2, oy);
+            ctx.strokeStyle = `rgba(125, 211, 252, ${alpha * 0.65})`;
+            ctx.lineWidth = 4.0;
+            ctx.lineCap = 'round';
+            ctx.stroke();
+
+            // c. Puncak buih putih berkilau (crisp white frothy crest)
+            ctx.beginPath();
+            ctx.moveTo(ox - w / 2 + 3, oy);
+            ctx.bezierCurveTo(ox - w / 4, oy - h * 0.9, ox + w / 4, oy + h * 0.9, ox + w / 2 - 3, oy);
+            ctx.strokeStyle = `rgba(255, 255, 255, ${alpha * 0.95})`;
+            ctx.lineWidth = 2.4;
+            ctx.lineCap = 'round';
+            ctx.stroke();
+
+            // d. Percikan buih laut lembut (sea foam particles)
+            ctx.fillStyle = `rgba(240, 249, 255, ${alpha * 0.85})`;
+            ctx.beginPath();
+            ctx.arc(ox - w * 0.22, oy - h * 0.4, 1.8, 0, Math.PI * 2);
+            ctx.arc(ox + w * 0.18, oy + h * 0.35, 1.6, 0, Math.PI * 2);
+            ctx.arc(ox + w * 0.35, oy + h * 0.15, 1.4, 0, Math.PI * 2);
+            ctx.fill();
+
+            // e. Bintang kilau pantulan sinar matahari (4-point sunlight glimmer sparkle)
+            const sx = ox - w * 0.06;
+            const sy = oy - h * 0.35;
+            ctx.fillStyle = `rgba(255, 255, 255, ${alpha * 1.0})`;
+            ctx.beginPath();
+            ctx.moveTo(sx, sy - 4);
+            ctx.lineTo(sx + 1.2, sy);
+            ctx.lineTo(sx + 4, sy);
+            ctx.lineTo(sx + 1.2, sy);
+            ctx.lineTo(sx, sy + 4);
+            ctx.lineTo(sx - 1.2, sy);
+            ctx.lineTo(sx - 4, sy);
+            ctx.lineTo(sx - 1.2, sy);
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.restore();
+          };
+
+          drawAt(cx, cy);
+          if (cx - w / 2 < 0) drawAt(cx + 480, cy);
+          if (cx + w / 2 > 480) drawAt(cx - 480, cy);
+          if (cy - h < 0) drawAt(cx, cy + 480);
+          if (cy + h > 480) drawAt(cx, cy - 480);
+        };
+
+        const waveList = [
+          { cx: 80, cy: 35, w: 110, h: 9, a: 0.70 },
+          { cx: 280, cy: 45, w: 100, h: 8, a: 0.60 },
+          { cx: 430, cy: 30, w: 80, h: 7, a: 0.65 },
+
+          { cx: 180, cy: 105, w: 125, h: 10, a: 0.75 },
+          { cx: 360, cy: 115, w: 90, h: 8, a: 0.55 },
+          { cx: 30, cy: 120, w: 75, h: 7, a: 0.60 },
+
+          { cx: 100, cy: 180, w: 105, h: 9, a: 0.65 },
+          { cx: 270, cy: 170, w: 120, h: 10, a: 0.72 },
+          { cx: 440, cy: 190, w: 85, h: 7, a: 0.58 },
+
+          { cx: 190, cy: 250, w: 115, h: 9, a: 0.70 },
+          { cx: 350, cy: 240, w: 100, h: 8, a: 0.62 },
+          { cx: 40, cy: 260, w: 90, h: 8, a: 0.65 },
+
+          { cx: 120, cy: 320, w: 120, h: 10, a: 0.75 },
+          { cx: 290, cy: 330, w: 95, h: 8, a: 0.58 },
+          { cx: 450, cy: 315, w: 80, h: 7, a: 0.55 },
+
+          { cx: 210, cy: 395, w: 130, h: 10, a: 0.72 },
+          { cx: 380, cy: 405, w: 85, h: 7, a: 0.55 },
+          { cx: 50, cy: 400, w: 95, h: 8, a: 0.62 },
+
+          { cx: 140, cy: 460, w: 100, h: 8, a: 0.62 },
+          { cx: 310, cy: 455, w: 115, h: 9, a: 0.70 },
+        ];
+
+        waveList.forEach(w => drawWave(w.cx, w.cy, w.w, w.h, w.a));
+        this.textures.addCanvas('water-wave-tile', canvas);
+      }
+    } catch (e) {
+      console.warn('[WorldScene] Gagal membuat water-wave-tile:', e);
+    }
+
+    // 2. Tekstur Kaustik Cahaya Tropis & Riak Sekunder (water-wave-caustic - 480x480 Seamless)
+    try {
+      if (this.textures.exists('water-wave-caustic')) {
+        this.textures.remove('water-wave-caustic');
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = 480;
+      canvas.height = 480;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.clearRect(0, 0, 480, 480);
+
+        const drawCausticRing = (cx: number, cy: number, rx: number, ry: number, a: number) => {
+          const drawAt = (ox: number, oy: number) => {
+            ctx.save();
+            ctx.beginPath();
+            ctx.ellipse(ox, oy, rx, ry, Math.PI * 0.12, 0, Math.PI * 2);
+            ctx.strokeStyle = `rgba(186, 230, 253, ${a * 0.40})`;
+            ctx.lineWidth = 2.4;
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.ellipse(ox + 1.5, oy - 1.5, rx * 0.85, ry * 0.85, Math.PI * 0.12, 0, Math.PI * 2);
+            ctx.strokeStyle = `rgba(255, 255, 255, ${a * 0.65})`;
+            ctx.lineWidth = 1.4;
+            ctx.stroke();
+            ctx.restore();
+          };
+          drawAt(cx, cy);
+          if (cx - rx < 0) drawAt(cx + 480, cy);
+          if (cx + rx > 480) drawAt(cx - 480, cy);
+          if (cy - ry < 0) drawAt(cx, cy + 480);
+          if (cy + ry > 480) drawAt(cx, cy - 480);
+        };
+
+        const causticList = [
+          { cx: 60, cy: 70, rx: 34, ry: 18, a: 0.55 },
+          { cx: 220, cy: 50, rx: 42, ry: 20, a: 0.60 },
+          { cx: 380, cy: 80, rx: 36, ry: 16, a: 0.50 },
+          { cx: 140, cy: 160, rx: 44, ry: 22, a: 0.65 },
+          { cx: 300, cy: 180, rx: 38, ry: 19, a: 0.55 },
+          { cx: 450, cy: 150, rx: 32, ry: 15, a: 0.50 },
+          { cx: 70, cy: 270, rx: 40, ry: 20, a: 0.60 },
+          { cx: 230, cy: 290, rx: 46, ry: 24, a: 0.70 },
+          { cx: 390, cy: 260, rx: 35, ry: 17, a: 0.52 },
+          { cx: 150, cy: 380, rx: 42, ry: 21, a: 0.62 },
+          { cx: 320, cy: 400, rx: 36, ry: 18, a: 0.58 },
+          { cx: 460, cy: 370, rx: 30, ry: 14, a: 0.48 },
+          { cx: 80, cy: 450, rx: 38, ry: 19, a: 0.55 },
+          { cx: 250, cy: 460, rx: 44, ry: 22, a: 0.64 },
+        ];
+
+        causticList.forEach(c => drawCausticRing(c.cx, c.cy, c.rx, c.ry, c.a));
+        this.textures.addCanvas('water-wave-caustic', canvas);
+      }
+    } catch (e) {
+      console.warn('[WorldScene] Gagal membuat water-wave-caustic:', e);
+    }
+
+    // 3. Tekstur Buih Gulungan Ombak Pantai (water-shoreline-surf - 480x80)
+    try {
+      if (this.textures.exists('water-shoreline-surf')) {
+        this.textures.remove('water-shoreline-surf');
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = 480;
+      canvas.height = 80;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.clearRect(0, 0, 480, 80);
+
+        // Lapisan basah pasir (wet sand backwash)
+        ctx.fillStyle = 'rgba(140, 115, 62, 0.35)';
+        ctx.fillRect(0, 0, 480, 24);
+
+        // Buih ombak putih tebal berbusa (foaming shore surf)
+        for (let x = 0; x < 480; x += 32) {
+          ctx.beginPath();
+          ctx.arc(x + 16, 26, 20, Math.PI, 0, false);
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.92)';
+          ctx.fill();
+
+          ctx.beginPath();
+          ctx.arc(x + 16, 28, 14, Math.PI, 0, false);
+          ctx.fillStyle = 'rgba(224, 242, 254, 0.65)';
+          ctx.fill();
+
+          // Gelembung buih kecil
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+          ctx.beginPath();
+          ctx.arc(x + 8, 18, 3, 0, Math.PI * 2);
+          ctx.arc(x + 22, 16, 2.5, 0, Math.PI * 2);
+          ctx.arc(x + 14, 12, 2, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        // Garis batas buih renda tajam (lacy foam crest)
+        ctx.beginPath();
+        for (let x = 0; x <= 480; x += 16) {
+          const y = 30 + Math.sin(x * 0.12) * 5;
+          if (x === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 3.5;
+        ctx.stroke();
+
+        this.textures.addCanvas('water-shoreline-surf', canvas);
+      }
+    } catch (e) {
+      console.warn('[WorldScene] Gagal membuat water-shoreline-surf:', e);
+    }
+  }
+
+  /**
    * Menampilkan feedback visual terhalang (Red Ring & 🚫 Sign) saat klik/tap lokasi tak terjangkau
    */
   private spawnBlockedFeedback(x: number, y: number): void {
     const gfx = this.add.graphics();
-    gfx.setDepth(y + 999);
+    gfx.setDepth(99999);
 
     // Bayangan merah gelap di lantai
     gfx.fillStyle(0x7f1d1d, 0.45);
@@ -1448,15 +1836,22 @@ export class WorldScene extends Phaser.Scene {
     // Interpolasi zoom kamera halus via CameraController
     this.cameraController?.update(time, delta);
 
-    // Animasi Riak & Ombak Air Laut Mengalir (Fluid Waves & Sparkling Caustics 60 FPS)
+    // Animasi Riak & Ombak Air Laut Mengalir HD (Fluid Waves, Glimmer & Sparkling Caustics 60 FPS)
     const t = time * 0.001;
     this.waterWaves1.forEach((w) => {
-      w.tilePositionX += delta * 0.022;
-      w.tilePositionY = Math.sin(t * 1.8) * 8;
+      w.tilePositionX += delta * 0.026;
+      w.tilePositionY = Math.sin(t * 1.6 + w.x * 0.001) * 8;
     });
     this.waterWaves2.forEach((w) => {
-      w.tilePositionX -= delta * 0.014;
-      w.tilePositionY = Math.cos(t * 1.4) * 6;
+      w.tilePositionX -= delta * 0.016;
+      w.tilePositionY = Math.cos(t * 1.3 + w.y * 0.001) * 7;
+    });
+
+    // Animasi Gulungan Buih Ombak Pasir Pantai Selatan (Tidal Breathing Surf)
+    this.shorelineSurfs.forEach((s) => {
+      s.sprite.tilePositionX += delta * 0.032;
+      s.sprite.y = s.baseY + Math.sin(t * 1.5) * 8;
+      s.sprite.alpha = 0.82 + Math.sin(t * 1.5) * 0.18;
     });
 
     // Gerakkan awan terapung acak secara independen (Organic Floating Clouds)

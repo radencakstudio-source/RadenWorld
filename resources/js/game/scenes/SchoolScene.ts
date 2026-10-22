@@ -523,6 +523,10 @@ export class SchoolScene extends Phaser.Scene {
         this.player.destroy();
         this.player = null as any;
       }
+      if (this.cameraController) {
+        this.cameraController.destroy();
+        this.cameraController = null as any;
+      }
     };
 
     this.events.on('shutdown', cleanupScene);
@@ -1502,17 +1506,16 @@ export class SchoolScene extends Phaser.Scene {
 
   private setupCameraZoomControls(defaultZoom: number = 0.95): void {
     this.targetZoom = defaultZoom;
-    if (!this.cameraController) {
-      this.cameraController = new CameraController(this, {
-        defaultZoom,
-        minZoom: 0.6,
-        maxZoom: 1.8,
-        zoomLerpSpeed: 0.12,
-      });
-    } else {
-      this.cameraController.setupZoomControls({ defaultZoom });
-      this.cameraController.smoothZoomTo(defaultZoom);
+    if (this.cameraController) {
+      this.cameraController.destroy();
+      this.cameraController = null as any;
     }
+    this.cameraController = new CameraController(this, {
+      defaultZoom,
+      minZoom: 0.6,
+      maxZoom: 1.8,
+      zoomLerpSpeed: 0.12,
+    });
   }
 
   public smoothZoomTo(newZoom: number): void {

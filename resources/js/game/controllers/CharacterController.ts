@@ -789,18 +789,13 @@ export class CharacterController {
       return true;
     }
 
-    // 3. Samudra Selatan Lepas & Bibir Ombak Pantai Selatan (Bibir ombak di ujung bawah pasir, worldY >= 9420)
-    if (worldY >= 9420 && gx >= 0 && gx <= 80) {
+    // 3. Samudra Selatan Lepas & Bibir Ombak Pantai Selatan (worldY >= 9420)
+    if (worldY >= 9420) {
       return true;
     }
 
-    // 4. Teluk Laut Timur Laut (gx: 78..80, gy: 0..12)
-    if (gx >= 78 && gy >= 0 && gy <= 12) {
-      return true;
-    }
-
-    // 5. Perairan Sisi Kiri & Kanan Pantai Selatan (gx <= 0 atau gx >= 79 di gy >= 70)
-    if ((gx <= 0 || gx >= 79) && gy >= 70) {
+    // 4. Perairan Sisi Timur Pantai Selatan (gx >= 79 di gy: 70..78)
+    if (gx >= 79 && gy >= 70 && gy <= 78) {
       return true;
     }
 

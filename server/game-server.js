@@ -22,11 +22,45 @@
  * ============================================================================
  */
 
-import { createServer } from 'http';
+import { createServer, request as httpRequest } from 'http';
 import { Server } from 'socket.io';
 
 const PORT = process.env.PORT || 3001;
-const httpServer = createServer();
+const LARAVEL_PORT = process.env.LARAVEL_PORT || 8000;
+
+// HTTP Server gabungan: Melayani WebSocket Socket.io sekaligus meneruskan request web ke Laravel (port 8000)
+// Memungkinkan tunneling online 100% mulus lewat single port ngrok
+const httpServer = createServer((req, res) => {
+  if (req.url && req.url.startsWith('/socket.io/')) {
+    return;
+  }
+
+  const proxyReq = httpRequest(
+    {
+      hostname: '127.0.0.1',
+      port: LARAVEL_PORT,
+      path: req.url,
+      method: req.method,
+      headers: {
+        ...req.headers,
+        host: req.headers.host || `127.0.0.1:${LARAVEL_PORT}`,
+        'x-forwarded-host': req.headers.host,
+        'x-forwarded-proto': req.headers['x-forwarded-proto'] || 'http',
+      },
+    },
+    (proxyRes) => {
+      res.writeHead(proxyRes.statusCode, proxyRes.headers);
+      proxyRes.pipe(res, { end: true });
+    }
+  );
+
+  proxyReq.on('error', () => {
+    res.writeHead(502, { 'Content-Type': 'text/plain' });
+    res.end('Bad Gateway: Laravel is not responding on port 8000');
+  });
+
+  req.pipe(proxyReq, { end: true });
+});
 
 const io = new Server(httpServer, {
   cors: {

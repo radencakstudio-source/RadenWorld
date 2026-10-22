@@ -88,11 +88,19 @@ export class VoiceManager {
     if (typeof window === 'undefined') return;
 
     const unlock = () => {
+      let bothActive = true;
       if (this.playbackContext && this.playbackContext.state === 'suspended') {
-        this.playbackContext.resume().catch(() => {});
+        bothActive = false;
+        setTimeout(() => this.playbackContext?.resume().catch(() => {}), 0);
       }
       if (this.recordContext && this.recordContext.state === 'suspended') {
-        this.recordContext.resume().catch(() => {});
+        bothActive = false;
+        setTimeout(() => this.recordContext?.resume().catch(() => {}), 0);
+      }
+      if (bothActive && this.playbackContext && this.recordContext) {
+        window.removeEventListener('click', unlock);
+        window.removeEventListener('keydown', unlock);
+        window.removeEventListener('touchstart', unlock);
       }
     };
 

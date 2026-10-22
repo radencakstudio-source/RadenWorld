@@ -234,7 +234,7 @@ export abstract class Entity extends Phaser.GameObjects.Container {
       fontSize: '12px',
       color: '#0f172a',
       fontStyle: 'bold',
-      resolution: 3, // Resolusi HD tajam saat kamera di-zoom in
+      resolution: 2, // Resolusi HD tajam efisien tanpa membebani GPU texture
       wordWrap: { width: 160 },
       align: 'center',
     }).setOrigin(0.5);

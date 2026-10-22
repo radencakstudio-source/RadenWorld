@@ -22,10 +22,10 @@ export const SunbeamOverlay: React.FC = () => {
   const [currentTime, setCurrentTime] = useState<Date>(new Date());
 
   useEffect(() => {
-    // Sinkronisasi realtime setiap 1 detik
+    // Sinkronisasi realtime setiap 30 detik (menghemat CPU dan render loop)
     const timer = setInterval(() => {
       setCurrentTime(new Date());
-    }, 1000);
+    }, 30000);
     return () => clearInterval(timer);
   }, []);
 
@@ -183,7 +183,11 @@ export const SunbeamOverlay: React.FC = () => {
         viewBox="0 0 1920 1080"
         preserveAspectRatio="none"
         xmlns="http://www.w3.org/2000/svg"
-        style={{ mixBlendMode: beamColors.mixMode, willChange: 'opacity, transform' }}
+        style={{
+          mixBlendMode: beamColors.mixMode,
+          transform: 'translateZ(0)',
+          willChange: 'opacity, transform',
+        }}
       >
         <defs>
           {/* Gradien linear berkas sinar diagonal dari (0,0) menuju tengah layar */}
@@ -208,7 +212,7 @@ export const SunbeamOverlay: React.FC = () => {
         <circle cx="0" cy="0" r="400" fill="url(#celestialCorona)" />
 
         {/* Gugusan 6 Berkas Sinar Menyorot Diagonal dari Atas Kiri ke Tengah Layar */}
-        <g style={{ filter: 'blur(16px)', willChange: 'transform' }}>
+        <g>
           {/* Sinar 1: Atas-Tengah */}
           <polygon points="0,0 480,1080 760,1080" fill="url(#godRayGradient)" opacity={beamColors.beamOpacity * 0.85} />
 

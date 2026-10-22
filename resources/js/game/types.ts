@@ -59,3 +59,17 @@ export interface IWorldInitData {
   monsters: IMonsterData[];
   worldBounds: { width: number; height: number };
 }
+
+export interface INpcConfig {
+  id: string;
+  name: string;
+  role: string;
+  avatarType: 'sage' | 'blacksmith' | 'alchemist' | 'merchant' | 'guard' | 'fisherman' | 'farmer' | 'elder';
+  avatarUrl?: string;
+  x: number;
+  y: number;
+  greeting: string;
+  dialogues: string[];
+  spriteKey: string;
+}
+

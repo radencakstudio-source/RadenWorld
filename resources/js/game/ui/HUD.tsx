@@ -484,6 +484,31 @@ export const HUD: React.FC<HUDProps> = ({
             </div>
           </button>
 
+          {/* Tombol Daftar Pemain Server (Roblox-style Player List Trigger - Aman dari tombol kontrol mobile) */}
+          <button
+            onClick={() => {
+              sound.playClick();
+              try {
+                NetworkManager.getInstance().requestRoomPlayers();
+              } catch (e) {}
+              setIsServerUsersModalOpen(true);
+            }}
+            className="pointer-events-auto h-10 flex items-center gap-2 px-2.5 rounded-md bg-black border border-neutral-800 hover:border-amber-400 text-neutral-200 transition-colors cursor-pointer group shrink-0"
+            title="Lihat Daftar Pemain di Server"
+          >
+            <div className="w-6 h-6 rounded bg-neutral-900 border border-neutral-800 flex items-center justify-center text-amber-400 group-hover:text-amber-300">
+              <Users className="w-3.5 h-3.5" />
+            </div>
+            <div className="flex flex-col text-left leading-none">
+              <span className="text-[8px] text-neutral-400 uppercase tracking-wider font-semibold">PEMAIN</span>
+              <div className="flex items-center gap-0.5 text-xs font-black font-mono tracking-wider text-white mt-0.5">
+                <span className="text-amber-300">{serverPlayerCount}</span>
+                <span className="text-neutral-500 font-normal">/</span>
+                <span className="text-neutral-400">50</span>
+              </div>
+            </div>
+          </button>
+
           {/* Tombol Pengaturan (H-10 W-10, Rounded-md) */}
           {onOpenSettings && (
             <button
@@ -502,45 +527,45 @@ export const HUD: React.FC<HUDProps> = ({
           {!stats.inHouse && (
             <div className="pointer-events-auto flex flex-col items-end shrink-0">
               {/* Header Peta Mini (Sejajar 1 Baris dengan Pengaturan) */}
-              <div className="h-10 flex items-center justify-between w-[184px] px-2.5 bg-black border-x border-t border-b border-neutral-800 rounded-t-md text-[10px] font-bold text-neutral-300 shadow-sm">
-                <div className="flex items-center gap-1.5 text-amber-400">
-                  <Map className="w-3.5 h-3.5 text-amber-400" />
-                  <span className="font-mono tracking-wider font-bold text-xs text-amber-300">PETA DUNIA</span>
+              <div className="h-8 flex items-center justify-between w-[132px] px-2 bg-black border-x border-t border-b border-neutral-800 rounded-t-md text-[9px] font-bold text-neutral-300 shadow-sm">
+                <div className="flex items-center gap-1 text-amber-400">
+                  <Map className="w-3 h-3 text-amber-400" />
+                  <span className="font-mono tracking-wider font-bold text-[10px] text-amber-300">PETA</span>
                 </div>
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-0.5">
                   <button
                     onClick={() => {
                       sound.playClick();
                       setIsMinimapOpen(!isMinimapOpen);
                     }}
-                    className="p-1 text-neutral-400 hover:text-amber-300 transition-colors cursor-pointer"
+                    className="p-0.5 text-neutral-400 hover:text-amber-300 transition-colors cursor-pointer"
                     title={isMinimapOpen ? "Sembunyikan Peta" : "Tampilkan Peta"}
                   >
-                    {isMinimapOpen ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                    {isMinimapOpen ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
                   </button>
                   <button
                     onClick={() => {
                       sound.playClick();
                       setIsFullMapOpen(true);
                     }}
-                    className="p-1 text-neutral-400 hover:text-amber-300 transition-colors cursor-pointer"
+                    className="p-0.5 text-neutral-400 hover:text-amber-300 transition-colors cursor-pointer"
                     title="Perbesar Peta Penuh"
                   >
-                    <Maximize2 className="w-3 h-3" />
+                    <Maximize2 className="w-2.5 h-2.5" />
                   </button>
                 </div>
               </div>
 
               {/* Kotak Bodi Peta: Kanvas Peta (Jika Buka) + Posisi Grid & Jam (Selalu Tampil) */}
-              <div className="w-[184px] flex flex-col bg-black border-x border-b border-neutral-800 rounded-b-md overflow-hidden shadow-2xl">
-                {/* Kanvas Peta Mini 80x80 (Hanya muncul jika tidak di-minimize) */}
+              <div className="w-[132px] flex flex-col bg-black border-x border-b border-neutral-800 rounded-b-md overflow-hidden shadow-2xl">
+                {/* Kanvas Peta Mini (Hanya muncul jika tidak di-minimize) */}
                 {isMinimapOpen && (
                   <div
                     onClick={() => {
                       sound.playClick();
                       setIsFullMapOpen(true);
                     }}
-                    className="w-[184px] h-[184px] bg-[#001026] p-1 relative overflow-hidden cursor-pointer group hover:opacity-95 transition-opacity border-b border-neutral-800"
+                    className="w-[132px] h-[132px] bg-[#001026] p-0.5 relative overflow-hidden cursor-pointer group hover:opacity-95 transition-opacity border-b border-neutral-800"
                     title="Klik untuk membuka Peta Penuh & Panduan Wilayah"
                   >
                     {/* Peta Mini WorldMapSvg Presisi & Kaya Visual Mirip Dunia Asli */}
@@ -554,16 +579,16 @@ export const HUD: React.FC<HUDProps> = ({
                     />
 
                     {/* Petunjuk Kompas Mata Angin (U, T, S, B) */}
-                    <div className="absolute top-1 left-1/2 -translate-x-1/2 text-[8px] font-black font-mono text-amber-300/90 pointer-events-none drop-shadow">
+                    <div className="absolute top-0.5 left-1/2 -translate-x-1/2 text-[7.5px] font-black font-mono text-amber-300/90 pointer-events-none drop-shadow">
                       U
                     </div>
-                    <div className="absolute bottom-1 left-1/2 -translate-x-1/2 text-[8px] font-black font-mono text-neutral-400 pointer-events-none drop-shadow">
+                    <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2 text-[7.5px] font-black font-mono text-neutral-400 pointer-events-none drop-shadow">
                       S
                     </div>
-                    <div className="absolute left-1 top-1/2 -translate-y-1/2 text-[8px] font-black font-mono text-neutral-400 pointer-events-none drop-shadow">
+                    <div className="absolute left-0.5 top-1/2 -translate-y-1/2 text-[7.5px] font-black font-mono text-neutral-400 pointer-events-none drop-shadow">
                       B
                     </div>
-                    <div className="absolute right-1 top-1/2 -translate-y-1/2 text-[8px] font-black font-mono text-neutral-400 pointer-events-none drop-shadow">
+                    <div className="absolute right-0.5 top-1/2 -translate-y-1/2 text-[7.5px] font-black font-mono text-neutral-400 pointer-events-none drop-shadow">
                       T
                     </div>
 
@@ -573,26 +598,26 @@ export const HUD: React.FC<HUDProps> = ({
                 )}
 
                 {/* BAGIAN DI DALAM KOTAK PETA DI BAWAH PETA: POSISI GRID & JAM (Selalu Tampil saat di-minimize) */}
-                <div className="w-full px-2.5 py-2 bg-neutral-950/95 flex flex-col gap-1.5 select-none">
+                <div className="w-full px-2 py-1.5 bg-neutral-950/95 flex flex-col gap-1 select-none">
                   {/* 1. Posisi Grid */}
-                  <div className="w-full flex items-center justify-between text-[10px] font-mono font-bold bg-black px-2 py-1 rounded border border-neutral-800">
-                    <span className="text-neutral-400 text-[9px] uppercase tracking-wider font-semibold">POSISI GRID</span>
-                    <span className="text-amber-300 font-bold">{gridX}, {gridY}</span>
+                  <div className="w-full flex items-center justify-between text-[9px] font-mono font-bold bg-black px-1.5 py-0.5 rounded border border-neutral-800">
+                    <span className="text-neutral-400 text-[8px] uppercase tracking-wider font-semibold">GRID</span>
+                    <span className="text-amber-300 font-bold text-[9px]">{gridX}, {gridY}</span>
                   </div>
 
                   {/* Waypoint Tanda Kustom Jika Ada */}
                   {customMarker && (
-                    <div className="w-full flex items-center justify-between text-[10px] font-mono bg-red-950/80 border border-red-800/80 px-2 py-0.5 rounded text-red-200">
+                    <div className="w-full flex items-center justify-between text-[8px] font-mono bg-red-950/80 border border-red-800/80 px-1.5 py-0.5 rounded text-red-200">
                       <span className="flex items-center gap-1 font-bold truncate">
-                        <MapPin className="w-3 h-3 text-red-400 shrink-0 animate-pulse" />
-                        TANDA: {customMarker.x}, {customMarker.y}
+                        <MapPin className="w-2.5 h-2.5 text-red-400 shrink-0 animate-pulse" />
+                        {customMarker.x}, {customMarker.y}
                       </span>
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
                           handleClearMarker();
                         }}
-                        className="text-neutral-400 hover:text-white px-1 font-bold hover:bg-red-800/50 rounded cursor-pointer leading-none ml-1"
+                        className="text-neutral-400 hover:text-white px-0.5 font-bold hover:bg-red-800/50 rounded cursor-pointer leading-none ml-1"
                         title="Hapus Tanda Waypoint"
                       >
                         ×
@@ -605,26 +630,26 @@ export const HUD: React.FC<HUDProps> = ({
                     className="w-full flex items-center justify-between gap-1 pt-0.5 text-left"
                     title={`Waktu RadenWorld: ${timePeriod} (${dateString}) - ${timeString} WIB`}
                   >
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-1">
                       <div className={`flex items-center justify-center ${periodColor}`}>
-                        <PeriodIcon className="w-3.5 h-3.5" />
+                        <PeriodIcon className="w-3 h-3" />
                       </div>
-                      <div className="flex flex-col leading-none">
-                        <div className="flex items-baseline gap-1 font-mono font-black text-xs tracking-wider text-white">
-                          <span>{timeString}</span>
-                          <span className="text-[8px] text-amber-400 font-bold">WIB</span>
-                        </div>
-                        <span className="text-[8px] font-medium text-neutral-400 mt-0.5">
-                          {dateString}
-                        </span>
+                      <div className="flex items-baseline gap-0.5 font-mono font-black text-[10px] tracking-wider text-white">
+                        <span>{timeString}</span>
+                        <span className="text-[7.5px] text-amber-400 font-bold">WIB</span>
                       </div>
                     </div>
 
-                    <span className={`text-[8px] font-black tracking-wider uppercase px-1.5 py-0.5 rounded ${periodBg} ${periodColor}`}>
+                    <span className={`text-[7px] font-black tracking-wider uppercase px-1 py-0.5 rounded ${periodBg} ${periodColor}`}>
                       {timePeriod}
                     </span>
                   </div>
                 </div>
+              </div>
+
+              {/* Teks Nama Wilayah / Lokasi di Bawah Minimap */}
+              <div className="w-[132px] text-right pointer-events-none text-[8.5px] font-black text-amber-300 uppercase tracking-wider truncate pt-1 drop-shadow-[0_1px_2px_rgba(0,0,0,1)]">
+                <span>{displayLocation}</span>
               </div>
             </div>
           )}
@@ -683,38 +708,14 @@ export const HUD: React.FC<HUDProps> = ({
           )}
         </div>
 
-        {/* KANAN BAWAH: Jumlah User Server (Max 50) + Icon Info & Lokasi di Bawahnya */}
-        <div className="flex flex-col items-end gap-1 text-right select-none">
-          {/* Baris Jumlah User & Icon Information */}
-          <div className="pointer-events-auto flex items-center gap-1.5 bg-black/85 hover:bg-black border border-neutral-800 hover:border-amber-500/40 px-2 py-0.5 rounded-md transition-colors shadow-sm group">
-            <div className="flex items-center gap-1 text-[10px] font-mono font-bold text-neutral-300">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-              <Users className="w-3 h-3 text-amber-400 shrink-0" />
-              <span className="text-white font-black">{serverPlayerCount}</span>
-              <span className="text-neutral-500 font-semibold">/</span>
-              <span className="text-neutral-400">50</span>
+        {/* KANAN BAWAH: Teks Nama Wilayah (Khusus Mode PC; pada Mobile sudah tampil rapi di bawah Minimap agar tidak tertimpa kontrol) */}
+        {!isMobile && (
+          <div className="flex flex-col items-end gap-1 text-right select-none pointer-events-none">
+            <div className="text-[10px] font-black text-amber-300 uppercase tracking-wider drop-shadow-[0_1px_3px_rgba(0,0,0,1)] pr-0.5">
+              <span>{displayLocation}</span>
             </div>
-
-            <button
-              onClick={() => {
-                sound.playClick();
-                try {
-                  NetworkManager.getInstance().requestRoomPlayers();
-                } catch (e) {}
-                setIsServerUsersModalOpen(true);
-              }}
-              className="p-0.5 text-neutral-400 hover:text-amber-400 active:scale-95 transition-colors cursor-pointer rounded ml-0.5"
-              title="Lihat Daftar Pemain di Server"
-            >
-              <Info className="w-3 h-3 text-amber-400" />
-            </button>
           </div>
-
-          {/* Teks Nama Tempat (Dermaga / Wilayah) di Posisi Paling Bawah Pojok Kanan */}
-          <div className="pointer-events-none text-[10px] font-black text-amber-300 uppercase tracking-wider drop-shadow-[0_1px_3px_rgba(0,0,0,1)] pr-0.5">
-            <span>{displayLocation}</span>
-          </div>
-        </div>
+        )}
       </div>
 
       {/* ==================================================================== */}

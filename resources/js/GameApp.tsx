@@ -58,7 +58,18 @@ export const GameApp: React.FC = () => {
     bgmVolume: 0.05, // 5% sesuai permintaan pengguna
     sfxVolume: 0.8,
     isMuted: false,
-    controlMode: 'pc', // 'pc' | 'mobile'
+    controlMode: (() => {
+      try {
+        const s = localStorage.getItem('raden_game_settings');
+        if (s) {
+          const p = JSON.parse(s);
+          if (p.controlMode) return p.controlMode;
+        }
+        const isTouch = typeof window !== 'undefined' && ('ontouchstart' in window || navigator.maxTouchPoints > 0);
+        return isTouch ? 'mobile' : 'pc';
+      } catch (e) {}
+      return 'pc';
+    })(),
   });
 
   const [inGameSettingsOpen, setInGameSettingsOpen] = useState(false);
@@ -966,7 +977,7 @@ export const GameApp: React.FC = () => {
         <LoadingScreen
           onComplete={handleLoadingComplete}
           serverCode={serverCode}
-          durationMs={gameState === 'playing' ? 1200 : 2500}
+          durationMs={gameState === 'playing' ? 650 : 800}
         />
       )}
 

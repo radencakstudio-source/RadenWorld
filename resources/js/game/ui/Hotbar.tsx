@@ -68,7 +68,7 @@ export const Hotbar: React.FC<HotbarProps> = ({ onOpenBackpack, isBackpackOpen =
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keydown', handleKeyDown, { passive: true });
 
     return () => {
       EventBus.off('inventory-updated', handleUpdate);

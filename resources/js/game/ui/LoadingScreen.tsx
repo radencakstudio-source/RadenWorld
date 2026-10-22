@@ -66,7 +66,7 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
         if (onCompleteRef.current) {
           onCompleteRef.current();
         }
-      }, 250);
+      }, 80);
     };
 
     const progressTimer = setInterval(() => {
@@ -82,7 +82,7 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
         clearInterval(progressTimer);
         triggerComplete();
       }
-    }, 35);
+    }, 50);
 
     const handlePhaserProgress = (val: number) => {
       const pct = Math.floor(val * 100);

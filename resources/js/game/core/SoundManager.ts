@@ -107,15 +107,17 @@ export class SoundManager {
           const startOnGesture = () => {
             if (!this.userInteracted) {
               this.userInteracted = true;
-              this.bgmAudio?.play().then(() => {
-                this.isBgmPlaying = true;
-              }).catch(() => {});
+              setTimeout(() => {
+                this.bgmAudio?.play().then(() => {
+                  this.isBgmPlaying = true;
+                }).catch(() => {});
+              }, 0);
             }
             window.removeEventListener('pointerdown', startOnGesture);
             window.removeEventListener('keydown', startOnGesture);
           };
-          window.addEventListener('pointerdown', startOnGesture, { once: true });
-          window.addEventListener('keydown', startOnGesture, { once: true });
+          window.addEventListener('pointerdown', startOnGesture, { once: true, passive: true });
+          window.addEventListener('keydown', startOnGesture, { once: true, passive: true });
         });
     }
   }

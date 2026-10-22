@@ -14,7 +14,7 @@
  */
 
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { Zap, ArrowUp, Fish, Backpack } from 'lucide-react';
+import { Zap, ArrowUp, Fish } from 'lucide-react';
 import { EventBus } from '../core/EventBus';
 import { SoundManager } from '../core/SoundManager';
 
@@ -47,7 +47,8 @@ export const VirtualControls: React.FC<VirtualControlsProps> = ({
     EventBus.emit('player-jump');
   }, [sound]);
 
-  const maxRadius = 42;
+  // Radius maksimum pergerakan knob analog (dikalibrasi untuk base w-28 h-28 / 112px)
+  const maxRadius = 38;
 
   const updateJoystick = useCallback(
     (clientX: number, clientY: number) => {
@@ -60,7 +61,7 @@ export const VirtualControls: React.FC<VirtualControlsProps> = ({
       const dy = clientY - centerY;
       const distance = Math.hypot(dx, dy);
 
-      // Batasi posisi knob dalam radius maksimum 42px
+      // Batasi posisi knob dalam radius maksimum
       const clampedDist = Math.min(distance, maxRadius);
       const angle = Math.atan2(dy, dx);
       const knobX = Math.cos(angle) * clampedDist;
@@ -68,8 +69,8 @@ export const VirtualControls: React.FC<VirtualControlsProps> = ({
 
       setKnobPos({ x: knobX, y: knobY });
 
-      // Jika digerakkan lebih dari deadzone (> 6px), kirim vektor analog 360 derajat
-      if (clampedDist > 6) {
+      // Jika digerakkan lebih dari deadzone (> 5px), kirim vektor analog 360 derajat
+      if (clampedDist > 5) {
         const normX = knobX / maxRadius;
         const normY = knobY / maxRadius;
 
@@ -146,9 +147,9 @@ export const VirtualControls: React.FC<VirtualControlsProps> = ({
   };
 
   return (
-    <div className="fixed inset-x-0 bottom-12 md:bottom-16 z-40 pointer-events-none flex justify-between items-end px-5 md:px-10 font-['Chakra_Petch']">
+    <div className="fixed inset-x-0 bottom-8 md:bottom-12 z-40 pointer-events-none flex justify-between items-end px-5 md:px-10 font-['Chakra_Petch']">
       {/* ================================================================ */}
-      {/* KIRI BAWAH: ANALOG JOYSTICK VIRTUAL SENTUH (360 DERAJAT)         */}
+      {/* KIRI BAWAH: ANALOG JOYSTICK VIRTUAL (SIMPEL, ELEGAN & RESPONSIF) */}
       {/* ================================================================ */}
       <div className="pointer-events-auto select-none touch-none pb-1 pl-1">
         <div
@@ -157,125 +158,123 @@ export const VirtualControls: React.FC<VirtualControlsProps> = ({
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
           onPointerCancel={handlePointerUp}
-          className="relative w-32 h-32 rounded-full bg-black/90 border-2 border-neutral-800 flex items-center justify-center cursor-pointer select-none touch-none shadow-lg shadow-black/60"
+          className="relative w-28 h-28 rounded-full bg-black/50 border border-white/20 flex items-center justify-center cursor-pointer select-none touch-none shadow-lg backdrop-blur-[2px]"
         >
-          {/* Garis Salib Sumbu Arah */}
+          {/* Garis Salib Sumbu Arah Halus */}
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <div className="w-20 h-0.5 bg-neutral-800/80" />
+            <div className="w-16 h-px bg-white/10" />
           </div>
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <div className="h-20 w-0.5 bg-neutral-800/80" />
+            <div className="h-16 w-px bg-white/10" />
           </div>
 
-          {/* Lingkaran Batas Dalam */}
-          <div className="absolute w-20 h-20 rounded-full border border-neutral-800/60 pointer-events-none" />
+          {/* Lingkaran Batas Dalam Tipis */}
+          <div className="absolute w-16 h-16 rounded-full border border-white/10 pointer-events-none" />
 
-          {/* Knob Analog (Mengikuti Sentuhan Jari Mulus Tanpa Mental/Balik Sendiri) */}
+          {/* Knob Analog Elegan & Responsif */}
           <div
-            className={`w-14 h-14 rounded-full border-2 border-amber-300 bg-amber-500 flex items-center justify-center transition-transform select-none shadow-md shadow-amber-500/30 ${
-              isDragging ? 'duration-0 scale-95' : 'duration-150 ease-out scale-100'
+            className={`w-12 h-12 rounded-full border border-white/30 bg-neutral-900/90 flex items-center justify-center transition-transform select-none shadow-md ${
+              isDragging ? 'duration-0 border-amber-400/70 bg-neutral-900' : 'duration-150 ease-out'
             }`}
             style={{
               transform: `translate3d(${knobPos.x}px, ${knobPos.y}px, 0)`,
             }}
           >
-            <div className="w-5 h-5 rounded-full bg-black border border-amber-300" />
+            <div className={`w-3.5 h-3.5 rounded-full border ${isDragging ? 'border-amber-400/80 bg-amber-400/30' : 'border-white/30 bg-white/15'}`} />
           </div>
         </div>
       </div>
 
       {/* ================================================================ */}
-      {/* KANAN BAWAH: TOMBOL AKSI, LOMPAT & MANCING MOBILE                */}
+      {/* KANAN BAWAH: CLUSTER KONTROL AKSI MOBILE (ELEGAN & BERKELAS)     */}
+      {/* - Mancing di KIRI Aksi (w-14 h-14)                               */}
+      {/* - Lompat di ATAS Aksi (w-14 h-14)                                */}
+      {/* - Aksi Utama di KANAN (w-28 h-28 setara analog)                  */}
       {/* ================================================================ */}
-      <div className="pointer-events-auto select-none touch-none pb-2 pr-2 relative flex items-end">
-        {/* Diamond / Arc Action Cluster Ergonomis */}
-        <div className="relative w-52 h-44 flex items-end justify-end">
-          
-          {/* 1. Tombol Tas Cepat Mobile (Kiri Atas Cluster) */}
-          <button
-            type="button"
-            onTouchStart={(e) => {
-              e.preventDefault();
-              sound.playClick();
-              EventBus.emit('open-backpack');
-            }}
-            onClick={(e) => {
-              e.preventDefault();
-              sound.playClick();
-              EventBus.emit('open-backpack');
-            }}
-            className="absolute top-2 left-2 w-11 h-11 rounded-full bg-neutral-900/95 border-2 border-amber-400/80 text-amber-300 flex flex-col items-center justify-center font-black cursor-pointer shadow-xl shadow-black/80 active:scale-90 transition-transform"
-            title="Buka Tas [B]"
-          >
-            <Backpack className="w-4 h-4 stroke-[2.5]" />
-            <span className="text-[7.5px] font-black tracking-wider leading-none mt-0.5">TAS</span>
-          </button>
+      <div className="pointer-events-auto select-none touch-none pb-1 pr-1 relative flex items-end">
+        <div className="flex items-end gap-3 select-none touch-none">
+          {/* Kolom Kiri: Tombol Mancing (Minimalis & Bersih) */}
+          <div className="flex flex-col items-center justify-end pb-1">
+            <button
+              type="button"
+              onTouchStart={(e) => {
+                e.preventDefault();
+                sound.playClick();
+                EventBus.emit('fishing-charge-start');
+              }}
+              onTouchEnd={(e) => {
+                e.preventDefault();
+                EventBus.emit('fishing-charge-release');
+              }}
+              onMouseDown={(e) => {
+                e.preventDefault();
+                sound.playClick();
+                EventBus.emit('fishing-charge-start');
+              }}
+              onMouseUp={(e) => {
+                e.preventDefault();
+                EventBus.emit('fishing-charge-release');
+              }}
+              className="w-14 h-14 rounded-full bg-black/50 hover:bg-black/70 border border-white/20 text-neutral-200 flex flex-col items-center justify-center cursor-pointer shadow-md active:scale-95 active:bg-neutral-800 transition-all select-none backdrop-blur-[2px]"
+              title="Tahan untuk Menimbang Lemparan Kail (F)"
+            >
+              <Fish className="w-5 h-5 stroke-[2] text-neutral-200" />
+              <span className="text-[7.5px] font-mono font-bold tracking-wider leading-none mt-0.5 text-neutral-400">
+                MANCING
+              </span>
+            </button>
+          </div>
 
-          {/* 2. Tombol Mancing Mobile (Dukungan Tahan untuk Menimbang Lemparan / Hold to Cast) */}
-          <button
-            type="button"
-            onTouchStart={(e) => {
-              e.preventDefault();
-              sound.playClick();
-              EventBus.emit('fishing-charge-start');
-            }}
-            onTouchEnd={(e) => {
-              e.preventDefault();
-              EventBus.emit('fishing-charge-release');
-            }}
-            onMouseDown={(e) => {
-              e.preventDefault();
-              sound.playClick();
-              EventBus.emit('fishing-charge-start');
-            }}
-            onMouseUp={(e) => {
-              e.preventDefault();
-              EventBus.emit('fishing-charge-release');
-            }}
-            className="absolute bottom-16 left-9 w-14 h-14 rounded-full bg-gradient-to-b from-sky-500/90 to-sky-900/95 border-2 border-sky-300 text-white flex flex-col items-center justify-center font-black cursor-pointer shadow-xl shadow-sky-950/60 active:scale-90 active:border-white transition-all"
-            title="Tahan untuk Menimbang Lemparan Kail (F)"
-          >
-            <Fish className="w-5 h-5 stroke-[2.5]" />
-            <span className="text-[7.5px] font-black tracking-wider leading-none mt-0.5">MANCING</span>
-          </button>
+          {/* Kolom Kanan: Tombol Lompat (di atas) + Tombol Aksi Utama (di bawah) */}
+          <div className="flex flex-col items-center gap-2.5">
+            {/* 1. Tombol Lompat Mobile (Di Atas Aksi, Bersih & Elegan) */}
+            <button
+              type="button"
+              onTouchStart={handleJumpPress}
+              onClick={handleJumpPress}
+              className="w-14 h-14 rounded-full bg-black/50 hover:bg-black/70 border border-white/20 text-neutral-200 flex flex-col items-center justify-center cursor-pointer shadow-md active:scale-95 active:bg-neutral-800 transition-all select-none backdrop-blur-[2px]"
+              title="Lompat / Double Jump (Spasi)"
+            >
+              <ArrowUp className="w-5 h-5 stroke-[2.5] text-neutral-200" />
+              <span className="text-[7.5px] font-mono font-bold tracking-wider leading-none mt-0.5 text-neutral-400">
+                LOMPAT
+              </span>
+            </button>
 
-          {/* 3. Tombol Lompat Mobile (Retro Spring Jump Mario) */}
-          <button
-            type="button"
-            onTouchStart={handleJumpPress}
-            onClick={handleJumpPress}
-            className="absolute top-1 right-20 w-14 h-14 rounded-full bg-gradient-to-b from-amber-400/90 to-amber-700/95 border-2 border-amber-300 text-neutral-950 flex flex-col items-center justify-center font-black cursor-pointer shadow-xl shadow-amber-950/60 active:scale-90 active:border-white transition-all"
-            title="Lompat / Double Jump (Spasi)"
-          >
-            <ArrowUp className="w-6 h-6 stroke-[3]" />
-            <span className="text-[7.5px] font-black tracking-wider leading-none mt-0.5 text-neutral-950 font-black">LOMPAT</span>
-          </button>
-
-          {/* 4. Tombol Interaksi [AKSI] Utama (Besar & Nyaman di Jangkauan Ibu Jari Kanan) */}
-          <button
-            type="button"
-            onTouchStart={(e) => {
-              e.preventDefault();
-              sound.playClick();
-              onActionPress();
-            }}
-            onClick={(e) => {
-              e.preventDefault();
-              sound.playClick();
-              onActionPress();
-            }}
-            className={`absolute bottom-0 right-0 w-[72px] h-[72px] rounded-full flex flex-col items-center justify-center font-black cursor-pointer transition-all select-none active:scale-90 shadow-2xl ${
-              isActionActive
-                ? 'bg-gradient-to-b from-amber-300 via-amber-400 to-amber-500 border-3 border-white ring-4 ring-amber-300 animate-pulse shadow-[0_0_35px_rgba(245,158,11,0.95)] scale-105'
-                : 'bg-gradient-to-b from-amber-400 to-amber-600 hover:from-amber-300 hover:to-amber-500 border-2 border-amber-300 shadow-[0_6px_25px_rgba(245,158,11,0.4)]'
-            }`}
-            title={isActionActive ? 'Sentuh untuk Berbicara / Interaksi' : 'Tombol Aksi [E]'}
-          >
-            <Zap className="w-7 h-7 stroke-[2.5] fill-black text-black" />
-            <span className="text-[11px] font-black tracking-widest leading-none mt-1 text-black uppercase">
-              AKSI
-            </span>
-          </button>
+            {/* 2. Tombol Aksi Utama (Paling Gede Setara Analog, Mewah & Minimalis) */}
+            <button
+              type="button"
+              onTouchStart={(e) => {
+                e.preventDefault();
+                sound.playClick();
+                onActionPress();
+              }}
+              onClick={(e) => {
+                e.preventDefault();
+                sound.playClick();
+                onActionPress();
+              }}
+              className={`w-28 h-28 rounded-full flex flex-col items-center justify-center cursor-pointer transition-all select-none active:scale-95 shadow-lg backdrop-blur-[2px] ${
+                isActionActive
+                  ? 'bg-amber-500/15 border-2 border-amber-400/90 text-amber-300 shadow-[0_0_20px_rgba(245,158,11,0.25)]'
+                  : 'bg-black/50 hover:bg-black/70 border border-white/20 text-neutral-200'
+              }`}
+              title={isActionActive ? 'Sentuh untuk Berbicara / Interaksi' : 'Tombol Aksi [E]'}
+            >
+              <Zap
+                className={`w-8 h-8 stroke-[2] transition-colors ${
+                  isActionActive ? 'text-amber-300 fill-amber-400/30' : 'text-neutral-200'
+                }`}
+              />
+              <span
+                className={`text-[10px] font-mono font-bold tracking-widest uppercase mt-1 transition-colors ${
+                  isActionActive ? 'text-amber-300' : 'text-neutral-300'
+                }`}
+              >
+                AKSI
+              </span>
+            </button>
+          </div>
         </div>
       </div>
     </div>

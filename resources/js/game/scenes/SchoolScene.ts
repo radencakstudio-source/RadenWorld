@@ -485,10 +485,12 @@ export class SchoolScene extends Phaser.Scene {
 
       if (!this.isLocationWalkable(wx, wy)) {
         this.spawnBlockedFeedback(wx, wy);
-        SoundManager.getInstance().playError();
-        if (this.player && this.player.active) {
-          this.player.showSpeechBubble('🚫 Lokasi terhalang & tidak bisa dijangkau!', 1300);
-        }
+        requestAnimationFrame(() => {
+          SoundManager.getInstance().playError();
+          if (this.player && this.player.active) {
+            this.player.showSpeechBubble('🚫 Lokasi terhalang & tidak bisa dijangkau!', 1300);
+          }
+        });
         return;
       }
 
@@ -1571,25 +1573,44 @@ export class SchoolScene extends Phaser.Scene {
     });
   }
 
+  private cachedObstacleBoxes: { minX: number; maxX: number; minY: number; maxY: number }[] | null = null;
+
+  public invalidateObstacleCache(): void {
+    this.cachedObstacleBoxes = null;
+  }
+
+  private getObstacleBoxes(): { minX: number; maxX: number; minY: number; maxY: number }[] {
+    if (this.cachedObstacleBoxes) return this.cachedObstacleBoxes;
+    const boxes: { minX: number; maxX: number; minY: number; maxY: number }[] = [];
+    const margin = 18;
+    if (this.obstacles) {
+      const list = this.obstacles.getChildren();
+      for (let i = 0; i < list.length; i++) {
+        const item = list[i] as any;
+        const b = item?.body as Phaser.Physics.Arcade.StaticBody;
+        if (b) {
+          boxes.push({
+            minX: b.x - margin,
+            maxX: b.x + b.width + margin,
+            minY: b.y - margin,
+            maxY: b.y + b.height + margin,
+          });
+        }
+      }
+    }
+    this.cachedObstacleBoxes = boxes;
+    return boxes;
+  }
+
   public isLocationWalkable(wx: number, wy: number): boolean {
     if (wx < 100 || wx > this.roomWidth - 100 || wy < 100 || wy > this.roomHeight - 100) {
       return false;
     }
-    if (this.obstacles) {
-      const list = this.obstacles.getChildren();
-      const margin = 18;
-      for (let i = 0; i < list.length; i++) {
-        const item = list[i] as any;
-        if (!item || !item.body) continue;
-        const b = item.body as Phaser.Physics.Arcade.StaticBody;
-        if (
-          wx >= b.x - margin &&
-          wx <= b.x + b.width + margin &&
-          wy >= b.y - margin &&
-          wy <= b.y + b.height + margin
-        ) {
-          return false;
-        }
+    const boxes = this.getObstacleBoxes();
+    for (let i = 0; i < boxes.length; i++) {
+      const b = boxes[i];
+      if (wx >= b.minX && wx <= b.maxX && wy >= b.minY && wy <= b.maxY) {
+        return false;
       }
     }
     return true;

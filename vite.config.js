@@ -21,4 +21,22 @@ export default defineConfig({
             ignored: ['**/storage/framework/views/**', '**/storage/framework/cache/**'],
         },
     },
+    build: {
+        chunkSizeWarningLimit: 1500,
+        rollupOptions: {
+            output: {
+                manualChunks(id) {
+                    if (id.includes('node_modules/phaser')) {
+                        return 'vendor-phaser';
+                    }
+                    if (id.includes('node_modules/socket.io-client')) {
+                        return 'vendor-socket';
+                    }
+                    if (id.includes('node_modules/react') || id.includes('node_modules/react-dom')) {
+                        return 'vendor-react';
+                    }
+                },
+            },
+        },
+    },
 });

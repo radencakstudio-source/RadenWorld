@@ -229,8 +229,8 @@ export class Player extends Entity {
     const onUserAction = () => {
       this.resetActivity();
     };
-    window.addEventListener('keydown', onUserAction);
-    window.addEventListener('pointerdown', onUserAction);
+    window.addEventListener('keydown', onUserAction, { passive: true });
+    window.addEventListener('pointerdown', onUserAction, { passive: true });
 
     // Sinkronisasi item yang dipegang saat inventaris / hotbar diperbarui
     const onInventoryUpdated = () => {

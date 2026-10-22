@@ -110,6 +110,14 @@ export class NetworkManager {
    * Mengambil URL server Socket.io yang efektif
    */
   public static getEffectiveServerUrl(): string {
+    if (typeof window !== 'undefined') {
+      // Jika diakses via HTTPS atau domain tunnel publik (ngrok)
+      const savedHost = localStorage.getItem('raden_server_host')?.trim();
+      if (!savedHost && (window.location.protocol === 'https:' || window.location.hostname.includes('ngrok'))) {
+        return window.location.origin;
+      }
+    }
+
     let host = NetworkManager.getEffectiveServerHost();
     if (!host) {
       host = (typeof window !== 'undefined' ? window.location.hostname : 'localhost') || 'localhost';

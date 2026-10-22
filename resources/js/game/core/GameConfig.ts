@@ -34,6 +34,16 @@ export function createGameConfig(parentContainerId: string = 'game-container'): 
       mode: Phaser.Scale.RESIZE,
       autoCenter: Phaser.Scale.CENTER_BOTH,
     },
+    input: {
+      touch: {
+        capture: true,
+      },
+      mouse: {
+        preventDefaultWheel: true,
+      },
+      activePointers: 2,
+    },
+    disableContextMenu: true,
     render: {
       powerPreference: 'high-performance',
       batchSize: 4096,
@@ -42,7 +52,7 @@ export function createGameConfig(parentContainerId: string = 'game-container'): 
     pixelArt: false,
     roundPixels: true,
     antialias: true,
-    antialiasGL: true,
+    antialiasGL: false,
     fps: {
       min: 30,
       target: 60,

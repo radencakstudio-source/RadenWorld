@@ -248,6 +248,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               alt="Female Avatar"
               className="h-[50vh] sm:h-[60vh] md:h-[66vh] max-h-[560px] object-contain scale-x-[-1] transform-gpu will-change-transform"
               loading="eager"
+              fetchPriority="high"
+              decoding="async"
             />
           </div>
 
@@ -258,6 +260,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               alt="Male Avatar"
               className="h-[50vh] sm:h-[60vh] md:h-[66vh] max-h-[560px] object-contain transform-gpu will-change-transform"
               loading="eager"
+              fetchPriority="high"
+              decoding="async"
             />
           </div>
         </div>

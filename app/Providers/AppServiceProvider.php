@@ -20,10 +20,18 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        // Dukungan Akses Fleksibel Jaringan Lokal / Wi-Fi (IP Dinamis):
-        // Jika Vite sedang aktif (HMR / public/hot), arahkan URL aset Vite secara dinamis
-        // ke host/IP yang digunakan oleh browser saat ini (request()->getHost()).
-        if (file_exists(public_path('hot'))) {
+        if (request()->header('x-forwarded-proto') === 'https' || str_contains((string)request()->getHost(), 'ngrok')) {
+            \Illuminate\Support\Facades\URL::forceScheme('https');
+        }
+
+        if (str_contains((string)request()->getHost(), 'ngrok')) {
+            // Pemain eksternal via ngrok hanya terhubung ke port 3001 (limit 1 tunnel free ngrok).
+            // Arahkan otomatis ke aset bundle build produksi (manifest.json) tanpa butuh port 5173:
+            Vite::useHotFile(storage_path('framework/cache/disabled_hot_for_ngrok'));
+        } elseif (file_exists(public_path('hot'))) {
+            // Dukungan Akses Fleksibel Jaringan Lokal / Wi-Fi (IP Dinamis):
+            // Jika Vite sedang aktif (HMR / public/hot), arahkan URL aset Vite secara dinamis
+            // ke host/IP yang digunakan oleh browser saat ini (request()->getHost()).
             $host = request()->getHost();
             if (!empty($host)) {
                 $cacheDir = storage_path('framework/cache');

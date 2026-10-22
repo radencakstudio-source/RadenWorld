@@ -180,11 +180,23 @@ export const WorldMapSvg: React.FC<WorldMapSvgProps> = ({
       {/* d. Samudra Selatan Paling Bawah (gy: 79, gx: 0..79, w: 80, h: 1) */}
       <rect x="0" y="79" width="80" height="1" fill="#00a2f3" />
 
-      {/* Garis Buih Putih Ombak di Pertemuan Pasir & Samudra Selatan (gy: 79) */}
+      {/* Garis Buih Putih Ombak di Pertemuan Pasir & Samudra Selatan (gy: 79) - berhenti di x: 79 */}
       <line
         x1="0"
         y1="79"
-        x2="80"
+        x2="79"
+        y2="79"
+        stroke="#ffffff"
+        strokeWidth="0.3"
+        strokeDasharray="1.5, 0.8"
+        opacity="0.9"
+      />
+
+      {/* Garis Buih Putih Ombak di Pertemuan Pasir & Laut Timur (gx: 79, gy: 70..79) */}
+      <line
+        x1="79"
+        y1="70"
+        x2="79"
         y2="79"
         stroke="#ffffff"
         strokeWidth="0.3"

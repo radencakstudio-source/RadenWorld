@@ -127,7 +127,7 @@ export class WorldScene extends Phaser.Scene {
   // Efek Riak Ombak Air Laut Dinamis & Buih Ombak Pantai
   private waterWaves1: Phaser.GameObjects.TileSprite[] = [];
   private waterWaves2: Phaser.GameObjects.TileSprite[] = [];
-  private shorelineSurfs: { sprite: Phaser.GameObjects.TileSprite; baseY: number }[] = [];
+  private shorelineSurfs: { sprite: Phaser.GameObjects.TileSprite; baseY?: number; isVertical?: boolean; baseX?: number }[] = [];
 
   constructor() {
     super({ key: 'WorldScene' });
@@ -672,17 +672,31 @@ export class WorldScene extends Phaser.Scene {
     // Samudra Bebas Luar Selatan (Buffer Samudra Selatan tak bertepi dari barat ke timur)
     addWaterArea(-buf, this.worldHeight, this.worldWidth + buf * 2, buf);
 
-    // Gulungan Buih Ombak Pasir Pantai Selatan (Tidal Foam Surf di gy: 79)
+    // Gulungan Buih Ombak Pasir Pantai Selatan & Pantai Timur
+    // a. Ombak Horizontal Pantai Selatan (gy: 79): Berhenti tepat di ujung pasir (79 * ts + 15), tidak menembus ke laut lepas timur!
     if (this.textures.exists('water-shoreline-surf')) {
-      const surfSouthW = this.worldWidth + buf * 2;
+      const surfSouthW = buf + 79 * ts + 15;
       const surfSouth = this.add.tileSprite(
-        this.worldWidth / 2,
+        -buf + surfSouthW / 2,
         79 * ts + 15,
         surfSouthW,
         60,
         'water-shoreline-surf'
       ).setDepth(-94);
-      this.shorelineSurfs.push({ sprite: surfSouth, baseY: 79 * ts + 15 });
+      this.shorelineSurfs.push({ sprite: surfSouth, baseY: 79 * ts + 15, isVertical: false });
+    }
+
+    // b. Ombak Vertikal Pantai Timur (gx: 79, gy: 70..79): Membentang di pertemuan pasir timur dengan laut timur
+    if (this.textures.exists('water-shoreline-surf-v')) {
+      const surfEastH = 9 * ts + 15;
+      const surfEast = this.add.tileSprite(
+        79 * ts + 15,
+        70 * ts + surfEastH / 2,
+        60,
+        surfEastH,
+        'water-shoreline-surf-v'
+      ).setDepth(-94);
+      this.shorelineSurfs.push({ sprite: surfEast, baseX: 79 * ts + 15, isVertical: true });
     }
 
     // 4. JALAN RAYA ASPAL (ROAD NETWORK 100% SESUAI BLUEPRINT)
@@ -1542,6 +1556,60 @@ export class WorldScene extends Phaser.Scene {
     } catch (e) {
       console.warn('[WorldScene] Gagal membuat water-shoreline-surf:', e);
     }
+
+    // 4. Tekstur Buih Gulungan Ombak Vertikal Pantai Timur (water-shoreline-surf-v - 80x480)
+    try {
+      if (this.textures.exists('water-shoreline-surf-v')) {
+        this.textures.remove('water-shoreline-surf-v');
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = 80;
+      canvas.height = 480;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.clearRect(0, 0, 80, 480);
+
+        // Lapisan basah pasir di sisi barat/kiri (wet sand backwash)
+        ctx.fillStyle = 'rgba(140, 115, 62, 0.35)';
+        ctx.fillRect(0, 0, 24, 480);
+
+        // Buih ombak putih tebal berbusa mengarah ke sisi timur/kanan (foaming shore surf)
+        for (let y = 0; y < 480; y += 32) {
+          ctx.beginPath();
+          ctx.arc(26, y + 16, 20, -Math.PI / 2, Math.PI / 2, false);
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.92)';
+          ctx.fill();
+
+          ctx.beginPath();
+          ctx.arc(28, y + 16, 14, -Math.PI / 2, Math.PI / 2, false);
+          ctx.fillStyle = 'rgba(224, 242, 254, 0.65)';
+          ctx.fill();
+
+          // Gelembung buih kecil
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+          ctx.beginPath();
+          ctx.arc(18, y + 8, 3, 0, Math.PI * 2);
+          ctx.arc(16, y + 22, 2.5, 0, Math.PI * 2);
+          ctx.arc(12, y + 14, 2, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        // Garis batas buih renda tajam vertikal (lacy foam crest)
+        ctx.beginPath();
+        for (let y = 0; y <= 480; y += 16) {
+          const x = 30 + Math.sin(y * 0.12) * 5;
+          if (y === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 3.5;
+        ctx.stroke();
+
+        this.textures.addCanvas('water-shoreline-surf-v', canvas);
+      }
+    } catch (e) {
+      console.warn('[WorldScene] Gagal membuat water-shoreline-surf-v:', e);
+    }
   }
 
   /**
@@ -1847,11 +1915,17 @@ export class WorldScene extends Phaser.Scene {
       w.tilePositionY = Math.cos(t * 1.3 + w.y * 0.001) * 7;
     });
 
-    // Animasi Gulungan Buih Ombak Pasir Pantai Selatan (Tidal Breathing Surf)
+    // Animasi Gulungan Buih Ombak Pasir Pantai Selatan & Timur (Tidal Breathing Surf)
     this.shorelineSurfs.forEach((s) => {
-      s.sprite.tilePositionX += delta * 0.032;
-      s.sprite.y = s.baseY + Math.sin(t * 1.5) * 8;
-      s.sprite.alpha = 0.82 + Math.sin(t * 1.5) * 0.18;
+      if (s.isVertical) {
+        s.sprite.tilePositionY += delta * 0.032;
+        s.sprite.x = (s.baseX ?? s.sprite.x) + Math.sin(t * 1.5) * 8;
+        s.sprite.alpha = 0.82 + Math.sin(t * 1.5) * 0.18;
+      } else {
+        s.sprite.tilePositionX += delta * 0.032;
+        s.sprite.y = (s.baseY ?? s.sprite.y) + Math.sin(t * 1.5) * 8;
+        s.sprite.alpha = 0.82 + Math.sin(t * 1.5) * 0.18;
+      }
     });
 
     // Gerakkan awan terapung acak secara independen (Organic Floating Clouds)

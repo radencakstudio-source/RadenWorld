@@ -147,7 +147,7 @@ export const VirtualControls: React.FC<VirtualControlsProps> = ({
   };
 
   return (
-    <div className="fixed inset-x-0 bottom-8 md:bottom-12 z-40 pointer-events-none flex justify-between items-end px-5 md:px-10 font-['Chakra_Petch']">
+    <div className="fixed inset-x-0 bottom-3 sm:bottom-6 md:bottom-10 z-40 pointer-events-none flex justify-between items-end px-3 sm:px-6 md:px-10 font-['Chakra_Petch']">
       {/* ================================================================ */}
       {/* KIRI BAWAH: ANALOG JOYSTICK VIRTUAL (SIMPEL, ELEGAN & RESPONSIF) */}
       {/* ================================================================ */}
@@ -158,41 +158,41 @@ export const VirtualControls: React.FC<VirtualControlsProps> = ({
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
           onPointerCancel={handlePointerUp}
-          className="relative w-28 h-28 rounded-full bg-black/50 border border-white/20 flex items-center justify-center cursor-pointer select-none touch-none shadow-lg backdrop-blur-[2px]"
+          className="relative w-22 h-22 sm:w-26 sm:h-26 md:w-28 md:h-28 rounded-full bg-black/60 border border-white/20 flex items-center justify-center cursor-pointer select-none touch-none shadow-lg"
         >
           {/* Garis Salib Sumbu Arah Halus */}
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <div className="w-16 h-px bg-white/10" />
+            <div className="w-12 sm:w-16 h-px bg-white/10" />
           </div>
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <div className="h-16 w-px bg-white/10" />
+            <div className="h-12 sm:h-16 w-px bg-white/10" />
           </div>
 
           {/* Lingkaran Batas Dalam Tipis */}
-          <div className="absolute w-16 h-16 rounded-full border border-white/10 pointer-events-none" />
+          <div className="absolute w-12 sm:w-16 h-12 sm:h-16 rounded-full border border-white/10 pointer-events-none" />
 
           {/* Knob Analog Elegan & Responsif */}
           <div
-            className={`w-12 h-12 rounded-full border border-white/30 bg-neutral-900/90 flex items-center justify-center transition-transform select-none shadow-md ${
+            className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full border border-white/30 bg-neutral-900/90 flex items-center justify-center transition-transform select-none shadow-md ${
               isDragging ? 'duration-0 border-amber-400/70 bg-neutral-900' : 'duration-150 ease-out'
             }`}
             style={{
               transform: `translate3d(${knobPos.x}px, ${knobPos.y}px, 0)`,
             }}
           >
-            <div className={`w-3.5 h-3.5 rounded-full border ${isDragging ? 'border-amber-400/80 bg-amber-400/30' : 'border-white/30 bg-white/15'}`} />
+            <div className={`w-3 h-3 sm:w-3.5 sm:h-3.5 rounded-full border ${isDragging ? 'border-amber-400/80 bg-amber-400/30' : 'border-white/30 bg-white/15'}`} />
           </div>
         </div>
       </div>
 
       {/* ================================================================ */}
       {/* KANAN BAWAH: CLUSTER KONTROL AKSI MOBILE (ELEGAN & BERKELAS)     */}
-      {/* - Mancing di KIRI Aksi (w-14 h-14)                               */}
-      {/* - Lompat di ATAS Aksi (w-14 h-14)                                */}
-      {/* - Aksi Utama di KANAN (w-28 h-28 setara analog)                  */}
+      {/* - Mancing di KIRI Aksi                                           */}
+      {/* - Lompat di ATAS Aksi                                            */}
+      {/* - Aksi Utama di KANAN                                            */}
       {/* ================================================================ */}
       <div className="pointer-events-auto select-none touch-none pb-1 pr-1 relative flex items-end">
-        <div className="flex items-end gap-3 select-none touch-none">
+        <div className="flex items-end gap-2 sm:gap-3 select-none touch-none">
           {/* Kolom Kiri: Tombol Mancing (Minimalis & Bersih) */}
           <div className="flex flex-col items-center justify-end pb-1">
             <button
@@ -215,28 +215,28 @@ export const VirtualControls: React.FC<VirtualControlsProps> = ({
                 e.preventDefault();
                 EventBus.emit('fishing-charge-release');
               }}
-              className="w-14 h-14 rounded-full bg-black/50 hover:bg-black/70 border border-white/20 text-neutral-200 flex flex-col items-center justify-center cursor-pointer shadow-md active:scale-95 active:bg-neutral-800 transition-all select-none backdrop-blur-[2px]"
+              className="w-11 h-11 sm:w-13 sm:h-13 md:w-14 md:h-14 rounded-full bg-black/60 hover:bg-black/80 border border-white/20 text-neutral-200 flex flex-col items-center justify-center cursor-pointer shadow-md active:scale-95 active:bg-neutral-800 transition-all select-none"
               title="Tahan untuk Menimbang Lemparan Kail (F)"
             >
-              <Fish className="w-5 h-5 stroke-[2] text-neutral-200" />
-              <span className="text-[7.5px] font-mono font-bold tracking-wider leading-none mt-0.5 text-neutral-400">
+              <Fish className="w-4 h-4 sm:w-5 sm:h-5 stroke-[2] text-neutral-200" />
+              <span className="text-[6.5px] sm:text-[7.5px] font-mono font-bold tracking-wider leading-none mt-0.5 text-neutral-400">
                 MANCING
               </span>
             </button>
           </div>
 
           {/* Kolom Kanan: Tombol Lompat (di atas) + Tombol Aksi Utama (di bawah) */}
-          <div className="flex flex-col items-center gap-2.5">
+          <div className="flex flex-col items-center gap-2 sm:gap-2.5">
             {/* 1. Tombol Lompat Mobile (Di Atas Aksi, Bersih & Elegan) */}
             <button
               type="button"
               onTouchStart={handleJumpPress}
               onClick={handleJumpPress}
-              className="w-14 h-14 rounded-full bg-black/50 hover:bg-black/70 border border-white/20 text-neutral-200 flex flex-col items-center justify-center cursor-pointer shadow-md active:scale-95 active:bg-neutral-800 transition-all select-none backdrop-blur-[2px]"
+              className="w-11 h-11 sm:w-13 sm:h-13 md:w-14 md:h-14 rounded-full bg-black/60 hover:bg-black/80 border border-white/20 text-neutral-200 flex flex-col items-center justify-center cursor-pointer shadow-md active:scale-95 active:bg-neutral-800 transition-all select-none"
               title="Lompat / Double Jump (Spasi)"
             >
-              <ArrowUp className="w-5 h-5 stroke-[2.5] text-neutral-200" />
-              <span className="text-[7.5px] font-mono font-bold tracking-wider leading-none mt-0.5 text-neutral-400">
+              <ArrowUp className="w-4 h-4 sm:w-5 sm:h-5 stroke-[2.5] text-neutral-200" />
+              <span className="text-[6.5px] sm:text-[7.5px] font-mono font-bold tracking-wider leading-none mt-0.5 text-neutral-400">
                 LOMPAT
               </span>
             </button>
@@ -254,20 +254,20 @@ export const VirtualControls: React.FC<VirtualControlsProps> = ({
                 sound.playClick();
                 onActionPress();
               }}
-              className={`w-28 h-28 rounded-full flex flex-col items-center justify-center cursor-pointer transition-all select-none active:scale-95 shadow-lg backdrop-blur-[2px] ${
+              className={`w-22 h-22 sm:w-26 sm:h-26 md:w-28 md:h-28 rounded-full flex flex-col items-center justify-center cursor-pointer transition-all select-none active:scale-95 shadow-lg ${
                 isActionActive
-                  ? 'bg-amber-500/15 border-2 border-amber-400/90 text-amber-300 shadow-[0_0_20px_rgba(245,158,11,0.25)]'
-                  : 'bg-black/50 hover:bg-black/70 border border-white/20 text-neutral-200'
+                  ? 'bg-amber-500/20 border-2 border-amber-400 text-amber-300'
+                  : 'bg-black/60 hover:bg-black/80 border border-white/20 text-neutral-200'
               }`}
               title={isActionActive ? 'Sentuh untuk Berbicara / Interaksi' : 'Tombol Aksi [E]'}
             >
               <Zap
-                className={`w-8 h-8 stroke-[2] transition-colors ${
+                className={`w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 stroke-[2] transition-colors ${
                   isActionActive ? 'text-amber-300 fill-amber-400/30' : 'text-neutral-200'
                 }`}
               />
               <span
-                className={`text-[10px] font-mono font-bold tracking-widest uppercase mt-1 transition-colors ${
+                className={`text-[8.5px] sm:text-[9.5px] md:text-[10px] font-mono font-bold tracking-widest uppercase mt-0.5 sm:mt-1 transition-colors ${
                   isActionActive ? 'text-amber-300' : 'text-neutral-300'
                 }`}
               >

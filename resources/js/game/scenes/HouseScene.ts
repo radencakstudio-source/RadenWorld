@@ -154,6 +154,7 @@ export class HouseScene extends Phaser.Scene {
         this.spawnPlayerInHouse();
       }
       this.emitStats(this.player?.x || 840, this.player?.y || 620, 'RUMAH PRIBADI: RUANG UTAMA');
+      EventBus.emit('scene-ready', 'HouseScene');
     };
     EventBus.on('join-game', onJoinGame);
 
@@ -250,6 +251,8 @@ export class HouseScene extends Phaser.Scene {
 
     this.events.on('shutdown', cleanupScene);
     this.events.on('destroy', cleanupScene);
+
+    EventBus.emit('scene-ready', 'HouseScene');
   }
 
   /**
@@ -743,12 +746,13 @@ export class HouseScene extends Phaser.Scene {
         window.history.pushState(null, '', '/world');
       }
       EventBus.emit('url-changed', '/world');
-      NetworkManager.getInstance().switchRoom('world', 1380, 960);
+      NetworkManager.getInstance().switchRoom('world', 1380, 900);
       this.cameras?.main?.stopFollow();
       this.scene.start('WorldScene', {
         name: this.playerName,
         avatar: this.currentAvatar,
         spawnNearHouse: true,
+        spawnPos: { x: 1380, y: 900 },
         privateRoomId: this.privateRoomId,
       });
     });

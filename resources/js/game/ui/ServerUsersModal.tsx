@@ -105,10 +105,15 @@ export const ServerUsersModal: React.FC<ServerUsersModalProps> = ({
 
   const handleRowClick = (p: IPlayerData & { isMe?: boolean }) => {
     sound.playClick();
+    const enriched = {
+      ...p,
+      location: (p as any).room ? `Room: ${(p as any).room}` : 'Online di Server',
+    };
     if (onInspectPlayer) {
-      onInspectPlayer(p);
+      onInspectPlayer(enriched);
     } else {
-      EventBus.emit('open-player-profile', p);
+      EventBus.emit('inspect-player-profile', enriched);
+      EventBus.emit('open-player-profile', enriched);
     }
   };
 
@@ -126,9 +131,9 @@ export const ServerUsersModal: React.FC<ServerUsersModalProps> = ({
     <div
       role="dialog"
       aria-modal="true"
-      className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 bg-black/85 pointer-events-auto font-['Chakra_Petch'] animate-in fade-in duration-150 select-none"
+      className="fixed inset-0 z-[100] flex items-center justify-center p-2 sm:p-4 bg-black/85 pointer-events-auto font-['Chakra_Petch'] animate-in fade-in duration-150 select-none"
     >
-      <div className="relative w-full max-w-lg bg-black border border-neutral-800 rounded-lg shadow-2xl overflow-hidden flex flex-col max-h-[88vh]">
+      <div className="relative w-full max-w-lg bg-black border border-neutral-800 rounded-lg shadow-2xl overflow-hidden flex flex-col max-h-[94dvh]">
         {/* Header Modal */}
         <div className="flex items-center justify-between px-4 py-3 bg-[#0a0a0a] border-b border-neutral-800">
           <div className="flex items-center gap-2.5">
@@ -198,7 +203,7 @@ export const ServerUsersModal: React.FC<ServerUsersModalProps> = ({
         </div>
 
         {/* Daftar Pemain (Scrollable List) */}
-        <div className="flex-1 overflow-y-auto p-2.5 sm:p-3 space-y-1.5 custom-scrollbar min-h-[220px] bg-black">
+        <div className="flex-1 overflow-y-auto p-2.5 sm:p-3 space-y-1.5 custom-scrollbar min-h-0 bg-black">
           {filteredPlayers.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-10 text-neutral-500 gap-1.5">
               <Users className="w-8 h-8 opacity-40 text-neutral-600" />

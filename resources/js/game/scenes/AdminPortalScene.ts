@@ -158,6 +158,7 @@ export class AdminPortalScene extends Phaser.Scene {
 
     // Beritahu HUD lokasi saat ini
     EventBus.emit('location-updated', `PORTAL SUPER ADMIN: PUSAT KENDALI (ID: ${this.adminToken})`);
+    EventBus.emit('scene-ready', 'AdminPortalScene');
   }
 
   private targetZoom: number = 1.0;

@@ -81,6 +81,7 @@ export class WorldScene extends Phaser.Scene {
   private waterWaves2: Phaser.GameObjects.TileSprite[] = [];
   private shorelineSurfs: IWorldShorelineSurf[] = [];
   private clouds: IWorldCloud[] = [];
+  public digTiles: Phaser.GameObjects.Image[] = [];
 
   // Cache bounding box rintangan statis untuk performa tinggi
   private cachedObstacleBoxes: { minX: number; maxX: number; minY: number; maxY: number }[] | null = null;
@@ -123,9 +124,11 @@ export class WorldScene extends Phaser.Scene {
     // 3. Masuk ke room 'world' pada WebSocket Server
     this.networkManager.switchRoom('world');
 
-    // 4. Pastikan tekstur prosedural Canvas (Wall Checker & Animated Water) tersedia
+    // 4. Pastikan tekstur prosedural Canvas (Wall Checker, Animated Water, Alun-Alun & Trotoar 2) tersedia
     WorldTextures.ensureWallTextures(this);
     WorldTextures.ensureWaterTextures(this);
+    WorldTextures.ensureAlunAlunTextures(this);
+    WorldTextures.ensureTrotoar2Textures(this);
 
     // 5. Render lingkungan Open World 1:1 mengikuti Blueprint Peta (WorldTerrain)
     const terrain = WorldTerrain.createWorldTerrain(
@@ -140,6 +143,7 @@ export class WorldScene extends Phaser.Scene {
     this.waterWaves2 = terrain.waterWaves2;
     this.shorelineSurfs = terrain.shorelineSurfs;
     this.clouds = terrain.clouds;
+    this.digTiles = terrain.digTiles;
 
     // 6. Tempatkan Lampu Jalan (44 Lampu), Kustom Props Arsitek, & Slot Gedung Baru (WorldProps)
     WorldProps.spawnWorldLamps((key, gx, gy, gw, gh, isObstacle, interactiveCallback, obstacleRows) =>
@@ -177,6 +181,8 @@ export class WorldScene extends Phaser.Scene {
 
     // 14. Daftarkan cleanup saat shutdown / destroy
     this.setupSceneCleanup();
+
+    EventBus.emit('scene-ready', 'WorldScene');
   }
 
   /**
@@ -251,6 +257,20 @@ export class WorldScene extends Phaser.Scene {
     WorldNpcs.interactWithNpc(npcData);
   }
 
+  /**
+   * Helper untuk mendapatkan tile tanah galian berdasarkan koordinat grid
+   */
+  public getDigTile(gx: number, gy: number): Phaser.GameObjects.Image | undefined {
+    return this.digTiles.find(t => t.getData('gridX') === gx && t.getData('gridY') === gy);
+  }
+
+  /**
+   * Mengecek apakah koordinat petak berada di dalam area lahan perkebunan tanah galian (gx: 57..80, gy: 1..9)
+   */
+  public isDigTile(gx: number, gy: number): boolean {
+    return gx >= 57 && gx <= 80 && gy >= 1 && gy <= 9;
+  }
+
   private openSchoolGradeSelect(schoolType: 'sd' | 'smp' | 'sma', returnX: number, returnY: number): void {
     if (this.isTransitioning) return;
     this.player?.showSpeechBubble('Pilih kelas dulu sebelum masuk sekolah... 🏫🎒');
@@ -261,7 +281,7 @@ export class WorldScene extends Phaser.Scene {
     });
   }
 
-  private approachDoorAndEnter(type: 'sd' | 'smp' | 'sma' | 'house', doorX: number, doorY: number): void {
+  public approachDoorAndEnter(type: 'sd' | 'smp' | 'sma' | 'house', doorX: number, doorY: number): void {
     WorldInteractions.approachDoorAndEnter(
       this.player,
       type,
@@ -311,6 +331,46 @@ export class WorldScene extends Phaser.Scene {
     );
   }
 
+  public transitionToCafe(): void {
+    if (this.isTransitioning) return;
+    this.isTransitioning = true;
+    SoundManager.getInstance().playDoor();
+    this.player?.showSpeechBubble('Masuk ke Raden Cafe... ☕🥐');
+    if (typeof window !== 'undefined' && window.location.pathname !== '/world/cafe') {
+      window.history.pushState(null, '', '/world/cafe');
+      EventBus.emit('url-changed', '/world/cafe');
+    }
+    this.time.delayedCall(300, () => {
+      this.cameras?.main?.stopFollow();
+      this.scene.start('CafeScene', {
+        name: this.player?.getEntityName() || this.pendingPlayerName || 'Petualang',
+        avatar: this.player?.getAvatar() || this.pendingAvatar,
+        returnX: this.doors.cafeDoor.x,
+        returnY: this.doors.cafeDoor.y + 60,
+      });
+    });
+  }
+
+  public transitionToLibrary(): void {
+    if (this.isTransitioning) return;
+    this.isTransitioning = true;
+    SoundManager.getInstance().playDoor();
+    this.player?.showSpeechBubble('Masuk ke Perpustakaan Kota... 📚📖');
+    if (typeof window !== 'undefined' && window.location.pathname !== '/world/perpustakaan') {
+      window.history.pushState(null, '', '/world/perpustakaan');
+      EventBus.emit('url-changed', '/world/perpustakaan');
+    }
+    this.time.delayedCall(300, () => {
+      this.cameras?.main?.stopFollow();
+      this.scene.start('LibraryScene', {
+        name: this.player?.getEntityName() || this.pendingPlayerName || 'Petualang',
+        avatar: this.player?.getAvatar() || this.pendingAvatar,
+        returnX: this.doors.libraryDoor?.x || 1740,
+        returnY: (this.doors.libraryDoor?.y || 3120) + 60,
+      });
+    });
+  }
+
   private getRegionName(x: number, y: number): string {
     return WorldInteractions.getRegionName(x, y, this.tileSize, this.doors);
   }
@@ -321,45 +381,66 @@ export class WorldScene extends Phaser.Scene {
     const py = this.player.y;
 
     // 1. Masuk ke Gedung SD
-    if (Phaser.Math.Distance.Between(px, py, this.doors.schoolSdDoor.x, this.doors.schoolSdDoor.y) < 130) {
+    if (Phaser.Math.Distance.Between(px, py, this.doors.schoolSdDoor.x, this.doors.schoolSdDoor.y) < 140) {
       this.openSchoolGradeSelect('sd', this.doors.schoolSdDoor.x, this.doors.schoolSdDoor.y + 60);
       return;
     }
 
     // 2. Masuk ke Gedung SMP
-    if (Phaser.Math.Distance.Between(px, py, this.doors.schoolSmpDoor.x, this.doors.schoolSmpDoor.y) < 130) {
+    if (Phaser.Math.Distance.Between(px, py, this.doors.schoolSmpDoor.x, this.doors.schoolSmpDoor.y) < 140) {
       this.openSchoolGradeSelect('smp', this.doors.schoolSmpDoor.x, this.doors.schoolSmpDoor.y + 60);
       return;
     }
 
     // 3. Masuk ke Gedung SMA
-    if (Phaser.Math.Distance.Between(px, py, this.doors.schoolSmaDoor.x, this.doors.schoolSmaDoor.y) < 130) {
+    if (Phaser.Math.Distance.Between(px, py, this.doors.schoolSmaDoor.x, this.doors.schoolSmaDoor.y) < 140) {
       this.openSchoolGradeSelect('sma', this.doors.schoolSmaDoor.x, this.doors.schoolSmaDoor.y + 60);
       return;
     }
 
     // 4. Masuk ke Rumah Pribadi
     const distHouse = Phaser.Math.Distance.Between(px, py, this.doors.playerHouseDoor.x, this.doors.playerHouseDoor.y);
-    if (distHouse < 130 && (!this.time || this.time.now > this.doorCooldownUntil)) {
+    if (distHouse < 140 && (!this.time || this.time.now > this.doorCooldownUntil)) {
       this.transitionToHouse();
       return;
     }
 
-    // 5. Interaksi dengan Cafe
-    if (Phaser.Math.Distance.Between(px, py, this.doors.cafeDoor.x, this.doors.cafeDoor.y) < 130) {
-      this.player.showSpeechBubble('Selamat datang di Raden Cafe & Bakery! Nikmati kopi aromatik dan aneka pastry hangat! ☕🥐', 3000);
+    // 5. Masuk ke Cafe
+    if (Phaser.Math.Distance.Between(px, py, this.doors.cafeDoor.x, this.doors.cafeDoor.y) < 160) {
+      this.transitionToCafe();
       return;
     }
 
-    // 6. Interaksi dengan Rumah Sakit (Heal HP)
-    if (Phaser.Math.Distance.Between(px, py, this.doors.hospitalDoor.x, this.doors.hospitalDoor.y) < 130) {
-      this.healPlayerAtHospital();
+    // 6. Masuk ke Perpustakaan Kota
+    if (this.doors.libraryDoor && Phaser.Math.Distance.Between(px, py, this.doors.libraryDoor.x, this.doors.libraryDoor.y) < 160) {
+      this.transitionToLibrary();
       return;
     }
 
-    // 7. Interaksi dengan Bank Sentral
-    if (Phaser.Math.Distance.Between(px, py, this.doors.bankDoor.x, this.doors.bankDoor.y) < 130) {
-      this.player.showSpeechBubble('🏦 Bank Sentral Raden: Layanan simpan pinjam emas dan transaksi finansial aman terpercaya!', 3000);
+    // 7. Kantor Polisi (Modal Lapor Polisi)
+    if (this.doors.policeDoor && Phaser.Math.Distance.Between(px, py, this.doors.policeDoor.x, this.doors.policeDoor.y) < 160) {
+      EventBus.emit('open-police-modal');
+      return;
+    }
+
+    // 8. Bank Sentral (Modal Tabungan & Investasi)
+    if (Phaser.Math.Distance.Between(px, py, this.doors.bankDoor.x, this.doors.bankDoor.y) < 160) {
+      EventBus.emit('open-bank-modal');
+      return;
+    }
+
+    // 9. Apotek Farma (Modal Ramuan Diamond)
+    if (
+      (this.doors.pharmacyDoor && Phaser.Math.Distance.Between(px, py, this.doors.pharmacyDoor.x, this.doors.pharmacyDoor.y) < 160) ||
+      (this.doors.hospitalDoor && Phaser.Math.Distance.Between(px, py, this.doors.hospitalDoor.x, this.doors.hospitalDoor.y) < 160)
+    ) {
+      EventBus.emit('open-pharmacy-modal');
+      return;
+    }
+
+    // 10. Makelar Properti & Pasar (Beli Alat, Biji, Jual Panen & Ikan)
+    if (this.doors.realtorDoor && Phaser.Math.Distance.Between(px, py, this.doors.realtorDoor.x, this.doors.realtorDoor.y) < 160) {
+      EventBus.emit('open-realtor-modal');
       return;
     }
 
@@ -562,10 +643,23 @@ export class WorldScene extends Phaser.Scene {
   }
 
   public spawnLocalPlayer(name: string, avatar: IAvatarCustomization, nearHouse: boolean = false): void {
+    if (!this.sys || !this.sys.displayList) return;
+    const status = this.sys.settings?.status;
+    if (status === Phaser.Scenes.SHUTDOWN || status === Phaser.Scenes.DESTROYED) return;
+
+    const effectiveAvatar: IAvatarCustomization = avatar || this.pendingAvatar || {
+      gender: 'male',
+      skinColor: '#fed7aa',
+      shirtColor: '#2563eb',
+      pantsColor: '#1e293b',
+      hatType: 'none',
+    };
+    const effectiveName = name || this.pendingPlayerName || 'Petualang';
+
     if (this.player && this.player.active && this.player.scene === this) {
-      this.player.setAvatar(avatar);
-      if (name) {
-        this.player.setEntityName(name);
+      this.player.setAvatar(effectiveAvatar);
+      if (effectiveName) {
+        this.player.setEntityName(effectiveName);
       }
       this.cameras.main.setRoundPixels(true);
       this.cameras.main.startFollow(this.player, true, 1.0, 1.0);
@@ -579,7 +673,11 @@ export class WorldScene extends Phaser.Scene {
     if (this.customSpawnPos) {
       spawnX = this.customSpawnPos.x;
       spawnY = this.customSpawnPos.y;
-    } else if (!nearHouse) {
+    } else if (nearHouse) {
+      // Keluar dari Rumah Pribadi -> Spawn tepat di depan pintu rumah pemain (gx: 11.5, gy: 7.5)
+      spawnX = this.doors.playerHouseDoor.x;
+      spawnY = this.doors.playerHouseDoor.y + 60;
+    } else {
       try {
         const saved = localStorage.getItem('raden_pos_world');
         if (saved) {
@@ -599,8 +697,8 @@ export class WorldScene extends Phaser.Scene {
       spawnX,
       spawnY,
       'local_player',
-      name,
-      avatar,
+      effectiveName,
+      effectiveAvatar,
       100,
       100
     );
@@ -718,10 +816,45 @@ export class WorldScene extends Phaser.Scene {
     this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
       if (document.activeElement?.tagName === 'INPUT' || document.activeElement?.tagName === 'TEXTAREA') return;
       if (pointer.rightButtonDown()) return;
-      if (this.player?.isMovementLocked()) return;
+      if (!this.player || !this.player.active || this.player.isMovementLocked()) return;
 
       const wx = pointer.worldX;
       const wy = pointer.worldY;
+
+      // 1. Cek apakah pemain menekan/mengklik pemain lain (Remote Player)
+      for (const [rId, remote] of this.remotePlayers.entries()) {
+        const dx = Math.abs(wx - remote.x);
+        const dy = wy - remote.y;
+        if (dx < 65 && dy > -190 && dy < 45) {
+          SoundManager.getInstance().playClick();
+          const raw = (remote as any).getRawPlayerData?.() || {};
+          const isTargetAdmin = Boolean(
+            raw.isSuperAdmin ||
+            raw.role === 'super_admin' ||
+            raw.role === 'admin' ||
+            remote.getEntityName?.()?.trim()?.toUpperCase() === 'RADEN'
+          );
+          EventBus.emit('inspect-player-profile', {
+            id: remote.getEntityId?.() || rId,
+            name: remote.getEntityName?.() || 'Pemain',
+            avatar: remote.getAvatar?.(),
+            gender: remote.getGender?.(),
+            level: isTargetAdmin ? 99999999999 : (raw.level || 1),
+            role: isTargetAdmin ? 'super_admin' : (raw.role || 'player'),
+            isSuperAdmin: isTargetAdmin,
+            title: isTargetAdmin ? '👑 KREATOR & SUPER ADMIN' : (raw.title || 'Petualang'),
+            likes: isTargetAdmin ? 99999999999 : (typeof raw.likes === 'number' ? raw.likes : 12),
+            friendsCount: isTargetAdmin ? 999 : (raw.friendsCount ?? 0),
+            followingCount: isTargetAdmin ? 999 : (raw.followingCount ?? 0),
+            followersCount: isTargetAdmin ? 999 : (raw.followersCount ?? 0),
+            bio: raw.bio || raw.description || 'Petualang penjelajah RadenWorld.',
+            location: 'Dunia Terbuka',
+            gold: isTargetAdmin ? 99999999999 : 2500,
+            diamonds: isTargetAdmin ? 99999999999 : 50,
+          });
+          return;
+        }
+      }
 
       for (const npc of this.npcs) {
         if (Phaser.Math.Distance.Between(wx, wy, npc.x, npc.y) < 70) {
@@ -771,8 +904,11 @@ export class WorldScene extends Phaser.Scene {
     EventBus.on('server-switched', onServerSwitched);
 
     const onJoinGame = (userData: { name: string; avatar: IAvatarCustomization }) => {
+      if (!this.sys || !this.sys.displayList) return;
+      const status = this.sys.settings?.status;
+      if (status === Phaser.Scenes.SHUTDOWN || status === Phaser.Scenes.DESTROYED) return;
       if (userData?.name) this.pendingPlayerName = userData.name;
-      if (this.player) {
+      if (this.player && this.player.active && this.player.scene === this) {
         this.player.setAvatar(userData.avatar);
         if (userData?.name) {
           this.player.setEntityName(userData.name);
@@ -839,6 +975,18 @@ export class WorldScene extends Phaser.Scene {
       }
     };
     EventBus.on('local-player-speaking', onLocalSpeaking);
+
+    this.events.once('shutdown', () => {
+      EventBus.off('server-switched', onServerSwitched);
+      EventBus.off('join-game', onJoinGame);
+      EventBus.off('send-chat', onSendChat);
+      EventBus.off('trigger-expression', onTriggerExpression);
+      EventBus.off('trigger-interaction', onTriggerInteraction);
+      EventBus.off('enter-school-with-grade', onEnterSchoolWithGrade);
+      EventBus.off('architect-config-updated', onArchitectConfigUpdated);
+      EventBus.off('player-speaking-status', onSpeakingStatus);
+      EventBus.off('local-player-speaking', onLocalSpeaking);
+    });
   }
 
   private setupMultiplayerListeners(): void {
@@ -983,6 +1131,36 @@ export class WorldScene extends Phaser.Scene {
         100,
         100
       );
+      remote.setRawPlayerData(p);
+
+      remote.makeClickable(() => {
+        SoundManager.getInstance().playClick();
+        const isTargetAdmin = Boolean(
+          p.isSuperAdmin ||
+          p.role === 'super_admin' ||
+          p.role === 'admin' ||
+          p.name?.trim()?.toUpperCase() === 'RADEN'
+        );
+        EventBus.emit('inspect-player-profile', {
+          id: p.id,
+          name: p.name,
+          avatar: p.avatar,
+          gender: p.avatar?.gender,
+          level: isTargetAdmin ? 99999999999 : ((p as any).level || 1),
+          role: isTargetAdmin ? 'super_admin' : (p.role || 'player'),
+          isSuperAdmin: isTargetAdmin,
+          title: isTargetAdmin ? '👑 KREATOR & SUPER ADMIN' : ((p as any).title || 'Petualang'),
+          likes: isTargetAdmin ? 99999999999 : (typeof (p as any).likes === 'number' ? (p as any).likes : 12),
+          friendsCount: isTargetAdmin ? 999 : ((p as any).friendsCount ?? 0),
+          followingCount: isTargetAdmin ? 999 : ((p as any).followingCount ?? 0),
+          followersCount: isTargetAdmin ? 999 : ((p as any).followersCount ?? 0),
+          bio: (p as any).bio || (p as any).description || 'Petualang penjelajah RadenWorld.',
+          location: 'Dunia Terbuka',
+          gold: isTargetAdmin ? 99999999999 : (typeof p.gold === 'number' ? p.gold : 2500),
+          diamonds: isTargetAdmin ? 99999999999 : (typeof p.diamonds === 'number' ? p.diamonds : 50),
+        });
+      });
+
       this.remotePlayers.set(p.id, remote);
     } catch (err) {
       console.warn('[WorldScene] Gagal menambahkan remote player:', err);
@@ -1009,6 +1187,9 @@ export class WorldScene extends Phaser.Scene {
     if (!this.player || !this.player.active) return;
     this.player.update(time, delta);
     this.player.setDepth(this.player.y + 60);
+
+    // 2b. Interaksi rumput bergoyang saat diinjak / didekati & pemain bergerak
+    WorldProps.updateWildGrassSway(time, this.player, this.remotePlayers);
 
     const px = this.player.x;
     const py = this.player.y;

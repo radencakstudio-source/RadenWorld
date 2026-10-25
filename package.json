@@ -5,9 +5,9 @@
     "scripts": {
         "build": "vite build",
         "dev": "vite --host 0.0.0.0",
-        "game-server": "node --watch server/game-server.js",
+        "game-server": "node --watch-path=server server/game-server.js",
         "tunnel": "ngrok http 3001",
-        "dev:all": "concurrently -n \"LARAVEL,VITE,SERVER\" -c \"red,cyan,green\" \"php artisan serve --host=0.0.0.0 --port=8000\" \"vite --host 0.0.0.0\" \"node --watch server/game-server.js\""
+        "dev:all": "concurrently -n \"LARAVEL,VITE,SERVER\" -c \"red,cyan,green\" \"php artisan serve --host=0.0.0.0 --port=8000\" \"vite --host 0.0.0.0\" \"node --watch-path=server server/game-server.js\""
     },
     "devDependencies": {
         "@tailwindcss/vite": "^4.0.0",

@@ -31,13 +31,20 @@ export class BootScene extends Phaser.Scene {
    * Siklus hidup preload(): Mengunduh file aset dan menampilkan progress bar
    */
   public preload(): void {
-    // Pemuatan aset di latar belakang (tanpa box & teks kuno di atas canvas)
+    // Pemuatan aset di latar belakang
     this.load.on('progress', (value: number) => {
-      EventBus.emit('assets-loading-progress', value);
+      // Skala 0 s/d 85% untuk unduhan file aset
+      EventBus.emit('assets-loading-progress', value * 0.85);
     });
 
     this.load.on('complete', () => {
+      EventBus.emit('assets-loading-progress', 0.88);
       EventBus.emit('assets-loading-complete');
+    });
+
+    // Perlindungan kegagalan jaringan: tangani loaderror agar game tidak pernah stuck/hang
+    this.load.on('loaderror', (fileObj: any) => {
+      console.warn(`[BootScene] File aset gagal diunduh (lanjutkan fallback aman): ${fileObj?.src || fileObj?.key}`);
     });
 
     // Memuat aset dari folder terpisah public/assets/
@@ -130,10 +137,13 @@ export class BootScene extends Phaser.Scene {
     this.load.image('court-basket', '/assets/maps/World/Assets/10X5%20LapanganBasket.png');
     this.load.image('court-bola', '/assets/maps/World/Assets/10X5%20LapanganBola.png');
     this.load.image('plaza-stage', '/assets/maps/World/Assets/10X8%20Panggung.png');
-    this.load.image('statue-lamongan', '/assets/maps/World/Assets/5X10%20PatungLamongan.png');
-    this.load.image('building-cafe', '/assets/maps/World/Assets/17x11%20cafe.png');
-    this.load.image('building-hospital', '/assets/maps/World/Assets/17x11%20apotek.png');
-    this.load.image('building-bank', '/assets/maps/World/Assets/17x11%20%20bank.png');
+    this.load.image('building-cafe', '/assets/maps/World/Assets/5x5%20Cafe.png');
+    this.load.image('building-perpustakaan', '/assets/maps/World/Assets/5x5%20Perpustakaan.png');
+    this.load.image('building-kantor-polisi', '/assets/maps/World/Assets/5x5%20KantorPolisi.png');
+    this.load.image('building-bank', '/assets/maps/World/Assets/5x5%20Bank.png');
+    this.load.image('building-apotek', '/assets/maps/World/Assets/5x5%20Apotek.png');
+    this.load.image('building-hospital', '/assets/maps/World/Assets/5x5%20Apotek.png');
+    this.load.image('building-makelar', '/assets/maps/World/Assets/5x5%20Makelar.png');
     this.load.image('prop-pagar-batu', '/assets/maps/World/Assets/1x2%20PagarBatu.png');
     this.load.image('trash-organik', '/assets/maps/World/Assets/1x2%20TongSampahDaurUlangOrganik.png');
     this.load.image('trash-plastik', '/assets/maps/World/Assets/1x2%20TongSampahDaurUlangPlastik.png');
@@ -211,7 +221,9 @@ export class BootScene extends Phaser.Scene {
    * Siklus hidup create(): Menyiapkan tekstur cadangan, inisialisasi animasi karakter, dan berpindah scene
    */
   public create(): void {
+    EventBus.emit('assets-loading-progress', 0.92);
     this.createFallbackTextures();
+    EventBus.emit('assets-loading-progress', 0.96);
     this.initCharacterAnimations();
 
     // Pastikan seluruh aset sprite memiliki filter tekstur tajam HD
@@ -233,7 +245,13 @@ export class BootScene extends Phaser.Scene {
           name: 'RADEN',
           adminToken,
         });
-      } else if (pathname.startsWith('/world') || pathname.startsWith('/school')) {
+      } else if (
+        pathname.startsWith('/world') ||
+        pathname.startsWith('/school') ||
+        pathname.startsWith('/cafe') ||
+        pathname.startsWith('/perpustakaan') ||
+        pathname.startsWith('/library')
+      ) {
         let savedName = '';
         let savedAvatar = undefined;
         try {
@@ -250,6 +268,13 @@ export class BootScene extends Phaser.Scene {
         ) {
           const schoolType = lowerPath.replace('/world/', '').replace('/school/', '') as 'sd' | 'smp' | 'sma';
           this.scene.start('SchoolScene', { schoolType, name: savedName, avatar: savedAvatar });
+        } else if (lowerPath === '/world/cafe' || lowerPath === '/cafe') {
+          this.scene.start('CafeScene', { name: savedName, avatar: savedAvatar });
+        } else if (
+          lowerPath === '/world/perpustakaan' || lowerPath === '/world/library' ||
+          lowerPath === '/perpustakaan' || lowerPath === '/library'
+        ) {
+          this.scene.start('LibraryScene', { name: savedName, avatar: savedAvatar });
         } else {
           this.scene.start('WorldScene', { name: savedName, avatar: savedAvatar });
         }
@@ -428,6 +453,56 @@ export class BootScene extends Phaser.Scene {
       g.fillStyle(0x00a2f3, 1); // Warna Biru Laut Asli Blueprint (#00A2F3)
       g.fillRect(0, 0, 120, 120);
       g.generateTexture('water-checker-tile', 120, 120);
+      g.destroy();
+    }
+
+    // Tekstur Fallback Tile Tanah Galian Cangkulan (tile-dig 120x120px)
+    if (!this.textures.exists('tile-dig')) {
+      const g = this.make.graphics({ x: 0, y: 0 });
+      g.fillStyle(0x8d5b2d, 1);
+      g.fillRoundedRect(6, 6, 108, 108, 24);
+      g.fillStyle(0x6e431f, 1);
+      g.fillCircle(60, 60, 34);
+      g.generateTexture('tile-dig', 120, 120);
+      g.destroy();
+    }
+
+    // Tekstur Fallback Lapangan Sepak Bola (10x5 petak: 1200x600px)
+    if (!this.textures.exists('court-bola')) {
+      const g = this.make.graphics({ x: 0, y: 0 });
+      g.fillStyle(0x14532d, 1);
+      g.fillRect(0, 0, 1200, 600);
+      g.fillStyle(0x16a34a, 1);
+      for (let i = 0; i < 12; i++) {
+        if (i % 2 === 0) g.fillRect(60 + i * 90, 40, 90, 520);
+      }
+      g.lineStyle(5, 0xffffff, 1);
+      g.strokeRect(60, 40, 1080, 520);
+      g.lineBetween(600, 40, 600, 560);
+      g.strokeCircle(600, 300, 85);
+      g.strokeRect(60, 160, 180, 280);
+      g.strokeRect(960, 160, 180, 280);
+      g.generateTexture('court-bola', 1200, 600);
+      g.destroy();
+    }
+
+    // Tekstur Fallback Lapangan Basket (10x5 petak: 1200x600px)
+    if (!this.textures.exists('court-basket')) {
+      const g = this.make.graphics({ x: 0, y: 0 });
+      g.fillStyle(0x0f172a, 1);
+      g.fillRect(0, 0, 1200, 600);
+      g.fillStyle(0x1d4ed8, 1);
+      g.fillRect(60, 40, 1080, 520);
+      g.fillStyle(0xea580c, 1);
+      g.fillRect(60, 215, 220, 170);
+      g.fillRect(920, 215, 220, 170);
+      g.lineStyle(5, 0xffffff, 1);
+      g.strokeRect(60, 40, 1080, 520);
+      g.lineBetween(600, 40, 600, 560);
+      g.strokeCircle(600, 300, 70);
+      g.strokeRect(60, 215, 220, 170);
+      g.strokeRect(920, 215, 220, 170);
+      g.generateTexture('court-basket', 1200, 600);
       g.destroy();
     }
 

@@ -66,6 +66,8 @@ export class NetworkManager {
     friendRequest: ((data: any) => void)[];
     friendResponse: ((data: any) => void)[];
     playerJumped: ((data: { id: string; jumpCount: number; x: number; y: number }) => void)[];
+    playerFollowedBy: ((data: any) => void)[];
+    playerUnfollowedBy: ((data: any) => void)[];
   } = {
     worldInit: [],
     playerJoined: [],
@@ -79,6 +81,8 @@ export class NetworkManager {
     friendRequest: [],
     friendResponse: [],
     playerJumped: [],
+    playerFollowedBy: [],
+    playerUnfollowedBy: [],
   };
 
   /** Konstruktor privat untuk mencegah pembuatan instansi ganda (Singleton) */
@@ -98,12 +102,15 @@ export class NetworkManager {
    * Mengambil host server yang efektif (dari localStorage 'raden_server_host' atau otomatis hostname browser)
    */
   public static getEffectiveServerHost(): string {
-    if (typeof window === 'undefined') return 'localhost';
+    if (typeof window === 'undefined') return '127.0.0.1';
     try {
       const savedHost = localStorage.getItem('raden_server_host')?.trim();
       if (savedHost) return savedHost;
     } catch (e) {}
-    return window.location.hostname || 'localhost';
+    const h = window.location.hostname;
+    // Pada Windows, gunakan '127.0.0.1' untuk 'localhost' agar terhubung langsung via IPv4 tanpa issue resolusi ::1
+    if (!h || h === 'localhost') return '127.0.0.1';
+    return h;
   }
 
   /**
@@ -120,7 +127,7 @@ export class NetworkManager {
 
     let host = NetworkManager.getEffectiveServerHost();
     if (!host) {
-      host = (typeof window !== 'undefined' ? window.location.hostname : 'localhost') || 'localhost';
+      host = (typeof window !== 'undefined' ? (window.location.hostname === 'localhost' ? '127.0.0.1' : window.location.hostname) : '127.0.0.1') || '127.0.0.1';
     }
 
     // Jika host sudah memiliki protokol http:// atau https://
@@ -151,11 +158,13 @@ export class NetworkManager {
     }
 
     this.socket = io(this.serverUrl, {
-      transports: ['websocket'],
-      reconnectionAttempts: 5,
-      reconnectionDelay: 2500,
-      reconnectionDelayMax: 10000,
-      timeout: 3000,
+      transports: ['polling', 'websocket'],
+      upgrade: true,
+      reconnection: true,
+      reconnectionAttempts: Infinity,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
+      timeout: 10000,
     });
 
     let hasLoggedOffline = false;
@@ -275,9 +284,23 @@ export class NetworkManager {
     this.socket.off('friend:request_received');
     this.socket.off('friend:response_result');
     this.socket.off('player:jumped');
+    this.socket.off('player:followed_by');
+    this.socket.off('player:unfollowed_by');
 
     this.socket.on('player:jumped', (data: { id: string; jumpCount: number; x: number; y: number }) => {
       this.listeners.playerJumped.forEach((cb) => cb(data));
+    });
+
+    this.socket.on('player:followed_by', (data: any) => {
+      console.log('[NetworkManager] Diterima player:followed_by:', data);
+      EventBus.emit('player-followed-by', data);
+      this.listeners.playerFollowedBy.forEach((cb) => cb(data));
+    });
+
+    this.socket.on('player:unfollowed_by', (data: any) => {
+      console.log('[NetworkManager] Diterima player:unfollowed_by:', data);
+      EventBus.emit('player-unfollowed-by', data);
+      this.listeners.playerUnfollowedBy.forEach((cb) => cb(data));
     });
 
     this.socket.on('world:init', (data: IWorldInitData) => {
@@ -619,6 +642,47 @@ export class NetworkManager {
     this.bindSocketListeners();
   }
 
+  /**
+   * Mengirim event mengikuti (follow) pemain lain ke server secara real-time
+   */
+  public sendFollow(targetId?: string, targetName?: string): void {
+    if (!this.socket || !this.isConnected) return;
+    this.socket.emit('player:follow', {
+      targetId,
+      targetName,
+      senderName: this.lastJoinData?.name,
+      senderAvatar: this.lastJoinData?.avatar,
+    });
+  }
+
+  /**
+   * Mengirim event berhenti mengikuti (unfollow) pemain lain ke server secara real-time
+   */
+  public sendUnfollow(targetId?: string, targetName?: string): void {
+    if (!this.socket || !this.isConnected) return;
+    this.socket.emit('player:unfollow', {
+      targetId,
+      targetName,
+      senderName: this.lastJoinData?.name,
+    });
+  }
+
+  /**
+   * Mendaftarkan callback saat ada pemain lain yang mengikuti kamu
+   */
+  public onFollowedBy(callback: (data: any) => void): void {
+    this.listeners.playerFollowedBy = [callback];
+    this.bindSocketListeners();
+  }
+
+  /**
+   * Mendaftarkan callback saat ada pemain lain yang berhenti mengikutimu
+   */
+  public onUnfollowedBy(callback: (data: any) => void): void {
+    this.listeners.playerUnfollowedBy = [callback];
+    this.bindSocketListeners();
+  }
+
   /** Mendaftarkan callback sinkronisasi monster (kompatibilitas mundur) */
   public onMonstersSync(_callback?: (monsters: any[]) => void): void {
     // Monster dihilangkan dan diganti dengan NPC interaktif di open world
@@ -633,6 +697,8 @@ export class NetworkManager {
     const preservedPlayerAfk = this.listeners.playerAfk || [];
     const preservedPlayerJumped = this.listeners.playerJumped || [];
     const preservedPlayerExpression = this.listeners.playerExpression || [];
+    const preservedPlayerFollowedBy = this.listeners.playerFollowedBy || [];
+    const preservedPlayerUnfollowedBy = this.listeners.playerUnfollowedBy || [];
 
     this.listeners = {
       worldInit: [],
@@ -647,6 +713,8 @@ export class NetworkManager {
       friendRequest: preservedFriendRequest,
       friendResponse: preservedFriendResponse,
       playerJumped: preservedPlayerJumped,
+      playerFollowedBy: preservedPlayerFollowedBy,
+      playerUnfollowedBy: preservedPlayerUnfollowedBy,
     };
 
     if (this.socket) {
@@ -655,7 +723,7 @@ export class NetworkManager {
       this.socket.off('player:moved');
       this.socket.off('player:left');
       this.socket.off('chat:broadcast');
-      // Jangan matikan player:jumped, player:expression, voice:stream, voice:speaking, friend:request_received, friend:response_result
+      // Jangan matikan player:jumped, player:expression, voice:stream, voice:speaking, friend:request_received, friend:response_result, player:followed_by, player:unfollowed_by
     }
   }
 

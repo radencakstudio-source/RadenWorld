@@ -1492,13 +1492,13 @@ export const SchoolSubjectsModal: React.FC<SchoolSubjectsModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-3 sm:p-5 font-cute animate-in fade-in duration-150">
-      <div className="w-full max-w-5xl bg-white border-2 border-neutral-800 rounded-3xl shadow-2xl flex flex-col max-h-[92vh] overflow-hidden text-neutral-800 relative">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-2 sm:p-5 font-cute animate-in fade-in duration-150">
+      <div className="w-full max-w-5xl bg-white border-2 border-neutral-800 rounded-2xl sm:rounded-3xl shadow-2xl flex flex-col max-h-[94dvh] overflow-hidden text-neutral-800 relative">
         
         {/* ================================================================== */}
         {/* HEADER MODAL: Sesuai Persis dengan Modal Pemilihan Kelas           */}
         {/* ================================================================== */}
-        <div className={`px-5 sm:px-6 py-4 ${theme.headerBg} border-b-2 border-neutral-800 flex items-center justify-between gap-3 shrink-0`}>
+        <div className={`px-3.5 sm:px-6 py-2.5 sm:py-4 ${theme.headerBg} border-b-2 border-neutral-800 flex items-center justify-between gap-2 sm:gap-3 shrink-0`}>
           <div className="flex items-center gap-3.5">
             <div className="w-12 h-12 rounded-2xl bg-white border-2 border-neutral-800 shadow-xs flex items-center justify-center text-2xl shrink-0">
               {schoolEmojiIcon}

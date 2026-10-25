@@ -70,16 +70,16 @@ export const TopUpModal: React.FC<TopUpModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 font-['Chakra_Petch']">
-      <div className="relative w-full max-w-md bg-[#080808] border border-cyan-500/40 rounded-xl p-5 text-neutral-100 flex flex-col gap-4 shadow-2xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/85 font-['Chakra_Petch']">
+      <div className="relative w-full max-w-md bg-[#080808] border border-neutral-800 rounded-xl p-3.5 sm:p-5 text-neutral-100 flex flex-col gap-3 sm:gap-4 shadow-2xl max-h-[94dvh] overflow-y-auto custom-scrollbar">
         {/* HEADER */}
-        <div className="flex items-center justify-between pb-3 border-b border-neutral-800">
+        <div className="flex items-center justify-between pb-3 border-b border-neutral-800 shrink-0">
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-md bg-cyan-950/80 border border-cyan-500/60 flex items-center justify-center text-cyan-400">
+            <div className="w-7 h-7 rounded-md bg-neutral-900 border border-neutral-700 flex items-center justify-center text-cyan-400">
               <Gem className="w-4 h-4 fill-cyan-400/30" />
             </div>
             <div>
-              <h2 className="text-sm font-extrabold uppercase tracking-wider text-cyan-400">
+              <h2 className="text-sm font-extrabold uppercase tracking-wider text-white">
                 TOP UP BERLIAN
               </h2>
               <p className="text-[10px] text-neutral-400 font-medium">
@@ -132,7 +132,7 @@ export const TopUpModal: React.FC<TopUpModalProps> = ({
                       }}
                       className={`relative p-3 rounded-lg border text-left flex flex-col justify-between transition-all cursor-pointer ${
                         isSelected
-                          ? 'bg-cyan-950/40 border-cyan-400 shadow-[0_0_15px_rgba(56,189,248,0.2)]'
+                          ? 'bg-neutral-900 border-cyan-400'
                           : 'bg-[#101010] border-neutral-800 hover:border-neutral-700'
                       }`}
                     >
@@ -203,7 +203,7 @@ export const TopUpModal: React.FC<TopUpModalProps> = ({
                 type="button"
                 disabled={isProcessing}
                 onClick={handlePurchase}
-                className="w-full py-2.5 rounded-lg bg-gradient-to-r from-cyan-500 to-cyan-400 hover:from-cyan-400 hover:to-cyan-300 text-black font-black text-xs uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center gap-2 shadow-lg shadow-cyan-500/25 active:scale-98 disabled:opacity-50"
+                className="w-full py-2.5 rounded-lg bg-cyan-400 hover:bg-cyan-300 text-black font-black text-xs uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center gap-2 active:scale-98 disabled:opacity-50"
               >
                 {isProcessing ? (
                   <span>MEMPROSES TRANSAKSI...</span>

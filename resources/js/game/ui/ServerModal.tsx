@@ -261,27 +261,27 @@ export const ServerModal: React.FC<ServerModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/85 font-['Chakra_Petch'] animate-in fade-in duration-200">
-      <div className="relative w-full max-w-2xl bg-black border border-neutral-800 rounded-xl flex flex-col overflow-hidden max-h-[92vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/80 font-['Chakra_Petch'] select-none animate-in fade-in duration-200">
+      <div className="relative w-full max-w-2xl bg-black border border-neutral-800 rounded-xl flex flex-col overflow-hidden max-h-[94dvh]">
 
         {/* ==================================================================== */}
         {/* HEADER MODAL: Flat Pure Black                                        */}
         {/* ==================================================================== */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-800 bg-[#0a0a0a]">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-md bg-neutral-900 border border-neutral-800 flex items-center justify-center text-amber-400">
+        <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-neutral-800 bg-[#0a0a0a] shrink-0">
+          <div className="flex items-center gap-2.5 sm:gap-3">
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-md bg-neutral-900 border border-neutral-800 flex items-center justify-center text-amber-400 shrink-0">
               <Server className="w-4 h-4" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-base font-bold text-amber-400 tracking-wider uppercase">
+                <h2 className="text-sm sm:text-base font-bold text-amber-400 tracking-wider uppercase">
                   Daftar & Pindah Server
                 </h2>
-                <span className="text-[10px] font-mono font-bold bg-amber-500 text-black px-1.5 py-0.5 rounded">
+                <span className="text-[9px] sm:text-[10px] font-mono font-bold bg-amber-500 text-black px-1.5 py-0.5 rounded">
                   MULTI-REALM
                 </span>
               </div>
-              <p className="text-xs text-neutral-400 mt-0.5">
+              <p className="text-[11px] sm:text-xs text-neutral-400 mt-0.5 hidden sm:block">
                 Bermain bersama teman di realm server yang sama atau jaringan Wi-Fi lokal.
               </p>
             </div>
@@ -292,7 +292,7 @@ export const ServerModal: React.FC<ServerModalProps> = ({
               sound.playClick();
               onClose();
             }}
-            className="p-1.5 rounded-md text-neutral-400 hover:text-amber-400 hover:bg-neutral-800 transition-colors cursor-pointer"
+            className="p-1.5 rounded-md text-neutral-400 hover:text-amber-400 hover:bg-neutral-800 transition-colors cursor-pointer shrink-0"
             title="Tutup"
           >
             <X className="w-5 h-5" />
@@ -302,7 +302,7 @@ export const ServerModal: React.FC<ServerModalProps> = ({
         {/* ==================================================================== */}
         {/* BODY CONTENT: SERVER LIST & CUSTOM LAN                               */}
         {/* ==================================================================== */}
-        <div className="p-6 overflow-y-auto space-y-5 custom-scrollbar">
+        <div className="p-3.5 sm:p-6 overflow-y-auto space-y-4 sm:space-y-5 custom-scrollbar flex-1 min-h-0">
 
           {successMessage && (
             <div className="flex items-center gap-2.5 p-3.5 bg-neutral-900 border border-emerald-500/50 rounded-md text-emerald-300 text-xs font-semibold animate-in fade-in">

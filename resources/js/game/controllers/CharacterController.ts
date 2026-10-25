@@ -152,6 +152,42 @@ export class CharacterController {
   private inAirTimer: Phaser.Time.TimerEvent | null = null;
   private landingTimer: Phaser.Time.TimerEvent | null = null;
 
+  // Pelacakan Efek Ramuan Apotek Farma (Durasi Real-time)
+  private activePotionBuffs: Map<string, number> = new Map();
+
+  /**
+   * Cek apakah pemain berada di zona lapangan minigame (Sepakbola, Basket, Volly).
+   * Seluruh efek ramuan dinonaktifkan di area ini sesuai aturan permainan.
+   */
+  public isInSportsMinigameArea(): boolean {
+    if (this.scene.scene.key !== 'WorldScene') return false;
+    const gx = Math.floor(this.player.x / 120);
+    const gy = Math.floor(this.player.y / 120);
+    // Area lapangan olahraga tengah alun-alun (sepakbola, basket, volly: gx 23..56, gy 50..56)
+    return gx >= 23 && gx <= 56 && gy >= 50 && gy <= 56;
+  }
+
+  /**
+   * Cek apakah efek ramuan tertentu sedang aktif dan tidak berada di lapangan olahraga
+   */
+  public isPotionActive(type: string): boolean {
+    if (this.isInSportsMinigameArea()) return false;
+    const exp = this.activePotionBuffs.get(type);
+    if (!exp) return false;
+    if (Date.now() >= exp) {
+      this.activePotionBuffs.delete(type);
+      return false;
+    }
+    return true;
+  }
+
+  /**
+   * Mengaktifkan efek ramuan dengan durasi detik
+   */
+  public applyPotionBuff(type: string, durationSec: number): void {
+    this.activePotionBuffs.set(type, Date.now() + durationSec * 1000);
+  }
+
   // Pelacakan terhalang rintangan saat navigasi otomatis (Anti-stuck pada dinding/objek)
   private lastNavPosX: number = 0;
   private lastNavPosY: number = 0;
@@ -320,6 +356,12 @@ export class CharacterController {
     EventBus.on('fishing-minigame-success', onFishingMinigameSuccess);
     EventBus.on('fishing-minigame-failed', onFishingMinigameFailed);
 
+    const onPotionConsumed = (data: { potionType: string; potionName: string; durationSec: number }) => {
+      this.applyPotionBuff(data.potionType, data.durationSec);
+      this.player.showSpeechBubble(`✨ Efek ${data.potionName} Aktif! (${data.durationSec}s)`);
+    };
+    EventBus.on('player-consumed-potion', onPotionConsumed);
+
     this.player.once(Phaser.GameObjects.Events.DESTROY, () => {
       EventBus.off('joystick-move', onJoystickMove);
       EventBus.off('joystick-end', onJoystickEnd);
@@ -329,6 +371,7 @@ export class CharacterController {
       EventBus.off('fishing-charge-release', onFishChargeRelease);
       EventBus.off('fishing-minigame-success', onFishingMinigameSuccess);
       EventBus.off('fishing-minigame-failed', onFishingMinigameFailed);
+      EventBus.off('player-consumed-potion', onPotionConsumed);
       this.landingGraphics?.destroy();
       this.landingDustGraphics?.destroy();
       this.crystalGraphics?.destroy();
@@ -363,8 +406,9 @@ export class CharacterController {
       return false;
     }
 
-    // Batasi maksimum 2x lompatan (Lompat pertama dari tanah, lompat kedua di udara)
-    if (this.jumpCount >= this.maxJumps) {
+    // Batasi maksimum lompatan (Lompat pertama dari tanah, lompat kedua di udara, lompat ketiga jika ada Ramuan)
+    const effectiveMaxJumps = this.isPotionActive('triple_jump') ? 3 : this.maxJumps;
+    if (this.jumpCount >= effectiveMaxJumps) {
       return false;
     }
 
@@ -425,7 +469,7 @@ export class CharacterController {
 
         // 2. TAHAP JUMP: Lepas landas melesat ke atas menuju max tertinggi
         this.currentJumpZ = 0;
-        this.jumpVelocityZ = this.jumpLaunchVz; // 660 px/s
+        this.jumpVelocityZ = this.jumpLaunchVz + (this.isPotionActive('high_jump') ? 300 : 0);
         this.sound.playJump(false);
         this.player.setJumpVisualStage('jump');
 
@@ -494,6 +538,38 @@ export class CharacterController {
         x: this.player.x,
         y: this.player.y,
         jumpCount: 2,
+        jumpZ: this.currentJumpZ,
+      });
+
+      return true;
+    } else if (this.jumpCount === 2 && this.isPotionActive('triple_jump')) {
+      // ======================================================================
+      // LOMPATAN KETIGA / TRIPLE JUMP (KHUSUS EFEK RAMUAN APOTEK)
+      // ======================================================================
+      const now = this.scene.time.now;
+      if (this.currentJumpZ < 10 || (now - this.lastLaunchTime < 100)) {
+        return false;
+      }
+
+      this.jumpCount = 3;
+      this.isJumping = true;
+      this.isCharging = false;
+      this.actionState = 'jumping';
+
+      this.jumpVelocityZ = this.doubleJumpLaunchVz + 60;
+      this.sound.playJump(true);
+      this.player.setJumpVisualStage('jump');
+
+      this.triggerLandingDust(this.player.x, this.player.y - this.currentJumpZ + 12);
+      this.player.showSpeechBubble('🌟 Triple Jump (Ramuan)!', 800);
+
+      NetworkManager.getInstance().sendJump(3, this.player.x, this.player.y);
+      this.player.triggerJumpWhiteFlash(150);
+
+      EventBus.emit('player-jump-started', {
+        x: this.player.x,
+        y: this.player.y,
+        jumpCount: 3,
         jumpZ: this.currentJumpZ,
       });
 
@@ -1148,10 +1224,14 @@ export class CharacterController {
         this.fishingState = 'waiting';
         this.fishingStateStartTime = time;
         this.bobberPos = { ...this.targetBobberPos };
-        // Waktu tunggu ikan menyambar: 2.5 hingga 5 detik acak
-        this.biteTimeout = Phaser.Math.Between(2600, 5200);
+        // Waktu tunggu ikan menyambar: dipersingkat jika memiliki Ramuan Keberuntungan
+        let rawBite = Phaser.Math.Between(2600, 5200);
+        if (this.isPotionActive('luck_3')) rawBite = Math.round(rawBite * 0.25);
+        else if (this.isPotionActive('luck_2')) rawBite = Math.round(rawBite * 0.5);
+        else if (this.isPotionActive('luck_1')) rawBite = Math.round(rawBite * 0.7);
+        this.biteTimeout = rawBite;
         this.sound.playFishSplash();
-        this.player.showSpeechBubble('Menunggu ikan menyambar...');
+        this.player.showSpeechBubble(this.isPotionActive('luck_3') ? '🌟 Ramuan Berkah Laut aktif! Ikan langsung menyambar!' : 'Menunggu ikan menyambar...');
       }
     }
     // 2. FASE WAITING (Pelampung mengambang tenang di air)
@@ -1478,14 +1558,17 @@ export class CharacterController {
 
     const hasManualInput = left || right || up || down;
 
+    const speedMultiplier = this.isPotionActive('speed') ? 1.6 : 1.0;
+    const currentSpeed = this.speed * speedMultiplier;
+
     if (this.joystickVector && (Math.abs(this.joystickVector.x) > 0.05 || Math.abs(this.joystickVector.y) > 0.05)) {
       // 1. Input Analog Virtual Joystick Sentuh
       this.targetDestination = null;
       this.crystalGraphics.clear();
       this.onArrivalCallback = null;
 
-      vx = this.joystickVector.x * this.speed;
-      vy = this.joystickVector.y * this.speed;
+      vx = this.joystickVector.x * currentSpeed;
+      vy = this.joystickVector.y * currentSpeed;
 
       this.syncFacingDirection(vx, vy);
     } else if (hasManualInput) {
@@ -1526,11 +1609,11 @@ export class CharacterController {
 
       // Normalisasi kecepatan diagonal
       if (moveX !== 0 && moveY !== 0) {
-        vx = moveX * this.speed * 0.7071;
-        vy = moveY * this.speed * 0.7071;
+        vx = moveX * currentSpeed * 0.7071;
+        vy = moveY * currentSpeed * 0.7071;
       } else {
-        vx = moveX * this.speed;
-        vy = moveY * this.speed;
+        vx = moveX * currentSpeed;
+        vy = moveY * currentSpeed;
       }
 
       this.syncFacingDirection(vx, vy);
@@ -1570,8 +1653,8 @@ export class CharacterController {
         }
 
         const angle = Math.atan2(dy, dx);
-        vx = Math.cos(angle) * this.speed;
-        vy = Math.sin(angle) * this.speed;
+        vx = Math.cos(angle) * currentSpeed;
+        vy = Math.sin(angle) * currentSpeed;
 
         // Gambar tanda kristal melayang di titik tujuan selama belum sampai
         this.drawDestinationCrystal(this.targetDestination.x, this.targetDestination.y, time);
@@ -1587,6 +1670,13 @@ export class CharacterController {
     // Failsafe: Sinkronkan arah hadap ke fisik velocity
     if (vx !== 0 || vy !== 0) {
       this.syncFacingDirection(vx, vy);
+    }
+
+    // Update efek transparansi ramuan invisible
+    if (this.isPotionActive('invisible')) {
+      if (this.player.alpha !== 0.25) this.player.setAlpha(0.25);
+    } else {
+      if (this.player.alpha !== 1.0) this.player.setAlpha(1.0);
     }
 
     body.setVelocity(vx, vy);

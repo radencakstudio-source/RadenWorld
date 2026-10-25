@@ -149,7 +149,7 @@ export const Hotbar: React.FC<HotbarProps> = ({ onOpenBackpack, isBackpackOpen =
   return (
     <aside
       aria-label="Mini Inventaris"
-      className="fixed bottom-3 left-1/2 -translate-x-1/2 z-40 select-none font-['Chakra_Petch']"
+      className="fixed bottom-[max(0.5rem,env(safe-area-inset-bottom,0.5rem))] left-1/2 -translate-x-1/2 z-40 select-none font-['Chakra_Petch']"
     >
       {/* Tooltip Hover Item (Ringan, Tanpa Blur) */}
       {hoveredItem && hoveredItem.item && (
@@ -168,7 +168,7 @@ export const Hotbar: React.FC<HotbarProps> = ({ onOpenBackpack, isBackpackOpen =
       )}
 
       {/* Wadah Mini Hotbar (Tegas, Elegan, Ringan & Cepat 60 FPS) */}
-      <div className="flex items-center gap-1.5 bg-[#0c101d] border border-neutral-800 rounded-lg p-1.5 shadow-lg">
+      <div className="flex items-center gap-1 sm:gap-1.5 bg-[#0a0c14] border border-white/10 rounded-lg p-1 sm:p-1.5 shadow-xl">
         {/* 6 Slot Hotbar */}
         <div className="flex items-center gap-1">
           {hotbarItems.map((item, idx) => {
@@ -188,22 +188,22 @@ export const Hotbar: React.FC<HotbarProps> = ({ onOpenBackpack, isBackpackOpen =
                 onClick={() => handleSelectSlot(idx)}
                 onMouseEnter={() => item && setHoveredItem({ item, index: idx })}
                 onMouseLeave={() => setHoveredItem(null)}
-                className={`relative w-11 h-11 sm:w-12 sm:h-12 rounded-md flex items-center justify-center transition-all ${
+                className={`relative w-8 h-8 sm:w-10 sm:h-10 md:w-11 md:h-11 rounded-md flex items-center justify-center transition-all ${
                   item ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'
                 } ${
                   isDragging ? 'opacity-30 border-dashed border-amber-400 scale-95' : ''
                 } ${
                   isDragOver
-                    ? 'border-2 border-amber-400 bg-amber-400/30 scale-105 shadow-[0_0_12px_rgba(251,191,36,0.6)] z-10'
+                    ? 'border-2 border-amber-400 bg-amber-400/25 scale-105 z-10'
                     : isActive
-                    ? 'bg-amber-400/20 border-2 border-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.3)]'
+                    ? 'bg-amber-400/20 border-2 border-amber-400'
                     : 'bg-neutral-900 hover:bg-neutral-850 border border-neutral-800 hover:border-neutral-700'
                 } ${item && !isDragOver && !isActive ? getRarityBorder(item.rarity) : ''}`}
                 title={item ? `${item.name} [Slot ${idx + 1}] - Drag untuk memindahkan` : `Slot ${idx + 1}`}
               >
                 {/* Nomor Slot Hotkey */}
                 <span
-                  className={`absolute top-0.5 left-1 text-[9px] font-mono leading-none ${
+                  className={`absolute top-0.5 left-1 text-[8px] sm:text-[9px] font-mono leading-none ${
                     isActive ? 'text-amber-300 font-black' : 'text-neutral-500 font-bold'
                   }`}
                 >
@@ -213,18 +213,18 @@ export const Hotbar: React.FC<HotbarProps> = ({ onOpenBackpack, isBackpackOpen =
                 {/* Konten Item */}
                 {item ? (
                   <>
-                    <span className="text-xl sm:text-2xl select-none">
+                    <span className="text-base sm:text-xl md:text-2xl select-none">
                       {item.icon}
                     </span>
                     {/* Badge Stack Kuantitas */}
                     {item.quantity > 1 && (
-                      <span className="absolute bottom-0.5 right-1 bg-black text-amber-300 text-[9px] font-bold px-1 rounded leading-tight border border-amber-500/30">
+                      <span className="absolute bottom-0.5 right-1 bg-black text-amber-300 text-[8px] sm:text-[9px] font-bold px-1 rounded leading-tight border border-amber-500/30">
                         {item.quantity}
                       </span>
                     )}
                   </>
                 ) : (
-                  <span className="text-[10px] text-neutral-700 font-bold pointer-events-none">•</span>
+                  <span className="text-[9px] sm:text-[10px] text-neutral-700 font-bold pointer-events-none">•</span>
                 )}
               </button>
             );
@@ -232,7 +232,7 @@ export const Hotbar: React.FC<HotbarProps> = ({ onOpenBackpack, isBackpackOpen =
         </div>
 
         {/* Separator Garis Lembut */}
-        <div className="w-[1px] h-7 bg-neutral-800 mx-0.5" />
+        <div className="w-[1px] h-6 sm:h-7 bg-neutral-800 mx-0.5" />
 
         {/* Tombol Tas: Ikon Tas di Atas + Teks "Tas" di Bawah */}
         <button
@@ -241,7 +241,7 @@ export const Hotbar: React.FC<HotbarProps> = ({ onOpenBackpack, isBackpackOpen =
             sound.playClick();
             onOpenBackpack();
           }}
-          className={`relative flex flex-col items-center justify-center w-11 h-11 sm:w-12 sm:h-12 rounded-md transition-colors cursor-pointer ${
+          className={`relative flex flex-col items-center justify-center w-8 h-8 sm:w-10 sm:h-10 md:w-11 md:h-11 rounded-md transition-colors cursor-pointer ${
             isBackpackOpen
               ? 'bg-amber-400 text-neutral-950 border border-amber-300 font-black'
               : 'bg-neutral-900 hover:bg-neutral-850 text-amber-300 hover:text-amber-200 border border-neutral-800 hover:border-amber-400/50'
@@ -249,10 +249,10 @@ export const Hotbar: React.FC<HotbarProps> = ({ onOpenBackpack, isBackpackOpen =
           title="Buka Tas Inventaris"
         >
           {/* Icon Tas */}
-          <Backpack className="w-4.5 h-4.5 stroke-[2]" />
+          <Backpack className="w-3.5 h-3.5 sm:w-4 sm:h-4 stroke-[2]" />
 
           {/* Teks Tas di Bawah Icon */}
-          <span className="text-[9px] sm:text-[9.5px] font-bold tracking-wide leading-none mt-0.5">
+          <span className="text-[7.5px] sm:text-[9px] font-bold tracking-wide leading-none mt-0.5">
             Tas
           </span>
 

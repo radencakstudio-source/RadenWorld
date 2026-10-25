@@ -44,8 +44,8 @@ export const LobbyModal: React.FC<LobbyModalProps> = ({ onJoin }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4 animate-in fade-in duration-300">
-      <div className="w-full max-w-lg bg-black border border-neutral-800 rounded-2xl p-6 md:p-8 text-neutral-100 flex flex-col gap-6 relative overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-2 sm:p-4 animate-in fade-in duration-300">
+      <div className="w-full max-w-lg bg-black border border-neutral-800 rounded-2xl p-4 sm:p-6 md:p-8 text-neutral-100 flex flex-col gap-4 sm:gap-6 relative overflow-hidden max-h-[94dvh] overflow-y-auto custom-scrollbar">
         {/* Header */}
         <div className="text-center space-y-2">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-neutral-900 border border-neutral-800 text-amber-400 text-xs font-semibold uppercase tracking-wider">

@@ -128,6 +128,7 @@ export const HUD: React.FC<HUDProps> = ({
   const gridY = stats.gridY ?? Math.floor(stats.y / 120);
 
   const isSuperAdmin = stats.role === 'super_admin' || stats.isSuperAdmin || stats.name?.toUpperCase() === 'RADEN';
+  const isUserAdmin = Boolean(stats.role === 'admin' || stats.role === 'super_admin' || stats.isSuperAdmin || stats.name?.toUpperCase() === 'RADEN');
 
   const [isMicActive, setIsMicActive] = React.useState(false);
   const [isMinimapOpen, setIsMinimapOpen] = React.useState(true);
@@ -338,63 +339,63 @@ export const HUD: React.FC<HUDProps> = ({
   };
 
   return (
-    <div className="pointer-events-none fixed inset-0 z-40 flex flex-col justify-between p-4 md:p-5 font-['Chakra_Petch']">
+    <div className="pointer-events-none fixed inset-0 z-40 flex flex-col justify-between p-2 sm:p-3 md:p-5 font-['Chakra_Petch']">
       {/* ==================================================================== */}
       {/* 1. TOP BAR: KIRI (PROFIL & CHAT) | TENGAH (UI JAM) | KANAN (SERVER) */}
       {/* ==================================================================== */}
-      <div className="flex items-start justify-between gap-2 md:gap-4 w-full">
+      <div className="flex items-start justify-between gap-1.5 sm:gap-2 md:gap-4 w-full">
         {/* KIRI ATAS: Group Profile, Quick Action & UI Jam Tanpa Background di Bawahnya */}
-        <div className="flex flex-col items-start gap-1.5 shrink-0">
-          <div className="pointer-events-auto flex items-center gap-1.5 shrink-0">
-            {/* Tombol Profil Karakter: H-10, Rounded-md */}
+        <div className="flex flex-col items-start gap-1 sm:gap-1.5 shrink-0">
+          <div className="pointer-events-auto flex items-center gap-1 sm:gap-1.5 shrink-0">
+            {/* Tombol Profil Karakter */}
             <button
               onClick={onOpenProfile}
-              className={`h-10 flex items-center gap-2.5 px-3 rounded-md bg-black border ${
+              className={`h-8 sm:h-9 md:h-10 flex items-center gap-1.5 sm:gap-2.5 px-2 sm:px-3 rounded-md bg-black border ${
                 isSuperAdmin ? 'border-amber-400' : 'border-neutral-800'
               } hover:border-amber-400 transition-colors cursor-pointer group text-left`}
               title={isSuperAdmin ? '👑 Profil Super Admin (RADEN)' : 'Klik untuk membuka Profil Karakter'}
             >
-              <div className={`w-6 h-6 rounded flex items-center justify-center ${
+              <div className={`w-5 h-5 sm:w-6 sm:h-6 rounded flex items-center justify-center shrink-0 ${
                 isSuperAdmin ? 'bg-amber-400 text-black' : 'bg-neutral-900 text-amber-400'
               }`}>
-                <User className="w-3.5 h-3.5" />
+                <User className="w-3 sm:w-3.5 h-3 sm:h-3.5" />
               </div>
               <div className="flex flex-col leading-none">
                 <div className="flex items-center gap-1">
-                  <span className="font-bold text-xs text-neutral-100 group-hover:text-amber-400 transition-colors uppercase tracking-wider truncate max-w-[120px]">
+                  <span className="font-bold text-[11px] sm:text-xs text-neutral-100 group-hover:text-amber-400 transition-colors uppercase tracking-wider truncate max-w-[70px] sm:max-w-[120px]">
                     {stats.name}
                   </span>
                   {isSuperAdmin && (
-                    <span className="text-[9px] font-black tracking-wider text-black bg-amber-400 px-1 py-0.5 rounded leading-none">
+                    <span className="text-[8px] sm:text-[9px] font-black tracking-wider text-black bg-amber-400 px-1 py-0.5 rounded leading-none">
                       ADMIN
                     </span>
                   )}
                 </div>
                 <div className="flex items-center gap-1 mt-0.5">
-                  <span className="text-[9px] font-bold tracking-widest text-neutral-400">
-                    LV. {playerLevel}
+                  <span className="text-[8px] sm:text-[9px] font-bold tracking-widest text-neutral-400">
+                    LV. {isUserAdmin ? '99999999999' : playerLevel}
                   </span>
                 </div>
               </div>
             </button>
 
-            {/* Icon Chat Button (H-10 W-10, Rounded-md) */}
+            {/* Icon Chat Button */}
             <button
               onClick={onToggleChat}
-              className={`h-10 w-10 rounded-md border flex items-center justify-center transition-colors cursor-pointer ${
+              className={`h-8 w-8 sm:h-9 sm:w-9 md:h-10 md:w-10 rounded-md border flex items-center justify-center transition-colors cursor-pointer shrink-0 ${
                 isChatOpen
                   ? 'bg-amber-400 text-black border-amber-400 font-bold'
                   : 'bg-black text-neutral-300 border-neutral-800 hover:border-amber-400 hover:text-amber-400'
               }`}
               title={isChatOpen ? 'Tutup Obrolan' : 'Buka Obrolan (atau tekan tombol "/")'}
             >
-              <MessageSquare className="w-4 h-4" />
+              <MessageSquare className="w-3.5 sm:w-4 h-3.5 sm:h-4" />
             </button>
 
-            {/* Tombol Mikrofon Proximity Voice Chat (H-10 W-10, Rounded-md) */}
+            {/* Tombol Mikrofon Proximity Voice Chat */}
             <button
               onClick={handleToggleMic}
-              className={`h-10 w-10 rounded-md border flex items-center justify-center relative transition-colors cursor-pointer ${
+              className={`h-8 w-8 sm:h-9 sm:w-9 md:h-10 md:w-10 rounded-md border flex items-center justify-center relative transition-colors cursor-pointer shrink-0 ${
                 isMicActive
                   ? 'bg-emerald-600 text-white border-emerald-500 font-semibold'
                   : 'bg-black text-neutral-300 border-neutral-800 hover:border-neutral-700 hover:text-white'
@@ -405,44 +406,44 @@ export const HUD: React.FC<HUDProps> = ({
                   : 'Nyalakan Mikrofon (Proximity Voice Chat Radius ±5 Petak X & Y)'
               }
             >
-              {isMicActive ? <Mic className="w-4 h-4 text-white" /> : <MicOff className="w-4 h-4" />}
+              {isMicActive ? <Mic className="w-3.5 sm:w-4 h-3.5 sm:h-4 text-white" /> : <MicOff className="w-3.5 sm:w-4 h-3.5 sm:h-4" />}
               {isMicActive && (
-                <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-emerald-400" />
               )}
             </button>
           </div>
         </div>
 
-        {/* KANAN ATAS: CONTAINER UANG, SERVER, SETTINGS, & PETA DUNIA (MINIMAP 1 BARIS DENGAN SETTINGS) */}
-        <div className="pointer-events-none flex items-start gap-1.5 flex-wrap justify-end select-none">
-          {/* KOIN EMAS (Bisa Diperoleh Dari Aktivitas) */}
+        {/* KANAN ATAS: CONTAINER UANG, SERVER, SETTINGS, & PETA DUNIA */}
+        <div className="pointer-events-none flex items-start gap-1 sm:gap-1.5 flex-wrap justify-end select-none max-w-[calc(100vw-140px)] sm:max-w-none">
+          {/* KOIN EMAS */}
           <div
-            className="pointer-events-auto h-10 flex items-center gap-1.5 px-3 rounded-md bg-black border border-neutral-800 text-amber-400 select-none shadow-sm shrink-0"
-            title="Koin Emas (Bisa diperoleh dari jelajah, quest & aktivitas)"
+            className="pointer-events-auto h-8 sm:h-9 md:h-10 flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 rounded-md bg-black border border-neutral-800 text-amber-400 select-none shadow-sm shrink-0"
+            title="Koin Emas"
           >
-            <Coins className="w-4 h-4 text-amber-400 shrink-0" />
+            <Coins className="w-3.5 sm:w-4 h-3.5 sm:h-4 text-amber-400 shrink-0" />
             <div className="flex flex-col text-left leading-none">
-              <span className="text-[8px] text-neutral-400 uppercase font-semibold">KOIN</span>
-              <span className="text-xs font-black font-mono tracking-wider text-amber-300 mt-0.5">
-                {gold.toLocaleString('id-ID')}
+              <span className="text-[7.5px] sm:text-[8px] text-neutral-400 uppercase font-semibold">KOIN</span>
+              <span className="text-[10px] sm:text-xs font-black font-mono tracking-wider text-amber-300 mt-0.5">
+                {isUserAdmin || gold >= 99999999999 ? '99999999999' : gold.toLocaleString('id-ID')}
               </span>
             </div>
           </div>
 
-          {/* BERLIAN (DAPAT MELALUI TOP UP) */}
+          {/* BERLIAN */}
           <div
             onClick={() => {
               sound.playClick();
               onOpenTopUp?.();
             }}
-            className="pointer-events-auto h-10 flex items-center gap-1.5 pl-2.5 pr-1.5 rounded-md bg-black border border-neutral-800 text-cyan-400 select-none shadow-sm group hover:border-cyan-500/50 transition-colors cursor-pointer shrink-0"
+            className="pointer-events-auto h-8 sm:h-9 md:h-10 flex items-center gap-1 sm:gap-1.5 pl-2 sm:pl-2.5 pr-1 sm:pr-1.5 rounded-md bg-black border border-neutral-800 text-cyan-400 select-none shadow-sm group hover:border-cyan-500/50 transition-colors cursor-pointer shrink-0"
             title="Berlian (Klik untuk Top Up)"
           >
-            <Gem className="w-4 h-4 text-cyan-400 fill-cyan-400/20 shrink-0" />
+            <Gem className="w-3.5 sm:w-4 h-3.5 sm:h-4 text-cyan-400 fill-cyan-400/20 shrink-0" />
             <div className="flex flex-col text-left leading-none">
-              <span className="text-[8px] text-neutral-400 uppercase font-semibold">BERLIAN</span>
-              <span className="text-xs font-black font-mono tracking-wider text-cyan-300 mt-0.5">
-                {diamonds.toLocaleString('id-ID')}
+              <span className="text-[7.5px] sm:text-[8px] text-neutral-400 uppercase font-semibold">BERLIAN</span>
+              <span className="text-[10px] sm:text-xs font-black font-mono tracking-wider text-cyan-300 mt-0.5">
+                {isUserAdmin || diamonds >= 99999999999 ? '99999999999' : diamonds.toLocaleString('id-ID')}
               </span>
             </div>
             <button
@@ -451,10 +452,10 @@ export const HUD: React.FC<HUDProps> = ({
                 sound.playClick();
                 onOpenTopUp?.();
               }}
-              className="h-7 px-2 rounded bg-gradient-to-r from-cyan-500 to-cyan-400 hover:from-cyan-400 hover:to-cyan-300 text-black font-black text-[10px] tracking-wider uppercase flex items-center gap-1 ml-1 cursor-pointer transition-all shadow-sm active:scale-95"
+              className="h-6 sm:h-7 px-1.5 sm:px-2 rounded bg-gradient-to-r from-cyan-500 to-cyan-400 hover:from-cyan-400 hover:to-cyan-300 text-black font-black text-[9px] sm:text-[10px] tracking-wider uppercase flex items-center gap-1 ml-1 cursor-pointer transition-all shadow-sm active:scale-95"
               title="Top Up Berlian"
             >
-              <Plus className="w-3 h-3 stroke-[3]" />
+              <Plus className="w-2.5 sm:w-3 h-2.5 sm:h-3 stroke-[3]" />
               <span>TOPUP</span>
             </button>
           </div>
@@ -465,26 +466,26 @@ export const HUD: React.FC<HUDProps> = ({
               sound.playClick();
               onOpenServerModal?.();
             }}
-            className="pointer-events-auto h-10 flex items-center gap-2 px-3 rounded-md bg-black border border-neutral-800 hover:border-amber-400 text-neutral-200 transition-colors cursor-pointer group shrink-0"
+            className="pointer-events-auto h-8 sm:h-9 md:h-10 flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 rounded-md bg-black border border-neutral-800 hover:border-amber-400 text-neutral-200 transition-colors cursor-pointer group shrink-0"
             title="Klik untuk Melihat Daftar Server & Pindah Realm"
           >
-            <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
-            <Globe className="w-3.5 h-3.5 text-neutral-400 group-hover:text-amber-400 transition-colors" />
+            <span className="w-1.5 sm:w-2 h-1.5 sm:h-2 rounded-full bg-emerald-500 shrink-0" />
+            <Globe className="w-3 sm:w-3.5 h-3 sm:h-3.5 text-neutral-400 group-hover:text-amber-400 transition-colors" />
             <div className="flex flex-col text-left leading-none">
-              <span className="text-[9px] text-neutral-400 uppercase tracking-widest font-semibold">
+              <span className="text-[8px] sm:text-[9px] text-neutral-400 uppercase tracking-widest font-semibold">
                 SERVER
               </span>
-              <span className="text-xs font-black text-amber-300 uppercase tracking-wider font-mono mt-0.5">
+              <span className="text-[10px] sm:text-xs font-black text-amber-300 uppercase tracking-wider font-mono mt-0.5">
                 {displayServerCode}
               </span>
             </div>
-            <div className="flex items-center gap-1 text-[9px] font-bold tracking-wider text-black bg-amber-400 group-hover:bg-amber-300 px-1.5 py-0.5 rounded transition-colors ml-1">
+            <div className="hidden sm:flex items-center gap-1 text-[8px] sm:text-[9px] font-bold tracking-wider text-black bg-amber-400 group-hover:bg-amber-300 px-1 sm:px-1.5 py-0.5 rounded transition-colors ml-1">
               <ArrowRightLeft className="w-2.5 h-2.5" />
               <span>PINDAH</span>
             </div>
           </button>
 
-          {/* Tombol Daftar Pemain Server (Roblox-style Player List Trigger - Aman dari tombol kontrol mobile) */}
+          {/* Tombol Daftar Pemain Server */}
           <button
             onClick={() => {
               sound.playClick();
@@ -493,15 +494,15 @@ export const HUD: React.FC<HUDProps> = ({
               } catch (e) {}
               setIsServerUsersModalOpen(true);
             }}
-            className="pointer-events-auto h-10 flex items-center gap-2 px-2.5 rounded-md bg-black border border-neutral-800 hover:border-amber-400 text-neutral-200 transition-colors cursor-pointer group shrink-0"
+            className="pointer-events-auto h-8 sm:h-9 md:h-10 flex items-center gap-1.5 sm:gap-2 px-2 sm:px-2.5 rounded-md bg-black border border-neutral-800 hover:border-amber-400 text-neutral-200 transition-colors cursor-pointer group shrink-0"
             title="Lihat Daftar Pemain di Server"
           >
-            <div className="w-6 h-6 rounded bg-neutral-900 border border-neutral-800 flex items-center justify-center text-amber-400 group-hover:text-amber-300">
-              <Users className="w-3.5 h-3.5" />
+            <div className="w-5 h-5 sm:w-6 sm:h-6 rounded bg-neutral-900 border border-neutral-800 flex items-center justify-center text-amber-400 group-hover:text-amber-300 shrink-0">
+              <Users className="w-3 sm:w-3.5 h-3 sm:h-3.5" />
             </div>
             <div className="flex flex-col text-left leading-none">
-              <span className="text-[8px] text-neutral-400 uppercase tracking-wider font-semibold">PEMAIN</span>
-              <div className="flex items-center gap-0.5 text-xs font-black font-mono tracking-wider text-white mt-0.5">
+              <span className="text-[7.5px] sm:text-[8px] text-neutral-400 uppercase tracking-wider font-semibold">PEMAIN</span>
+              <div className="flex items-center gap-0.5 text-[10px] sm:text-xs font-black font-mono tracking-wider text-white mt-0.5">
                 <span className="text-amber-300">{serverPlayerCount}</span>
                 <span className="text-neutral-500 font-normal">/</span>
                 <span className="text-neutral-400">50</span>
@@ -509,14 +510,14 @@ export const HUD: React.FC<HUDProps> = ({
             </div>
           </button>
 
-          {/* Tombol Pengaturan (H-10 W-10, Rounded-md) */}
+          {/* Tombol Pengaturan */}
           {onOpenSettings && (
             <button
               onClick={() => {
                 sound.playClick();
                 onOpenSettings();
               }}
-              className="pointer-events-auto h-10 w-10 rounded-md bg-black border border-neutral-800 text-neutral-300 hover:text-amber-400 hover:border-amber-400 flex items-center justify-center transition-colors cursor-pointer shrink-0"
+              className="pointer-events-auto h-8 w-8 sm:h-9 sm:w-9 md:h-10 md:w-10 rounded-md bg-black border border-neutral-800 text-neutral-300 hover:text-amber-400 hover:border-amber-400 flex items-center justify-center transition-colors cursor-pointer shrink-0"
               title="Pengaturan Game & Konfigurasi IP Server"
             >
               <Settings className="w-4 h-4" />
@@ -527,10 +528,10 @@ export const HUD: React.FC<HUDProps> = ({
           {!stats.inHouse && (
             <div className="pointer-events-auto flex flex-col items-end shrink-0">
               {/* Header Peta Mini (Sejajar 1 Baris dengan Pengaturan) */}
-              <div className="h-8 flex items-center justify-between w-[132px] px-2 bg-black border-x border-t border-b border-neutral-800 rounded-t-md text-[9px] font-bold text-neutral-300 shadow-sm">
+              <div className="h-8 flex items-center justify-between w-[110px] sm:w-[132px] px-1.5 sm:px-2 bg-black border-x border-t border-b border-neutral-800 rounded-t-md text-[9px] font-bold text-neutral-300 shadow-sm">
                 <div className="flex items-center gap-1 text-amber-400">
                   <Map className="w-3 h-3 text-amber-400" />
-                  <span className="font-mono tracking-wider font-bold text-[10px] text-amber-300">PETA</span>
+                  <span className="font-mono tracking-wider font-bold text-[9px] sm:text-[10px] text-amber-300">PETA</span>
                 </div>
                 <div className="flex items-center gap-0.5">
                   <button
@@ -557,7 +558,7 @@ export const HUD: React.FC<HUDProps> = ({
               </div>
 
               {/* Kotak Bodi Peta: Kanvas Peta (Jika Buka) + Posisi Grid & Jam (Selalu Tampil) */}
-              <div className="w-[132px] flex flex-col bg-black border-x border-b border-neutral-800 rounded-b-md overflow-hidden shadow-2xl">
+              <div className="w-[110px] sm:w-[132px] flex flex-col bg-black border-x border-b border-neutral-800 rounded-b-md overflow-hidden shadow-2xl">
                 {/* Kanvas Peta Mini (Hanya muncul jika tidak di-minimize) */}
                 {isMinimapOpen && (
                   <div
@@ -565,7 +566,7 @@ export const HUD: React.FC<HUDProps> = ({
                       sound.playClick();
                       setIsFullMapOpen(true);
                     }}
-                    className="w-[132px] h-[132px] bg-[#001026] p-0.5 relative overflow-hidden cursor-pointer group hover:opacity-95 transition-opacity border-b border-neutral-800"
+                    className="w-[110px] h-[110px] sm:w-[132px] sm:h-[132px] bg-[#001026] p-0.5 relative overflow-hidden cursor-pointer group hover:opacity-95 transition-opacity border-b border-neutral-800"
                     title="Klik untuk membuka Peta Penuh & Panduan Wilayah"
                   >
                     {/* Peta Mini WorldMapSvg Presisi & Kaya Visual Mirip Dunia Asli */}
@@ -723,32 +724,32 @@ export const HUD: React.FC<HUDProps> = ({
       {/* ==================================================================== */}
       {isFullMapOpen && !stats.inHouse && (
         <div className="fixed inset-0 z-[95] flex items-center justify-center p-2 sm:p-4 bg-black/85 pointer-events-auto animate-in fade-in duration-200">
-          <div className="relative w-full max-w-xl bg-neutral-950 border border-neutral-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col">
+          <div className="relative w-full max-w-xl bg-neutral-950 border border-neutral-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[94dvh]">
             {/* Header Modal */}
-            <div className="flex items-center justify-between px-4 py-3 bg-neutral-900/90 border-b border-neutral-800">
+            <div className="flex items-center justify-between px-3 sm:px-4 py-2.5 sm:py-3 bg-neutral-900/90 border-b border-neutral-800 shrink-0">
               <div className="flex items-center gap-2">
                 <Map className="w-4 h-4 text-amber-400" />
-                <span className="font-bold text-sm tracking-wider text-white">ATLAS DUNIA RADENWORLD</span>
-                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-amber-400/10 text-amber-400 border border-amber-400/30">
+                <span className="font-bold text-xs sm:text-sm tracking-wider text-white">ATLAS DUNIA RADENWORLD</span>
+                <span className="text-[9px] sm:text-[10px] font-mono font-bold px-1.5 sm:px-2 py-0.5 rounded bg-amber-400/10 text-amber-400 border border-amber-400/30">
                   80 × 80 PETAK
                 </span>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 sm:gap-2">
                 {customMarker && (
-                  <span className="text-xs font-mono font-bold text-red-300 bg-red-950/80 px-2 py-1 rounded border border-red-800 flex items-center gap-1">
+                  <span className="text-[10px] sm:text-xs font-mono font-bold text-red-300 bg-red-950/80 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded border border-red-800 flex items-center gap-1">
                     <MapPin className="w-3 h-3 text-red-400" />
-                    TANDA: ({customMarker.x}, {customMarker.y})
+                    ({customMarker.x}, {customMarker.y})
                   </span>
                 )}
-                <span className="text-xs font-mono font-bold text-amber-300 bg-black/60 px-2 py-1 rounded border border-neutral-800">
-                  POSISI: ({gridX}, {gridY})
+                <span className="text-[10px] sm:text-xs font-mono font-bold text-amber-300 bg-black/60 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded border border-neutral-800">
+                  ({gridX}, {gridY})
                 </span>
                 <button
                   onClick={() => {
                     sound.playClick();
                     setIsFullMapOpen(false);
                   }}
-                  className="p-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-300 hover:text-white transition-colors cursor-pointer"
+                  className="p-1 sm:p-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-300 hover:text-white transition-colors cursor-pointer"
                   title="Tutup Peta"
                 >
                   <X className="w-4 h-4" />
@@ -757,9 +758,9 @@ export const HUD: React.FC<HUDProps> = ({
             </div>
 
             {/* Konten Peta Besar */}
-            <div className="p-3 sm:p-4 flex flex-col items-center gap-2.5">
+            <div className="p-2.5 sm:p-4 flex flex-col items-center gap-2 sm:gap-2.5 flex-1 min-h-0 overflow-y-auto custom-scrollbar">
               {/* Toolbar Zoom & Tanda */}
-              <div className="flex flex-wrap items-center justify-between gap-2 w-full max-w-[440px] px-2.5 py-1.5 bg-neutral-900/90 border border-neutral-800 rounded-lg text-xs">
+              <div className="flex flex-wrap items-center justify-between gap-2 w-full max-w-[440px] px-2.5 py-1.5 bg-neutral-900/90 border border-neutral-800 rounded-lg text-xs shrink-0">
                 {/* Kontrol Zoom In / Out / Reset */}
                 <div className="flex items-center gap-1.5">
                   <span className="text-[11px] font-semibold text-neutral-400">Zoom:</span>
@@ -822,7 +823,7 @@ export const HUD: React.FC<HUDProps> = ({
 
               {/* Viewport Peta dengan Pan & Zoom */}
               <div
-                className={`w-[320px] h-[320px] sm:w-[400px] sm:h-[400px] md:w-[440px] md:h-[440px] bg-[#001026] border border-neutral-800 rounded-xl relative overflow-hidden shadow-2xl select-none ${
+                className={`w-[260px] h-[260px] sm:w-[380px] sm:h-[380px] md:w-[440px] md:h-[440px] max-w-[88vw] max-h-[48dvh] bg-[#001026] border border-neutral-800 rounded-xl relative overflow-hidden shadow-2xl select-none shrink-0 ${
                   mapZoom > 1 ? (isDraggingMap ? 'cursor-grabbing' : 'cursor-grab') : 'cursor-crosshair'
                 }`}
                 onMouseDown={handleMapMouseDown}

@@ -300,27 +300,27 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/85 font-['Chakra_Petch'] animate-in fade-in duration-200">
-      <div className="relative w-full max-w-xl bg-black border border-neutral-800 rounded-xl flex flex-col overflow-hidden max-h-[92vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/80 font-['Chakra_Petch'] select-none animate-in fade-in duration-200">
+      <div className="relative w-full max-w-xl bg-black border border-neutral-800 rounded-xl flex flex-col overflow-hidden max-h-[94dvh]">
 
         {/* ==================================================================== */}
         {/* HEADER MODAL: Flat Pure Black                                        */}
         {/* ==================================================================== */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-800 bg-[#0a0a0a]">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-md bg-neutral-900 border border-neutral-800 flex items-center justify-center text-amber-400">
+        <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-neutral-800 bg-[#0a0a0a] shrink-0">
+          <div className="flex items-center gap-2.5 sm:gap-3">
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-md bg-neutral-900 border border-neutral-800 flex items-center justify-center text-amber-400 shrink-0">
               {activeTab === 'login' ? <LogIn className="w-4 h-4" /> : <UserPlus className="w-4 h-4" />}
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-base font-bold text-amber-400 tracking-wider uppercase">
+                <h2 className="text-sm sm:text-base font-bold text-amber-400 tracking-wider uppercase">
                   {activeTab === 'login' ? 'Masuk ke Game' : 'Daftar Akun Baru'}
                 </h2>
-                <span className="text-[10px] font-mono font-bold bg-amber-500 text-black px-1.5 py-0.5 rounded">
+                <span className="text-[9px] sm:text-[10px] font-mono font-bold bg-amber-500 text-black px-1.5 py-0.5 rounded">
                   PORTAL
                 </span>
               </div>
-              <p className="text-xs text-neutral-400 mt-0.5">
+              <p className="text-[11px] sm:text-xs text-neutral-400 mt-0.5 hidden sm:block">
                 {activeTab === 'login'
                   ? 'Akses akun petualangan open world Anda yang telah terdaftar.'
                   : 'Buat identitas karakter baru dan mulai petualangan di RadenWorld.'}
@@ -333,7 +333,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
               sound.playClick();
               onClose();
             }}
-            className="p-1.5 rounded-md text-neutral-400 hover:text-amber-400 hover:bg-neutral-800 transition-colors cursor-pointer"
+            className="p-1.5 rounded-md text-neutral-400 hover:text-amber-400 hover:bg-neutral-800 transition-colors cursor-pointer shrink-0"
             title="Tutup"
           >
             <X className="w-5 h-5" />
@@ -343,11 +343,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
         {/* ==================================================================== */}
         {/* TAB NAVIGATION BAR (MASUK vs DAFTAR)                                 */}
         {/* ==================================================================== */}
-        <div className="flex items-center gap-1.5 px-6 pt-3 pb-2 border-b border-neutral-800 bg-[#0a0a0a]">
+        <div className="flex items-center gap-1.5 px-4 sm:px-6 pt-2.5 pb-2 border-b border-neutral-800 bg-[#0a0a0a] shrink-0">
           <button
             type="button"
             onClick={() => handleTabChange('login')}
-            className={`flex-1 py-2 px-3 rounded-md text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-colors cursor-pointer ${
+            className={`flex-1 py-1.5 sm:py-2 px-2.5 sm:px-3 rounded-md text-[11px] sm:text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 sm:gap-2 transition-colors cursor-pointer ${
               activeTab === 'login'
                 ? 'bg-amber-500 text-black font-black'
                 : 'text-neutral-400 hover:text-amber-300 hover:bg-neutral-800'
@@ -360,7 +360,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
           <button
             type="button"
             onClick={() => handleTabChange('register')}
-            className={`flex-1 py-2 px-3 rounded-md text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-colors cursor-pointer ${
+            className={`flex-1 py-1.5 sm:py-2 px-2.5 sm:px-3 rounded-md text-[11px] sm:text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 sm:gap-2 transition-colors cursor-pointer ${
               activeTab === 'register'
                 ? 'bg-amber-500 text-black font-black'
                 : 'text-neutral-400 hover:text-amber-300 hover:bg-neutral-800'
@@ -374,7 +374,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
         {/* ==================================================================== */}
         {/* MODAL CONTENT BODY                                                   */}
         {/* ==================================================================== */}
-        <div className="p-6 overflow-y-auto space-y-4 custom-scrollbar flex-1 min-h-[380px] max-h-[72vh]">
+        <div className="p-3.5 sm:p-6 overflow-y-auto space-y-4 custom-scrollbar flex-1 min-h-0">
 
           {/* Banner Error jika ada */}
           {authError && (

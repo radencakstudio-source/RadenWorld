@@ -483,6 +483,41 @@ export class SchoolScene extends Phaser.Scene {
       const wx = pointer.worldX;
       const wy = pointer.worldY;
 
+      // Cek apakah pemain menekan/mengklik pemain lain (Remote Player)
+      for (const [rId, remote] of this.remotePlayers.entries()) {
+        const dx = Math.abs(wx - remote.x);
+        const dy = wy - remote.y;
+        if (dx < 65 && dy > -190 && dy < 45) {
+          SoundManager.getInstance().playClick();
+          const raw = (remote as any).getRawPlayerData?.() || {};
+          const isTargetAdmin = Boolean(
+            raw.isSuperAdmin ||
+            raw.role === 'super_admin' ||
+            raw.role === 'admin' ||
+            remote.getEntityName?.()?.trim()?.toUpperCase() === 'RADEN'
+          );
+          EventBus.emit('inspect-player-profile', {
+            id: remote.getEntityId?.() || rId,
+            name: remote.getEntityName?.() || 'Pemain',
+            avatar: remote.getAvatar?.(),
+            gender: remote.getGender?.(),
+            level: isTargetAdmin ? 99999999999 : (raw.level || 1),
+            role: isTargetAdmin ? 'super_admin' : (raw.role || 'player'),
+            isSuperAdmin: isTargetAdmin,
+            title: isTargetAdmin ? '👑 KREATOR & SUPER ADMIN' : (raw.title || 'Petualang'),
+            likes: isTargetAdmin ? 99999999999 : (typeof raw.likes === 'number' ? raw.likes : 12),
+            friendsCount: isTargetAdmin ? 999 : (raw.friendsCount ?? 0),
+            followingCount: isTargetAdmin ? 999 : (raw.followingCount ?? 0),
+            followersCount: isTargetAdmin ? 999 : (raw.followersCount ?? 0),
+            bio: raw.bio || raw.description || 'Petualang penjelajah RadenWorld.',
+            location: 'Gedung Sekolah',
+            gold: isTargetAdmin ? 99999999999 : 2500,
+            diamonds: isTargetAdmin ? 99999999999 : 50,
+          });
+          return;
+        }
+      }
+
       if (!this.isLocationWalkable(wx, wy)) {
         this.spawnBlockedFeedback(wx, wy);
         requestAnimationFrame(() => {
@@ -533,6 +568,8 @@ export class SchoolScene extends Phaser.Scene {
 
     this.events.on('shutdown', cleanupScene);
     this.events.on('destroy', cleanupScene);
+
+    EventBus.emit('scene-ready', 'SchoolScene');
   }
 
   private setupMultiplayerListeners(): void {
@@ -631,17 +668,32 @@ export class SchoolScene extends Phaser.Scene {
         p.hp,
         p.maxHp
       );
+      remote.setRawPlayerData(p);
 
       remote.makeClickable(() => {
+        SoundManager.getInstance().playClick();
+        const isTargetAdmin = Boolean(
+          p.isSuperAdmin ||
+          p.role === 'super_admin' ||
+          p.role === 'admin' ||
+          p.name?.trim()?.toUpperCase() === 'RADEN'
+        );
         EventBus.emit('inspect-player-profile', {
           id: p.id,
           name: p.name,
           avatar: p.avatar,
-          level: (p as any).level || 1,
-          role: p.role || 'player',
-          isSuperAdmin: p.isSuperAdmin,
-          gold: typeof p.gold === 'number' ? p.gold : 2500,
-          diamonds: typeof p.diamonds === 'number' ? p.diamonds : 50,
+          level: isTargetAdmin ? 99999999999 : ((p as any).level || 1),
+          role: isTargetAdmin ? 'super_admin' : (p.role || 'player'),
+          isSuperAdmin: isTargetAdmin,
+          title: isTargetAdmin ? '👑 KREATOR & SUPER ADMIN' : ((p as any).title || 'Petualang'),
+          likes: isTargetAdmin ? 99999999999 : (typeof (p as any).likes === 'number' ? (p as any).likes : 12),
+          friendsCount: isTargetAdmin ? 999 : ((p as any).friendsCount ?? 0),
+          followingCount: isTargetAdmin ? 999 : ((p as any).followingCount ?? 0),
+          followersCount: isTargetAdmin ? 999 : ((p as any).followersCount ?? 0),
+          bio: (p as any).bio || (p as any).description || 'Petualang penjelajah RadenWorld.',
+          location: 'Gedung Sekolah',
+          gold: isTargetAdmin ? 99999999999 : (typeof p.gold === 'number' ? p.gold : 2500),
+          diamonds: isTargetAdmin ? 99999999999 : (typeof p.diamonds === 'number' ? p.diamonds : 50),
         });
       });
 

@@ -364,6 +364,28 @@ export class SoundManager {
     } catch (e) {}
   }
 
+  /** Efek suara buka / masuk pintu ruangan (Door Opening Sound) */
+  public playDoor(): void {
+    if (this.isMuted) return;
+    const ctx = this.initCtx();
+    if (!ctx) return;
+    try {
+      const now = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(180, now);
+      osc.frequency.exponentialRampToValueAtTime(320, now + 0.15);
+      const vol = this.masterVolume * this.sfxVolume * 0.12;
+      gain.gain.setValueAtTime(vol, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.22);
+    } catch (e) {}
+  }
+
   /** Efek suara mendarat ke lantai (Landing Thud) */
   public playLand(): void {
     if (this.isMuted) return;

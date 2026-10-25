@@ -65,8 +65,11 @@ const httpServer = createServer((req, res) => {
 const io = new Server(httpServer, {
   cors: {
     origin: '*',
-    methods: ['GET', 'POST']
-  }
+    methods: ['GET', 'POST'],
+    credentials: true,
+  },
+  transports: ['polling', 'websocket'],
+  allowEIO3: true,
 });
 
 /** Database memori (In-Memory Map) penyimpan seluruh pemain yang aktif */
@@ -429,15 +432,82 @@ io.on('connection', (socket) => {
       accepted: !!data?.accepted
     });
   });
+
+  // 9. Event Follow / Mengikuti Pemain Lain secara Real-time
+  socket.on('player:follow', (data) => {
+    const sender = players.get(socket.id);
+    const senderName = data?.senderName || sender?.name || 'Petualang';
+    const senderAvatar = data?.senderAvatar || sender?.avatar;
+
+    let targetSocketId = null;
+    if (data?.targetId && io.sockets.sockets.has(data.targetId)) {
+      targetSocketId = data.targetId;
+    }
+    if (!targetSocketId && data?.targetName) {
+      const targetLower = data.targetName.trim().toLowerCase();
+      for (const [sId, p] of players.entries()) {
+        if (p.name && p.name.trim().toLowerCase() === targetLower && io.sockets.sockets.has(sId)) {
+          targetSocketId = sId;
+          break;
+        }
+      }
+    }
+
+    if (targetSocketId) {
+      io.to(targetSocketId).emit('player:followed_by', {
+        followerId: socket.id,
+        followerName: senderName,
+        followerAvatar: senderAvatar,
+        timestamp: Date.now(),
+      });
+    }
+  });
+
+  // 10. Event Unfollow / Berhenti Mengikuti Pemain Lain secara Real-time
+  socket.on('player:unfollow', (data) => {
+    const sender = players.get(socket.id);
+    const senderName = data?.senderName || sender?.name || 'Petualang';
+
+    let targetSocketId = null;
+    if (data?.targetId && io.sockets.sockets.has(data.targetId)) {
+      targetSocketId = data.targetId;
+    }
+    if (!targetSocketId && data?.targetName) {
+      const targetLower = data.targetName.trim().toLowerCase();
+      for (const [sId, p] of players.entries()) {
+        if (p.name && p.name.trim().toLowerCase() === targetLower && io.sockets.sockets.has(sId)) {
+          targetSocketId = sId;
+          break;
+        }
+      }
+    }
+
+    if (targetSocketId) {
+      io.to(targetSocketId).emit('player:unfollowed_by', {
+        followerId: socket.id,
+        followerName: senderName,
+        timestamp: Date.now(),
+      });
+    }
+  });
 });
 
 // Catatan: Monster dihilangkan sesuai permintaan pengguna, open world diisi oleh NPC interaktif
 
 
+// Handle unhandled errors to avoid unexpected process terminations
+process.on('uncaughtException', (err) => {
+  console.error('[GameServer] Uncaught Exception:', err?.message || err);
+});
+
+process.on('unhandledRejection', (reason) => {
+  console.error('[GameServer] Unhandled Rejection:', reason);
+});
+
 httpServer.listen(PORT, '0.0.0.0', () => {
   console.log(`=========================================`);
   console.log(`🎮 RadenWorld Game Server (WebSocket)`);
-  console.log(`🚀 Berjalan di port: http://localhost:${PORT}`);
+  console.log(`🚀 Berjalan di port: http://0.0.0.0:${PORT} / http://localhost:${PORT}`);
   console.log(`🌐 Batas Open World: ${WORLD_WIDTH}x${WORLD_HEIGHT}`);
   console.log(`=========================================`);
 });

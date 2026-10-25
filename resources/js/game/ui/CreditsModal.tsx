@@ -24,17 +24,17 @@ export const CreditsModal: React.FC<CreditsModalProps> = ({ isOpen, onClose }) =
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4 animate-in fade-in duration-200">
-      <div className="w-full max-w-md bg-black border border-neutral-800 rounded-2xl p-6 text-neutral-100 flex flex-col gap-5 relative overflow-hidden max-h-[90vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-2 sm:p-4 animate-in fade-in duration-200">
+      <div className="w-full max-w-md bg-black border border-neutral-800 rounded-2xl p-4 sm:p-6 text-neutral-100 flex flex-col gap-3 sm:gap-4 relative overflow-hidden max-h-[94dvh]">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-neutral-800 pb-3">
+        <div className="flex items-center justify-between border-b border-neutral-800 pb-3 shrink-0">
           <div className="flex items-center gap-2.5">
             <div className="p-2 rounded-xl bg-neutral-900 border border-neutral-800 text-amber-400">
               <Award className="w-4 h-4" />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-white">Kredit & Pengembang</h2>
-              <p className="text-xs text-neutral-400">Siapa di balik pembuatan RadenWorld.</p>
+              <h2 className="text-base sm:text-lg font-bold text-white">Kredit & Pengembang</h2>
+              <p className="text-[11px] sm:text-xs text-neutral-400">Siapa di balik pembuatan RadenWorld.</p>
             </div>
           </div>
           <button
@@ -49,7 +49,7 @@ export const CreditsModal: React.FC<CreditsModalProps> = ({ isOpen, onClose }) =
         </div>
 
         {/* Scrollable Credits Content */}
-        <div className="space-y-4 overflow-y-auto max-h-[60vh] pr-1 text-xs custom-scrollbar">
+        <div className="space-y-4 overflow-y-auto flex-1 min-h-0 pr-1 text-xs custom-scrollbar">
           {/* Main Creator Highlight */}
           <div className="p-4 rounded-xl bg-neutral-900 border border-amber-500/30 text-center space-y-2">
             <div className="inline-flex p-2.5 rounded-full bg-black text-amber-300 border border-amber-500/40">
@@ -125,7 +125,7 @@ export const CreditsModal: React.FC<CreditsModalProps> = ({ isOpen, onClose }) =
         </div>
 
         {/* Close Button */}
-        <div className="border-t border-neutral-800 pt-3 flex justify-end">
+        <div className="border-t border-neutral-800 pt-3 flex justify-end shrink-0">
           <button
             type="button"
             onClick={() => {

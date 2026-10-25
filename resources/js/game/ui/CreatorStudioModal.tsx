@@ -720,7 +720,7 @@ const WORLD_SECTORS: ISectorFocus[] = [
   { id: 'school', name: 'Kompleks Pendidikan (SD-SMP-SMA)', icon: '🏫', minGx: 44, maxGx: 76, minGy: 50, maxGy: 76 },
   { id: 'housing', name: 'Kawasan Rumah & Residensi', icon: '🏡', minGx: 8, maxGx: 36, minGy: 50, maxGy: 76 },
   { id: 'lake', name: 'Telaga Catur Kristal (Danau Mistik)', icon: '🌊', minGx: 50, maxGx: 78, minGy: 8, maxGy: 36 },
-  { id: 'farm', name: 'Persawahan Asri Nusantara', icon: '🌾', minGx: 6, maxGx: 34, minGy: 6, maxGy: 34 },
+  { id: 'farm', name: 'Lahan Pertanian & Kebun (gx: 57-80, gy: 1-9)', icon: '🌾', minGx: 57, maxGx: 80, minGy: 1, maxGy: 9 },
 ];
 
 interface CreatorStudioModalProps {

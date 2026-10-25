@@ -114,6 +114,20 @@ export const ChatBox: React.FC<ChatBoxProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
+  // Listener untuk prefill pesan (misal bisikan / sapaan dari modal profil)
+  useEffect(() => {
+    const handlePrefill = (text: string) => {
+      setInputText(text);
+      setTimeout(() => {
+        inputRef.current?.focus();
+      }, 80);
+    };
+    EventBus.on('chat-prefill', handlePrefill);
+    return () => {
+      EventBus.off('chat-prefill', handlePrefill);
+    };
+  }, []);
+
   // Fokus otomatis ke input saat chat box dibuka
   useEffect(() => {
     if (isOpen) {
@@ -152,16 +166,16 @@ export const ChatBox: React.FC<ChatBoxProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed top-[68px] md:top-[72px] left-4 md:left-5 z-40 w-80 sm:w-96 md:w-[410px] flex flex-col bg-black border border-neutral-800 rounded-md overflow-hidden transition-all pointer-events-auto font-['Chakra_Petch'] animate-in fade-in slide-in-from-top-1 duration-150">
+    <div className="fixed top-[54px] sm:top-[66px] md:top-[72px] left-2 sm:left-4 md:left-5 z-40 w-[calc(100vw-1rem)] sm:w-96 md:w-[410px] max-w-[410px] flex flex-col bg-black border border-neutral-800 rounded-md overflow-hidden transition-all pointer-events-auto font-['Chakra_Petch'] animate-in fade-in slide-in-from-top-1 duration-150 shadow-2xl">
       
       {/* 1. HEADER CHAT: Rata & Sejajar Presisi (Flat Minimalist) */}
-      <div className="px-3.5 py-2.5 border-b border-neutral-800 bg-[#0a0a0a] flex items-center justify-between text-xs font-bold text-amber-400 uppercase tracking-wider">
-        <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded bg-neutral-900 border border-neutral-800 flex items-center justify-center text-amber-400">
-            <MessageSquare className="w-3.5 h-3.5" />
+      <div className="px-3 sm:px-3.5 py-2 sm:py-2.5 border-b border-neutral-800 bg-[#0a0a0a] flex items-center justify-between text-xs font-bold text-amber-400 uppercase tracking-wider">
+        <div className="flex items-center gap-1.5 sm:gap-2">
+          <div className="w-5 h-5 sm:w-6 sm:h-6 rounded bg-neutral-900 border border-neutral-800 flex items-center justify-center text-amber-400">
+            <MessageSquare className="w-3 sm:w-3.5 h-3 sm:h-3.5" />
           </div>
-          <span className="font-bold tracking-wider">OBROLAN DUNIA</span>
-          <span className="flex items-center gap-1 text-[9px] font-mono text-emerald-400 bg-neutral-900 px-1.5 py-0.5 rounded border border-neutral-800">
+          <span className="font-bold tracking-wider text-[11px] sm:text-xs">OBROLAN DUNIA</span>
+          <span className="flex items-center gap-1 text-[8.5px] sm:text-[9px] font-mono text-emerald-400 bg-neutral-900 px-1.5 py-0.5 rounded border border-neutral-800">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
             LIVE
           </span>
@@ -175,14 +189,14 @@ export const ChatBox: React.FC<ChatBoxProps> = ({
               sound.playClick();
               setShowExpressions(!showExpressions);
             }}
-            className={`h-7 px-2.5 rounded text-[10px] font-bold tracking-wider flex items-center gap-1.5 transition-all cursor-pointer border ${
+            className={`h-6 sm:h-7 px-2 sm:px-2.5 rounded text-[9px] sm:text-[10px] font-bold tracking-wider flex items-center gap-1 sm:gap-1.5 transition-all cursor-pointer border ${
               showExpressions
                 ? 'bg-amber-500 text-black border-amber-400'
                 : 'bg-neutral-900 text-amber-400 border-neutral-800 hover:border-amber-400 hover:bg-neutral-800'
             }`}
             title="Buka Palet Reaksi Ekspresi Wajah Karakter"
           >
-            <Smile className="w-3.5 h-3.5" />
+            <Smile className="w-3 sm:w-3.5 h-3 sm:h-3.5" />
             <span>EKSPRESI</span>
           </button>
 
@@ -193,7 +207,7 @@ export const ChatBox: React.FC<ChatBoxProps> = ({
                 sound.playClick();
                 onClose();
               }}
-              className="h-7 w-7 rounded flex items-center justify-center text-neutral-400 hover:text-amber-400 hover:bg-neutral-800 transition-all cursor-pointer border border-transparent hover:border-neutral-700"
+              className="h-6 sm:h-7 w-6 sm:w-7 rounded flex items-center justify-center text-neutral-400 hover:text-amber-400 hover:bg-neutral-800 transition-all cursor-pointer border border-transparent hover:border-neutral-700"
               title="Tutup Obrolan"
             >
               <X className="w-3.5 h-3.5" />
@@ -247,7 +261,7 @@ export const ChatBox: React.FC<ChatBoxProps> = ({
       )}
 
       {/* 3. DAFTAR PESAN OBROLAN: Rapi, Sejajar, & Tidak Berantakan */}
-      <div className="p-3 max-h-52 min-h-36 overflow-y-auto space-y-1.5 text-xs custom-scrollbar bg-black/90">
+      <div className="p-2.5 sm:p-3 max-h-[35dvh] min-h-[90px] overflow-y-auto space-y-1.5 text-xs custom-scrollbar bg-black/90">
         {messages.length === 0 ? (
           <div className="text-neutral-500 text-center py-7 text-[11px] italic">
             Belum ada obrolan. Ketik pesan di bawah untuk menyapa pemain lain di RadenWorld!
@@ -294,9 +308,32 @@ export const ChatBox: React.FC<ChatBoxProps> = ({
                     </span>
                   )}
                   <span
+                    onClick={() => {
+                      if (!isSystem && msg.senderName) {
+                        sound.playClick();
+                        EventBus.emit('inspect-player-profile', {
+                          id: msg.senderId,
+                          name: msg.senderName,
+                          role: isSuper ? 'super_admin' : (msg.senderRole || 'player'),
+                          isSuperAdmin: isSuper,
+                          level: isSuper ? 99999999999 : 1,
+                          title: isSuper ? '👑 KREATOR & SUPER ADMIN' : 'Petualang',
+                          likes: isSuper ? 99999999999 : 12,
+                          friendsCount: isSuper ? 999 : 0,
+                          followingCount: isSuper ? 999 : 0,
+                          followersCount: isSuper ? 999 : 0,
+                          gold: isSuper ? 99999999999 : 2500,
+                          diamonds: isSuper ? 99999999999 : 50,
+                          location: 'Obrolan Server',
+                        });
+                      }
+                    }}
                     className={`font-bold mr-1.5 ${
+                      !isSystem ? 'cursor-pointer hover:underline hover:text-amber-300' : ''
+                    } ${
                       isSuper ? 'text-amber-300' : isSystem ? 'text-amber-400' : 'text-amber-400'
                     }`}
+                    title={!isSystem ? `Klik untuk melihat profil ${msg.senderName}` : undefined}
                   >
                     {msg.senderName}:
                   </span>

@@ -28,19 +28,19 @@ export const DownloadModal: React.FC<DownloadModalProps> = ({ isOpen, onClose })
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4 animate-in fade-in duration-200 select-none">
-      <div className="relative w-full max-w-lg bg-[#0e0e0e] border-2 border-orange-500 rounded-2xl p-6 text-neutral-100 flex flex-col gap-5 shadow-2xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-2 sm:p-4 animate-in fade-in duration-200 select-none">
+      <div className="relative w-full max-w-lg bg-[#0e0e0e] border border-neutral-800 rounded-2xl p-4 sm:p-6 text-neutral-100 flex flex-col gap-3 sm:gap-4 shadow-2xl max-h-[94dvh] overflow-y-auto custom-scrollbar">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-neutral-800 pb-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-orange-500/20 border border-orange-500 flex items-center justify-center text-orange-400">
-              <Download className="w-5 h-5" />
+        <div className="flex items-center justify-between border-b border-neutral-800 pb-3 shrink-0">
+          <div className="flex items-center gap-2.5 sm:gap-3">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-orange-500/10 border border-orange-500/40 flex items-center justify-center text-orange-400 shrink-0">
+              <Download className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
             <div>
-              <h2 className="text-xl font-black tracking-wide text-white font-['Chakra_Petch']">
+              <h2 className="text-base sm:text-lg md:text-xl font-black tracking-wide text-white font-['Chakra_Petch']">
                 UNDUH RADENWORLD
               </h2>
-              <p className="text-xs text-neutral-400">
+              <p className="text-[11px] sm:text-xs text-neutral-400">
                 Pilih platform perangkat Anda untuk pengalaman bermain maksimal
               </p>
             </div>

@@ -128,29 +128,29 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
       />
 
       {/* Top Header Bar */}
-      <div className="relative z-30 w-full flex items-start justify-between">
+      <div className="relative z-30 w-full flex flex-col sm:flex-row items-start justify-between gap-2.5 sm:gap-4">
         {/* Kiri Atas: Logo Judul & Subteks (Dibatasi rapi agar tidak menimpa avatar) */}
-        <div className="space-y-2 max-w-[320px] sm:max-w-[360px] md:max-w-[420px]">
+        <div className="space-y-1.5 sm:space-y-2 max-w-[320px] sm:max-w-[360px] md:max-w-[420px]">
           <h1
-            className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-[#FFE600] font-['Press_Start_2P'] tracking-wider leading-none"
+            className="text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-[#FFE600] font-['Press_Start_2P'] tracking-wider leading-none"
             style={{
               textShadow: '3px 3px 0px #000, -2px -2px 0px #000, 2px -2px 0px #000, -2px 2px 0px #000',
             }}
           >
             RADEN WORLD
           </h1>
-          <div className="pt-2 space-y-1">
-            <p className="text-white font-black text-xs sm:text-[13px] uppercase tracking-wide drop-shadow-[0_2px_4px_rgba(0,0,0,1)]">
+          <div className="pt-1 space-y-0.5">
+            <p className="text-white font-black text-[10px] sm:text-xs md:text-[13px] uppercase tracking-wide drop-shadow-[0_2px_4px_rgba(0,0,0,1)]">
               JELAJAHI DUNIA TERBUKA, BERKENALAN DENGAN ORANG LAIN
             </p>
-            <p className="text-[#FFE600] font-black text-xs sm:text-[13px] uppercase tracking-wide drop-shadow-[0_2px_4px_rgba(0,0,0,1)]">
+            <p className="text-[#FFE600] font-black text-[10px] sm:text-xs md:text-[13px] uppercase tracking-wide drop-shadow-[0_2px_4px_rgba(0,0,0,1)]">
               DAN BERINTERAKSI BERSAMA PEMAIN LAIN SECARA REAL-TIME
             </p>
           </div>
         </div>
 
         {/* Kanan Atas: Server Bar & 3 Tombol Sesuai Desain Game */}
-        <div className="flex flex-col items-end gap-2 w-52 sm:w-60 md:w-64 z-30">
+        <div className="flex flex-col items-end gap-1.5 sm:gap-2 w-full sm:w-60 md:w-64 z-30">
           {/* Bar Server: ASIA - 0001 (Tanpa kata RADEN, sesuai game) */}
           <button
             onClick={() => {
@@ -168,31 +168,31 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             {/* Download */}
             <button
               onClick={handleOpenDownload}
-              className="flex-1 h-14 sm:h-16 rounded-xl bg-gradient-to-b from-[#ff7e29] to-[#ea580c] hover:brightness-110 border-2 border-black flex flex-col items-center justify-center text-black shadow-[0_2px_0_#000] active:translate-y-0.5 active:shadow-none transition-all cursor-pointer group"
+              className="flex-1 h-12 sm:h-14 md:h-16 rounded-xl bg-gradient-to-b from-[#ff7e29] to-[#ea580c] hover:brightness-110 border-2 border-black flex flex-col items-center justify-center text-black shadow-[0_2px_0_#000] active:translate-y-0.5 active:shadow-none transition-all cursor-pointer group"
               title="Unduh Game"
             >
-              <Download className="w-5 sm:w-6 h-5 sm:h-6 group-hover:scale-110 transition-transform stroke-[2.5]" />
-              <span className="text-[10px] sm:text-[11px] font-black mt-0.5 leading-none tracking-tight">Download</span>
+              <Download className="w-4 sm:w-5 md:w-6 h-4 sm:h-5 md:h-6 group-hover:scale-110 transition-transform stroke-[2.5]" />
+              <span className="text-[9px] sm:text-[10px] md:text-[11px] font-black mt-0.5 leading-none tracking-tight">Download</span>
             </button>
 
             {/* Language */}
             <button
               onClick={handleOpenSettings}
-              className="flex-1 h-14 sm:h-16 rounded-xl bg-gradient-to-b from-[#ff7e29] to-[#ea580c] hover:brightness-110 border-2 border-black flex flex-col items-center justify-center text-black shadow-[0_2px_0_#000] active:translate-y-0.5 active:shadow-none transition-all cursor-pointer group"
+              className="flex-1 h-12 sm:h-14 md:h-16 rounded-xl bg-gradient-to-b from-[#ff7e29] to-[#ea580c] hover:brightness-110 border-2 border-black flex flex-col items-center justify-center text-black shadow-[0_2px_0_#000] active:translate-y-0.5 active:shadow-none transition-all cursor-pointer group"
               title="Pengaturan Bahasa"
             >
-              <Globe className="w-5 sm:w-6 h-5 sm:h-6 group-hover:scale-110 transition-transform stroke-[2.5]" />
-              <span className="text-[10px] sm:text-[11px] font-black mt-0.5 leading-none tracking-tight">Language</span>
+              <Globe className="w-4 sm:w-5 md:w-6 h-4 sm:h-5 md:h-6 group-hover:scale-110 transition-transform stroke-[2.5]" />
+              <span className="text-[9px] sm:text-[10px] md:text-[11px] font-black mt-0.5 leading-none tracking-tight">Language</span>
             </button>
 
             {/* Information */}
             <button
               onClick={handleOpenCredits}
-              className="flex-1 h-14 sm:h-16 rounded-xl bg-gradient-to-b from-[#ff7e29] to-[#ea580c] hover:brightness-110 border-2 border-black flex flex-col items-center justify-center text-black shadow-[0_2px_0_#000] active:translate-y-0.5 active:shadow-none transition-all cursor-pointer group"
+              className="flex-1 h-12 sm:h-14 md:h-16 rounded-xl bg-gradient-to-b from-[#ff7e29] to-[#ea580c] hover:brightness-110 border-2 border-black flex flex-col items-center justify-center text-black shadow-[0_2px_0_#000] active:translate-y-0.5 active:shadow-none transition-all cursor-pointer group"
               title="Informasi & Kredit"
             >
-              <Info className="w-5 sm:w-6 h-5 sm:h-6 group-hover:scale-110 transition-transform stroke-[2.5]" />
-              <span className="text-[10px] sm:text-[11px] font-black mt-0.5 leading-none tracking-tight">Information</span>
+              <Info className="w-4 sm:w-5 md:w-6 h-4 sm:h-5 md:h-6 group-hover:scale-110 transition-transform stroke-[2.5]" />
+              <span className="text-[9px] sm:text-[10px] md:text-[11px] font-black mt-0.5 leading-none tracking-tight">Information</span>
             </button>
           </div>
         </div>
@@ -201,12 +201,12 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
       {/* Area Tengah: 4 Tombol Menu Kiri & Dua Karakter Avatar Raksasa Berdiri */}
       <div className="relative z-10 w-full h-full flex items-center justify-between my-auto">
         {/* Menu 4 Tombol Oranye Kiri */}
-        <div className="flex flex-col gap-3.5 sm:gap-4 w-56 sm:w-68 md:w-80 shrink-0 z-20">
+        <div className="flex flex-col gap-2.5 sm:gap-3.5 md:gap-4 w-48 sm:w-60 md:w-76 shrink-0 z-20">
           {/* 1. PLAY */}
           <button
             onClick={handlePlayClick}
             onMouseEnter={() => sound.playHover()}
-            className="w-full py-3.5 sm:py-4 px-6 rounded-2xl bg-gradient-to-b from-[#ff7e29] to-[#ea580c] hover:brightness-110 border-[2.5px] border-black text-black font-black text-2xl sm:text-3xl tracking-wider text-left shadow-[0_4px_0_#000] active:translate-y-1 active:shadow-none transition-all cursor-pointer"
+            className="w-full py-2.5 sm:py-3.5 md:py-4 px-4 sm:px-6 rounded-2xl bg-gradient-to-b from-[#ff7e29] to-[#ea580c] hover:brightness-110 border-[2.5px] border-black text-black font-black text-xl sm:text-2xl md:text-3xl tracking-wider text-left shadow-[0_4px_0_#000] active:translate-y-1 active:shadow-none transition-all cursor-pointer"
           >
             PLAY
           </button>
@@ -215,7 +215,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           <button
             onClick={handleOpenSettings}
             onMouseEnter={() => sound.playHover()}
-            className="w-full py-3.5 sm:py-4 px-6 rounded-2xl bg-gradient-to-b from-[#ff7e29] to-[#ea580c] hover:brightness-110 border-[2.5px] border-black text-black font-black text-2xl sm:text-3xl tracking-wider text-left shadow-[0_4px_0_#000] active:translate-y-1 active:shadow-none transition-all cursor-pointer"
+            className="w-full py-2.5 sm:py-3.5 md:py-4 px-4 sm:px-6 rounded-2xl bg-gradient-to-b from-[#ff7e29] to-[#ea580c] hover:brightness-110 border-[2.5px] border-black text-black font-black text-xl sm:text-2xl md:text-3xl tracking-wider text-left shadow-[0_4px_0_#000] active:translate-y-1 active:shadow-none transition-all cursor-pointer"
           >
             SETTING
           </button>
@@ -224,7 +224,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           <button
             onClick={handleOpenCredits}
             onMouseEnter={() => sound.playHover()}
-            className="w-full py-3.5 sm:py-4 px-6 rounded-2xl bg-gradient-to-b from-[#ff7e29] to-[#ea580c] hover:brightness-110 border-[2.5px] border-black text-black font-black text-2xl sm:text-3xl tracking-wider text-left shadow-[0_4px_0_#000] active:translate-y-1 active:shadow-none transition-all cursor-pointer"
+            className="w-full py-2.5 sm:py-3.5 md:py-4 px-4 sm:px-6 rounded-2xl bg-gradient-to-b from-[#ff7e29] to-[#ea580c] hover:brightness-110 border-[2.5px] border-black text-black font-black text-xl sm:text-2xl md:text-3xl tracking-wider text-left shadow-[0_4px_0_#000] active:translate-y-1 active:shadow-none transition-all cursor-pointer"
           >
             CREDIT
           </button>
@@ -233,20 +233,20 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           <button
             onClick={handleOpenDownload}
             onMouseEnter={() => sound.playHover()}
-            className="w-full py-3.5 sm:py-4 px-6 rounded-2xl bg-gradient-to-b from-[#ff7e29] to-[#ea580c] hover:brightness-110 border-[2.5px] border-black text-black font-black text-2xl sm:text-3xl tracking-wider text-left shadow-[0_4px_0_#000] active:translate-y-1 active:shadow-none transition-all cursor-pointer"
+            className="w-full py-2.5 sm:py-3.5 md:py-4 px-4 sm:px-6 rounded-2xl bg-gradient-to-b from-[#ff7e29] to-[#ea580c] hover:brightness-110 border-[2.5px] border-black text-black font-black text-xl sm:text-2xl md:text-3xl tracking-wider text-left shadow-[0_4px_0_#000] active:translate-y-1 active:shadow-none transition-all cursor-pointer"
           >
             DOWNLOAD
           </button>
         </div>
 
-        {/* Dua Karakter Raksasa: FemaleAvatar & MaleAvatar - Sama Tingginya, Ringan, Tidak Menimpa Teks */}
-        <div className="absolute inset-y-0 right-0 left-[320px] sm:left-[380px] md:left-[430px] flex items-end justify-center pointer-events-none z-10 pb-4 sm:pb-6">
+        {/* Dua Karakter Raksasa: FemaleAvatar & MaleAvatar - Responsif untuk Semua Orientasi */}
+        <div className="absolute inset-y-0 right-0 sm:left-[240px] md:left-[360px] flex items-end justify-end sm:justify-center pointer-events-none z-10 pb-2 sm:pb-6 opacity-35 sm:opacity-100 transition-opacity">
           {/* Karakter Cewek: FemaleAvatar (Flipped via scale-x-[-1]) */}
           <div className="relative flex flex-col items-center -mr-2 sm:-mr-4">
             <img
               src="/assets/sprites/characters/Player/Female/FemaleAvatar_Lobby.png"
               alt="Female Avatar"
-              className="h-[50vh] sm:h-[60vh] md:h-[66vh] max-h-[560px] object-contain scale-x-[-1] transform-gpu will-change-transform"
+              className="h-[45vh] sm:h-[55vh] md:h-[66vh] max-h-[520px] object-contain scale-x-[-1] transform-gpu will-change-transform"
               loading="eager"
               fetchPriority="high"
               decoding="async"
@@ -258,7 +258,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             <img
               src="/assets/sprites/characters/Player/Male/MaleAvatar_Lobby.png"
               alt="Male Avatar"
-              className="h-[50vh] sm:h-[60vh] md:h-[66vh] max-h-[560px] object-contain transform-gpu will-change-transform"
+              className="h-[45vh] sm:h-[55vh] md:h-[66vh] max-h-[520px] object-contain transform-gpu will-change-transform"
               loading="eager"
               fetchPriority="high"
               decoding="async"

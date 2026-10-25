@@ -228,13 +228,13 @@ export const FishingMinigame: React.FC<FishingMinigameProps> = ({
   }, [fishData, onSuccess, onFailed, sound]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 select-none touch-none pointer-events-auto font-['Chakra_Petch'] animate-fade-in">
-      {/* Bingkai Panel Bergaya Stardew Valley Retro */}
-      <div className="relative bg-[#1c1917] border-3 border-amber-600 rounded-2xl p-4 shadow-[0_12px_40px_rgba(0,0,0,0.85)] text-neutral-100 flex flex-col items-center">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/75 select-none touch-none pointer-events-auto font-['Chakra_Petch'] animate-fade-in">
+      {/* Bingkai Panel Bergaya Retro */}
+      <div className="relative bg-[#1c1917] border-2 border-neutral-700 rounded-2xl p-3 sm:p-4 shadow-2xl text-neutral-100 flex flex-col items-center max-h-[94dvh]">
         {/* Tombol Tutup / Batalkan */}
         <button
           onClick={onClose}
-          className="absolute -top-3 -right-3 w-8 h-8 rounded-full bg-red-600 hover:bg-red-500 text-white flex items-center justify-center border-2 border-white shadow-md cursor-pointer transition-transform active:scale-90"
+          className="absolute -top-3 -right-3 w-8 h-8 rounded-full bg-neutral-800 hover:bg-neutral-700 text-white flex items-center justify-center border-2 border-neutral-600 shadow-md cursor-pointer transition-transform active:scale-90"
           title="Batal Memancing"
         >
           <X className="w-4 h-4 stroke-[3]" />
@@ -243,7 +243,7 @@ export const FishingMinigame: React.FC<FishingMinigameProps> = ({
         {/* Header Nama Ikan & Tingkat Kesulitan */}
         <div className="text-center mb-3">
           <div className="flex items-center justify-center gap-1.5 text-amber-400 font-bold text-xs tracking-wider uppercase">
-            <Sparkles className="w-3.5 h-3.5 text-amber-300 animate-pulse" />
+            <Sparkles className="w-3.5 h-3.5 text-amber-300" />
             <span>IKAN MENYAMBAR!</span>
           </div>
           <h3 className="text-sm font-black text-white tracking-wide truncate max-w-[200px]">
@@ -263,7 +263,7 @@ export const FishingMinigame: React.FC<FishingMinigameProps> = ({
         </div>
 
         {/* Wadah Minigame: Jalur Akuatik (Kiri) + Meteran Kemajuan (Kanan) */}
-        <div className="flex items-center gap-3 bg-[#0c0a09] p-3 rounded-xl border-2 border-amber-900/60 shadow-inner">
+        <div className="flex items-center gap-3 bg-[#0c0a09] p-3 rounded-xl border border-neutral-800 shadow-inner">
           {/* ============================================================== */}
           {/* JALUR VERTIKAL AKUATIK AIR TEMPAT IKAN DAN KOTAK HIJAU BERADA  */}
           {/* ============================================================== */}
@@ -284,10 +284,10 @@ export const FishingMinigame: React.FC<FishingMinigameProps> = ({
 
             {/* KOTAK HIJAU PENANGKAP (CATCH BAR) BERGERAK NAIK-TURUN */}
             <div
-              className={`absolute inset-x-1 rounded-md transition-[box-shadow,border-color] duration-75 flex items-center justify-center ${
+              className={`absolute inset-x-1 rounded-md transition-colors duration-75 flex items-center justify-center ${
                 isFishInside
-                  ? 'bg-emerald-500/60 border-2 border-emerald-300 shadow-[0_0_14px_rgba(16,185,129,0.9)]'
-                  : 'bg-emerald-600/35 border-2 border-emerald-400/50 shadow-none'
+                  ? 'bg-emerald-500/60 border-2 border-emerald-300'
+                  : 'bg-emerald-600/35 border-2 border-emerald-400/50'
               }`}
               style={{
                 height: `${BAR_HEIGHT}px`,
@@ -333,7 +333,7 @@ export const FishingMinigame: React.FC<FishingMinigameProps> = ({
               <div
                 className={`w-full rounded-full transition-all duration-75 ${
                   displayProgress > 60
-                    ? 'bg-gradient-to-t from-emerald-600 to-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.8)]'
+                    ? 'bg-gradient-to-t from-emerald-600 to-emerald-400'
                     : displayProgress > 25
                     ? 'bg-gradient-to-t from-amber-600 to-amber-400'
                     : 'bg-gradient-to-t from-rose-600 to-rose-400 animate-pulse'

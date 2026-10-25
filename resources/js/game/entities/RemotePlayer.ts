@@ -550,6 +550,16 @@ export class RemotePlayer extends Entity {
     return this.gender;
   }
 
+  private rawPlayerData: any = null;
+
+  public setRawPlayerData(data: any): void {
+    this.rawPlayerData = data;
+  }
+
+  public getRawPlayerData(): any {
+    return this.rawPlayerData;
+  }
+
   /**
    * Mengaktifkan interaksi klik/tap pada pemain jarak jauh untuk membuka modal profil
    */
@@ -576,5 +586,9 @@ export class RemotePlayer extends Entity {
         onClicked();
       });
     }
+  }
+
+  public getIsMoving(): boolean {
+    return this.isMoving;
   }
 }

@@ -140,11 +140,11 @@ export const SdGradeSelectModal: React.FC<SdGradeSelectModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-3 sm:p-5 font-cute animate-in fade-in duration-200">
-      <div className="w-full max-w-2xl bg-gradient-to-b from-amber-50 via-white to-orange-50 border-4 border-amber-300 rounded-[32px] shadow-2xl shadow-amber-950/20 flex flex-col max-h-[92vh] overflow-hidden text-neutral-800 relative">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-2 sm:p-5 font-cute animate-in fade-in duration-200">
+      <div className="w-full max-w-2xl bg-gradient-to-b from-amber-50 via-white to-orange-50 border-4 border-amber-300 rounded-[28px] sm:rounded-[32px] shadow-2xl shadow-amber-950/20 flex flex-col max-h-[94dvh] overflow-hidden text-neutral-800 relative">
         
         {/* Header Ceria */}
-        <div className="px-5 py-4 bg-gradient-to-r from-amber-200 via-yellow-100 to-orange-200 border-b-2 border-amber-300 flex items-center justify-between gap-3 shrink-0">
+        <div className="px-4 sm:px-5 py-3 sm:py-4 bg-gradient-to-r from-amber-200 via-yellow-100 to-orange-200 border-b-2 border-amber-300 flex items-center justify-between gap-3 shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-2xl bg-white border-2 border-amber-400 shadow-md flex items-center justify-center text-2xl shrink-0 -rotate-3">
               🏫

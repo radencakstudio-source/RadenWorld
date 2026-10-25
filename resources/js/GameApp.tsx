@@ -40,6 +40,10 @@ import { SoundManager } from './game/core/SoundManager';
 import { NetworkManager } from './game/core/NetworkManager';
 import { IAvatarCustomization, IChatMessage } from './game/types';
 import { IFishData } from './game/controllers/CharacterController';
+import { PoliceReportModal } from './game/ui/PoliceReportModal';
+import { BankModal } from './game/ui/BankModal';
+import { PharmacyModal } from './game/ui/PharmacyModal';
+import { MarketRealtorModal } from './game/ui/MarketRealtorModal';
 
 export const GameApp: React.FC = () => {
   // Check initial URL pathname
@@ -100,7 +104,14 @@ export const GameApp: React.FC = () => {
       : (() => { try { const p = JSON.parse(localStorage.getItem('raden_pos_house_safe-01') || ''); if (p?.y) return p.y; } catch (e) {} return 620; })(),
     gridX: initialPath.startsWith('/world') ? 11 : 7,
     gridY: initialPath.startsWith('/world') ? 8 : 5,
-    level: 1,
+    level: (() => {
+      try {
+        const u = JSON.parse(localStorage.getItem('raden_player_user') || '{}');
+        if (u.is_super_admin || u.role === 'super_admin' || u.role === 'admin' || u.name?.toUpperCase() === 'RADEN' || u.email === 'radencakstudio@gmail.com') return 99999999999;
+        if (typeof u.level === 'number') return u.level;
+      } catch (e) {}
+      return 1;
+    })(),
     hp: 100,
     maxHp: 100,
     name: (() => {
@@ -129,14 +140,14 @@ export const GameApp: React.FC = () => {
     isSuperAdmin: (() => {
       try {
         const u = JSON.parse(localStorage.getItem('raden_player_user') || '{}');
-        if (u.is_super_admin || u.role === 'super_admin' || u.name?.toUpperCase() === 'RADEN' || u.email === 'radencakstudio@gmail.com') return true;
+        if (u.is_super_admin || u.role === 'super_admin' || u.role === 'admin' || u.name?.toUpperCase() === 'RADEN' || u.email === 'radencakstudio@gmail.com') return true;
       } catch (e) {}
       return false;
     })(),
     title: (() => {
       try {
         const u = JSON.parse(localStorage.getItem('raden_player_user') || '{}');
-        if (u.is_super_admin || u.role === 'super_admin' || u.name?.toUpperCase() === 'RADEN' || u.email === 'radencakstudio@gmail.com') return '👑 SUPER ADMIN';
+        if (u.is_super_admin || u.role === 'super_admin' || u.role === 'admin' || u.name?.toUpperCase() === 'RADEN' || u.email === 'radencakstudio@gmail.com') return '👑 SUPER ADMIN';
         if (u.title) return u.title;
       } catch (e) {}
       return 'Petualang Pemula';
@@ -211,10 +222,52 @@ export const GameApp: React.FC = () => {
     return 21;
   }, [playerBirthDate]);
 
-  const [playerLikes] = useState<number>(36);
+  const isCurrentUserAdmin = useMemo(() => {
+    try {
+      const u = JSON.parse(localStorage.getItem('raden_player_user') || '{}');
+      return Boolean(
+        u.is_super_admin ||
+        u.role === 'super_admin' ||
+        u.role === 'admin' ||
+        u.name?.toUpperCase() === 'RADEN' ||
+        u.email === 'radencakstudio@gmail.com' ||
+        playerStats?.isSuperAdmin ||
+        playerStats?.role === 'admin' ||
+        playerStats?.role === 'super_admin'
+      );
+    } catch (e) {
+      return false;
+    }
+  }, [playerStats]);
+
+  const [playerLikes, setPlayerLikes] = useState<number>(() => {
+    try {
+      const u = JSON.parse(localStorage.getItem('raden_player_user') || '{}');
+      if (
+        u.role === 'admin' ||
+        u.role === 'super_admin' ||
+        u.is_super_admin === true ||
+        u.email === 'radencakstudio@gmail.com' ||
+        u.name?.toUpperCase() === 'RADEN'
+      ) {
+        return 99999999999;
+      }
+      if (typeof u.likes === 'number') return u.likes;
+    } catch (e) {}
+    return 0;
+  });
   const [playerGold, setPlayerGold] = useState<number>(() => {
     try {
       const u = JSON.parse(localStorage.getItem('raden_player_user') || '{}');
+      if (
+        u.role === 'admin' ||
+        u.role === 'super_admin' ||
+        u.is_super_admin === true ||
+        u.email === 'radencakstudio@gmail.com' ||
+        u.name?.toUpperCase() === 'RADEN'
+      ) {
+        return 99999999999;
+      }
       if (typeof u.gold === 'number') return u.gold;
       if (typeof u.coins === 'number') return u.coins;
       const g = localStorage.getItem('raden_player_gold');
@@ -225,6 +278,15 @@ export const GameApp: React.FC = () => {
   const [playerDiamonds, setPlayerDiamonds] = useState<number>(() => {
     try {
       const u = JSON.parse(localStorage.getItem('raden_player_user') || '{}');
+      if (
+        u.role === 'admin' ||
+        u.role === 'super_admin' ||
+        u.is_super_admin === true ||
+        u.email === 'radencakstudio@gmail.com' ||
+        u.name?.toUpperCase() === 'RADEN'
+      ) {
+        return 99999999999;
+      }
       if (typeof u.diamonds === 'number') return u.diamonds;
       const d = localStorage.getItem('raden_player_diamonds');
       if (d) return parseInt(d, 10);
@@ -235,7 +297,7 @@ export const GameApp: React.FC = () => {
 
   // Inspected Player (saat menekan/klik pemain lain di open world)
   const [inspectedPlayer, setInspectedPlayer] = useState<{
-    id: string;
+    id?: string | number;
     name: string;
     avatar?: IAvatarCustomization;
     level?: number;
@@ -244,6 +306,17 @@ export const GameApp: React.FC = () => {
     isSuperAdmin?: boolean;
     gold?: number;
     diamonds?: number;
+    likes?: number;
+    has_liked_today?: boolean;
+    location?: string;
+    joined_at?: string;
+    joinedAt?: string;
+    title?: string;
+    gender?: 'male' | 'female';
+    friendsCount?: number;
+    followingCount?: number;
+    followersCount?: number;
+    [key: string]: any;
   } | null>(null);
 
   // Friend & Follow System States (dengan penyimpanan lokal)
@@ -289,6 +362,12 @@ export const GameApp: React.FC = () => {
   const [schoolSubjectsType, setSchoolSubjectsType] = useState<'sd' | 'smp' | 'sma'>('sd');
   const [schoolSubjectsGrade, setSchoolSubjectsGrade] = useState<number>(1);
   const [schoolSubjectsDeskType, setSchoolSubjectsDeskType] = useState<'guru' | 'siswa'>('guru');
+
+  // Modal Layanan Publik & Komersial Barat (Polisi, Bank, Apotek, Makelar)
+  const [isPoliceModalOpen, setIsPoliceModalOpen] = useState(false);
+  const [isBankModalOpen, setIsBankModalOpen] = useState(false);
+  const [isPharmacyModalOpen, setIsPharmacyModalOpen] = useState(false);
+  const [isRealtorModalOpen, setIsRealtorModalOpen] = useState(false);
   // Minigame Memancing Interaktif Bergaya Stardew Valley
   const [fishingMinigameData, setFishingMinigameData] = useState<IFishData | null>(null);
   const [isFishingMinigameOpen, setIsFishingMinigameOpen] = useState(false);
@@ -308,6 +387,32 @@ export const GameApp: React.FC = () => {
   });
 
   const sound = SoundManager.getInstance();
+
+  // Sinkronisasi data sosial (Teman, Mengikuti, Diikuti) dari database Laravel
+  useEffect(() => {
+    const pName = (playerStats?.name || '').trim();
+    if (pName && pName !== 'Petualang') {
+      fetch(`/api/social/relations/${encodeURIComponent(pName)}`)
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          if (data) {
+            if (Array.isArray(data.friends)) {
+              setFriendsList(data.friends);
+              try { localStorage.setItem('raden_friends_list', JSON.stringify(data.friends)); } catch (e) {}
+            }
+            if (Array.isArray(data.following)) {
+              setFollowingList(data.following);
+              try { localStorage.setItem('raden_following_list', JSON.stringify(data.following)); } catch (e) {}
+            }
+            if (Array.isArray(data.followers)) {
+              setFollowersList(data.followers);
+              try { localStorage.setItem('raden_followers_list', JSON.stringify(data.followers)); } catch (e) {}
+            }
+          }
+        })
+        .catch(() => {});
+    }
+  }, [playerStats?.name]);
 
   useEffect(() => {
     // 1. Stats updates from Phaser engine (X, Y, Name, Room)
@@ -381,9 +486,17 @@ export const GameApp: React.FC = () => {
           if (lowerP === '/world/sd' || lowerP === '/world/smp' || lowerP === '/world/sma') {
             const schoolType = lowerP.replace('/world/', '');
             EventBus.emit('switch-scene', { scene: 'SchoolScene', schoolType });
+          } else if (lowerP === '/world/cafe') {
+            EventBus.emit('switch-scene', { scene: 'CafeScene' });
+          } else if (lowerP === '/world/perpustakaan' || lowerP === '/world/library') {
+            EventBus.emit('switch-scene', { scene: 'LibraryScene' });
           } else {
             EventBus.emit('switch-scene', { scene: 'WorldScene' });
           }
+        } else if (p.startsWith('/cafe')) {
+          EventBus.emit('switch-scene', { scene: 'CafeScene' });
+        } else if (p.startsWith('/perpustakaan') || p.startsWith('/library')) {
+          EventBus.emit('switch-scene', { scene: 'LibraryScene' });
         } else if (p.startsWith('/home')) {
           const seg = p.replace('/home/', '').trim();
           EventBus.emit('switch-scene', { scene: 'HouseScene', privateRoomId: seg });
@@ -424,10 +537,72 @@ export const GameApp: React.FC = () => {
     EventBus.on('open-creator-studio', handleOpenCreatorStudio);
 
     const handleInspectProfile = (target: any) => {
-      setInspectedPlayer(target);
+      const myName = (playerStats?.name || '').trim().toLowerCase();
+      const targetName = (target?.name || '').trim().toLowerCase();
+      if (target?.isMe || (myName && targetName && targetName === myName)) {
+        setInspectedPlayer(null);
+        setIsProfileOpen(true);
+        return;
+      }
+
+      const pName = window.location.pathname.toLowerCase();
+      const defaultLoc = pName.startsWith('/cafe')
+        ? 'Cafe Raden Lounge'
+        : (pName.startsWith('/perpustakaan') || pName.startsWith('/library'))
+          ? 'Perpustakaan Kota'
+          : pName.startsWith('/school')
+            ? 'Gedung Sekolah'
+            : pName.startsWith('/home')
+              ? 'Rumah Pribadi'
+              : 'Dunia Terbuka';
+
+      const enriched = {
+        ...target,
+        location: target.location || defaultLoc,
+      };
+
+      setInspectedPlayer(enriched);
       setIsProfileOpen(true);
+
+      // Sinkronisasi data asli profil dari API Laravel jika ada
+      if (target?.name) {
+        const rawMyName = (playerStats?.name || '').trim();
+        fetch(`/api/auth/profile/${encodeURIComponent(target.name)}?viewer=${encodeURIComponent(rawMyName)}`)
+          .then((res) => (res.ok ? res.json() : null))
+          .then((dbProfile) => {
+            if (dbProfile && dbProfile.name) {
+              setInspectedPlayer((prev) => {
+                if (!prev || prev.name?.toLowerCase() !== target.name.toLowerCase()) return prev;
+                const isTargetSuper = dbProfile.is_super_admin || prev.isSuperAdmin;
+                return {
+                  ...prev,
+                  ...dbProfile,
+                  role: isTargetSuper ? 'super_admin' : (dbProfile.role || prev.role || 'player'),
+                  isSuperAdmin: isTargetSuper,
+                  level: isTargetSuper ? 99999999999 : (dbProfile.level || prev.level || 1),
+                  title: isTargetSuper ? '👑 KREATOR & SUPER ADMIN' : (dbProfile.title || prev.title || 'Petualang'),
+                  joinedAt: dbProfile.joined_at,
+                  likes: typeof dbProfile.likes === 'number' ? dbProfile.likes : prev.likes,
+                  has_liked_today: Boolean(dbProfile.has_liked_today),
+                  friends_count: dbProfile.friends_count,
+                  following_count: dbProfile.following_count,
+                  followers_count: dbProfile.followers_count,
+                  friendsCount: dbProfile.friends_count,
+                  followingCount: dbProfile.following_count,
+                  followersCount: dbProfile.followers_count,
+                  is_following: Boolean(dbProfile.is_following),
+                  is_follower: Boolean(dbProfile.is_follower),
+                  is_friend: Boolean(dbProfile.is_friend),
+                  avatar: dbProfile.avatar || prev.avatar,
+                };
+              });
+            }
+          })
+          .catch(() => {});
+      }
     };
     EventBus.on('inspect-player-profile', handleInspectProfile);
+    EventBus.on('open-player-profile', handleInspectProfile);
 
     // Tangani event pembukaan modal Pemilihan Kelas sebelum masuk sekolah (SD, SMP, SMA)
     const handleOpenGradeSelect = (data: { schoolType: 'sd' | 'smp' | 'sma'; returnX?: number; returnY?: number }) => {
@@ -477,6 +652,33 @@ export const GameApp: React.FC = () => {
     };
     EventBus.on('open-sd-subjects', handleOpenSdSubjects);
 
+    // Tangani event pembukaan modal 4 Gedung Layanan & Komersial Barat
+    const handleOpenPolice = () => {
+      sound.playOpenModal();
+      setIsPoliceModalOpen(true);
+      EventBus.emit('dialogue-active', true);
+    };
+    const handleOpenBank = () => {
+      sound.playOpenModal();
+      setIsBankModalOpen(true);
+      EventBus.emit('dialogue-active', true);
+    };
+    const handleOpenPharmacy = () => {
+      sound.playOpenModal();
+      setIsPharmacyModalOpen(true);
+      EventBus.emit('dialogue-active', true);
+    };
+    const handleOpenRealtor = () => {
+      sound.playOpenModal();
+      setIsRealtorModalOpen(true);
+      EventBus.emit('dialogue-active', true);
+    };
+
+    EventBus.on('open-police-modal', handleOpenPolice);
+    EventBus.on('open-bank-modal', handleOpenBank);
+    EventBus.on('open-pharmacy-modal', handleOpenPharmacy);
+    EventBus.on('open-realtor-modal', handleOpenRealtor);
+
     const handleIncomingFriend = (req: IFriendRequest) => {
       console.log('[GameApp] Notifikasi permintaan pertemanan diterima:', req);
       setIncomingFriendRequest(req);
@@ -519,6 +721,59 @@ export const GameApp: React.FC = () => {
     NetworkManager.getInstance().onFriendResponse(handleFriendResponse);
     EventBus.on('incoming-friend-request', handleIncomingFriend);
     EventBus.on('friend-response-result', handleFriendResponse);
+
+    const handleFollowedBy = (data: { followerId: string; followerName: string; followerAvatar?: any }) => {
+      sound.playSuccess();
+      setFollowersList((prev) => {
+        const next = Array.from(new Set([...prev, data.followerName]));
+        try { localStorage.setItem('raden_followers_list', JSON.stringify(next)); } catch (e) {}
+        return next;
+      });
+
+      setFollowingList((currentFollowing) => {
+        if (currentFollowing.includes(data.followerName)) {
+          setFriendsList((prevFriends) => {
+            const nextFriends = Array.from(new Set([...prevFriends, data.followerName]));
+            try { localStorage.setItem('raden_friends_list', JSON.stringify(nextFriends)); } catch (e) {}
+            return nextFriends;
+          });
+          EventBus.emit('new-chat-message', {
+            id: `mutual_${Date.now()}`,
+            sender: 'SISTEM',
+            text: `🎉 ${data.followerName} mengikuti kamu balik! Kini kalian resmi berteman (saling mengikuti)!`,
+            timestamp: Date.now(),
+            isSystem: true,
+          });
+        } else {
+          EventBus.emit('new-chat-message', {
+            id: `follow_${Date.now()}`,
+            sender: 'SISTEM',
+            text: `👀 ${data.followerName} mulai mengikuti kamu. Ikuti balik untuk menjadi Teman!`,
+            timestamp: Date.now(),
+            isSystem: true,
+          });
+        }
+        return currentFollowing;
+      });
+    };
+
+    const handleUnfollowedBy = (data: { followerName: string }) => {
+      setFollowersList((prev) => {
+        const next = prev.filter((n) => n !== data.followerName);
+        try { localStorage.setItem('raden_followers_list', JSON.stringify(next)); } catch (e) {}
+        return next;
+      });
+      setFriendsList((prev) => {
+        const next = prev.filter((n) => n !== data.followerName);
+        try { localStorage.setItem('raden_friends_list', JSON.stringify(next)); } catch (e) {}
+        return next;
+      });
+    };
+
+    NetworkManager.getInstance().onFollowedBy(handleFollowedBy);
+    NetworkManager.getInstance().onUnfollowedBy(handleUnfollowedBy);
+    EventBus.on('player-followed-by', handleFollowedBy);
+    EventBus.on('player-unfollowed-by', handleUnfollowedBy);
 
     // If opened directly with /home/{id}, /world, atau /admin/{token}
     if (isDirectInGame) {
@@ -608,6 +863,9 @@ export const GameApp: React.FC = () => {
         EventBus.off('interaction-prompt', handlePrompt);
         EventBus.off('new-chat-message', handleChat);
         EventBus.off('inspect-player-profile', handleInspectProfile);
+        EventBus.off('open-player-profile', handleInspectProfile);
+        EventBus.off('player-followed-by', handleFollowedBy);
+        EventBus.off('player-unfollowed-by', handleUnfollowedBy);
       };
     }
 
@@ -617,6 +875,10 @@ export const GameApp: React.FC = () => {
       EventBus.off('player-stats-updated', handleStats);
       EventBus.off('interaction-prompt', handlePrompt);
       EventBus.off('new-chat-message', handleChat);
+      EventBus.off('inspect-player-profile', handleInspectProfile);
+      EventBus.off('open-player-profile', handleInspectProfile);
+      EventBus.off('player-followed-by', handleFollowedBy);
+      EventBus.off('player-unfollowed-by', handleUnfollowedBy);
       EventBus.off('open-wardrobe', handleOpenWardrobe);
       EventBus.off('open-creator-studio', handleOpenCreatorStudio);
       EventBus.off('open-school-grade-select', handleOpenGradeSelect);
@@ -625,6 +887,10 @@ export const GameApp: React.FC = () => {
       EventBus.off('open-sd-subjects', handleOpenSdSubjects);
       EventBus.off('incoming-friend-request', handleIncomingFriend);
       EventBus.off('friend-response-result', handleFriendResponse);
+      EventBus.off('open-police-modal', handleOpenPolice);
+      EventBus.off('open-bank-modal', handleOpenBank);
+      EventBus.off('open-pharmacy-modal', handleOpenPharmacy);
+      EventBus.off('open-realtor-modal', handleOpenRealtor);
     };
   }, []);
 
@@ -690,6 +956,166 @@ export const GameApp: React.FC = () => {
       timestamp: Date.now(),
       isSystem: true,
     });
+  };
+
+  // Follow & Unfollow Handler (Terhubung Langsung ke Database Laravel)
+  const handleFollowToggle = (targetName: string, targetId?: string | number) => {
+    sound.playClick();
+    const myName = (playerStats?.name || '').trim();
+    const isCurrentlyFollowing = followingList.includes(targetName);
+
+    if (isCurrentlyFollowing) {
+      // Unfollow
+      const nextFollowing = followingList.filter((n) => n !== targetName);
+      setFollowingList(nextFollowing);
+      try { localStorage.setItem('raden_following_list', JSON.stringify(nextFollowing)); } catch (e) {}
+
+      // Jika sebelumnya mutual friends, maka status berteman gugur
+      const nextFriends = friendsList.filter((n) => n !== targetName);
+      setFriendsList(nextFriends);
+      try { localStorage.setItem('raden_friends_list', JSON.stringify(nextFriends)); } catch (e) {}
+
+      setInspectedPlayer((prev) => {
+        if (!prev || prev.name?.toLowerCase() !== targetName.toLowerCase()) return prev;
+        const curFollowers = typeof prev.followers_count === 'number' ? prev.followers_count : (typeof prev.followersCount === 'number' ? prev.followersCount : 1);
+        const curFriends = typeof prev.friends_count === 'number' ? prev.friends_count : (typeof prev.friendsCount === 'number' ? prev.friendsCount : 1);
+        return {
+          ...prev,
+          is_following: false,
+          is_friend: false,
+          followers_count: Math.max(0, curFollowers - 1),
+          followersCount: Math.max(0, curFollowers - 1),
+          friends_count: prev.is_friend ? Math.max(0, curFriends - 1) : curFriends,
+          friendsCount: prev.is_friend ? Math.max(0, curFriends - 1) : curFriends,
+        };
+      });
+
+      if (myName) {
+        fetch('/api/social/unfollow', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          body: JSON.stringify({ sender_name: myName, target_name: targetName }),
+        })
+          .then((res) => (res.ok ? res.json() : null))
+          .then((data) => {
+            if (data?.sender_counts) {
+              setFollowingList(data.sender_counts.following || []);
+              setFriendsList(data.sender_counts.friends || []);
+            }
+          })
+          .catch(() => {});
+      }
+
+      NetworkManager.getInstance().sendUnfollow(targetId ? String(targetId) : undefined, targetName);
+
+      EventBus.emit('new-chat-message', {
+        id: `unfollow_${Date.now()}`,
+        sender: 'SISTEM',
+        text: `Kamu telah berhenti mengikuti ${targetName}.`,
+        timestamp: Date.now(),
+        isSystem: true,
+      });
+    } else {
+      // Follow
+      const nextFollowing = Array.from(new Set([...followingList, targetName]));
+      setFollowingList(nextFollowing);
+      try { localStorage.setItem('raden_following_list', JSON.stringify(nextFollowing)); } catch (e) {}
+
+      // Cek apakah target sudah mengikuti kita (Mutual Follow = TEMAN!)
+      const isMutual = followersList.includes(targetName);
+      if (isMutual) {
+        sound.playSuccess();
+        const nextFriends = Array.from(new Set([...friendsList, targetName]));
+        setFriendsList(nextFriends);
+        try { localStorage.setItem('raden_friends_list', JSON.stringify(nextFriends)); } catch (e) {}
+      }
+
+      setInspectedPlayer((prev) => {
+        if (!prev || prev.name?.toLowerCase() !== targetName.toLowerCase()) return prev;
+        const curFollowers = typeof prev.followers_count === 'number' ? prev.followers_count : (typeof prev.followersCount === 'number' ? prev.followersCount : 0);
+        const curFriends = typeof prev.friends_count === 'number' ? prev.friends_count : (typeof prev.friendsCount === 'number' ? prev.friendsCount : 0);
+        return {
+          ...prev,
+          is_following: true,
+          is_friend: isMutual,
+          followers_count: curFollowers + 1,
+          followersCount: curFollowers + 1,
+          friends_count: isMutual ? curFriends + 1 : curFriends,
+          friendsCount: isMutual ? curFriends + 1 : curFriends,
+        };
+      });
+
+      if (myName) {
+        fetch('/api/social/follow', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          body: JSON.stringify({ sender_name: myName, target_name: targetName }),
+        })
+          .then((res) => (res.ok ? res.json() : null))
+          .then((data) => {
+            if (data?.sender_counts) {
+              setFollowingList(data.sender_counts.following || []);
+              setFriendsList(data.sender_counts.friends || []);
+            }
+          })
+          .catch(() => {});
+      }
+
+      NetworkManager.getInstance().sendFollow(targetId ? String(targetId) : undefined, targetName);
+
+      if (isMutual) {
+        EventBus.emit('new-chat-message', {
+          id: `mutual_${Date.now()}`,
+          sender: 'SISTEM',
+          text: `🎉 Luar biasa! Kamu dan ${targetName} saling mengikuti dan kini resmi menjadi TEMAN!`,
+          timestamp: Date.now(),
+          isSystem: true,
+        });
+      } else {
+        EventBus.emit('new-chat-message', {
+          id: `follow_${Date.now()}`,
+          sender: 'SISTEM',
+          text: `👀 Kamu sekarang mengikuti ${targetName}. Jika dia mengikutimu balik, kalian otomatis menjadi Teman!`,
+          timestamp: Date.now(),
+          isSystem: true,
+        });
+      }
+    }
+  };
+
+  // Hapus Pengikut Handler (Terhubung ke Database)
+  const handleRemoveFollower = (followerName: string) => {
+    sound.playClick();
+    const myName = (playerStats?.name || '').trim();
+    const nextFollowers = followersList.filter((n) => n !== followerName);
+    setFollowersList(nextFollowers);
+    try { localStorage.setItem('raden_followers_list', JSON.stringify(nextFollowers)); } catch (e) {}
+
+    const nextFriends = friendsList.filter((n) => n !== followerName);
+    setFriendsList(nextFriends);
+    try { localStorage.setItem('raden_friends_list', JSON.stringify(nextFriends)); } catch (e) {}
+
+    if (myName) {
+      fetch('/api/social/remove-follower', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify({ user_name: myName, follower_name: followerName }),
+      }).catch(() => {});
+    }
+
+    EventBus.emit('new-chat-message', {
+      id: `rem_fol_${Date.now()}`,
+      sender: 'SISTEM',
+      text: `${followerName} telah dihapus dari daftar pengikut.`,
+      timestamp: Date.now(),
+      isSystem: true,
+    });
+  };
+
+  // Hapus Teman Handler (Terhubung ke Database)
+  const handleRemoveFriend = (friendName: string) => {
+    sound.playClick();
+    handleFollowToggle(friendName);
   };
 
   // Top Up Berlian Handler
@@ -977,7 +1403,7 @@ export const GameApp: React.FC = () => {
         <LoadingScreen
           onComplete={handleLoadingComplete}
           serverCode={serverCode}
-          durationMs={gameState === 'playing' ? 650 : 800}
+          minDisplayTimeMs={gameState === 'playing' ? 800 : 1200}
         />
       )}
 
@@ -1014,8 +1440,7 @@ export const GameApp: React.FC = () => {
             onOpenTopUp={() => setIsTopUpOpen(true)}
             friendsList={friendsList}
             onInspectPlayer={(p) => {
-              setInspectedPlayer(p);
-              setIsProfileOpen(true);
+              EventBus.emit('inspect-player-profile', p);
             }}
             onAddFriend={(targetId, targetName) => handleAddFriend(targetId, targetName)}
           />
@@ -1032,45 +1457,149 @@ export const GameApp: React.FC = () => {
             onClose={() => setIsBackpackOpen(false)}
             gold={playerGold}
             diamonds={playerDiamonds}
+            isAdmin={isCurrentUserAdmin}
           />
 
-          <ProfileModal
-            isOpen={isProfileOpen}
-            onClose={() => {
-              setIsProfileOpen(false);
-              setInspectedPlayer(null);
-            }}
-            name={inspectedPlayer ? inspectedPlayer.name : (playerStats?.name || 'Petualang')}
-            avatar={inspectedPlayer ? inspectedPlayer.avatar : (playerStats?.avatar || wardrobeAvatar)}
-            level={inspectedPlayer ? (inspectedPlayer.level || 1) : (playerStats?.level || 1)}
-            exp={inspectedPlayer ? 0 : playerExp}
-            role={inspectedPlayer ? inspectedPlayer.role : playerStats?.role}
-            isSuperAdmin={inspectedPlayer ? inspectedPlayer.isSuperAdmin : playerStats?.isSuperAdmin}
-            title={inspectedPlayer ? (inspectedPlayer.isSuperAdmin ? '👑 KREATOR & SUPER ADMIN' : 'Petualang') : (playerStats?.isSuperAdmin ? '👑 KREATOR & SUPER ADMIN' : (playerStats?.title || 'Petualang Pemula'))}
-            gold={inspectedPlayer ? (typeof inspectedPlayer.gold === 'number' ? inspectedPlayer.gold : (inspectedPlayer.isSuperAdmin ? 999999 : 2500)) : playerGold}
-            diamonds={inspectedPlayer ? (typeof inspectedPlayer.diamonds === 'number' ? inspectedPlayer.diamonds : (inspectedPlayer.isSuperAdmin ? 99999 : 50)) : playerDiamonds}
-            age={inspectedPlayer ? 20 : playerAge}
-            birthDate={inspectedPlayer ? '' : playerBirthDate}
-            likes={playerLikes}
-            gender={inspectedPlayer ? (inspectedPlayer.avatar?.gender || 'male') : wardrobeAvatar.gender}
-            description={inspectedPlayer ? (inspectedPlayer.bio || 'Petualang penjelajah RadenWorld.') : playerBio}
-            onSaveDescription={inspectedPlayer ? undefined : (d) => {
-              setPlayerBio(d);
-              try {
-                localStorage.setItem('raden_player_bio', d);
-              } catch (e) {}
-            }}
-            friendsCount={friendsList.length}
-            followingCount={followingList.length}
-            followersCount={followersList.length}
-            isInspecting={!!inspectedPlayer}
-            isFriend={inspectedPlayer ? friendsList.includes(inspectedPlayer.name) : false}
-            isFriendRequested={inspectedPlayer ? sentFriendRequests.includes(inspectedPlayer.id) : false}
-            onAddFriend={inspectedPlayer ? () => handleAddFriend(inspectedPlayer.id, inspectedPlayer.name) : undefined}
-            onLogout={inspectedPlayer ? undefined : handleLogout}
-            onTeleportToAdminPortal={inspectedPlayer ? undefined : handleTeleportToAdminPortal}
-            onOpenTopUp={inspectedPlayer ? undefined : () => setIsTopUpOpen(true)}
-          />
+          {(() => {
+            const isTargetAdmin = inspectedPlayer
+              ? Boolean(
+                  inspectedPlayer.isSuperAdmin ||
+                  inspectedPlayer.role === 'super_admin' ||
+                  inspectedPlayer.role === 'admin' ||
+                  inspectedPlayer.name?.trim()?.toUpperCase() === 'RADEN'
+                )
+              : false;
+
+            return (
+              <ProfileModal
+                isOpen={isProfileOpen}
+                onClose={() => {
+                  setIsProfileOpen(false);
+                  setInspectedPlayer(null);
+                }}
+                name={inspectedPlayer ? inspectedPlayer.name : (playerStats?.name || 'Petualang')}
+                avatar={inspectedPlayer ? inspectedPlayer.avatar : (playerStats?.avatar || wardrobeAvatar)}
+                level={
+                  inspectedPlayer
+                    ? (isTargetAdmin ? 99999999999 : (inspectedPlayer.level || 1))
+                    : (isCurrentUserAdmin ? 99999999999 : (playerStats?.level || 1))
+                }
+                exp={
+                  inspectedPlayer
+                    ? (isTargetAdmin ? 99999999999 : (inspectedPlayer.exp || 0))
+                    : playerExp
+                }
+                role={
+                  inspectedPlayer
+                    ? (isTargetAdmin ? 'super_admin' : (inspectedPlayer.role || 'player'))
+                    : (isCurrentUserAdmin ? 'super_admin' : (playerStats?.role || 'player'))
+                }
+                isSuperAdmin={
+                  inspectedPlayer
+                    ? isTargetAdmin
+                    : Boolean(isCurrentUserAdmin || playerStats?.isSuperAdmin)
+                }
+                title={
+                  inspectedPlayer
+                    ? (isTargetAdmin ? '👑 KREATOR & SUPER ADMIN' : (inspectedPlayer.title || 'Petualang'))
+                    : (isCurrentUserAdmin || playerStats?.isSuperAdmin ? '👑 KREATOR & SUPER ADMIN' : (playerStats?.title || 'Petualang Pemula'))
+                }
+                gold={
+                  inspectedPlayer
+                    ? (isTargetAdmin ? 99999999999 : (typeof inspectedPlayer.gold === 'number' ? inspectedPlayer.gold : 2500))
+                    : (isCurrentUserAdmin ? 99999999999 : playerGold)
+                }
+                diamonds={
+                  inspectedPlayer
+                    ? (isTargetAdmin ? 99999999999 : (typeof inspectedPlayer.diamonds === 'number' ? inspectedPlayer.diamonds : 50))
+                    : (isCurrentUserAdmin ? 99999999999 : playerDiamonds)
+                }
+                age={inspectedPlayer ? (inspectedPlayer.age || 20) : playerAge}
+                birthDate={inspectedPlayer ? (inspectedPlayer.birthDate || '') : playerBirthDate}
+                likes={
+                  inspectedPlayer
+                    ? (isTargetAdmin ? 99999999999 : (typeof inspectedPlayer.likes === 'number' ? inspectedPlayer.likes : 0))
+                    : (isCurrentUserAdmin ? 99999999999 : playerLikes)
+                }
+                gender={inspectedPlayer ? (inspectedPlayer.gender || inspectedPlayer.avatar?.gender || 'male') : wardrobeAvatar.gender}
+                description={inspectedPlayer ? (inspectedPlayer.bio || inspectedPlayer.description || 'Petualang penjelajah RadenWorld.') : playerBio}
+                onSaveDescription={inspectedPlayer ? undefined : (d) => {
+                  setPlayerBio(d);
+                  try {
+                    localStorage.setItem('raden_player_bio', d);
+                  } catch (e) {}
+                }}
+                friendsList={inspectedPlayer ? [] : friendsList}
+                followingList={inspectedPlayer ? [] : followingList}
+                followersList={inspectedPlayer ? [] : followersList}
+                friendsCount={
+                  inspectedPlayer
+                    ? (typeof inspectedPlayer.friends_count === 'number'
+                        ? inspectedPlayer.friends_count
+                        : (typeof inspectedPlayer.friendsCount === 'number' ? inspectedPlayer.friendsCount : 0))
+                    : friendsList.length
+                }
+                followingCount={
+                  inspectedPlayer
+                    ? (typeof inspectedPlayer.following_count === 'number'
+                        ? inspectedPlayer.following_count
+                        : (typeof inspectedPlayer.followingCount === 'number' ? inspectedPlayer.followingCount : 0))
+                    : followingList.length
+                }
+                followersCount={
+                  inspectedPlayer
+                    ? (typeof inspectedPlayer.followers_count === 'number'
+                        ? inspectedPlayer.followers_count
+                        : (typeof inspectedPlayer.followersCount === 'number' ? inspectedPlayer.followersCount : 0))
+                    : followersList.length
+                }
+                isInspecting={!!inspectedPlayer}
+                playerId={inspectedPlayer?.id}
+                location={inspectedPlayer?.location}
+                joinedAt={inspectedPlayer?.joined_at || inspectedPlayer?.joinedAt}
+                currentUserName={playerStats?.name || 'Petualang'}
+                hasLikedToday={Boolean(inspectedPlayer?.has_liked_today)}
+                onLikePlayer={(targetName) => {
+                  setInspectedPlayer((prev) => {
+                    if (!prev) return prev;
+                    const cur = typeof prev.likes === 'number' ? prev.likes : 0;
+                    return { ...prev, likes: cur + 1, has_liked_today: true };
+                  });
+                }}
+                isFriend={
+                  inspectedPlayer
+                    ? Boolean(inspectedPlayer.is_friend || (friendsList.includes(inspectedPlayer.name) && followingList.includes(inspectedPlayer.name)))
+                    : false
+                }
+                isFollowing={
+                  inspectedPlayer
+                    ? Boolean(inspectedPlayer.is_following || followingList.includes(inspectedPlayer.name))
+                    : false
+                }
+                isFollower={
+                  inspectedPlayer
+                    ? Boolean(inspectedPlayer.is_follower || followersList.includes(inspectedPlayer.name))
+                    : false
+                }
+                isFriendRequested={inspectedPlayer ? sentFriendRequests.includes(String(inspectedPlayer.id || '')) : false}
+                onAddFriend={inspectedPlayer ? () => handleAddFriend(String(inspectedPlayer.id || ''), inspectedPlayer.name) : undefined}
+                onFollowToggle={handleFollowToggle}
+                onRemoveFollower={handleRemoveFollower}
+                onRemoveFriend={handleRemoveFriend}
+                onInspectOtherPlayer={(target) => {
+                  EventBus.emit('inspect-player-profile', target);
+                }}
+                onWhisper={(targetName) => {
+                  setIsProfileOpen(false);
+                  setIsChatOpen(true);
+                  EventBus.emit('chat-prefill', `@${targetName} `);
+                }}
+                onLogout={inspectedPlayer ? undefined : handleLogout}
+                onTeleportToAdminPortal={inspectedPlayer ? undefined : handleTeleportToAdminPortal}
+                onOpenTopUp={inspectedPlayer ? undefined : () => setIsTopUpOpen(true)}
+              />
+            );
+          })()}
 
           <ChatBox
             messages={messages}
@@ -1241,6 +1770,76 @@ export const GameApp: React.FC = () => {
               setInGameSettingsOpen(false);
               setIsServerModalOpen(true);
             }}
+          />
+
+          {/* Modal Layanan Polisi (Report Player) */}
+          <PoliceReportModal
+            isOpen={isPoliceModalOpen}
+            onClose={() => {
+              setIsPoliceModalOpen(false);
+              EventBus.emit('dialogue-active', false);
+            }}
+            currentPlayerName={playerStats.name}
+          />
+
+          {/* Modal Layanan Bank (Investasi & Tabungan Koin) */}
+          <BankModal
+            isOpen={isBankModalOpen}
+            onClose={() => {
+              setIsBankModalOpen(false);
+              EventBus.emit('dialogue-active', false);
+            }}
+            playerGold={playerGold}
+            onUpdateGold={(g) => {
+              if (isCurrentUserAdmin) {
+                setPlayerGold(99999999999);
+                localStorage.setItem('raden_player_gold', '99999999999');
+              } else {
+                setPlayerGold(g);
+                localStorage.setItem('raden_player_gold', g.toString());
+              }
+            }}
+            isAdmin={isCurrentUserAdmin}
+          />
+
+          {/* Modal Apotek Ramuan Ajaib (Beli Ramuan dengan Diamond) */}
+          <PharmacyModal
+            isOpen={isPharmacyModalOpen}
+            onClose={() => {
+              setIsPharmacyModalOpen(false);
+              EventBus.emit('dialogue-active', false);
+            }}
+            playerDiamonds={playerDiamonds}
+            onUpdateDiamonds={(d) => {
+              if (isCurrentUserAdmin) {
+                setPlayerDiamonds(99999999999);
+                localStorage.setItem('raden_player_diamonds', '99999999999');
+              } else {
+                setPlayerDiamonds(d);
+                localStorage.setItem('raden_player_diamonds', d.toString());
+              }
+            }}
+            isAdmin={isCurrentUserAdmin}
+          />
+
+          {/* Modal Makelar Hasil Bumi & Pasar Alat (Beli Alat/Biji, Jual Panen/Ikan) */}
+          <MarketRealtorModal
+            isOpen={isRealtorModalOpen}
+            onClose={() => {
+              setIsRealtorModalOpen(false);
+              EventBus.emit('dialogue-active', false);
+            }}
+            playerGold={playerGold}
+            onUpdateGold={(g) => {
+              if (isCurrentUserAdmin) {
+                setPlayerGold(99999999999);
+                localStorage.setItem('raden_player_gold', '99999999999');
+              } else {
+                setPlayerGold(g);
+                localStorage.setItem('raden_player_gold', g.toString());
+              }
+            }}
+            isAdmin={isCurrentUserAdmin}
           />
         </>
       )}

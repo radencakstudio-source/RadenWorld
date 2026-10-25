@@ -35,6 +35,7 @@ export interface IWorldTerrainElements {
   waterWaves2: Phaser.GameObjects.TileSprite[];
   shorelineSurfs: IWorldShorelineSurf[];
   clouds: IWorldCloud[];
+  digTiles: Phaser.GameObjects.Image[];
 }
 
 export class WorldTerrain {
@@ -112,6 +113,21 @@ export class WorldTerrain {
       }
     }
 
+    // c. Tembok Samping Timur: Memenuhi area Timur Laut luar map (x: 80 s/d 80 + buf) pada gy: 1..10
+    // Menggunakan Wall With Top (wall-side-checker) agar tidak berupa tanah hijau polos
+    if (scene.textures.exists('wall-side-checker')) {
+      scene.add.tileSprite(worldWidth, ts, buf, 10 * ts, 'wall-side-checker')
+        .setOrigin(0, 0).setDepth(10);
+    } else {
+      for (let gy = 1; gy <= 10; gy++) {
+        for (let gx = 80; gx < 80 + 20; gx++) {
+          const isDark = (gx + gy) % 2 === 0;
+          const key = isDark ? 'tile-wall-top-dark' : 'tile-wall-top-light';
+          scene.add.image(gx * ts, gy * ts, key).setOrigin(0, 0).setDepth(10);
+        }
+      }
+    }
+
     // Tambahkan Rintangan Fisik Statis (Collider) di Sepanjang Tembok & Batas Wilayah
     if (obstacles) {
       // Dinding Utara Tebal (Dari -buf sampai ts = 120px)
@@ -128,16 +144,16 @@ export class WorldTerrain {
       scene.physics.add.existing(leftWallZone2, true);
       obstacles.add(leftWallZone2);
 
-      // Dinding Timur (Dibagi 3 segmen agar koridor jalan terus ke arah laut)
-      const rightWallZone1 = scene.add.zone(worldWidth - 24, (11 * ts) / 2, 54, 11 * ts);
+      // Dinding Timur Tebal (Tepat di x = worldWidth / x80, membentang ke luar buffer agar pas 100% di garis batas x80)
+      const rightWallZone1 = scene.add.zone(worldWidth + buf / 2, ts + (10 * ts) / 2, buf, 10 * ts);
       scene.physics.add.existing(rightWallZone1, true);
       obstacles.add(rightWallZone1);
 
-      const rightWallZone2 = scene.add.zone(worldWidth - 24, 17 * ts + (47 * ts) / 2, 54, 47 * ts);
+      const rightWallZone2 = scene.add.zone(worldWidth + buf / 2, 17 * ts + (47 * ts) / 2, buf, 47 * ts);
       scene.physics.add.existing(rightWallZone2, true);
       obstacles.add(rightWallZone2);
 
-      const rightWallZone3 = scene.add.zone(worldWidth - 24, 70 * ts + (10 * ts) / 2, 54, 10 * ts);
+      const rightWallZone3 = scene.add.zone(worldWidth + buf / 2, 70 * ts + (10 * ts) / 2, buf, 10 * ts);
       scene.physics.add.existing(rightWallZone3, true);
       obstacles.add(rightWallZone3);
 
@@ -425,6 +441,68 @@ export class WorldTerrain {
     for (let gx = 22; gx <= 57; gx++) addTrotoarH(gx, 59);
     addTrotoarEdge(58, 59, 90);
 
+    // ========================================================================
+    // ALUN-ALUN PUSAT KOTA (gx: 22..57, gy: 22..58)
+    // Hamparan Trotoar Alun-Alun (1X1 Trotoar Alunalun) menggantikan rumput hijau
+    // ========================================================================
+    const alunTexKey = scene.textures.exists('alunalun-checker-tile')
+      ? 'alunalun-checker-tile'
+      : (scene.textures.exists('tile-trotoar-alunalun')
+        ? 'tile-trotoar-alunalun'
+        : (scene.textures.exists('plaza-checker-tile') ? 'plaza-checker-tile' : 'trotoar-2'));
+
+    scene.add.tileSprite(
+      22 * ts,
+      22 * ts,
+      36 * ts,
+      37 * ts,
+      alunTexKey
+    ).setOrigin(0, 0).setDepth(-96);
+
+    // ========================================================================
+    // HAMPARAN TROTOAR 2 UTARA (gx: 23..42, gy: 0..16)
+    // Mengubah tanah rumput hijau menjadi trotoar 2
+    // ========================================================================
+    const trotoar2TexKey = scene.textures.exists('trotoar2-checker-tile')
+      ? 'trotoar2-checker-tile'
+      : (scene.textures.exists('trotoar-2') ? 'trotoar-2' : 'plaza-checker-tile');
+
+    scene.add.tileSprite(
+      23 * ts,
+      0,
+      20 * ts,
+      17 * ts,
+      trotoar2TexKey
+    ).setOrigin(0, 0).setDepth(-96);
+
+    // Hamparan Trotoar 2 Timur Utara (gx: 43..56, gy: 1..16)
+    scene.add.tileSprite(
+      43 * ts,
+      1 * ts,
+      14 * ts,
+      16 * ts,
+      trotoar2TexKey
+    ).setOrigin(0, 0).setDepth(-96);
+
+    // ========================================================================
+    // KAWASAN LAHAN PERTANIAN / TANAH GALIAN (gx: 57..80, gy: 1..9)
+    // Hamparan tanah cangkulan (tile-dig 1x1) untuk media bercocok tanam tanaman
+    // ========================================================================
+    const digTiles: Phaser.GameObjects.Image[] = [];
+    for (let gy = 1; gy <= 9; gy++) {
+      for (let gx = 57; gx <= 80; gx++) {
+        const digImg = scene.add.image(gx * ts, gy * ts, 'tile-dig')
+          .setOrigin(0, 0)
+          .setDisplaySize(ts, ts)
+          .setDepth(-96);
+        digImg.setData('gridX', gx);
+        digImg.setData('gridY', gy);
+        digImg.setData('isDigTile', true);
+        digImg.setData('hasCrop', false);
+        digTiles.push(digImg);
+      }
+    }
+
     // E. Teluk Pantai Selatan (Cove gy: 62..68):
     for (let gx = 22; gx <= 57; gx++) addTrotoarH(gx, 62);
     for (let gx = 22; gx <= 57; gx++) addTrotoar2(gx, 63);
@@ -528,6 +606,7 @@ export class WorldTerrain {
       waterWaves2,
       shorelineSurfs,
       clouds,
+      digTiles,
     };
   }
 

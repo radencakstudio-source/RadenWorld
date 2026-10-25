@@ -44,6 +44,7 @@ export class CameraController {
   // Nilai Zoom
   private currentTargetZoom: number = 1.0;
   private defaultZoom: number = 1.0;
+  private baseUserZoom: number = 1.0;
   private minZoom: number = 0.45;
   private maxZoom: number = 2.0;
   private zoomLerpSpeed: number = 0.12;
@@ -56,15 +57,42 @@ export class CameraController {
   private onWheelHandler: ((pointer: Phaser.Input.Pointer, gameObjects: any, deltaX: number, deltaY: number) => void) | null = null;
   private eventBusHandlers: Map<string, (...args: any[]) => void> = new Map();
   private keyboardHandlers: Map<string, () => void> = new Map();
+  private resizeHandler: ((gameSize: Phaser.Structs.Size) => void) | null = null;
+
+  /**
+   * Menghitung zoom kamera yang proporsional sesuai rasio layar (PC vs Mobile Vertikal vs Horizontal)
+   * serta bar navigasi / link browser mobile yang mengecilkan viewport.
+   */
+  public static calculateAdaptiveZoom(width: number, height: number, baseZoom: number = 1.0): number {
+    const isPortrait = height > width;
+
+    if (isPortrait) {
+      // Mobile vertikal (portrait): layar sangat sempit secara horizontal
+      if (width <= 440) return Math.min(baseZoom, 0.72);
+      if (width <= 640) return Math.min(baseZoom, 0.78);
+      if (width <= 768) return Math.min(baseZoom, 0.85);
+      return Math.min(baseZoom, 0.90);
+    } else {
+      // Horizontal (landscape)
+      // Jika tinggi layar pendek (misal HP horizontal dengan address bar browser aktif, height <= 440px)
+      if (height <= 440) return Math.min(baseZoom, 0.76);
+      if (height <= 540) return Math.min(baseZoom, 0.84);
+      if (height <= 720) return Math.min(baseZoom, 0.92);
+      return baseZoom;
+    }
+  }
 
   constructor(scene: Phaser.Scene, options: ICameraControllerOptions = {}) {
     this.scene = scene;
     const initialCam = options.camera || scene.cameras?.main;
     this.camera = initialCam && (initialCam as any)._bounds ? initialCam : (scene.cameras?.main || null as any);
 
-    this.defaultZoom = options.defaultZoom ?? 1.0;
+    const sceneWidth = scene.scale?.width || window.innerWidth || 1280;
+    const sceneHeight = scene.scale?.height || window.innerHeight || 720;
+    this.baseUserZoom = options.defaultZoom ?? 1.0;
+    this.defaultZoom = CameraController.calculateAdaptiveZoom(sceneWidth, sceneHeight, this.baseUserZoom);
     this.currentTargetZoom = this.defaultZoom;
-    this.minZoom = options.minZoom ?? 0.45;
+    this.minZoom = options.minZoom ?? 0.40;
     this.maxZoom = options.maxZoom ?? 2.0;
     this.zoomLerpSpeed = options.zoomLerpSpeed ?? 0.12;
 
@@ -91,6 +119,16 @@ export class CameraController {
       enableKeyboard: options.enableKeyboard !== false,
       enableEventBus: options.enableEventBus !== false,
     });
+
+    // Dengarkan event resize layar Phaser (misal rotasi HP atau address bar collapse/expand)
+    this.resizeHandler = (gameSize: Phaser.Structs.Size) => {
+      const activeCam = this.getCamera();
+      if (!activeCam) return;
+      const adaptive = CameraController.calculateAdaptiveZoom(gameSize.width, gameSize.height, this.baseUserZoom);
+      this.defaultZoom = adaptive;
+      this.smoothZoomTo(adaptive);
+    };
+    this.scene.scale?.on(Phaser.Scale.Events.RESIZE, this.resizeHandler);
 
     // Otomatis bersihkan listener saat scene dimatikan atau dihancurkan
     const cleanup = () => this.destroy();
@@ -510,6 +548,12 @@ export class CameraController {
         this.scene.input.keyboard?.off(keyEvent, handler);
       });
       this.keyboardHandlers.clear();
+    }
+
+    // 4. Resize listener
+    if (this.resizeHandler && this.scene?.scale) {
+      this.scene.scale.off(Phaser.Scale.Events.RESIZE, this.resizeHandler);
+      this.resizeHandler = null;
     }
 
     this.followTarget = null;

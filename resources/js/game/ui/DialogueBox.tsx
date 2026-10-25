@@ -321,43 +321,43 @@ export const DialogueBox: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-x-0 bottom-6 z-50 flex justify-center px-4 md:px-8 pointer-events-auto font-['Chakra_Petch']">
+    <div className="fixed inset-x-0 bottom-[max(0.5rem,env(safe-area-inset-bottom,0.5rem))] z-50 flex justify-center px-2 sm:px-4 md:px-8 pointer-events-auto font-['Chakra_Petch']">
       {/* Box Utama Dialog RPG: Flat Pure Black (Tanpa Shadow & Tanpa Efek Biru) */}
-      <div className="relative w-full max-w-3xl bg-black border border-neutral-800 rounded-3xl p-4 md:p-5 text-white h-[185px] md:h-[195px] flex flex-col justify-between select-none">
+      <div className="relative w-full max-w-3xl bg-black border border-neutral-800 rounded-2xl p-3 sm:p-4 md:p-5 text-white min-h-[140px] max-h-[38dvh] flex flex-col justify-between select-none shadow-xl">
         
         {/* 1. HEADER: NAMA NPC, ROLE & HALAMAN */}
-        <div className="flex items-center justify-between pb-2 border-b border-neutral-800">
-          <div className="flex items-center gap-2">
-            <span className="text-base md:text-lg font-bold text-amber-300 tracking-wide">
+        <div className="flex items-center justify-between pb-1.5 sm:pb-2 border-b border-neutral-800">
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <span className="text-sm sm:text-base md:text-lg font-bold text-amber-300 tracking-wide">
               {dialogue.name}
             </span>
-            <span className="text-[11px] md:text-xs font-semibold text-amber-200 bg-neutral-900 border border-neutral-800 px-2.5 py-0.5 rounded-full">
+            <span className="text-[10px] sm:text-[11px] md:text-xs font-semibold text-amber-200 bg-neutral-900 border border-neutral-800 px-2 sm:px-2.5 py-0.5 rounded-full">
               {dialogue.role}
             </span>
           </div>
 
-          <span className="text-xs font-bold text-neutral-400 bg-neutral-900 border border-neutral-800 px-2.5 py-0.5 rounded-full">
+          <span className="text-[10px] sm:text-xs font-bold text-neutral-400 bg-neutral-900 border border-neutral-800 px-2 sm:px-2.5 py-0.5 rounded-full">
             {currentPage + 1} / {totalPages}
           </span>
         </div>
 
         {/* 2. BODY: POTRET CHIBI IMUT & TEXT NARASI */}
-        <div className="flex items-center gap-3 md:gap-4 flex-1 my-1.5 overflow-hidden">
+        <div className="flex items-center gap-2.5 sm:gap-3 md:gap-4 flex-1 my-1 sm:my-1.5 overflow-hidden">
           {/* Avatar Chibi Imut */}
-          <div className="shrink-0 w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-neutral-900 border border-neutral-800 p-1 flex items-center justify-center overflow-hidden">
+          <div className="shrink-0 w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 rounded-xl sm:rounded-2xl bg-neutral-900 border border-neutral-800 p-1 flex items-center justify-center overflow-hidden">
             {renderNpcPortrait()}
           </div>
 
           {/* Area Teks Narasi */}
           <div className="flex-1 h-full flex items-center overflow-hidden px-1">
-            <p className="font-sans font-medium text-neutral-100 text-sm md:text-base leading-relaxed line-clamp-3">
+            <p className="font-sans font-medium text-neutral-100 text-xs sm:text-sm md:text-base leading-relaxed line-clamp-3">
               {displayedText}
             </p>
           </div>
         </div>
 
         {/* 3. FOOTER: 3 TOMBOL KONTROL SIMPEL */}
-        <div className="flex items-center justify-between pt-1.5 border-t border-neutral-800">
+        <div className="flex items-center justify-between pt-1 sm:pt-1.5 border-t border-neutral-800">
           <span className="text-[11px] text-neutral-400 hidden sm:inline">
             💡 Tekan <kbd className="px-1.5 py-0.2 bg-neutral-900 border border-neutral-700 rounded text-amber-300 font-mono text-[10px]">Space</kbd> / <kbd className="px-1.5 py-0.2 bg-neutral-900 border border-neutral-700 rounded text-amber-300 font-mono text-[10px]">Enter</kbd> untuk Lanjut
           </span>

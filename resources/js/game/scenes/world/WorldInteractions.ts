@@ -33,18 +33,26 @@ export interface IWorldDoors {
   schoolSmpDoor: IWorldDoorCoord;
   schoolSmaDoor: IWorldDoorCoord;
   cafeDoor: IWorldDoorCoord;
-  hospitalDoor: IWorldDoorCoord;
+  libraryDoor?: IWorldDoorCoord;
+  policeDoor?: IWorldDoorCoord;
   bankDoor: IWorldDoorCoord;
+  pharmacyDoor?: IWorldDoorCoord;
+  hospitalDoor: IWorldDoorCoord;
+  realtorDoor?: IWorldDoorCoord;
 }
 
 export const DEFAULT_WORLD_DOORS: IWorldDoors = {
   playerHouseDoor: { x: 1380, y: 840 },  // gx: 11.5, gy: 7 (Rumah di Kiri Atas)
-  schoolSdDoor: { x: 3420, y: 1320 },    // gx: 28.5, gy: 11 (SD di Utara Pusat)
-  schoolSmpDoor: { x: 4380, y: 1320 },   // gx: 36.5, gy: 11 (SMP di Utara Pusat)
-  schoolSmaDoor: { x: 5340, y: 1320 },   // gx: 44.5, gy: 11 (SMA di Utara Pusat)
-  cafeDoor: { x: 2040, y: 2700 },        // gx: 17, gy: 22.5 (Cafe di Barat)
-  hospitalDoor: { x: 2040, y: 4620 },    // gx: 17, gy: 38.5 (RS di Barat)
-  bankDoor: { x: 2040, y: 6540 },        // gx: 17, gy: 54.5 (Bank di Barat)
+  schoolSdDoor: { x: 3300, y: 1140 },    // gx: 27.5, gy: 9.5 (Gedung SD 5x10)
+  schoolSmpDoor: { x: 4020, y: 1140 },   // gx: 33.5, gy: 9.5 (Gedung SMP 5x10)
+  schoolSmaDoor: { x: 4740, y: 1140 },   // gx: 39.5, gy: 9.5 (Gedung SMA 5x10)
+  cafeDoor: { x: 420, y: 3120 },         // gx: 3.5, gy: 26 (Cafe di gx: 1..5, gy: 21..25)
+  libraryDoor: { x: 1740, y: 3120 },     // gx: 14.5, gy: 26 (Perpustakaan di gx: 12..16, gy: 21..25)
+  policeDoor: { x: 420, y: 5040 },       // gx: 3.5, gy: 42 (Kantor Polisi di gx: 1..5, gy: 37..41)
+  bankDoor: { x: 1740, y: 5040 },        // gx: 14.5, gy: 42 (Bank di gx: 12..16, gy: 37..41)
+  pharmacyDoor: { x: 420, y: 6960 },     // gx: 3.5, gy: 58 (Apotek di gx: 1..5, gy: 53..57)
+  hospitalDoor: { x: 420, y: 6960 },     // Alias Apotek / RS
+  realtorDoor: { x: 1740, y: 6960 },     // gx: 14.5, gy: 58 (Makelar di gx: 12..16, gy: 53..57)
 };
 
 export class WorldInteractions {
@@ -64,27 +72,36 @@ export class WorldInteractions {
     if (Math.hypot(x - doors.schoolSdDoor.x, y - doors.schoolSdDoor.y) < 240) return 'KOMPLEKS PENDIDIKAN: GEDUNG SD';
     if (Math.hypot(x - doors.schoolSmpDoor.x, y - doors.schoolSmpDoor.y) < 240) return 'KOMPLEKS PENDIDIKAN: GEDUNG SMP';
     if (Math.hypot(x - doors.schoolSmaDoor.x, y - doors.schoolSmaDoor.y) < 240) return 'KOMPLEKS PENDIDIKAN: GEDUNG SMA';
-    if (gy <= 13 && gx >= 22 && gx <= 57) return 'KOMPLEKS PENDIDIKAN TERPADU';
+    if (gy <= 16 && gx >= 23 && gx <= 42) return 'KOMPLEKS PENDIDIKAN TERPADU';
 
     // 2. Kiri Atas: Kawasan Residensial
     if (Math.hypot(x - doors.playerHouseDoor.x, y - doors.playerHouseDoor.y) < 260) return 'KAWASAN RESIDENSIAL: RUMAH PEMAIN';
     if (gy <= 13 && gx <= 21) return 'TAMAN RESIDENSIAL BARAT LAUT';
 
     // 3. Timur Laut: Kawasan Persawahan & Pertanian
-    if (gy <= 13 && gx >= 58) return 'KAWASAN PERSAWAHAN & PERTANIAN SUBUR';
+    if (gx >= 57 && gx <= 80 && gy >= 1 && gy <= 9) return 'LAHAN PERTANIAN & PERKEBUNAN SUBUR';
+    if (gy <= 13 && gx >= 57) return 'KAWASAN PERSAWAHAN & PERTANIAN SUBUR';
 
-    // 4. Barat: Kawasan Komersial & Layanan Publik
-    if (Math.hypot(x - doors.cafeDoor.x, y - doors.cafeDoor.y) < 260) return 'KAWASAN BISNIS: RADEN CAFE & BAKERY';
-    if (Math.hypot(x - doors.hospitalDoor.x, y - doors.hospitalDoor.y) < 260) return 'KAWASAN KESEHATAN: RUMAH SAKIT KOTA';
-    if (Math.hypot(x - doors.bankDoor.x, y - doors.bankDoor.y) < 260) return 'KAWASAN FINANSIAL: BANK SENTRAL RADEN';
+    // 4. Barat: Kawasan Komersial & Layanan Publik (6 Gedung 5x5)
+    if (gx >= 1 && gx <= 5 && gy >= 21 && gy <= 25) return 'KAWASAN KULINER: RADEN CAFE';
+    if (gx >= 12 && gx <= 16 && gy >= 21 && gy <= 25) return 'KAWASAN LITERASI: PERPUSTAKAAN KOTA';
+    if (gx >= 1 && gx <= 5 && gy >= 37 && gy <= 41) return 'LAYANAN PUBLIK: KANTOR POLISI';
+    if (gx >= 12 && gx <= 16 && gy >= 37 && gy <= 41) return 'KAWASAN FINANSIAL: KANTOR BANK';
+    if (gx >= 1 && gx <= 5 && gy >= 53 && gy <= 57) return 'KAWASAN KESEHATAN: APOTEK FARMA';
+    if (gx >= 12 && gx <= 16 && gy >= 53 && gy <= 57) return 'KAWASAN PROPERTI: KANTOR MAKELAR';
+    if (Math.hypot(x - doors.cafeDoor.x, y - doors.cafeDoor.y) < 260) return 'KAWASAN KULINER: RADEN CAFE';
+    if (doors.libraryDoor && Math.hypot(x - doors.libraryDoor.x, y - doors.libraryDoor.y) < 260) return 'KAWASAN LITERASI: PERPUSTAKAAN KOTA';
+    if (doors.policeDoor && Math.hypot(x - doors.policeDoor.x, y - doors.policeDoor.y) < 260) return 'LAYANAN PUBLIK: KANTOR POLISI';
+    if (Math.hypot(x - doors.bankDoor.x, y - doors.bankDoor.y) < 260) return 'KAWASAN FINANSIAL: KANTOR BANK';
+    if (Math.hypot(x - doors.hospitalDoor.x, y - doors.hospitalDoor.y) < 260) return 'KAWASAN KESEHATAN: APOTEK FARMA';
+    if (doors.realtorDoor && Math.hypot(x - doors.realtorDoor.x, y - doors.realtorDoor.y) < 260) return 'KAWASAN PROPERTI: KANTOR MAKELAR';
     if (gx <= 18 && gy >= 14 && gy <= 63) return 'BOULEVARD LAYANAN PUBLIK & PERKANTORAN';
 
-    // 5. Central Plaza / Alun-Alun Pusat Kota
-    if (gx >= 23 && gx <= 36 && gy >= 21 && gy <= 34) return 'PUJASERA KULINER CENTRAL PLAZA';
-    if (gx >= 45 && gx <= 56 && gy >= 21 && gy <= 30) return 'PANGGUNG HIBURAN ALUN-ALUN';
-    if (Math.hypot(x - 4800, y - 4800) < 420) return 'MONUMEN PATUNG KOTA LAMONGAN';
-    if (gx >= 24 && gx <= 56 && gy >= 50 && gy <= 59) return 'GELANGGANG OLAHRAGA BASKET & FUTSAL';
-    if (gx >= 22 && gx <= 57 && gy >= 16 && gy <= 61) return 'SANCTUARY CENTRAL PLAZA (ALUN-ALUN KOTA)';
+    // 5. Alun-Alun Pusat Kota (gx: 22..57, gy: 22..58)
+    if (gx >= 24 && gx <= 33 && gy >= 51 && gy <= 55) return 'ALUN-ALUN: LAPANGAN SEPAK BOLA';
+    if (gx >= 46 && gx <= 55 && gy >= 51 && gy <= 55) return 'ALUN-ALUN: LAPANGAN BASKET';
+    if (gx >= 22 && gx <= 57 && gy >= 22 && gy <= 58) return 'Alun Alun';
+    if (gx >= 22 && gx <= 57 && gy >= 16 && gy <= 61) return 'Alun Alun';
 
     // 6. Timur: Teluk Bahari & Dermaga
     if (gx >= 61 && gy >= 23 && gy <= 27) return 'DERMAGA 1: TELUK BAHARI UTARA';
@@ -123,8 +140,11 @@ export class WorldInteractions {
     const distSmp = Phaser.Math.Distance.Between(px, py, doors.schoolSmpDoor.x, doors.schoolSmpDoor.y);
     const distSma = Phaser.Math.Distance.Between(px, py, doors.schoolSmaDoor.x, doors.schoolSmaDoor.y);
     const distCafe = Phaser.Math.Distance.Between(px, py, doors.cafeDoor.x, doors.cafeDoor.y);
-    const distHospital = Phaser.Math.Distance.Between(px, py, doors.hospitalDoor.x, doors.hospitalDoor.y);
+    const distLibrary = doors.libraryDoor ? Phaser.Math.Distance.Between(px, py, doors.libraryDoor.x, doors.libraryDoor.y) : 999;
+    const distPolice = doors.policeDoor ? Phaser.Math.Distance.Between(px, py, doors.policeDoor.x, doors.policeDoor.y) : 999;
     const distBank = Phaser.Math.Distance.Between(px, py, doors.bankDoor.x, doors.bankDoor.y);
+    const distPharmacy = (doors.pharmacyDoor || doors.hospitalDoor) ? Phaser.Math.Distance.Between(px, py, (doors.pharmacyDoor || doors.hospitalDoor).x, (doors.pharmacyDoor || doors.hospitalDoor).y) : 999;
+    const distRealtor = doors.realtorDoor ? Phaser.Math.Distance.Between(px, py, doors.realtorDoor.x, doors.realtorDoor.y) : 999;
 
     let prompt: string | null = null;
     let locationName = this.getRegionName(px, py, tileSize, doors);
@@ -142,14 +162,23 @@ export class WorldInteractions {
       prompt = 'TEKAN [E] / KLIK UNTUK MASUK KE GEDUNG SMA';
       locationName = 'KOMPLEKS PENDIDIKAN: GEDUNG SMA';
     } else if (distCafe < 130) {
-      prompt = 'TEKAN [E] / KLIK UNTUK MAMPIR KE RADEN CAFE & BAKERY';
-      locationName = 'KAWASAN BISNIS: RADEN CAFE & BAKERY';
-    } else if (distHospital < 130) {
-      prompt = 'TEKAN [E] / KLIK UNTUK MASUK KE RUMAH SAKIT (PULIHKAN HP)';
-      locationName = 'KAWASAN KESEHATAN: RUMAH SAKIT KOTA';
+      prompt = 'TEKAN [E] / KLIK UNTUK MAMPIR KE RADEN CAFE ☕🥐';
+      locationName = 'KAWASAN KULINER: RADEN CAFE';
+    } else if (distLibrary < 130) {
+      prompt = 'TEKAN [E] / KLIK UNTUK MASUK KE PERPUSTAKAAN KOTA 📚';
+      locationName = 'KAWASAN LITERASI: PERPUSTAKAAN KOTA';
+    } else if (distPolice < 130) {
+      prompt = 'TEKAN [E] / KLIK UNTUK LAPOR KE KANTOR POLISI 👮';
+      locationName = 'LAYANAN PUBLIK: KANTOR POLISI';
     } else if (distBank < 130) {
-      prompt = 'TEKAN [E] / KLIK UNTUK MENGUNJUNGI BANK SENTRAL RADEN';
-      locationName = 'KAWASAN FINANSIAL: BANK SENTRAL RADEN';
+      prompt = 'TEKAN [E] / KLIK UNTUK TRANSAKSI DI KANTOR BANK 🏦';
+      locationName = 'KAWASAN FINANSIAL: KANTOR BANK';
+    } else if (distPharmacy < 130) {
+      prompt = 'TEKAN [E] / KLIK UNTUK MEMBELI OBAT / PULIHKAN HP DI APOTEK 💊✨';
+      locationName = 'KAWASAN KESEHATAN: APOTEK FARMA';
+    } else if (distRealtor < 130) {
+      prompt = 'TEKAN [E] / KLIK UNTUK KONSULTASI MAKELAR PROPERTI 🏠';
+      locationName = 'KAWASAN PROPERTI: KANTOR MAKELAR';
     } else if (
       Phaser.Math.Distance.Between(px, py, 30 * tileSize, 48 * tileSize) < 240 ||
       Phaser.Math.Distance.Between(px, py, 50 * tileSize, 48 * tileSize) < 240
@@ -168,13 +197,19 @@ export class WorldInteractions {
       if (!prompt) {
         const gx = Math.floor(px / tileSize);
         const gy = Math.floor(py / tileSize);
-        const isPierOrWaterfront = (
-          (gx >= 61 && gx <= 74 && gy >= 23 && gy <= 56) ||
-          (gy >= 68 && gy <= 78)
-        );
-        const isNearFountain = Math.hypot(px - 4800, py - 4800) <= 260;
-        if (isPierOrWaterfront || isNearFountain) {
-          prompt = 'TEKAN [F] / SENTUH MANCING UNTUK MEMANCING';
+        if (gx >= 24 && gx <= 33 && gy >= 51 && gy <= 55) {
+          prompt = 'KLIK / SENTUH LAPANGAN UNTUK MENGOPER & MENENDANG BOLA SEPAK ⚽';
+        } else if (gx >= 46 && gx <= 55 && gy >= 51 && gy <= 55) {
+          prompt = 'KLIK / SENTUH LAPANGAN UNTUK DRIBBLE & SLAM DUNK BOLA BASKET 🏀';
+        } else {
+          const isPierOrWaterfront = (
+            (gx >= 61 && gx <= 74 && gy >= 23 && gy <= 56) ||
+            (gy >= 68 && gy <= 78)
+          );
+          const isNearFountain = Math.hypot(px - 4800, py - 4800) <= 260;
+          if (isPierOrWaterfront || isNearFountain) {
+            prompt = 'TEKAN [F] / SENTUH MANCING UNTUK MEMANCING';
+          }
         }
       }
     }

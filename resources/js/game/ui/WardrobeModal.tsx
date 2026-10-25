@@ -64,13 +64,13 @@ export const WardrobeModal: React.FC<WardrobeModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 font-['Chakra_Petch']">
-      <div className="relative w-full max-w-lg bg-black border border-neutral-800 rounded-2xl overflow-hidden p-6 text-amber-400">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/85 font-['Chakra_Petch']">
+      <div className="relative w-full max-w-lg bg-black border border-neutral-800 rounded-2xl overflow-hidden p-4 sm:p-6 text-amber-400 flex flex-col max-h-[94dvh]">
         {/* Header */}
-        <div className="flex items-center justify-between pb-4 border-b border-neutral-800">
+        <div className="flex items-center justify-between pb-3 border-b border-neutral-800 shrink-0">
           <div className="flex items-center gap-2">
             <Sparkles className="w-5 h-5 text-amber-500" />
-            <h2 className="text-base font-bold tracking-wider uppercase text-amber-400">
+            <h2 className="text-sm sm:text-base font-bold tracking-wider uppercase text-amber-400">
               LEMARI PAKAIAN (GANTI AVATAR)
             </h2>
           </div>
@@ -86,11 +86,11 @@ export const WardrobeModal: React.FC<WardrobeModalProps> = ({
         </div>
 
         {/* Content: Preview & Customization Grid */}
-        <div className="mt-5 grid grid-cols-1 md:grid-cols-12 gap-5 items-center">
+        <div className="mt-4 grid grid-cols-1 md:grid-cols-12 gap-4 items-center flex-1 min-h-0 overflow-y-auto custom-scrollbar pr-1">
           {/* Avatar Preview */}
-          <div className="md:col-span-5 flex flex-col items-center justify-center p-4 rounded-xl border border-neutral-800 bg-neutral-900">
-            <AvatarPreview avatar={avatar} size={140} />
-            <span className="mt-3 text-xs font-bold uppercase tracking-widest text-amber-400">
+          <div className="md:col-span-5 flex flex-col items-center justify-center p-3 rounded-xl border border-neutral-800 bg-neutral-900">
+            <AvatarPreview avatar={avatar} size={110} />
+            <span className="mt-2 text-[10px] sm:text-xs font-bold uppercase tracking-widest text-amber-400">
               PRATINJAU KARAKTER
             </span>
           </div>
@@ -221,7 +221,7 @@ export const WardrobeModal: React.FC<WardrobeModalProps> = ({
         </div>
 
         {/* Action Buttons */}
-        <div className="mt-6 pt-4 border-t border-neutral-800 flex items-center justify-end gap-3">
+        <div className="mt-4 pt-3 border-t border-neutral-800 flex items-center justify-end gap-3 shrink-0">
           <button
             type="button"
             onClick={() => {

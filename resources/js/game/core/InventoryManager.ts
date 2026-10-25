@@ -324,6 +324,29 @@ export class InventoryManager {
       };
     }
 
+    // Jika item adalah ramuan khusus apotek
+    if (item.category === 'consumable' && (item.extraData?.potionType || item.id.startsWith('pot_'))) {
+      const potionType = item.extraData?.potionType || item.id.split('_')[1];
+      const durationSec = item.extraData?.durationSec || 60;
+      item.quantity--;
+      if (item.quantity <= 0) {
+        this.items[slotIndex] = null;
+      }
+      this.saveToStorage();
+
+      SoundManager.getInstance().playItemUse();
+      EventBus.emit('player-consumed-potion', {
+        potionType,
+        potionName: item.name,
+        durationSec,
+      });
+
+      return {
+        success: true,
+        message: `Teguk! Meminum ${item.name}! Efek aktif ${durationSec} detik (Nonaktif di minigame bola/basket/volly). ✨`,
+      };
+    }
+
     // Jika item adalah makanan / konsumsi penyembuh
     if (item.category === 'consumable' && item.extraData?.hpRestore) {
       const hp = item.extraData.hpRestore;

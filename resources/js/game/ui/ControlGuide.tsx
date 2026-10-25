@@ -13,10 +13,10 @@ export const ControlGuide: React.FC<ControlGuideProps> = ({ isOpen, onClose, con
   const isMobile = controlMode === 'mobile';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4 pointer-events-auto">
-      <div className="w-full max-w-md bg-black border border-neutral-800 rounded-2xl p-6 text-neutral-100 space-y-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-2 sm:p-4 pointer-events-auto">
+      <div className="w-full max-w-md bg-black border border-neutral-800 rounded-2xl p-4 sm:p-6 text-neutral-100 flex flex-col gap-3 sm:gap-4 max-h-[94dvh] overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between pb-3 border-b border-neutral-800">
+        <div className="flex items-center justify-between pb-3 border-b border-neutral-800 shrink-0">
           <div className="flex items-center gap-2 text-amber-400 font-bold text-base">
             <Keyboard className="w-5 h-5" />
             <span>Petunjuk Kontrol ({isMobile ? 'Mode Mobile' : 'Mode PC'})</span>
@@ -30,7 +30,7 @@ export const ControlGuide: React.FC<ControlGuideProps> = ({ isOpen, onClose, con
         </div>
 
         {/* Content */}
-        <div className="space-y-3 text-xs text-neutral-300">
+        <div className="space-y-3 text-xs text-neutral-300 overflow-y-auto flex-1 min-h-0 custom-scrollbar pr-1">
           <div className="flex items-start gap-3 bg-[#0e0e0e] p-3 rounded-xl border border-neutral-800">
             <div className="p-2 rounded-lg bg-neutral-900 text-amber-400 shrink-0">
               <Keyboard className="w-4 h-4" />
@@ -142,7 +142,7 @@ export const ControlGuide: React.FC<ControlGuideProps> = ({ isOpen, onClose, con
 
         <button
           onClick={onClose}
-          className="w-full py-2.5 bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-white font-semibold rounded-xl text-xs transition-colors cursor-pointer"
+          className="w-full py-2.5 bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-white font-semibold rounded-xl text-xs transition-colors cursor-pointer shrink-0"
         >
           Mengerti, Lanjutkan Game
         </button>

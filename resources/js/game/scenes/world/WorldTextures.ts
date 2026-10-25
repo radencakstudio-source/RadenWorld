@@ -351,4 +351,58 @@ export class WorldTextures {
       console.warn('[WorldTextures] Gagal membuat water-shoreline-surf-v:', e);
     }
   }
+
+  /**
+   * Memastikan tekstur paving trotoar Alun-Alun tersedia di runtime
+   */
+  public static ensureAlunAlunTextures(scene: Phaser.Scene): void {
+    if (!scene.textures.exists('alunalun-checker-tile')) {
+      try {
+        if (scene.textures.exists('tile-trotoar-alunalun')) {
+          const img = scene.textures.get('tile-trotoar-alunalun').getSourceImage() as HTMLImageElement;
+          const canvas = document.createElement('canvas');
+          canvas.width = 240;
+          canvas.height = 240;
+          const ctx = canvas.getContext('2d');
+          if (ctx && img) {
+            ctx.drawImage(img, 0, 0, 120, 120);
+            ctx.drawImage(img, 120, 0, 120, 120);
+            ctx.drawImage(img, 0, 120, 120, 120);
+            ctx.drawImage(img, 120, 120, 120, 120);
+            scene.textures.addCanvas('alunalun-checker-tile', canvas);
+          }
+        }
+      } catch (e) {
+        console.warn('[WorldTextures] Gagal membuat alunalun-checker-tile:', e);
+      }
+    }
+  }
+
+  /**
+   * Memastikan tekstur paving trotoar 2 tersedia sebagai canvas 2x2 (240x240) untuk TileSprite
+   */
+  public static ensureTrotoar2Textures(scene: Phaser.Scene): void {
+    if (!scene.textures.exists('trotoar2-checker-tile')) {
+      try {
+        if (scene.textures.exists('trotoar-2')) {
+          const img = scene.textures.get('trotoar-2').getSourceImage() as HTMLImageElement;
+          const canvas = document.createElement('canvas');
+          canvas.width = 240;
+          canvas.height = 240;
+          const ctx = canvas.getContext('2d');
+          if (ctx && img) {
+            ctx.drawImage(img, 0, 0, 120, 120);
+            ctx.drawImage(img, 120, 0, 120, 120);
+            ctx.drawImage(img, 0, 120, 120, 120);
+            ctx.drawImage(img, 120, 120, 120, 120);
+            scene.textures.addCanvas('trotoar2-checker-tile', canvas);
+          }
+        }
+      } catch (e) {
+        console.warn('[WorldTextures] Gagal membuat trotoar2-checker-tile:', e);
+      }
+    }
+  }
 }
+
+

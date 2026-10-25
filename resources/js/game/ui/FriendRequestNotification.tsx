@@ -70,7 +70,7 @@ export const FriendRequestNotification: React.FC<FriendRequestNotificationProps>
   const progressPercent = Math.max(0, Math.min(100, (timeLeft / 60) * 100));
 
   return (
-    <div className="fixed right-4 top-20 z-[9999] pointer-events-auto w-80 bg-[#080808] border border-amber-500/50 rounded-xl p-3.5 shadow-2xl text-neutral-100 font-['Chakra_Petch'] animate-in slide-in-from-right duration-300">
+    <div className="fixed right-2 sm:right-4 top-16 sm:top-20 z-[9999] pointer-events-auto w-[calc(100vw-1rem)] sm:w-80 max-w-80 bg-[#080808] border border-neutral-800 rounded-xl p-3 sm:p-3.5 shadow-2xl text-neutral-100 font-['Chakra_Petch'] animate-in slide-in-from-right duration-300">
       {/* HEADER */}
       <div className="flex items-center justify-between pb-2 border-b border-neutral-800">
         <div className="flex items-center gap-1.5 text-amber-400">

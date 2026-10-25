@@ -23,6 +23,18 @@ Route::get('/school/{type?}', function ($type = null) {
     return view('welcome');
 });
 
+Route::get('/cafe', function () {
+    return view('welcome');
+});
+
+Route::get('/perpustakaan', function () {
+    return view('welcome');
+});
+
+Route::get('/library', function () {
+    return view('welcome');
+});
+
 // Route Khusus Portal Super Admin (Dengan random token ID berkeamanan tinggi)
 Route::get('/admin/{adminToken?}', function ($adminToken = null) {
     return view('welcome');
@@ -228,6 +240,12 @@ Route::post('/api/auth/register', function (\Illuminate\Http\Request $request) {
         'role' => $role,
     ]);
 
+    $months = [
+        'Jan' => 'Jan', 'Feb' => 'Feb', 'Mar' => 'Mar', 'Apr' => 'Apr', 'May' => 'Mei', 'Jun' => 'Jun',
+        'Jul' => 'Jul', 'Aug' => 'Ags', 'Sep' => 'Sep', 'Oct' => 'Okt', 'Nov' => 'Nov', 'Dec' => 'Des'
+    ];
+    $joinedDateStr = $user->created_at ? strtr($user->created_at->format('d M Y'), $months) : 'Warga RadenWorld';
+
     return response()->json([
         'status' => 'success',
         'message' => $isSuperAdmin ? 'Akun Super Admin berhasil dibuat!' : 'Akun berhasil dibuat! Selamat datang di RadenWorld.',
@@ -242,6 +260,9 @@ Route::post('/api/auth/register', function (\Illuminate\Http\Request $request) {
             'title' => $user->title,
             'role' => $user->role,
             'is_super_admin' => $user->isSuperAdmin(),
+            'created_at' => $user->created_at ? $user->created_at->toIso8601String() : null,
+            'joined_at' => $joinedDateStr,
+            'likes' => $user->isSuperAdmin() ? 99999999999 : 0,
             'private_room_id' => 'safe-' . $user->id . '-' . substr(md5($user->name), 0, 6),
         ],
     ]);
@@ -325,6 +346,16 @@ Route::post('/api/auth/login', function (\Illuminate\Http\Request $request) {
         $user->save();
     }
 
+    $likesFile = storage_path('app/player_likes.json');
+    $likesMap = file_exists($likesFile) ? (json_decode(file_get_contents($likesFile), true) ?: []) : [];
+    $isSuper = $user->isSuperAdmin();
+    $likesCount = $likesMap[$user->name] ?? ($isSuper ? 99999999999 : 0);
+    $months = [
+        'Jan' => 'Jan', 'Feb' => 'Feb', 'Mar' => 'Mar', 'Apr' => 'Apr', 'May' => 'Mei', 'Jun' => 'Jun',
+        'Jul' => 'Jul', 'Aug' => 'Ags', 'Sep' => 'Sep', 'Oct' => 'Okt', 'Nov' => 'Nov', 'Dec' => 'Des'
+    ];
+    $joinedDateStr = $user->created_at ? strtr($user->created_at->format('d M Y'), $months) : 'Warga RadenWorld';
+
     return response()->json([
         'status' => 'success',
         'message' => $user->isSuperAdmin() ? 'Selamat datang kembali, Pemimpin Tertinggi Raden (Super Admin)!' : 'Berhasil masuk ke RadenWorld!',
@@ -339,6 +370,9 @@ Route::post('/api/auth/login', function (\Illuminate\Http\Request $request) {
             'title' => $user->title,
             'role' => $user->role,
             'is_super_admin' => $user->isSuperAdmin(),
+            'created_at' => $user->created_at ? $user->created_at->toIso8601String() : null,
+            'joined_at' => $joinedDateStr,
+            'likes' => $likesCount,
             'private_room_id' => 'safe-' . $user->id . '-' . substr(md5($user->name), 0, 6),
         ],
     ]);
@@ -395,39 +429,305 @@ Route::post('/api/auth/update-avatar', function (\Illuminate\Http\Request $reque
 });
 
 // E. Dapatkan Profil Pemain Lengkap
-Route::get('/api/auth/profile/{name}', function ($name) {
-    $user = \App\Models\User::where('name', $name)->first();
+// E. Dapatkan Profil Pemain Lengkap (Dengan Relasi Sosial Nyata dari Database)
+Route::get('/api/auth/profile/{name}', function (\Illuminate\Http\Request $request, $name) {
+    $targetName = trim($name);
+    $viewerName = trim($request->input('viewer', ''));
+    $clientIp = $request->ip() ?: '127.0.0.1';
+    $today = date('Y-m-d');
+
+    $likesFile = storage_path('app/player_likes.json');
+    $likesMap = file_exists($likesFile) ? (json_decode(file_get_contents($likesFile), true) ?: []) : [];
+
+    // Cek apakah penonton (viewer) sudah memberikan suka hari ini (Berdasarkan Nama Akun atau IP)
+    $dailyLogFile = storage_path('app/player_daily_likes_log.json');
+    $dailyLogs = file_exists($dailyLogFile) ? (json_decode(file_get_contents($dailyLogFile), true) ?: []) : [];
+    $senderKey = strtolower($viewerName);
+    $ipKey = "ip_{$clientIp}";
+    $targetKey = strtolower($targetName);
+    
+    $hasLikedToday = ($senderKey !== '' && isset($dailyLogs[$today]["{$senderKey}-->{$targetKey}"]))
+        || isset($dailyLogs[$today]["{$ipKey}-->{$targetKey}"]);
+
+    // Hitung data relasi sosial asli dari database (Teman, Mengikuti, Pengikut)
+    $socialCounts = \App\Models\UserFollow::getCounts($targetName);
+    $isFollowing = false;
+    $isFollower = false;
+    $isFriend = false;
+
+    if ($viewerName !== '') {
+        $isFollowing = \App\Models\UserFollow::isFollowing($viewerName, $targetName);
+        $isFollower = \App\Models\UserFollow::isFollowing($targetName, $viewerName);
+        $isFriend = $isFollowing && $isFollower;
+    }
+
+    $months = [
+        'Jan' => 'Jan', 'Feb' => 'Feb', 'Mar' => 'Mar', 'Apr' => 'Apr', 'May' => 'Mei', 'Jun' => 'Jun',
+        'Jul' => 'Jul', 'Aug' => 'Ags', 'Sep' => 'Sep', 'Oct' => 'Okt', 'Nov' => 'Nov', 'Dec' => 'Des'
+    ];
+
+    $user = \App\Models\User::where('name', $targetName)
+        ->orWhereRaw('LOWER(name) = ?', [strtolower(trim($targetName))])
+        ->first();
     if (!$user) {
+        $likesCount = $likesMap[$targetName] ?? 0;
         return response()->json([
-            'name' => $name,
+            'name' => $targetName,
             'level' => 1,
             'exp' => 0,
             'max_exp' => 100,
             'title' => 'Petualang Pemula',
+            'likes' => $likesCount,
+            'has_liked_today' => $hasLikedToday,
             'gold' => 250,
             'diamonds' => 10,
-            'joined_at' => date('d M Y'),
+            'joined_at' => 'Warga RadenWorld',
+            'friends_count' => $socialCounts['friends_count'],
+            'following_count' => $socialCounts['following_count'],
+            'followers_count' => $socialCounts['followers_count'],
+            'is_following' => $isFollowing,
+            'is_follower' => $isFollower,
+            'is_friend' => $isFriend,
+            'friends' => $socialCounts['friends'],
+            'following' => $socialCounts['following'],
+            'followers' => $socialCounts['followers'],
         ]);
     }
 
     $isSuper = $user->isSuperAdmin();
+    $likesCount = $likesMap[$user->name] ?? ($isSuper ? 99999999999 : 0);
+    $formattedJoinedAt = $user->created_at ? strtr($user->created_at->format('d M Y'), $months) : 'Warga RadenWorld';
 
     return response()->json([
         'id' => $user->id,
         'name' => $user->name,
         'email' => $user->email,
-        'level' => $user->level,
+        'level' => $isSuper ? 99 : $user->level,
         'exp' => $user->exp,
         'max_exp' => $user->level * 100,
         'title' => $user->title,
         'role' => $user->role,
         'is_super_admin' => $isSuper,
+        'likes' => $likesCount,
+        'has_liked_today' => $hasLikedToday,
         'gold' => $isSuper ? 999999 : 250,
         'diamonds' => $isSuper ? 9999 : 10,
         'avatar' => $user->avatar,
-        'joined_at' => $user->created_at->format('d M Y'),
+        'joined_at' => $formattedJoinedAt,
+        'friends_count' => $socialCounts['friends_count'], // Real database count, no 999 hardcode
+        'following_count' => $socialCounts['following_count'], // Real database count
+        'followers_count' => $socialCounts['followers_count'], // Real database count
+        'is_following' => $isFollowing,
+        'is_follower' => $isFollower,
+        'is_friend' => $isFriend,
+        'friends' => $socialCounts['friends'],
+        'following' => $socialCounts['following'],
+        'followers' => $socialCounts['followers'],
     ]);
 });
+
+// G. Dapatkan Hubungan Relasi Sosial Pemain (Teman, Mengikuti, Pengikut)
+Route::get('/api/social/relations/{name}', function (\Illuminate\Http\Request $request, $name) {
+    $targetName = trim($name);
+    $viewerName = trim($request->input('viewer', ''));
+
+    $data = \App\Models\UserFollow::getCounts($targetName);
+    $isFollowing = false;
+    $isFollower = false;
+    $isFriend = false;
+
+    if ($viewerName !== '') {
+        $isFollowing = \App\Models\UserFollow::isFollowing($viewerName, $targetName);
+        $isFollower = \App\Models\UserFollow::isFollowing($targetName, $viewerName);
+        $isFriend = $isFollowing && $isFollower;
+    }
+
+    return response()->json([
+        'name' => $targetName,
+        'friends' => $data['friends'],
+        'following' => $data['following'],
+        'followers' => $data['followers'],
+        'friends_count' => $data['friends_count'],
+        'following_count' => $data['following_count'],
+        'followers_count' => $data['followers_count'],
+        'is_following' => $isFollowing,
+        'is_follower' => $isFollower,
+        'is_friend' => $isFriend,
+    ]);
+});
+
+// H. Ikuti Pemain Lain (Follow / Saling Ikuti Jadi Teman)
+Route::post('/api/social/follow', function (\Illuminate\Http\Request $request) {
+    $senderName = trim($request->input('sender_name', ''));
+    $targetName = trim($request->input('target_name', ''));
+
+    if (!$senderName || !$targetName) {
+        return response()->json([
+            'status' => 'error',
+            'message' => 'Nama pengirim dan target harus diisi.'
+        ], 400);
+    }
+
+    if (strtolower($senderName) === strtolower($targetName)) {
+        return response()->json([
+            'status' => 'self_follow',
+            'message' => 'Kamu tidak dapat mengikuti diri sendiri!'
+        ], 400);
+    }
+
+    $result = \App\Models\UserFollow::follow($senderName, $targetName);
+    $counts = \App\Models\UserFollow::getCounts($targetName);
+    $senderCounts = \App\Models\UserFollow::getCounts($senderName);
+
+    return response()->json([
+        'status' => 'success',
+        'message' => $result['message'],
+        'is_following' => true,
+        'is_friend' => $result['is_friend'],
+        'target_counts' => $counts,
+        'sender_counts' => $senderCounts,
+    ]);
+});
+
+// I. Berhenti Mengikuti Pemain Lain (Unfollow / Hapus Pertemanan)
+Route::post('/api/social/unfollow', function (\Illuminate\Http\Request $request) {
+    $senderName = trim($request->input('sender_name', ''));
+    $targetName = trim($request->input('target_name', ''));
+
+    if (!$senderName || !$targetName) {
+        return response()->json([
+            'status' => 'error',
+            'message' => 'Nama pengirim dan target harus diisi.'
+        ], 400);
+    }
+
+    $result = \App\Models\UserFollow::unfollow($senderName, $targetName);
+    $counts = \App\Models\UserFollow::getCounts($targetName);
+    $senderCounts = \App\Models\UserFollow::getCounts($senderName);
+
+    return response()->json([
+        'status' => 'success',
+        'message' => $result['message'],
+        'is_following' => false,
+        'is_friend' => false,
+        'target_counts' => $counts,
+        'sender_counts' => $senderCounts,
+    ]);
+});
+
+// J. Hapus Pengikut
+Route::post('/api/social/remove-follower', function (\Illuminate\Http\Request $request) {
+    $userName = trim($request->input('user_name', ''));
+    $followerName = trim($request->input('follower_name', ''));
+
+    if (!$userName || !$followerName) {
+        return response()->json([
+            'status' => 'error',
+            'message' => 'Nama user dan pengikut harus diisi.'
+        ], 400);
+    }
+
+    $result = \App\Models\UserFollow::removeFollower($userName, $followerName);
+    $userCounts = \App\Models\UserFollow::getCounts($userName);
+
+    return response()->json([
+        'status' => 'success',
+        'message' => $result['message'],
+        'user_counts' => $userCounts,
+    ]);
+});
+
+// F. Berikan Like ke Profil Pemain (Maksimal 1 Kali Sehari & Bebas Spam)
+Route::post('/api/auth/profile/{name}/like', function (\Illuminate\Http\Request $request, $name) {
+    $targetName = trim($name);
+    $senderName = trim($request->input('sender_name', ''));
+    $clientIp = $request->ip() ?: '127.0.0.1';
+    $today = date('Y-m-d');
+
+    // 1. Validasi tidak boleh like diri sendiri jika nama sama
+    if ($senderName !== '' && strtolower($senderName) === strtolower($targetName)) {
+        return response()->json([
+            'status' => 'self_like',
+            'can_like' => false,
+            'name' => $targetName,
+            'message' => 'Kamu tidak dapat memberikan suka ke profilmu sendiri!'
+        ], 400);
+    }
+
+    // 2. Baca dan bersihkan log harian (simpan maksimal 7 hari ke belakang)
+    $dailyLogFile = storage_path('app/player_daily_likes_log.json');
+    $dailyLogs = [];
+    if (file_exists($dailyLogFile)) {
+        $dailyLogs = json_decode(file_get_contents($dailyLogFile), true) ?: [];
+    }
+
+    $sevenDaysAgo = date('Y-m-d', strtotime('-7 days'));
+    foreach (array_keys($dailyLogs) as $logDate) {
+        if ($logDate < $sevenDaysAgo) {
+            unset($dailyLogs[$logDate]);
+        }
+    }
+
+    if (!isset($dailyLogs[$today]) || !is_array($dailyLogs[$today])) {
+        $dailyLogs[$today] = [];
+    }
+
+    // 3. Kunci unik kombinasi pengirim dan penerima (Dual Check: Nama Akun + IP Address)
+    $senderKey = strtolower($senderName);
+    $ipKey = "ip_{$clientIp}";
+    $targetKey = strtolower($targetName);
+    $pairNameKey = $senderKey !== '' ? "{$senderKey}-->{$targetKey}" : null;
+    $pairIpKey = "{$ipKey}-->{$targetKey}";
+
+    // Baca data total like saat ini
+    $likesFile = storage_path('app/player_likes.json');
+    $likesMap = file_exists($likesFile) ? (json_decode(file_get_contents($likesFile), true) ?: []) : [];
+    
+    $targetUser = \App\Models\User::where('name', $targetName)
+        ->orWhereRaw('LOWER(name) = ?', [strtolower(trim($targetName))])
+        ->first();
+    $isTargetSuper = $targetUser ? $targetUser->isSuperAdmin() : (strtoupper($targetName) === 'RADEN');
+    $currentLikes = $likesMap[$targetName] ?? ($isTargetSuper ? 99999999999 : 0);
+
+    // 4. Cegah spam: Cek apakah Nama Akun atau IP Address sudah like target hari ini
+    $alreadyLiked = ($pairNameKey && isset($dailyLogs[$today][$pairNameKey])) || isset($dailyLogs[$today][$pairIpKey]);
+    if ($alreadyLiked) {
+        return response()->json([
+            'status' => 'already_liked',
+            'can_like' => false,
+            'name' => $targetName,
+            'likes' => $currentLikes,
+            'has_liked_today' => true,
+            'message' => "Kamu sudah memberikan suka ke {$targetName} hari ini. Kamu bisa memberikan suka lagi besok!"
+        ], 200);
+    }
+
+    // 5. Catat log like harian untuk Nama Akun dan IP Address
+    $logData = [
+        'time' => date('H:i:s'),
+        'sender' => $senderName ?: "ip_{$clientIp}",
+        'target' => $targetName,
+    ];
+    if ($pairNameKey) {
+        $dailyLogs[$today][$pairNameKey] = $logData;
+    }
+    $dailyLogs[$today][$pairIpKey] = $logData;
+    @file_put_contents($dailyLogFile, json_encode($dailyLogs, JSON_PRETTY_PRINT));
+
+    $newLikes = $isTargetSuper ? 99999999999 : ($currentLikes + 1);
+    $likesMap[$targetName] = $newLikes;
+    @file_put_contents($likesFile, json_encode($likesMap, JSON_PRETTY_PRINT));
+
+    return response()->json([
+        'status' => 'success',
+        'can_like' => false,
+        'has_liked_today' => true,
+        'name' => $targetName,
+        'likes' => $newLikes,
+        'message' => "Kamu berhasil memberikan apresiasi suka ke {$targetName} untuk hari ini!"
+    ]);
+});
+
 
 // ============================================================================
 // 4. API SUPER ADMIN
@@ -631,6 +931,139 @@ Route::get('/api/game/school/{type}', function ($type) {
     return response()->json([
         'status' => 'success',
         'data' => $schools[$normalized],
+    ]);
+});
+
+// ============================================================================
+// API CAFE & LOUNGE (RADEN CAFE)
+// ============================================================================
+Route::get('/api/game/cafe', function () {
+    return response()->json([
+        'status' => 'success',
+        'data' => [
+            'name' => 'Raden Cafe & Lounge',
+            'code' => 'RADEN-CAFE-01',
+            'category' => 'Kawasan Kuliner Barat',
+            'room' => 'cafe',
+            'description' => 'Tempat nongkrong santai nan mewah dengan sajian kopi Nusantara, pastry lezat, dan Wi-Fi kencang.',
+            'barista' => [
+                'name' => 'Barista Doni',
+                'title' => 'Master Barista & Head of Cafe',
+                'greeting' => 'Selamat datang di Raden Cafe! Mau pesan kopi panas atau minuman segar hari ini?',
+            ],
+            'menu' => [
+                [
+                    'id' => 'kopi_gayo',
+                    'name' => 'Kopi Tubruk Gayo',
+                    'category' => 'Kopi Panas',
+                    'price' => 250,
+                    'effect' => '+10 Stamina & Kecepatan Lari +5%',
+                    'icon' => '☕',
+                ],
+                [
+                    'id' => 'caramel_macchiato',
+                    'name' => 'Iced Caramel Macchiato',
+                    'category' => 'Minuman Dingin',
+                    'price' => 350,
+                    'effect' => '+25 Energi & Efek Mood Ceria',
+                    'icon' => '🧊',
+                ],
+                [
+                    'id' => 'croissant_butter',
+                    'name' => 'Butter Croissant Premium',
+                    'category' => 'Pastry',
+                    'price' => 200,
+                    'effect' => '+20 HP & Kenyamanan Maksimal',
+                    'icon' => '🥐',
+                ],
+                [
+                    'id' => 'donut_hazelnut',
+                    'name' => 'Donat Cokelat Hazelnut',
+                    'category' => 'Snack',
+                    'price' => 150,
+                    'effect' => '+15 EXP Manis',
+                    'icon' => '🍩',
+                ],
+                [
+                    'id' => 'teh_tarik',
+                    'name' => 'Teh Tarik Nusantara',
+                    'category' => 'Teh Tradisional',
+                    'price' => 180,
+                    'effect' => '+10 Relaksasi Pikiran',
+                    'icon' => '🍵',
+                ],
+            ],
+            'facilities' => [
+                'Bar Counter Kayu Mewah',
+                'Mesin Espresso Italia Modern',
+                '8 Set Meja Diskusi & Karpet Amber',
+                'Jukebox Klasik Pemutar Musik Jazz',
+                'Vending Machine Minuman Otomatis',
+                'Koneksi Internet Wi-Fi Cepat',
+            ],
+            'ambience' => [
+                'music' => 'Lo-Fi Jazz Cafe Lounge',
+                'lighting' => 'Warm Amber Glow',
+            ],
+        ],
+    ]);
+});
+
+// ============================================================================
+// API PERPUSTAKAAN KOTA (LIBRARY)
+// ============================================================================
+Route::get('/api/game/library', function () {
+    return response()->json([
+        'status' => 'success',
+        'data' => [
+            'name' => 'Perpustakaan Kota RadenWorld',
+            'code' => 'RADEN-LIB-01',
+            'category' => 'Kawasan Literasi & Akademik',
+            'room' => 'library',
+            'motto' => 'Jendela Ilmu, Menembus Cakrawala Dunia Tanpa Batas',
+            'librarian' => [
+                'name' => 'Ibu Siti Nurhaliza',
+                'title' => 'Kepala Pustakawati Kota',
+                'greeting' => 'Selamat datang di Perpustakaan Kota! Silakan pilih buku di rak SD, SMP, atau SMA untuk menambah wawasanmu.',
+            ],
+            'catalogs' => [
+                'sd' => [
+                    'title' => 'Koleksi Dasar Pelajar SD',
+                    'books' => [
+                        'Matematika Ceria: Perkalian, Pembagian & Pecahan',
+                        'Petualangan Sains Cilik: Ekosistem Flora & Fauna',
+                        'Bahasa Nusantara: Cerita Rakyat & Pantun Berbudi',
+                    ],
+                    'exp_reward' => 25,
+                ],
+                'smp' => [
+                    'title' => 'Koleksi Menengah Pelajar SMP',
+                    'books' => [
+                        'Fisika Terapan: Gerak Lurus & Energi Terbarukan',
+                        'Biologi Lingkungan: Sel, Genetika & Hutan Tropis',
+                        'Sejarah Dunia & Jejak Kerajaan Maritim Nusantara',
+                    ],
+                    'exp_reward' => 50,
+                ],
+                'sma' => [
+                    'title' => 'Koleksi Lanjutan Pelajar SMA',
+                    'books' => [
+                        'Kalkulus Lanjut & Aljabar Linear Komputasi',
+                        'Kimia Organik Modern & Teknologi Polimer Ramah Lingkungan',
+                        'Ekonomi Makro, Fiskal & Pasar Modal Digital',
+                        'Strategi Menembus Seleksi Nasional UTBK-SNBT',
+                    ],
+                    'exp_reward' => 100,
+                ],
+            ],
+            'facilities' => [
+                'Rak Buku Kayu Jati Klasifikasi SD, SMP, SMA',
+                'Meja Baca Panjang Berlampu Banker Hijau Antik',
+                'Karpet Lorong Hijau Zamrud (Emerald Runner)',
+                'Globe Antik & Alat Peraga Anatomi Tubuh',
+                'Pojok Digital E-Library & Komputer Pencarian',
+            ],
+        ],
     ]);
 });
 

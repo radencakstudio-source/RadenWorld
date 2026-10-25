@@ -37,8 +37,8 @@ export const ExitModal: React.FC<ExitModalProps> = ({ isOpen, onClose, onConfirm
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4 animate-in fade-in duration-200">
-      <div className="w-full max-w-sm bg-black border border-neutral-800 rounded-2xl p-6 text-neutral-100 flex flex-col gap-5 text-center relative overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-2 sm:p-4 animate-in fade-in duration-200">
+      <div className="w-full max-w-sm bg-black border border-neutral-800 rounded-2xl p-4 sm:p-6 text-neutral-100 flex flex-col gap-4 sm:gap-5 text-center relative overflow-hidden max-h-[94dvh] overflow-y-auto custom-scrollbar">
         {!hasExited ? (
           <>
             <div className="mx-auto p-3.5 rounded-full bg-neutral-900 border border-neutral-800 text-rose-400 w-fit">

@@ -84,3 +84,23 @@ if (container) {
     </ErrorBoundary>
   );
 }
+
+// Daftarkan Service Worker untuk caching aset statis (gambar, audio, map, font)
+if (typeof window !== 'undefined' && 'serviceWorker' in navigator && window.location.protocol.startsWith('http')) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker
+      .register('/sw.js')
+      .then((reg) => {
+        // SW aktif dan memantau aset untuk caching super cepat
+        if (reg.installing) {
+          console.log('[RadenWorld] Service Worker sedang menginstal cache aset game...');
+        } else if (reg.active) {
+          console.log('[RadenWorld] Cache aset game aktif (Hemat Data & Muat Super Cepat).');
+        }
+      })
+      .catch((err) => {
+        // Fallback aman jika browser dalam mode incognito/private tanpa SW support
+        console.warn('[RadenWorld] Service Worker tidak dapat didaftarkan (mode direct aktif):', err);
+      });
+  });
+}

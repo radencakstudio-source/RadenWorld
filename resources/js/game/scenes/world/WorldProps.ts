@@ -15,6 +15,8 @@
  */
 
 import Phaser from 'phaser';
+import { SoundManager } from '../../core/SoundManager';
+import { EventBus } from '../../core/EventBus';
 
 export interface ILampCoord {
   gx: number;
@@ -22,6 +24,11 @@ export interface ILampCoord {
 }
 
 export class WorldProps {
+  /**
+   * Kumpulan sprite rumput liar untuk interaksi goyangan saat diinjak / didekati pemain yang bergerak
+   */
+  public static wildGrassSprites: Phaser.GameObjects.Image[] = [];
+
   /**
    * Kumpulan koordinat 44 Lampu Jalan (prop-lampu 1x3) 100% Sesuai Blueprint Peta
    */
@@ -130,10 +137,16 @@ export class WorldProps {
 
     const isWildGrass = key === 'prop-rumput';
     const isTamanRumput = key === 'prop-taman-rumput';
+    const isGroundCourt = key === 'court-bola' || key === 'court-basket';
 
-    img.setDepth((gy + gh) * tileSize);
+    // Lapangan olahraga ditaruh pada kedalaman tanah (-94) agar pemain berjalan di atasnya
+    if (isGroundCourt) {
+      img.setDepth(-94);
+    } else {
+      img.setDepth((gy + gh) * tileSize);
+    }
 
-    if (isWildGrass || isTamanRumput) isObstacle = false;
+    if (isWildGrass || isTamanRumput || isGroundCourt) isObstacle = false;
 
     if (interactiveCallback) {
       img.setInteractive({ useHandCursor: true });
@@ -143,7 +156,7 @@ export class WorldProps {
       });
     }
 
-    if (isObstacle && !isWildGrass && !isTamanRumput && addObstacleFn) {
+    if (isObstacle && !isWildGrass && !isTamanRumput && !isGroundCourt && addObstacleFn) {
       // Collision selalu di bagian baris dasar objek (default 1 baris)
       const rows = obstacleRows || 1;
       addObstacleFn(gx, gy + gh - rows, gw, rows);
@@ -219,19 +232,403 @@ export class WorldProps {
       obstacleRows?: number
     ) => Phaser.GameObjects.Image | null
   ): void {
-    // Siap diisi penempatan gedung visual saat aset gedung sudah final.
-    // Contoh template penempatan gedung di masa mendatang:
-    /*
-    // 1. Gedung SD Merah (gx: 26, gy: 3, 7x8 petak)
-    addGridPropFn('building-sd', 26, 3, 7, 8, true, () => {
-      // callback interaksi pintu masuk
-    }, 2);
+    // ========================================================================
+    // PAGAR BATU BATAS UTARA (x: 23 & x: 42, y: 0..16)
+    // 16 segmen pagar bertingkat (gy: 0..15) mencakup tepat petak 0 s/d 16
+    // ========================================================================
+    // 1. Pagar Batu Sisi Barat (x = 23, y = 0 s/d 16)
+    for (let gy = 0; gy <= 15; gy++) {
+      addGridPropFn('prop-pagar-batu', 23, gy, 1, 2, true, undefined, 1);
+    }
+    // 2. Pagar Batu Sisi Timur (x = 42, y = 0 s/d 16)
+    for (let gy = 0; gy <= 15; gy++) {
+      addGridPropFn('prop-pagar-batu', 42, gy, 1, 2, true, undefined, 1);
+    }
+    // 3. Pagar Batu Batas Timur Trotoar 2 (x = 56, y = 0 s/d 16, gy: 0..15)
+    for (let gy = 0; gy <= 15; gy++) {
+      addGridPropFn('prop-pagar-batu', 56, gy, 1, 2, true, undefined, 1);
+    }
 
-    // 2. Gedung SMP Biru (gx: 34, gy: 3, 7x8 petak)
-    addGridPropFn('building-smp', 34, 3, 7, 8, true, () => {}, 2);
+    // ========================================================================
+    // KOMPLEKS GEDUNG SEKOLAH 5x10 (Ukuran Asli: gw = 5, gh = 10)
+    // Menempel batas utara gy: 0 s/d dasar/pintu di gy: 9-10
+    // 1. Gedung SD  : gx: 25..29, gy: 0..9 (5x10 petak)
+    // 2. Gedung SMP : gx: 31..35, gy: 0..9 (5x10 petak)
+    // 3. Gedung SMA : gx: 37..41, gy: 0..9 (5x10 petak)
+    // ========================================================================
+    // 1. Gedung SD Merah
+    addGridPropFn(
+      'school-sd-building',
+      25,
+      0,
+      5,
+      10,
+      true,
+      () => {
+        (scene as any).approachDoorAndEnter?.('sd', 3300, 1140);
+      },
+      2
+    );
 
-    // 3. Gedung SMA Cyan (gx: 42, gy: 3, 7x8 petak)
-    addGridPropFn('building-sma', 42, 3, 7, 8, true, () => {}, 2);
-    */
+    // 2. Gedung SMP Biru
+    addGridPropFn(
+      'school-smp-building',
+      31,
+      0,
+      5,
+      10,
+      true,
+      () => {
+        (scene as any).approachDoorAndEnter?.('smp', 4020, 1140);
+      },
+      2
+    );
+
+    // 3. Gedung SMA Cyan
+    addGridPropFn(
+      'school-sma-building',
+      37,
+      0,
+      5,
+      10,
+      true,
+      () => {
+        (scene as any).approachDoorAndEnter?.('sma', 4740, 1140);
+      },
+      2
+    );
+
+    // ========================================================================
+    // RUMAH PRIBADI PEMAIN 5x5 (gx: 9..13, gy: 2..6, Pintu: gx: 11.5, gy: 7)
+    // Berada tepat di tengah kawasan residensial di antara deretan pohon zigzag
+    // ========================================================================
+    addGridPropFn(
+      'house-5x5',
+      9,
+      2,
+      5,
+      5,
+      true,
+      () => {
+        (scene as any).approachDoorAndEnter?.('house', 1380, 840);
+      },
+      2
+    );
+
+    // ========================================================================
+    // DERETAN POHON TINGGI 1x3 (ZIGZAG SISI TIMUR & BARAT KAWASAN RESIDENSIAL)
+    // Berakhir di y=8 (x:19, y:8 dan x:2, y:8) agar petak 9, 10, 11 bersih
+    // Sisi Timur: (19,8), (18,7), (19,6), (18,5), (19,4), (18,3), (19,2), (18,1)
+    // Sisi Barat: (2,8), (3,7), (2,6), (3,5), (2,4), (3,3), (2,2), (3,1)
+    // ========================================================================
+    const tallTrees: Array<{ gx: number; gy: number }> = [
+      // Sisi Timur Residensi (x: 18..19, y: 1..8)
+      { gx: 19, gy: 8 },
+      { gx: 18, gy: 7 },
+      { gx: 19, gy: 6 },
+      { gx: 18, gy: 5 },
+      { gx: 19, gy: 4 },
+      { gx: 18, gy: 3 },
+      { gx: 19, gy: 2 },
+      { gx: 18, gy: 1 },
+      // Sisi Barat Residensi (x: 2..3, y: 1..8)
+      { gx: 2, gy: 8 },
+      { gx: 3, gy: 7 },
+      { gx: 2, gy: 6 },
+      { gx: 3, gy: 5 },
+      { gx: 2, gy: 4 },
+      { gx: 3, gy: 3 },
+      { gx: 2, gy: 2 },
+      { gx: 3, gy: 1 },
+    ];
+
+    tallTrees.forEach((tree) => {
+      addGridPropFn('prop-pohon-tall', tree.gx, tree.gy, 1, 3, true, undefined, 1);
+    });
+
+    // ========================================================================
+    // RUMPUT LIAR ALAMI 1x2 (Pekarangan Kawasan Residensial)
+    // Ditanam di setiap baris y agar padat, tidak ada petak yang terlihat kosong:
+    // 1. Sisi Kiri Rumah : gx: 7..8, gy: 2..7 (tiap baris y: 2, 3, 4, 5, 6, 7)
+    // 2. Belakang Rumah  : gx: 9..13, gy: 2..3
+    // 3. Sisi Kanan Rumah: gx: 14..15, gy: 2..7 (tiap baris y: 2, 3, 4, 5, 6, 7)
+    // ========================================================================
+    this.wildGrassSprites = [];
+
+    const spawnGrass = (gx: number, gy: number) => {
+      const g = addGridPropFn('prop-rumput', gx, gy, 1, 2, false);
+      if (g) {
+        // Set pivot point ke dasar akar rumput (bawah) agar goyangan natural dari tanah
+        g.setOrigin(0.5, 0.95);
+        g.y += 108; // 240 * (0.95 - 0.5) = 108px
+        this.wildGrassSprites.push(g);
+      }
+    };
+
+    // Sisi Kiri Rumah (x: 7..8, y: 2..7 lengkap di setiap baris petak)
+    for (let gy = 2; gy <= 7; gy++) {
+      for (let gx = 7; gx <= 8; gx++) {
+        spawnGrass(gx, gy);
+      }
+    }
+
+    // Belakang Rumah (x: 9..13, y: 2..3)
+    for (let gy = 2; gy <= 3; gy++) {
+      for (let gx = 9; gx <= 13; gx++) {
+        spawnGrass(gx, gy);
+      }
+    }
+
+    // Sisi Kanan Rumah (x: 14..15, y: 2..7 lengkap di setiap baris petak)
+    for (let gy = 2; gy <= 7; gy++) {
+      for (let gx = 14; gx <= 15; gx++) {
+        spawnGrass(gx, gy);
+      }
+    }
+
+    // ========================================================================
+    // SARANA OLAHRAGA ALUN-ALUN (BAGIAN BAWAH ALUN-ALUN: gy: 51..55)
+    // 1. Lapangan Sepak Bola (10x5 Petak Grid): gx: 24..33, gy: 51..55
+    // 2. Lapangan Bola Basket (10x5 Petak Grid): gx: 46..55, gy: 51..55
+    // Memberikan koridor jalan tengah 12 petak (gx: 34..45) yang asri & luas
+    // ========================================================================
+    // a. Lapangan Sepak Bola (10x5)
+    addGridPropFn(
+      'court-bola',
+      24,
+      51,
+      10,
+      5,
+      false,
+      () => {
+        const p = (scene as any).player;
+        if (p) {
+          p.showSpeechBubble('⚽ Oper ke depan dan... TENDANG! GOOOOL!! 🥅🔥', 2500);
+          try {
+            SoundManager.getInstance().playClick();
+          } catch (e) {}
+        }
+      }
+    );
+
+    // Rintangan fisik tiang gawang sepak bola (Kiri & Kanan)
+    WorldProps.addGridObstacle(scene, tileSize, obstacles, 23.6, 52.8, 0.7, 1.4);
+    WorldProps.addGridObstacle(scene, tileSize, obstacles, 33.7, 52.8, 0.7, 1.4);
+
+    // b. Lapangan Bola Basket (10x5)
+    addGridPropFn(
+      'court-basket',
+      46,
+      51,
+      10,
+      5,
+      false,
+      () => {
+        const p = (scene as any).player;
+        if (p) {
+          p.showSpeechBubble('🏀 Dribble melewati lawan, lompat dan... SLAM DUNK! 💥🏀', 2500);
+          try {
+            SoundManager.getInstance().playClick();
+          } catch (e) {}
+        }
+      }
+    );
+
+    // Rintangan fisik tiang ring basket (Kiri & Kanan)
+    WorldProps.addGridObstacle(scene, tileSize, obstacles, 45.7, 53.0, 0.6, 1.0);
+    WorldProps.addGridObstacle(scene, tileSize, obstacles, 55.7, 53.0, 0.6, 1.0);
+
+    // ========================================================================
+    // KAWASAN KOMERSIAL & LAYANAN PUBLIK BARAT (6 Gedung 5x5 Petak Grid)
+    // Sesuai Tata Letak Grid:
+    // Row 1 (gy: 21):
+    //   - gx: 1,  gy: 21 -> Raden Cafe (5x5)
+    //   - gx: 12, gy: 21 -> Perpustakaan Kota (5x5)
+    // Row 2 (gy: 37):
+    //   - gx: 1,  gy: 37 -> Kantor Polisi (5x5)
+    //   - gx: 12, gy: 37 -> Kantor Bank Sentral (5x5)
+    // Row 3 (gy: 53):
+    //   - gx: 1,  gy: 53 -> Apotek Farma (5x5)
+    //   - gx: 12, gy: 53 -> Kantor Makelar Properti (5x5)
+    // ========================================================================
+    // 1. Raden Cafe 5x5 (gx: 1, gy: 21)
+    addGridPropFn(
+      'building-cafe',
+      1,
+      21,
+      5,
+      5,
+      true,
+      () => {
+        if ((scene as any).transitionToCafe) {
+          (scene as any).transitionToCafe();
+        } else {
+          scene.scene.start('CafeScene');
+        }
+      },
+      2
+    );
+
+    // 2. Perpustakaan 5x5 (gx: 12, gy: 21)
+    addGridPropFn(
+      'building-perpustakaan',
+      12,
+      21,
+      5,
+      5,
+      true,
+      () => {
+        if ((scene as any).transitionToLibrary) {
+          (scene as any).transitionToLibrary();
+        } else {
+          scene.scene.start('LibraryScene');
+        }
+      },
+      2
+    );
+
+    // 3. Kantor Polisi 5x5 (gx: 1, gy: 37)
+    addGridPropFn(
+      'building-kantor-polisi',
+      1,
+      37,
+      5,
+      5,
+      true,
+      () => {
+        EventBus.emit('open-police-modal');
+      },
+      2
+    );
+
+    // 4. Kantor Bank 5x5 (gx: 12, gy: 37)
+    addGridPropFn(
+      'building-bank',
+      12,
+      37,
+      5,
+      5,
+      true,
+      () => {
+        EventBus.emit('open-bank-modal');
+      },
+      2
+    );
+
+    // 5. Apotek 5x5 (gx: 1, gy: 53)
+    addGridPropFn(
+      'building-apotek',
+      1,
+      53,
+      5,
+      5,
+      true,
+      () => {
+        EventBus.emit('open-pharmacy-modal');
+      },
+      2
+    );
+
+    // 6. Makelar 5x5 (gx: 12, gy: 53)
+    addGridPropFn(
+      'building-makelar',
+      12,
+      53,
+      5,
+      5,
+      true,
+      () => {
+        EventBus.emit('open-realtor-modal');
+      },
+      2
+    );
+  }
+
+  /**
+   * Mengatur animasi goyangan rumput saat diinjak / didekati pemain yang sedang bergerak.
+   * Rumput berhenti bergoyang dan kembali tegak jika pemain diam (idle).
+   */
+  public static updateWildGrassSway(
+    time: number,
+    localPlayer: { x: number; y: number; getIsMoving?: () => boolean } | null,
+    remotePlayers?: Map<string, any>
+  ): void {
+    if (!this.wildGrassSprites || this.wildGrassSprites.length === 0) return;
+
+    const movingPositions: { x: number; y: number }[] = [];
+
+    if (localPlayer) {
+      const isLocalMoving =
+        (typeof (localPlayer as any).getIsMoving === 'function' && (localPlayer as any).getIsMoving()) ||
+        Boolean((localPlayer as any).isMoving) ||
+        Boolean(
+          (localPlayer as any).body &&
+            (Math.abs((localPlayer as any).body.velocity.x) > 5 ||
+              Math.abs((localPlayer as any).body.velocity.y) > 5)
+        );
+
+      if (isLocalMoving) {
+        movingPositions.push({ x: localPlayer.x, y: localPlayer.y });
+      }
+    }
+
+    if (remotePlayers) {
+      remotePlayers.forEach((rp) => {
+        if (rp && rp.active) {
+          const isRemoteMoving =
+            (typeof rp.getIsMoving === 'function' ? rp.getIsMoving() : false) ||
+            Boolean(rp.isMoving) ||
+            Boolean(rp.body && (Math.abs(rp.body.velocity.x) > 5 || Math.abs(rp.body.velocity.y) > 5));
+          if (isRemoteMoving) {
+            movingPositions.push({ x: rp.x, y: rp.y });
+          }
+        }
+      });
+    }
+
+    const hasMovingPlayers = movingPositions.length > 0;
+    const triggerRadius = 125; // Radius sentuhan ~1 petak di sekeliling rumpun rumput
+
+    for (let i = 0; i < this.wildGrassSprites.length; i++) {
+      const grass = this.wildGrassSprites[i];
+      if (!grass || !grass.active) continue;
+
+      let isTriggered = false;
+      let minDist = 9999;
+
+      if (hasMovingPlayers) {
+        // grass.y berada di titik jangkar akar (bawah).
+        // Titik tengah visual rumput 1x2 berada ~108px di atas akarnya.
+        const grassCenterY = grass.y - 108;
+
+        for (let j = 0; j < movingPositions.length; j++) {
+          const pos = movingPositions[j];
+          const dist = Phaser.Math.Distance.Between(pos.x, pos.y, grass.x, grassCenterY);
+          if (dist < triggerRadius && dist < minDist) {
+            minDist = dist;
+            isTriggered = true;
+          }
+        }
+      }
+
+      if (isTriggered) {
+        // Goyangan rumput alami: terayun jelas (tidak kaku), berayun lembut & wajar (tidak berlebihan)
+        const influence = Math.max(0.35, 1 - (minDist / triggerRadius));
+        const swaySpeed = 0.016; // Kecepatan ayunan serasi dengan ketukan langkah kaki
+        const maxSwayAngle = 7.0 * influence; // Maksimal ±7 derajat di pusat sentuhan
+        const phaseOffset = grass.x * 0.03 + grass.y * 0.02;
+        const targetAngle = Math.sin(time * swaySpeed + phaseOffset) * maxSwayAngle;
+
+        grass.angle = Phaser.Math.Linear(grass.angle, targetAngle, 0.2);
+      } else {
+        // Pemain diam / menjauh -> Rumput kembali tegak lurus (0 derajat) secara mulus
+        if (grass.angle !== 0) {
+          grass.angle = Phaser.Math.Linear(grass.angle, 0, 0.15);
+          if (Math.abs(grass.angle) < 0.05) {
+            grass.angle = 0;
+          }
+        }
+      }
+    }
   }
 }

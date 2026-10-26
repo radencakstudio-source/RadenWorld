@@ -36,6 +36,20 @@ export class SoundManager {
         const savedMute = localStorage.getItem('raden_is_muted');
         if (savedMute) this.isMuted = savedMute === 'true';
       } catch (e) {}
+
+      // Tangkap interaksi pertama pengguna untuk mengaktifkan AudioContext (kebijakan Autoplay Chrome/Android/iOS)
+      const unlockAudio = () => {
+        this.userInteracted = true;
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume().catch(() => {});
+        }
+        window.removeEventListener('pointerdown', unlockAudio);
+        window.removeEventListener('touchstart', unlockAudio);
+        window.removeEventListener('keydown', unlockAudio);
+      };
+      window.addEventListener('pointerdown', unlockAudio, { once: true, passive: true });
+      window.addEventListener('touchstart', unlockAudio, { once: true, passive: true });
+      window.addEventListener('keydown', unlockAudio, { once: true, passive: true });
     }
   }
 
@@ -50,11 +64,13 @@ export class SoundManager {
     if (!this.ctx && typeof window !== 'undefined') {
       const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
       if (AudioCtx) {
-        this.ctx = new AudioCtx();
+        try {
+          this.ctx = new AudioCtx();
+        } catch (e) {}
       }
     }
-    if (this.ctx && this.ctx.state === 'suspended') {
-      this.ctx.resume();
+    if (this.ctx && this.ctx.state === 'suspended' && this.userInteracted) {
+      this.ctx.resume().catch(() => {});
     }
     return this.ctx;
   }

@@ -50,9 +50,15 @@ import {
   Quote,
   MapPin,
   UserX,
+  Mail,
+  ShieldCheck,
+  AlertCircle,
+  Link,
+  RefreshCw,
 } from 'lucide-react';
 import { SoundManager } from '../core/SoundManager';
 import { EventBus } from '../core/EventBus';
+import { SocialAccountChooserModal, ISocialAccount } from './SocialAccountChooserModal';
 
 export interface ProfileModalProps {
   isOpen: boolean;
@@ -71,6 +77,7 @@ export interface ProfileModalProps {
   onOpenGuide?: () => void;
   description?: string;
   onSaveDescription?: (newDesc: string) => void;
+  onUpdateName?: (newName: string) => void;
   age?: number;
   birthDate?: string;
   likes?: number;
@@ -99,6 +106,13 @@ export interface ProfileModalProps {
   friendsList?: string[];
   followingList?: string[];
   followersList?: string[];
+  email?: string;
+  emailVerified?: boolean;
+  googleLinked?: boolean;
+  googleEmail?: string;
+  facebookLinked?: boolean;
+  facebookEmail?: string;
+  onRefreshWallet?: () => void;
 }
 
 export const ProfileModal: React.FC<ProfileModalProps> = ({
@@ -118,6 +132,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
   onOpenGuide,
   description = 'Petualang penjelajah tanah agung RadenWorld.',
   onSaveDescription,
+  onUpdateName,
   age = 21,
   birthDate,
   likes = 0,
@@ -146,6 +161,13 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
   friendsList = [],
   followingList = [],
   followersList = [],
+  email,
+  emailVerified,
+  googleLinked,
+  googleEmail,
+  facebookLinked,
+  facebookEmail,
+  onRefreshWallet,
 }) => {
   const sound = SoundManager.getInstance();
 
@@ -157,6 +179,317 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
   const [isLiking, setIsLiking] = useState<boolean>(false);
   const [currentLikes, setCurrentLikes] = useState<number>(likes);
   const [likeFeedback, setLikeFeedback] = useState<string>('');
+
+  // Tab Kategori Akun: 'overview' (Ikhtisar Karakter) atau 'account' (Keamanan & Akun)
+  const [profileCategory, setProfileCategory] = useState<'overview' | 'account'>('overview');
+
+  const [accountEmail, setAccountEmail] = useState<string>(() => {
+    try {
+      const u = JSON.parse(localStorage.getItem('raden_player_user') || '{}');
+      return email || u.email || '';
+    } catch (e) {
+      return email || '';
+    }
+  });
+
+  const [isEmailVerified, setIsEmailVerified] = useState<boolean>(() => {
+    try {
+      const u = JSON.parse(localStorage.getItem('raden_player_user') || '{}');
+      return emailVerified !== undefined ? emailVerified : Boolean(u.email_verified || u.email_verified_at);
+    } catch (e) {
+      return Boolean(emailVerified);
+    }
+  });
+
+  const [isGoogleLinked, setIsGoogleLinked] = useState<boolean>(() => {
+    try {
+      const u = JSON.parse(localStorage.getItem('raden_player_user') || '{}');
+      return googleLinked !== undefined ? googleLinked : Boolean(u.google_linked || u.google_email || u.provider === 'google');
+    } catch (e) {
+      return Boolean(googleLinked);
+    }
+  });
+
+  const [linkedGoogleEmail, setLinkedGoogleEmail] = useState<string>(() => {
+    try {
+      const u = JSON.parse(localStorage.getItem('raden_player_user') || '{}');
+      return googleEmail || u.google_email || (u.provider === 'google' ? u.email : '');
+    } catch (e) {
+      return googleEmail || '';
+    }
+  });
+
+  const [isFacebookLinked, setIsFacebookLinked] = useState<boolean>(() => {
+    try {
+      const u = JSON.parse(localStorage.getItem('raden_player_user') || '{}');
+      return facebookLinked !== undefined ? facebookLinked : Boolean(u.facebook_linked || u.facebook_email || u.provider === 'facebook');
+    } catch (e) {
+      return Boolean(facebookLinked);
+    }
+  });
+
+  const [linkedFacebookEmail, setLinkedFacebookEmail] = useState<string>(() => {
+    try {
+      const u = JSON.parse(localStorage.getItem('raden_player_user') || '{}');
+      return facebookEmail || u.facebook_email || (u.provider === 'facebook' ? u.email : '');
+    } catch (e) {
+      return facebookEmail || '';
+    }
+  });
+
+  const [verifyingEmail, setVerifyingEmail] = useState(false);
+  const [accountFeedback, setAccountFeedback] = useState<string>('');
+  const [linkingProvider, setLinkingProvider] = useState<'google' | 'facebook' | null>(null);
+  const [linkInputEmail, setLinkInputEmail] = useState('');
+  const [isLinkingLoading, setIsLinkingLoading] = useState(false);
+
+  // Pemilih Akun Sosial Browser Otentik
+  const [isSocialChooserOpen, setIsSocialChooserOpen] = useState(false);
+  const [socialChooserProvider, setSocialChooserProvider] = useState<'google' | 'facebook'>('google');
+
+  // Ganti Nama Karakter Game (Nickname)
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [currentDisplayName, setCurrentDisplayName] = useState(name);
+  const [newNameInput, setNewNameInput] = useState(name);
+  const [isSavingName, setIsSavingName] = useState(false);
+
+  useEffect(() => {
+    setCurrentDisplayName(name);
+    setNewNameInput(name);
+  }, [name]);
+
+  // Handler Verifikasi Email
+  const handleVerifyEmail = async () => {
+    sound.playClick();
+    setVerifyingEmail(true);
+    setAccountFeedback('');
+    try {
+      const u = JSON.parse(localStorage.getItem('raden_player_user') || '{}');
+      const res = await fetch('/api/user/account/verify-email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-User-Id': u.id?.toString() || '',
+          'X-User-Email': u.email || accountEmail || '',
+          'X-User-Name': u.name || name || '',
+        },
+        body: JSON.stringify({
+          user_id: u.id,
+          email: accountEmail || u.email,
+        }),
+      });
+
+      const data = await res.json();
+      if (res.ok && data.status === 'success') {
+        sound.playSuccess();
+        setIsEmailVerified(true);
+        setAccountFeedback('✓ Email Anda telah berhasil diverifikasi secara resmi!');
+        u.email_verified = true;
+        u.email_verified_at = data.email_verified_at || new Date().toISOString();
+        localStorage.setItem('raden_player_user', JSON.stringify(u));
+      } else {
+        setAccountFeedback(data.message || 'Gagal memverifikasi email.');
+      }
+    } catch (err) {
+      setAccountFeedback('Gagal terhubung ke database server.');
+    } finally {
+      setVerifyingEmail(false);
+    }
+  };
+
+  // Handler Tautkan Akun Sosial
+  const handleLinkSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!linkingProvider || !linkInputEmail.trim()) return;
+
+    sound.playClick();
+    setIsLinkingLoading(true);
+    setAccountFeedback('');
+
+    try {
+      const u = JSON.parse(localStorage.getItem('raden_player_user') || '{}');
+      const res = await fetch('/api/user/account/link-social', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-User-Id': u.id?.toString() || '',
+          'X-User-Email': u.email || accountEmail || '',
+          'X-User-Name': u.name || name || '',
+        },
+        body: JSON.stringify({
+          user_id: u.id,
+          provider: linkingProvider,
+          social_email: linkInputEmail.trim(),
+        }),
+      });
+
+      const data = await res.json();
+      if (res.ok && data.status === 'success') {
+        sound.playSuccess();
+        if (linkingProvider === 'google') {
+          setIsGoogleLinked(true);
+          setLinkedGoogleEmail(linkInputEmail.trim());
+          u.google_linked = true;
+          u.google_email = linkInputEmail.trim();
+        } else {
+          setIsFacebookLinked(true);
+          setLinkedFacebookEmail(linkInputEmail.trim());
+          u.facebook_linked = true;
+          u.facebook_email = linkInputEmail.trim();
+        }
+        localStorage.setItem('raden_player_user', JSON.stringify(u));
+        setAccountFeedback(data.message || `✓ Akun ${linkingProvider} berhasil ditautkan!`);
+        setLinkingProvider(null);
+        setLinkInputEmail('');
+      } else {
+        setAccountFeedback(data.message || 'Gagal menautkan akun.');
+      }
+    } catch (err) {
+      setAccountFeedback('Gagal menghubungi server database.');
+    } finally {
+      setIsLinkingLoading(false);
+    }
+  };
+
+  // Handler Lepas Tautan Akun Sosial
+  const handleUnlink = async (provider: 'google' | 'facebook') => {
+    sound.playClick();
+    setAccountFeedback('');
+    try {
+      const u = JSON.parse(localStorage.getItem('raden_player_user') || '{}');
+      const res = await fetch('/api/user/account/unlink-social', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-User-Id': u.id?.toString() || '',
+          'X-User-Email': u.email || accountEmail || '',
+          'X-User-Name': u.name || name || '',
+        },
+        body: JSON.stringify({
+          user_id: u.id,
+          provider,
+        }),
+      });
+
+      const data = await res.json();
+      if (res.ok && data.status === 'success') {
+        sound.playSuccess();
+        if (provider === 'google') {
+          setIsGoogleLinked(false);
+          setLinkedGoogleEmail('');
+          u.google_linked = false;
+          u.google_email = null;
+        } else {
+          setIsFacebookLinked(false);
+          setLinkedFacebookEmail('');
+          u.facebook_linked = false;
+          u.facebook_email = null;
+        }
+        localStorage.setItem('raden_player_user', JSON.stringify(u));
+        setAccountFeedback(`✓ Tautan akun ${provider} berhasil dilepas.`);
+      }
+    } catch (err) {
+      setAccountFeedback('Gagal menghubungi server.');
+    }
+  };
+
+  // Handler saat akun Google / Facebook dipilih dari dialog peramban
+  const handleAccountChosen = async (acc: ISocialAccount) => {
+    sound.playClick();
+    setIsLinkingLoading(true);
+    setAccountFeedback('');
+    try {
+      const u = JSON.parse(localStorage.getItem('raden_player_user') || '{}');
+      const res = await fetch('/api/user/account/link-social', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-User-Id': u.id?.toString() || '',
+          'X-User-Email': u.email || accountEmail || '',
+          'X-User-Name': u.name || currentDisplayName || '',
+        },
+        body: JSON.stringify({
+          user_id: u.id,
+          provider: socialChooserProvider,
+          social_email: acc.email,
+        }),
+      });
+
+      const data = await res.json();
+      if (res.ok && data.status === 'success') {
+        sound.playSuccess();
+        if (socialChooserProvider === 'google') {
+          setIsGoogleLinked(true);
+          setLinkedGoogleEmail(acc.email);
+          u.google_linked = true;
+          u.google_email = acc.email;
+        } else {
+          setIsFacebookLinked(true);
+          setLinkedFacebookEmail(acc.email);
+          u.facebook_linked = true;
+          u.facebook_email = acc.email;
+        }
+        localStorage.setItem('raden_player_user', JSON.stringify(u));
+        setAccountFeedback(data.message || `✓ Akun ${socialChooserProvider} (${acc.email}) berhasil ditautkan!`);
+      } else {
+        setAccountFeedback(data.message || 'Gagal menautkan akun.');
+      }
+    } catch (err) {
+      setAccountFeedback('Gagal menghubungi server database.');
+    } finally {
+      setIsLinkingLoading(false);
+      setIsSocialChooserOpen(false);
+    }
+  };
+
+  // Handler Mengubah Nama Karakter Game (Ganti Nickname)
+  const handleSaveName = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = newNameInput.trim();
+    if (!trimmed || trimmed.length < 3 || trimmed === currentDisplayName) {
+      setIsEditingName(false);
+      return;
+    }
+
+    sound.playClick();
+    setIsSavingName(true);
+    setAccountFeedback('');
+
+    try {
+      const u = JSON.parse(localStorage.getItem('raden_player_user') || '{}');
+      const res = await fetch('/api/user/account/update-name', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-User-Id': u.id?.toString() || '',
+          'X-User-Email': u.email || accountEmail || '',
+          'X-User-Name': u.name || currentDisplayName || '',
+        },
+        body: JSON.stringify({
+          user_id: u.id,
+          name: trimmed,
+        }),
+      });
+
+      const data = await res.json();
+      if (res.ok && data.status === 'success') {
+        sound.playSuccess();
+        setCurrentDisplayName(trimmed);
+        setIsEditingName(false);
+        u.name = trimmed;
+        localStorage.setItem('raden_player_user', JSON.stringify(u));
+        setAccountFeedback(data.message || `✓ Nama karakter berhasil diubah menjadi ${trimmed}!`);
+        if (onUpdateName) onUpdateName(trimmed);
+        EventBus.emit('player-name-changed', trimmed);
+      } else {
+        setAccountFeedback(data.message || 'Gagal mengubah nama karakter.');
+      }
+    } catch (err) {
+      setAccountFeedback('Gagal terhubung ke database server.');
+    } finally {
+      setIsSavingName(false);
+    }
+  };
 
   // Kunci pergerakan karakter di Phaser saat modal dibuka agar spasi & WASD tidak menggerakkan game
   useEffect(() => {
@@ -435,7 +768,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                 ? 'bg-[#0b0c10] border border-amber-500/40 shadow-2xl'
                 : 'bg-[#0b0c10] border border-cyan-500/40 shadow-2xl')
             : 'bg-[#0a0a0c] border border-white/10 shadow-2xl'
-        } rounded-xl p-3 sm:p-4 text-neutral-100 flex flex-col gap-2.5 max-h-[94dvh] overflow-hidden`}
+        } rounded-xl p-2.5 sm:p-4 text-neutral-100 flex flex-col gap-2 sm:gap-2.5 max-h-[min(90dvh,88vh)] overflow-hidden my-auto`}
       >
         {/* ================================================================ */}
         {/* TAMPILAN 1: DAFTAR SOSIAL (TEMAN / MENGIKUTI / DIIKUTI)           */}
@@ -713,9 +1046,9 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
           /* ================================================================ */
           /* TAMPILAN 2B: KARTU IDENTITAS PETUALANG LAIN (INSPECTION CARD)    */
           /* ================================================================ */
-          <>
+          <div className="flex flex-col gap-2 sm:gap-2.5 flex-1 min-h-0 overflow-hidden">
             {/* Header Modal Kartu Pemain Lain */}
-            <div className="flex items-center justify-between pb-3 border-b border-neutral-800">
+            <div className="flex items-center justify-between pb-2 sm:pb-3 border-b border-neutral-800 shrink-0">
               <div className="flex items-center gap-2 min-w-0">
                 <Shield className={`w-4 h-4 shrink-0 ${isSuperAdmin ? 'text-amber-400' : 'text-cyan-400'}`} />
                 <h2 className={`text-xs sm:text-sm font-black uppercase tracking-wider truncate ${isSuperAdmin ? 'text-amber-400' : 'text-cyan-400'}`}>
@@ -747,15 +1080,15 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
             </div>
 
             {/* SCROLLABLE BODY PETUALANG LAIN */}
-            <div className="flex-1 overflow-y-auto custom-scrollbar space-y-2.5 pr-1 min-h-0">
+            <div className="flex-1 overflow-y-auto custom-scrollbar space-y-2 sm:space-y-2.5 pr-1 min-h-0">
               {/* HERO CARD: AVATAR & IDENTITAS PETUALANG LAIN (TANPA EXP BAR) */}
-            <div className="flex items-center gap-3.5 bg-gradient-to-b from-[#131318] to-[#0c0c0f] border border-neutral-800 p-3.5 rounded-xl shadow-inner">
+            <div className="flex items-center gap-2.5 sm:gap-3.5 bg-gradient-to-b from-[#131318] to-[#0c0c0f] border border-neutral-800 p-2.5 sm:p-3.5 rounded-xl shadow-inner shrink-0">
               <div
-                className={`w-20 h-20 rounded-xl bg-black border ${
+                className={`w-14 h-14 sm:w-20 sm:h-20 rounded-xl bg-black border ${
                   isSuperAdmin ? 'border-amber-400/80 shadow-amber-500/20' : 'border-cyan-400/80 shadow-cyan-500/20'
                 } shadow-lg flex items-center justify-center shrink-0 overflow-hidden`}
               >
-                <AvatarPreview avatar={fallbackAvatar} size={80} />
+                <AvatarPreview avatar={fallbackAvatar} size={60} />
               </div>
 
               <div className="flex flex-col flex-1 min-w-0">
@@ -1004,20 +1337,20 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                   sound.playClick();
                   onClose();
                 }}
-                className="py-2.5 px-3 rounded-lg border border-neutral-800 bg-[#141418] hover:bg-[#1f1f24] text-neutral-400 hover:text-white text-xs font-bold uppercase tracking-wider cursor-pointer transition-colors"
+                className="py-2 sm:py-2.5 px-3 rounded-lg border border-neutral-800 bg-[#141418] hover:bg-[#1f1f24] text-neutral-400 hover:text-white text-xs font-bold uppercase tracking-wider cursor-pointer transition-colors"
                 title="Tutup Profil"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
-          </>
+          </div>
         ) : (
           /* ================================================================ */
           /* TAMPILAN 2A: PROFIL KARAKTER SAYA (PERSONAL ACCOUNT DASHBOARD)   */
           /* ================================================================ */
-          <>
+          <div className="flex flex-col gap-2 sm:gap-2.5 flex-1 min-h-0 overflow-hidden">
             {/* Header Modal Akun Saya */}
-            <div className="flex items-center justify-between pb-3 border-b border-neutral-800">
+            <div className="flex items-center justify-between pb-2 sm:pb-3 border-b border-neutral-800 shrink-0">
               <div className="flex items-center gap-2">
                 <User className="w-4 h-4 text-amber-400" />
                 <h2 className="text-sm font-extrabold uppercase tracking-wider text-amber-400">
@@ -1062,19 +1395,106 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
               </div>
             </div>
 
+            {/* Navigasi Kategori Tab: IKHTISAR vs KEAMANAN & AKUN */}
+            <div className="grid grid-cols-2 gap-1.5 p-1 bg-[#121214] rounded-lg border border-neutral-800/80 shrink-0">
+              <button
+                type="button"
+                onClick={() => {
+                  sound.playClick();
+                  setProfileCategory('overview');
+                }}
+                className={`flex items-center justify-center gap-1.5 py-1.5 rounded-md text-xs font-black tracking-wider uppercase transition-all cursor-pointer ${
+                  profileCategory === 'overview'
+                    ? 'bg-amber-500 text-black shadow-md'
+                    : 'text-neutral-400 hover:text-neutral-200 hover:bg-neutral-800/60'
+                }`}
+              >
+                <User className="w-3.5 h-3.5" />
+                <span>1. IKHTISAR PROFIL</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  sound.playClick();
+                  setProfileCategory('account');
+                }}
+                className={`flex items-center justify-center gap-1.5 py-1.5 rounded-md text-xs font-black tracking-wider uppercase transition-all cursor-pointer ${
+                  profileCategory === 'account'
+                    ? 'bg-amber-500 text-black shadow-md'
+                    : 'text-neutral-400 hover:text-neutral-200 hover:bg-neutral-800/60'
+                }`}
+              >
+                <ShieldCheck className="w-3.5 h-3.5" />
+                <span>2. KEAMANAN & AKUN</span>
+                {(!isEmailVerified || (!isGoogleLinked && !isFacebookLinked)) && (
+                  <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse ml-0.5" title="Ada pengaturan akun yang belum lengkap" />
+                )}
+              </button>
+            </div>
+
             {/* SCROLLABLE BODY PROFIL SAYA */}
-            <div className="flex-1 overflow-y-auto custom-scrollbar space-y-2.5 pr-1 min-h-0">
-              {/* HERO SECTION: AVATAR & IDENTITAS KARAKTER SAYA DENGAN PROGRESS EXP */}
-            <div className="flex items-center gap-4 bg-[#101010] border border-neutral-800 p-3.5 rounded-md">
-              <div className="w-20 h-20 rounded-md bg-black border border-amber-500/30 flex items-center justify-center shrink-0 overflow-hidden">
-                <AvatarPreview avatar={fallbackAvatar} size={80} />
+            <div className="flex-1 overflow-y-auto custom-scrollbar space-y-2 sm:space-y-2.5 pr-1 min-h-0">
+              {profileCategory === 'overview' ? (
+                <>
+                  {/* HERO SECTION: AVATAR & IDENTITAS KARAKTER SAYA DENGAN PROGRESS EXP */}
+            <div className="flex items-center gap-2.5 sm:gap-4 bg-[#101010] border border-neutral-800 p-2.5 sm:p-3.5 rounded-md shrink-0">
+              <div className="w-14 h-14 sm:w-20 sm:h-20 rounded-md bg-black border border-amber-500/30 flex items-center justify-center shrink-0 overflow-hidden">
+                <AvatarPreview avatar={fallbackAvatar} size={60} />
               </div>
 
               <div className="flex flex-col flex-1 min-w-0">
                 <div className="flex items-center justify-between gap-1">
-                  <span className="text-base font-bold text-amber-400 uppercase tracking-wide truncate">
-                    {name}
-                  </span>
+                  {isEditingName ? (
+                    <form onSubmit={handleSaveName} className="flex items-center gap-1.5 flex-1 min-w-0 mr-1">
+                      <input
+                        type="text"
+                        value={newNameInput}
+                        onChange={(e) => setNewNameInput(e.target.value)}
+                        placeholder="Nama baru..."
+                        maxLength={20}
+                        required
+                        autoFocus
+                        className="w-full px-2 py-0.5 rounded bg-black border border-amber-500 text-sm font-bold text-amber-400 focus:outline-none"
+                      />
+                      <button
+                        type="submit"
+                        disabled={isSavingName || newNameInput.trim().length < 3}
+                        className="px-2 py-0.5 rounded bg-amber-500 hover:bg-amber-400 text-black text-[10px] font-black uppercase shrink-0 disabled:opacity-50 cursor-pointer"
+                      >
+                        {isSavingName ? '...' : 'Simpan'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsEditingName(false);
+                          setNewNameInput(currentDisplayName);
+                        }}
+                        className="px-1.5 py-0.5 rounded bg-neutral-800 hover:bg-neutral-700 text-neutral-300 text-[10px] font-bold shrink-0 cursor-pointer"
+                      >
+                        Batal
+                      </button>
+                    </form>
+                  ) : (
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <span className="text-base font-bold text-amber-400 uppercase tracking-wide truncate">
+                        {currentDisplayName || name}
+                      </span>
+                      {!isInspecting && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            sound.playClick();
+                            setNewNameInput(currentDisplayName || name);
+                            setIsEditingName(true);
+                          }}
+                          className="p-1 rounded hover:bg-neutral-800 text-neutral-400 hover:text-amber-400 transition-colors cursor-pointer shrink-0"
+                          title="Ganti Nama Karakter (Nickname)"
+                        >
+                          <Edit3 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  )}
                   <span className="text-[10px] font-black bg-amber-500 text-black px-1.5 py-0.5 rounded shrink-0">
                     LV. {effectiveLevel}
                   </span>
@@ -1324,10 +1744,273 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                 <span>MASUK KE PORTAL ADMIN</span>
               </button>
             )}
+                </>
+              ) : (
+                /* ================================================================ */
+                /* KATEGORI: KEAMANAN & AKUN (AUTHORITATIVE RADENSHIELD & SOCIALS)  */
+                /* ================================================================ */
+                <div className="space-y-2.5 pb-2">
+                  {/* Feedback Banner */}
+                  {accountFeedback && (
+                    <div className="p-2.5 rounded-md bg-amber-500/10 border border-amber-500/30 flex items-center justify-between text-xs text-amber-300">
+                      <div className="flex items-center gap-2">
+                        <AlertCircle className="w-4 h-4 text-amber-400 shrink-0" />
+                        <span className="leading-tight">{accountFeedback}</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setAccountFeedback('')}
+                        className="text-neutral-400 hover:text-white text-xs font-bold px-1 cursor-pointer"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  )}
+
+                  {/* KARTU 1: RADENSHIELD™ ANTI-CHEAT & SERVER PROTECTION */}
+                  <div className="p-3 rounded-lg border border-neutral-800 bg-[#101012] flex flex-col gap-2.5">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                        <span className="text-xs font-extrabold uppercase tracking-wider text-emerald-400">
+                          RadenShield™ Engine
+                        </span>
+                      </div>
+                      <span className="text-[10px] font-black bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 px-2 py-0.5 rounded flex items-center gap-1">
+                        <Check className="w-3 h-3" /> PROTECTED
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-neutral-400 leading-relaxed">
+                      Sistem keamanan multi-layer aktif melindungi akun, saldo koin & diamond, pergerakan karakter, serta mencegah eksploitasi server.
+                    </p>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5 text-[10px] font-semibold text-neutral-300">
+                      <div className="p-1.5 rounded bg-black/40 border border-neutral-800/80 flex items-center gap-1.5">
+                        <Shield className="w-3 h-3 text-amber-400 shrink-0" />
+                        <span className="truncate">MySQL Vault Lock</span>
+                      </div>
+                      <div className="p-1.5 rounded bg-black/40 border border-neutral-800/80 flex items-center gap-1.5">
+                        <Zap className="w-3 h-3 text-emerald-400 shrink-0" />
+                        <span className="truncate">Anti-Speedhack & Warp</span>
+                      </div>
+                      <div className="p-1.5 rounded bg-black/40 border border-neutral-800/80 flex items-center gap-1.5">
+                        <MessageSquare className="w-3 h-3 text-blue-400 shrink-0" />
+                        <span className="truncate">Chat Flood Protection</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* KARTU 2: EMAIL AKUN UTAMA & VERIFIKASI */}
+                  <div className="p-3 rounded-lg border border-neutral-800 bg-[#101012] flex flex-col gap-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Mail className="w-4 h-4 text-amber-400" />
+                        <span className="text-xs font-extrabold uppercase tracking-wider text-neutral-200">
+                          Email Akun Utama
+                        </span>
+                      </div>
+                      {isEmailVerified ? (
+                        <span className="text-[10px] font-black bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 px-2 py-0.5 rounded flex items-center gap-1">
+                          <Check className="w-3 h-3" /> TERVERIFIKASI
+                        </span>
+                      ) : (
+                        <span className="text-[10px] font-black bg-amber-500/20 text-amber-400 border border-amber-500/40 px-2 py-0.5 rounded flex items-center gap-1">
+                          <AlertCircle className="w-3 h-3" /> BELUM VERIFIKASI
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="flex items-center justify-between text-xs bg-black/50 p-2 rounded border border-neutral-800">
+                      <span className="text-neutral-300 font-medium truncate">
+                        {accountEmail || 'Email belum diatur di akun'}
+                      </span>
+                      {isEmailVerified && (
+                        <span className="text-[10px] text-emerald-400 font-bold ml-2 shrink-0">AMAN</span>
+                      )}
+                    </div>
+
+                    {!isEmailVerified && (
+                      <button
+                        type="button"
+                        disabled={verifyingEmail || !accountEmail}
+                        onClick={handleVerifyEmail}
+                        className="mt-1 w-full py-1.5 px-3 rounded bg-amber-500 hover:bg-amber-400 text-black text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
+                      >
+                        {verifyingEmail ? (
+                          <>
+                            <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                            <span>MEMVERIFIKASI EMAIL...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Check className="w-3.5 h-3.5" />
+                            <span>VERIFIKASI EMAIL SEKARANG</span>
+                          </>
+                        )}
+                      </button>
+                    )}
+                  </div>
+
+                  {/* KARTU 3: TAUTAN AKUN GOOGLE */}
+                  <div className="p-3 rounded-lg border border-neutral-800 bg-[#101012] flex flex-col gap-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
+                          <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                          <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                          <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
+                          <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
+                        </svg>
+                        <span className="text-xs font-extrabold uppercase tracking-wider text-neutral-200">
+                          Tautan Akun Google
+                        </span>
+                      </div>
+                      {isGoogleLinked ? (
+                        <span className="text-[10px] font-black bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 px-2 py-0.5 rounded flex items-center gap-1">
+                          <Check className="w-3 h-3" /> TERTAUT
+                        </span>
+                      ) : (
+                        <span className="text-[10px] font-black bg-neutral-800 text-neutral-400 border border-neutral-700 px-2 py-0.5 rounded">
+                          BELUM TERTAUT
+                        </span>
+                      )}
+                    </div>
+
+                    {isGoogleLinked ? (
+                      <div className="flex items-center justify-between text-xs bg-black/50 p-2 rounded border border-neutral-800">
+                        <span className="text-neutral-300 font-medium truncate">
+                          {linkedGoogleEmail || accountEmail || 'Akun Google Tertaut'}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleUnlink('google')}
+                          className="text-[10px] font-bold text-red-400 hover:text-red-300 hover:underline ml-2 cursor-pointer shrink-0"
+                        >
+                          Putuskan
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          sound.playClick();
+                          setSocialChooserProvider('google');
+                          setIsSocialChooserOpen(true);
+                        }}
+                        className="mt-1 w-full py-1.5 px-3 rounded border border-neutral-700 bg-neutral-800/80 hover:bg-neutral-800 text-neutral-200 text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-colors cursor-pointer"
+                      >
+                        <Link className="w-3.5 h-3.5 text-amber-400" />
+                        <span>Pilih & Tautkan Akun Google</span>
+                      </button>
+                    )}
+                  </div>
+
+                  {/* KARTU 4: TAUTAN AKUN FACEBOOK */}
+                  <div className="p-3 rounded-lg border border-neutral-800 bg-[#101012] flex flex-col gap-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <svg className="w-4 h-4 fill-[#1877F2] shrink-0" viewBox="0 0 24 24">
+                          <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+                        </svg>
+                        <span className="text-xs font-extrabold uppercase tracking-wider text-neutral-200">
+                          Tautan Akun Facebook
+                        </span>
+                      </div>
+                      {isFacebookLinked ? (
+                        <span className="text-[10px] font-black bg-blue-500/20 text-blue-400 border border-blue-500/40 px-2 py-0.5 rounded flex items-center gap-1">
+                          <Check className="w-3 h-3" /> TERTAUT
+                        </span>
+                      ) : (
+                        <span className="text-[10px] font-black bg-neutral-800 text-neutral-400 border border-neutral-700 px-2 py-0.5 rounded">
+                          BELUM TERTAUT
+                        </span>
+                      )}
+                    </div>
+
+                    {isFacebookLinked ? (
+                      <div className="flex items-center justify-between text-xs bg-black/50 p-2 rounded border border-neutral-800">
+                        <span className="text-neutral-300 font-medium truncate">
+                          {linkedFacebookEmail || accountEmail || 'Akun Facebook Tertaut'}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleUnlink('facebook')}
+                          className="text-[10px] font-bold text-red-400 hover:text-red-300 hover:underline ml-2 cursor-pointer shrink-0"
+                        >
+                          Putuskan
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          sound.playClick();
+                          setSocialChooserProvider('facebook');
+                          setIsSocialChooserOpen(true);
+                        }}
+                        className="mt-1 w-full py-1.5 px-3 rounded border border-neutral-700 bg-neutral-800/80 hover:bg-neutral-800 text-neutral-200 text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-colors cursor-pointer"
+                      >
+                        <Link className="w-3.5 h-3.5 text-blue-400" />
+                        <span>Pilih & Tautkan Akun Facebook</span>
+                      </button>
+                    )}
+                  </div>
+
+                  {/* KARTU 5: KEAMANAN SALDO AUTHORITATIVE MYSQL */}
+                  <div className="p-3 rounded-lg border border-neutral-800 bg-[#101012] flex flex-col gap-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Shield className="w-4 h-4 text-amber-400" />
+                        <span className="text-xs font-extrabold uppercase tracking-wider text-amber-400">
+                          Authoritative Wallet Vault
+                        </span>
+                      </div>
+                      <span className="text-[10px] font-black bg-amber-500/20 text-amber-400 border border-amber-500/40 px-2 py-0.5 rounded">
+                        MYSQL PROTECTED
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div className="p-2 rounded bg-black/60 border border-neutral-800 flex items-center gap-2">
+                        <Coins className="w-4 h-4 text-amber-400 shrink-0" />
+                        <div>
+                          <div className="text-[9px] text-neutral-400 font-bold uppercase">Koin Emas</div>
+                          <div className="font-extrabold text-amber-400">{gold.toLocaleString('id-ID')}</div>
+                        </div>
+                      </div>
+                      <div className="p-2 rounded bg-black/60 border border-neutral-800 flex items-center gap-2">
+                        <Gem className="w-4 h-4 text-cyan-400 shrink-0" />
+                        <div>
+                          <div className="text-[9px] text-neutral-400 font-bold uppercase">Diamond</div>
+                          <div className="font-extrabold text-cyan-400">{diamonds.toLocaleString('id-ID')}</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <p className="text-[10px] text-neutral-400 leading-tight">
+                      Saldo dilindungi oleh tanda tangan digital & row-level locking server untuk mencegah modifikasi ilegal client-side.
+                    </p>
+
+                    {onRefreshWallet && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          sound.playClick();
+                          onRefreshWallet();
+                          setAccountFeedback('✓ Saldo berhasil disinkronkan langsung dari basis data server.');
+                        }}
+                        className="mt-1 w-full py-1.5 px-3 rounded border border-neutral-700 bg-neutral-800/80 hover:bg-neutral-800 text-neutral-200 text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-colors cursor-pointer"
+                      >
+                        <RefreshCw className="w-3.5 h-3.5 text-amber-400" />
+                        <span>Sinkronkan Saldo Database</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
           </div>
 
           {/* FOOTER ACTIONS PROFIL SAYA */}
-          <div className="pt-2 border-t border-neutral-800 flex items-center gap-2 shrink-0">
+          <div className="pt-2 border-t border-neutral-800 flex items-center gap-2 shrink-0 bg-[#0a0a0c]">
               {/* Tombol Logout Akun */}
               <button
                 type="button"
@@ -1335,7 +2018,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                   sound.playClick();
                   if (onLogout) onLogout();
                 }}
-                className="flex-1 py-2 px-3 rounded-md border border-neutral-800 bg-[#121212] hover:bg-[#1a1a1a] hover:border-red-500/50 text-neutral-400 hover:text-red-400 text-xs font-bold uppercase tracking-wider cursor-pointer transition-colors flex items-center justify-center gap-1.5"
+                className="flex-1 py-1.5 sm:py-2 px-3 rounded-md border border-neutral-800 bg-[#121212] hover:bg-[#1a1a1a] hover:border-red-500/50 text-neutral-400 hover:text-red-400 text-xs font-bold uppercase tracking-wider cursor-pointer transition-colors flex items-center justify-center gap-1.5"
               >
                 <LogOut className="w-3.5 h-3.5" />
                 <span>LOGOUT</span>
@@ -1348,14 +2031,24 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                   sound.playClick();
                   onClose();
                 }}
-                className="flex-1 py-2 px-3 rounded-md bg-amber-500 hover:bg-amber-400 text-black text-xs font-bold uppercase tracking-wider cursor-pointer transition-colors"
+                className="flex-1 py-1.5 sm:py-2 px-3 rounded-md bg-amber-500 hover:bg-amber-400 text-black text-xs font-bold uppercase tracking-wider cursor-pointer transition-colors"
               >
                 TUTUP
               </button>
             </div>
-          </>
+          </div>
         )}
       </div>
+
+      {/* SOCIAL ACCOUNT CHOOSER MODAL (GOOGLE / FACEBOOK) */}
+      <SocialAccountChooserModal
+        isOpen={isSocialChooserOpen}
+        provider={socialChooserProvider}
+        mode="link"
+        targetCharacterName={currentDisplayName || name}
+        onClose={() => setIsSocialChooserOpen(false)}
+        onSelectAccount={handleAccountChosen}
+      />
     </div>
   );
 };

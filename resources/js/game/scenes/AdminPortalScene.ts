@@ -104,6 +104,14 @@ export class AdminPortalScene extends Phaser.Scene {
 
     // Tap / Klik lantai ruangan untuk bergerak (Khusus PC & Mobile)
     this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+      if ((window as any).__radenPinching || Date.now() - ((window as any).__radenLastPinchTime || 0) < 400) {
+        if (this.player && this.player.active) this.player.stopNavigation();
+        return;
+      }
+      if ((pointer.event as TouchEvent)?.touches?.length >= 2) {
+        if (this.player && this.player.active) this.player.stopNavigation();
+        return;
+      }
       if (document.activeElement?.tagName === 'INPUT' || document.activeElement?.tagName === 'TEXTAREA') return;
       if (pointer.rightButtonDown()) return;
 

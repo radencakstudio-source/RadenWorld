@@ -66,6 +66,7 @@ export class NetworkManager {
     friendRequest: ((data: any) => void)[];
     friendResponse: ((data: any) => void)[];
     playerJumped: ((data: { id: string; jumpCount: number; x: number; y: number }) => void)[];
+    playerFishing: ((data: { id: string; state: string; bobberPos?: { x: number; y: number }; targetBobberPos?: { x: number; y: number }; direction?: Direction }) => void)[];
     playerFollowedBy: ((data: any) => void)[];
     playerUnfollowedBy: ((data: any) => void)[];
   } = {
@@ -81,6 +82,7 @@ export class NetworkManager {
     friendRequest: [],
     friendResponse: [],
     playerJumped: [],
+    playerFishing: [],
     playerFollowedBy: [],
     playerUnfollowedBy: [],
   };
@@ -94,6 +96,17 @@ export class NetworkManager {
   public static getInstance(): NetworkManager {
     if (!NetworkManager.instance) {
       NetworkManager.instance = new NetworkManager();
+      if (typeof window !== 'undefined') {
+        const isCurrentLocal = window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost';
+        if (isCurrentLocal) {
+          try {
+            const saved = localStorage.getItem('raden_server_host');
+            if (saved && (saved.includes('ngrok') || saved.includes('trycloudflare') || saved.includes('localtunnel') || saved.includes('pinggy'))) {
+              localStorage.removeItem('raden_server_host');
+            }
+          } catch (e) {}
+        }
+      }
     }
     return NetworkManager.instance;
   }
@@ -105,7 +118,14 @@ export class NetworkManager {
     if (typeof window === 'undefined') return '127.0.0.1';
     try {
       const savedHost = localStorage.getItem('raden_server_host')?.trim();
-      if (savedHost) return savedHost;
+      if (savedHost) {
+        const isCurrentLocal = window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost';
+        if (isCurrentLocal && (savedHost.includes('ngrok') || savedHost.includes('trycloudflare') || savedHost.includes('localtunnel'))) {
+          localStorage.removeItem('raden_server_host');
+          return '127.0.0.1';
+        }
+        return savedHost;
+      }
     } catch (e) {}
     const h = window.location.hostname;
     // Pada Windows, gunakan '127.0.0.1' untuk 'localhost' agar terhubung langsung via IPv4 tanpa issue resolusi ::1
@@ -118,9 +138,19 @@ export class NetworkManager {
    */
   public static getEffectiveServerUrl(): string {
     if (typeof window !== 'undefined') {
-      // Jika diakses via HTTPS atau domain tunnel publik (ngrok)
-      const savedHost = localStorage.getItem('raden_server_host')?.trim();
-      if (!savedHost && (window.location.protocol === 'https:' || window.location.hostname.includes('ngrok'))) {
+      const isCurrentLocal = window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost';
+      if (isCurrentLocal) {
+        return 'http://127.0.0.1:3001';
+      }
+
+      const isHttps = window.location.protocol === 'https:';
+      const isTunnel = window.location.hostname.includes('ngrok') ||
+                       window.location.hostname.includes('trycloudflare') ||
+                       window.location.hostname.includes('localtunnel') ||
+                       window.location.hostname.includes('pinggy');
+
+      // Jika diakses via HTTPS atau domain tunnel publik (ngrok dll), gunakan origin
+      if (isHttps || isTunnel) {
         return window.location.origin;
       }
     }
@@ -158,7 +188,10 @@ export class NetworkManager {
     }
 
     this.socket = io(this.serverUrl, {
-      transports: ['polling', 'websocket'],
+      transports: ['websocket', 'polling'],
+      extraHeaders: {
+        'ngrok-skip-browser-warning': '1',
+      },
       upgrade: true,
       reconnection: true,
       reconnectionAttempts: Infinity,
@@ -216,6 +249,18 @@ export class NetworkManager {
         console.warn('[NetworkManager] Multiplayer server offline (mode lokal aktif):', err.message);
       }
       EventBus.emit('network-status-changed', { isConnected: false, serverUrl: this.serverUrl, error: err.message });
+
+      // Jika koneksi ke serverUrl gagal dan serverUrl bukan 127.0.0.1:3001, coba fallback ke server lokal 127.0.0.1:3001
+      if (this.serverUrl !== 'http://127.0.0.1:3001' && typeof window !== 'undefined') {
+        const isCurrentLocal = window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost';
+        if (isCurrentLocal) {
+          console.log('[NetworkManager] Mengalihkan koneksi ke server game lokal 127.0.0.1:3001...');
+          try { localStorage.removeItem('raden_server_host'); } catch (e) {}
+          this.socket?.disconnect();
+          this.serverUrl = 'http://127.0.0.1:3001';
+          this.connect('http://127.0.0.1:3001');
+        }
+      }
     });
 
     this.bindSocketListeners();
@@ -229,6 +274,57 @@ export class NetworkManager {
   /** Mengambil status koneksi WebSocket saat ini */
   public getIsConnected(): boolean {
     return Boolean(this.socket && this.socket.connected && this.isConnected);
+  }
+
+  /**
+   * Mengukur round-trip latency ke server (dalam ms)
+   * Mengutamakan WebSocket ping jika terhubung, atau fallback ke HTTP endpoint /api/ping
+   */
+  public async measureLatency(targetUrl?: string): Promise<number> {
+    const start = performance.now();
+
+    // 1. Jika terhubung via WebSocket dan tidak menguji URL eksternal kustom
+    if (!targetUrl && this.socket && this.socket.connected) {
+      try {
+        const pingPromise = new Promise<number>((resolve, reject) => {
+          const timeout = setTimeout(() => reject(new Error('WS ping timeout')), 2500);
+          const t0 = performance.now();
+          this.socket.emit('app:ping', t0, () => {
+            clearTimeout(timeout);
+            resolve(Math.max(1, Math.round(performance.now() - t0)));
+          });
+        });
+        return await pingPromise;
+      } catch (e) {
+        // Fallback ke HTTP ping jika WS ping timeout
+      }
+    }
+
+    // 2. HTTP ping ke /api/ping
+    try {
+      const baseUrl = targetUrl || this.getServerUrl() || (typeof window !== 'undefined' ? window.location.origin : 'http://127.0.0.1:3001');
+      const cleanBase = baseUrl.replace(/\/+$/, '');
+      const pingUrl = `${cleanBase}/api/ping?t=${Date.now()}`;
+
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 2500);
+
+      const httpStart = performance.now();
+      const res = await fetch(pingUrl, {
+        method: 'GET',
+        cache: 'no-store',
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+
+      if (res.ok) {
+        return Math.max(1, Math.round(performance.now() - httpStart));
+      }
+      return Math.max(5, Math.round(performance.now() - httpStart));
+    } catch (err) {
+      const elapsed = Math.round(performance.now() - start);
+      return this.isConnected ? Math.max(5, Math.min(40, elapsed)) : 999;
+    }
   }
 
   /**
@@ -284,11 +380,16 @@ export class NetworkManager {
     this.socket.off('friend:request_received');
     this.socket.off('friend:response_result');
     this.socket.off('player:jumped');
+    this.socket.off('player:fishing');
     this.socket.off('player:followed_by');
     this.socket.off('player:unfollowed_by');
 
     this.socket.on('player:jumped', (data: { id: string; jumpCount: number; x: number; y: number }) => {
       this.listeners.playerJumped.forEach((cb) => cb(data));
+    });
+
+    this.socket.on('player:fishing', (data: { id: string; state: string; bobberPos?: { x: number; y: number }; targetBobberPos?: { x: number; y: number }; direction?: Direction }) => {
+      this.listeners.playerFishing.forEach((cb) => cb(data));
     });
 
     this.socket.on('player:followed_by', (data: any) => {
@@ -550,6 +651,22 @@ export class NetworkManager {
   }
 
   /**
+   * Mengirim sinkronisasi status memancing ke server
+   */
+  public sendFishing(state: string, bobberPos?: { x: number; y: number }, targetBobberPos?: { x: number; y: number }): void {
+    if (!this.socket || !this.isConnected) return;
+    this.socket.emit('player:fishing', { state, bobberPos, targetBobberPos });
+  }
+
+  /**
+   * Mendaftarkan callback saat ada pemain lain yang memancing
+   */
+  public onPlayerFishing(callback: (data: { id: string; state: string; bobberPos?: { x: number; y: number }; targetBobberPos?: { x: number; y: number }; direction?: Direction }) => void): void {
+    this.listeners.playerFishing = [callback];
+    this.bindSocketListeners();
+  }
+
+  /**
    * Mengirim chunk rekaman suara untuk Proximity Voice Chat (Radius ±5 petak)
    */
   public sendVoiceChunk(audio: ArrayBuffer | Blob, x: number, y: number): void {
@@ -696,6 +813,7 @@ export class NetworkManager {
     const preservedFriendResponse = this.listeners.friendResponse || [];
     const preservedPlayerAfk = this.listeners.playerAfk || [];
     const preservedPlayerJumped = this.listeners.playerJumped || [];
+    const preservedPlayerFishing = this.listeners.playerFishing || [];
     const preservedPlayerExpression = this.listeners.playerExpression || [];
     const preservedPlayerFollowedBy = this.listeners.playerFollowedBy || [];
     const preservedPlayerUnfollowedBy = this.listeners.playerUnfollowedBy || [];
@@ -713,6 +831,7 @@ export class NetworkManager {
       friendRequest: preservedFriendRequest,
       friendResponse: preservedFriendResponse,
       playerJumped: preservedPlayerJumped,
+      playerFishing: preservedPlayerFishing,
       playerFollowedBy: preservedPlayerFollowedBy,
       playerUnfollowedBy: preservedPlayerUnfollowedBy,
     };

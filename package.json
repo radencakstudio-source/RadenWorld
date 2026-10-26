@@ -6,7 +6,7 @@
         "build": "vite build",
         "dev": "vite --host 0.0.0.0",
         "game-server": "node --watch-path=server server/game-server.js",
-        "tunnel": "ngrok http 3001",
+        "tunnel": "ngrok http 127.0.0.1:3001",
         "dev:all": "concurrently -n \"LARAVEL,VITE,SERVER\" -c \"red,cyan,green\" \"php artisan serve --host=0.0.0.0 --port=8000\" \"vite --host 0.0.0.0\" \"node --watch-path=server server/game-server.js\""
     },
     "devDependencies": {

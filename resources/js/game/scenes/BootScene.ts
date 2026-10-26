@@ -289,7 +289,7 @@ export class BootScene extends Phaser.Scene {
           const a = localStorage.getItem('raden_player_avatar');
           if (a) savedAvatar = JSON.parse(a);
         } catch (e) {}
-        this.scene.start('HouseScene', { name: savedName, avatar: savedAvatar, privateRoomId: savedRoomId });
+        this.scene.start('WorldScene', { name: savedName, avatar: savedAvatar, spawnNearHouse: true });
       }
     });
   }

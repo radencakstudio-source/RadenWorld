@@ -34,7 +34,9 @@ import {
   LogIn,
   UserPlus,
   Sparkles,
+  ShieldCheck,
 } from 'lucide-react';
+import { SocialAccountChooserModal, ISocialAccount } from './SocialAccountChooserModal';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -94,6 +96,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
   const [forgotEmail, setForgotEmail] = useState('');
   const [forgotSent, setForgotSent] = useState(false);
 
+  // Social Modal Sub-view State (Google & Facebook)
+  const [socialModalProvider, setSocialModalProvider] = useState<'google' | 'facebook' | null>(null);
+  const [isSocialChooserOpen, setIsSocialChooserOpen] = useState(false);
+  const [selectedSocialAccount, setSelectedSocialAccount] = useState<ISocialAccount | null>(null);
+  const [socialEmail, setSocialEmail] = useState('');
+  const [socialDisplayName, setSocialDisplayName] = useState('');
+  const [socialGender, setSocialGender] = useState<Gender>('male');
+
   const [socialLoading, setSocialLoading] = useState<string | null>(null);
   const [authError, setAuthError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -123,6 +133,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
     setAuthError(null);
     setIsForgotView(false);
     setForgotSent(false);
+    setSocialModalProvider(null);
     setRegisterStep(1);
   };
 
@@ -282,21 +293,90 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
     }
   };
 
-  // Social Login Mock
+  // Penanganan Sukses Login Akun Sosial
+  const handleSocialSuccess = (user: any) => {
+    sound.playSuccess();
+    let loadedAvatar = user?.avatar;
+    if (typeof loadedAvatar === 'string') {
+      try {
+        loadedAvatar = JSON.parse(loadedAvatar);
+      } catch (e) {}
+    }
+    if (!loadedAvatar || typeof loadedAvatar !== 'object' || !loadedAvatar.gender) {
+      loadedAvatar = getAvatarForGender(user?.avatar?.gender || 'male');
+    }
+
+    try {
+      localStorage.setItem('raden_player_avatar', JSON.stringify(loadedAvatar));
+      localStorage.setItem('raden_player_user', JSON.stringify(user));
+    } catch (err) {}
+
+    const safeRoomId = user?.private_room_id || `safe-${user?.id || 1}`;
+    onSuccess(user.name, loadedAvatar, safeRoomId);
+    onClose();
+  };
+
+  // Autentikasi Akun Sosial Otentik Browser (Google & Facebook Account Chooser)
   const handleSocialLogin = (provider: 'google' | 'facebook') => {
     sound.playClick();
-    setSocialLoading(provider);
+    setSocialLoading(null);
     setAuthError(null);
+    setActiveTab('login');
+    setSocialModalProvider(provider);
+    setIsSocialChooserOpen(true);
+  };
 
-    setTimeout(() => {
-      setSocialLoading(null);
-      const guestName = `${provider === 'google' ? 'Google' : 'FB'}_${Math.floor(1000 + Math.random() * 9000)}`;
-      const guestAvatar = getAvatarForGender('male');
-      const safeRoomId = `safe-social-${Date.now().toString(36)}`;
-      sound.playSuccess();
-      onSuccess(guestName, guestAvatar, safeRoomId);
-      onClose();
-    }, 1200);
+  // Handler saat akun Google / Facebook dipilih dari dialog peramban
+  const handleSocialAccountChosen = (account: ISocialAccount) => {
+    sound.playSuccess();
+    setSelectedSocialAccount(account);
+    setSocialEmail(account.email);
+    // Berikan saran nama panggilan awal yang rapi, pemain bebas menggantinya ke nama apapun
+    const cleanNick = account.name
+      ? account.name.replace(/[^a-zA-Z0-9_]/g, '')
+      : account.email.split('@')[0];
+    setSocialDisplayName(cleanNick);
+    setIsSocialChooserOpen(false);
+  };
+
+  // Submit Formulir Masuk Sosial Langsung (Tersimpan Permanen di MySQL)
+  const handleSocialVerifySubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!socialModalProvider) return;
+    if (!socialEmail.trim() && !socialDisplayName.trim()) {
+      setAuthError('Email atau Nama Akun wajib diisi!');
+      return;
+    }
+
+    setAuthError(null);
+    setIsLoading(true);
+
+    try {
+      const res = await fetch('/api/auth/social/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({
+          provider: socialModalProvider,
+          email: socialEmail.trim(),
+          name: socialDisplayName.trim() || undefined,
+          gender: socialGender,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || data.status === 'error') {
+        setAuthError(data.message || 'Gagal masuk dengan akun sosial.');
+        setIsLoading(false);
+        return;
+      }
+
+      setSocialModalProvider(null);
+      handleSocialSuccess(data.user);
+    } catch (err) {
+      setAuthError('Gagal terhubung ke server database MySQL.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -389,7 +469,143 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
           {/* ================================================================== */}
           {activeTab === 'login' && (
             <div className="space-y-4 animate-in fade-in duration-150">
-              {!isForgotView ? (
+              {socialModalProvider ? (
+                /* Sub-view: Langkah 2 - Konfirmasi Akun Sosial & Pilih Nama Karakter Game */
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        sound.playClick();
+                        setSocialModalProvider(null);
+                        setSelectedSocialAccount(null);
+                        setAuthError(null);
+                      }}
+                      className="flex items-center gap-1.5 text-xs text-neutral-400 hover:text-amber-400 transition-colors cursor-pointer"
+                    >
+                      <ArrowLeft className="w-3.5 h-3.5" />
+                      <span>Batal / Pilih Akun Lain</span>
+                    </button>
+
+                    <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center gap-1">
+                      <Check className="w-3 h-3 text-emerald-400" />
+                      <span>AKUN {socialModalProvider === 'google' ? 'GOOGLE' : 'FACEBOOK'} TERVERIFIKASI</span>
+                    </span>
+                  </div>
+
+                  {/* Banner Akun Sosial Terpilih */}
+                  <div className="p-3.5 rounded-xl border border-neutral-800 bg-[#121214] flex items-center justify-between shadow-inner">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 shadow-md ${socialModalProvider === 'google' ? 'bg-white' : 'bg-[#1877F2]'}`}>
+                        {socialModalProvider === 'google' ? (
+                          <svg className="w-6 h-6" viewBox="0 0 24 24">
+                            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
+                            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
+                          </svg>
+                        ) : (
+                          <svg className="w-6 h-6 fill-white" viewBox="0 0 24 24">
+                            <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                          </svg>
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-xs font-bold text-white truncate">
+                          {socialEmail || 'Akun Terhubung'}
+                        </div>
+                        <div className="text-[10px] text-neutral-400 mt-0.5 truncate">
+                          Terhubung via {socialModalProvider === 'google' ? 'Google Account' : 'Facebook Login'}
+                        </div>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        sound.playClick();
+                        setIsSocialChooserOpen(true);
+                      }}
+                      className="px-2.5 py-1 rounded bg-neutral-800 hover:bg-neutral-700 text-amber-400 hover:text-amber-300 text-[11px] font-bold transition-colors cursor-pointer shrink-0"
+                    >
+                      Ganti Akun
+                    </button>
+                  </div>
+
+                  <form onSubmit={handleSocialVerifySubmit} className="space-y-3.5">
+                    {/* Input Nama Karakter Bebas (Nickname Game) */}
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+                          <User className="w-3.5 h-3.5" />
+                          <span>Nama Karakter di Game (Nickname):</span>
+                        </label>
+                        <span className="text-[10px] text-neutral-400">Bebas & Unik</span>
+                      </div>
+                      <input
+                        type="text"
+                        required
+                        value={socialDisplayName}
+                        onChange={(e) => setSocialDisplayName(e.target.value)}
+                        placeholder="Contoh: RadenSatria, ShadowNinja..."
+                        className="w-full px-3.5 py-2.5 bg-black border border-amber-500/70 rounded-md text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-amber-400 font-mono transition-colors"
+                        autoFocus
+                      />
+                      <p className="text-[10px] text-neutral-400 leading-tight">
+                        💡 Tentukan nama petualangmu di sini! Nama ini yang akan dilihat pemain lain di open world, sekolah, chat, dan papan peringkat (tidak harus sama dengan nama asli atau email Anda).
+                      </p>
+                    </div>
+
+                    {/* Model Karakter */}
+                    <div className="space-y-1.5 p-3 bg-[#0e0e0e] border border-neutral-800 rounded-md">
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="text-[11px] font-bold text-neutral-300 uppercase tracking-wider">
+                          Pilih Model Karakter Baru:
+                        </label>
+                        <span className="text-[10px] text-neutral-400 font-mono font-bold text-amber-400">
+                          {socialGender === 'male' ? 'LAKI-LAKI' : 'PEREMPUAN'}
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            sound.playClick();
+                            setSocialGender('male');
+                          }}
+                          className={`py-2 px-3 rounded border text-xs font-bold uppercase transition-all flex items-center justify-center gap-2 cursor-pointer ${socialGender === 'male' ? 'bg-amber-500 text-black border-amber-400 font-black' : 'bg-neutral-900 text-neutral-400 border-neutral-800 hover:text-white'}`}
+                        >
+                          <span>LAKI-LAKI</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            sound.playClick();
+                            setSocialGender('female');
+                          }}
+                          className={`py-2 px-3 rounded border text-xs font-bold uppercase transition-all flex items-center justify-center gap-2 cursor-pointer ${socialGender === 'female' ? 'bg-amber-500 text-black border-amber-400 font-black' : 'bg-neutral-900 text-neutral-400 border-neutral-800 hover:text-white'}`}
+                        >
+                          <span>PEREMPUAN</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={isLoading || !socialDisplayName.trim()}
+                      className="w-full py-3 rounded-md text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg bg-amber-500 hover:bg-amber-400 text-black shadow-amber-950/50 disabled:opacity-50"
+                    >
+                      {isLoading ? (
+                        <span>Menghubungkan ke Database...</span>
+                      ) : (
+                        <>
+                          <span>MASUK KE RADENWORLD</span>
+                          <ArrowRight className="w-4 h-4" />
+                        </>
+                      )}
+                    </button>
+                  </form>
+                </div>
+              ) : !isForgotView ? (
                 <form onSubmit={handleLoginSubmit} className="space-y-4">
                   {/* Quick Social Buttons */}
                   <div className="grid grid-cols-2 gap-2.5">
@@ -397,9 +613,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
                       type="button"
                       onClick={() => handleSocialLogin('google')}
                       disabled={!!socialLoading}
-                      className="py-2.5 px-3 rounded-md bg-[#0e0e0e] hover:bg-neutral-900 border border-neutral-800 hover:border-amber-400 text-xs font-bold text-neutral-200 transition-colors cursor-pointer uppercase tracking-wider flex items-center justify-center gap-2"
+                      className="py-2.5 px-3 rounded-md bg-[#0e0e0e] hover:bg-neutral-900 border border-neutral-800 hover:border-rose-500/70 text-xs font-bold text-neutral-200 transition-all cursor-pointer uppercase tracking-wider flex items-center justify-center gap-2 group shadow-sm"
                     >
-                      <span className="w-2 h-2 rounded-full bg-rose-500" />
+                      <svg className="w-3.5 h-3.5 shrink-0 group-hover:scale-110 transition-transform" viewBox="0 0 24 24">
+                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
+                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
+                      </svg>
                       <span>{socialLoading === 'google' ? 'Menghubungkan...' : 'Google'}</span>
                     </button>
 
@@ -407,9 +628,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
                       type="button"
                       onClick={() => handleSocialLogin('facebook')}
                       disabled={!!socialLoading}
-                      className="py-2.5 px-3 rounded-md bg-[#0e0e0e] hover:bg-neutral-900 border border-neutral-800 hover:border-amber-400 text-xs font-bold text-neutral-200 transition-colors cursor-pointer uppercase tracking-wider flex items-center justify-center gap-2"
+                      className="py-2.5 px-3 rounded-md bg-[#0e0e0e] hover:bg-neutral-900 border border-neutral-800 hover:border-blue-500/70 text-xs font-bold text-neutral-200 transition-all cursor-pointer uppercase tracking-wider flex items-center justify-center gap-2 group shadow-sm"
                     >
-                      <span className="w-2 h-2 rounded-full bg-blue-500" />
+                      <svg className="w-3.5 h-3.5 fill-[#1877F2] shrink-0 group-hover:scale-110 transition-transform" viewBox="0 0 24 24">
+                        <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                      </svg>
                       <span>{socialLoading === 'facebook' ? 'Menghubungkan...' : 'Facebook'}</span>
                     </button>
                   </div>
@@ -558,9 +781,46 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
 
               {registerStep === 1 ? (
                 /* --- STEP 1: FORM PENDAFTARAN & TANGGAL LAHIR --- */
-                <form onSubmit={handleRegisterStep1Submit} className="space-y-3.5">
-                  {/* Nama Karakter */}
-                  <div className="space-y-1.5">
+                <div className="space-y-4">
+                  {/* Quick Social Register Buttons */}
+                  <div className="grid grid-cols-2 gap-2.5">
+                    <button
+                      type="button"
+                      onClick={() => handleSocialLogin('google')}
+                      disabled={!!socialLoading}
+                      className="py-2.5 px-3 rounded-md bg-[#0e0e0e] hover:bg-neutral-900 border border-neutral-800 hover:border-rose-500/70 text-xs font-bold text-neutral-200 transition-all cursor-pointer uppercase tracking-wider flex items-center justify-center gap-2 group shadow-sm"
+                    >
+                      <svg className="w-3.5 h-3.5 shrink-0 group-hover:scale-110 transition-transform" viewBox="0 0 24 24">
+                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
+                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
+                      </svg>
+                      <span>Google</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleSocialLogin('facebook')}
+                      disabled={!!socialLoading}
+                      className="py-2.5 px-3 rounded-md bg-[#0e0e0e] hover:bg-neutral-900 border border-neutral-800 hover:border-blue-500/70 text-xs font-bold text-neutral-200 transition-all cursor-pointer uppercase tracking-wider flex items-center justify-center gap-2 group shadow-sm"
+                    >
+                      <svg className="w-3.5 h-3.5 fill-[#1877F2] shrink-0 group-hover:scale-110 transition-transform" viewBox="0 0 24 24">
+                        <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                      </svg>
+                      <span>Facebook</span>
+                    </button>
+                  </div>
+
+                  <div className="flex items-center gap-3 my-1 text-[10px] text-neutral-400 uppercase tracking-widest font-mono">
+                    <div className="flex-1 h-px bg-neutral-800" />
+                    <span>ATAU DAFTAR MANUAL</span>
+                    <div className="flex-1 h-px bg-neutral-800" />
+                  </div>
+
+                  <form onSubmit={handleRegisterStep1Submit} className="space-y-3.5">
+                    {/* Nama Karakter */}
+                    <div className="space-y-1.5">
                     <label className="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
                       <User className="w-3.5 h-3.5" />
                       <span>Nama Karakter:</span>
@@ -657,7 +917,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
                     <span>LANJUT KE PEMILIHAN AVATAR</span>
                     <ArrowRight className="w-4 h-4 stroke-[3]" />
                   </button>
-                </form>
+                  </form>
+                </div>
               ) : (
                 /* --- STEP 2: PILIH AVATAR (KHUSUS MALE DAN FEMALE SAJA) --- */
                 <form onSubmit={handleRegisterFinalSubmit} className="space-y-4 animate-in fade-in duration-150">
@@ -824,6 +1085,20 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
             Tutup
           </button>
         </div>
+
+        {/* Dialog Otentik Pemilih Akun Google / Facebook */}
+        <SocialAccountChooserModal
+          isOpen={isSocialChooserOpen && !!socialModalProvider}
+          provider={socialModalProvider || 'google'}
+          mode="login"
+          onClose={() => {
+            setIsSocialChooserOpen(false);
+            if (!selectedSocialAccount) {
+              setSocialModalProvider(null);
+            }
+          }}
+          onSelectAccount={handleSocialAccountChosen}
+        />
 
       </div>
     </div>

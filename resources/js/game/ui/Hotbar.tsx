@@ -149,7 +149,7 @@ export const Hotbar: React.FC<HotbarProps> = ({ onOpenBackpack, isBackpackOpen =
   return (
     <aside
       aria-label="Mini Inventaris"
-      className="fixed bottom-[max(0.5rem,env(safe-area-inset-bottom,0.5rem))] left-1/2 -translate-x-1/2 z-40 select-none font-['Chakra_Petch']"
+      className="fixed bottom-[max(0.75rem,env(safe-area-inset-bottom,0.75rem))] left-1/2 -translate-x-1/2 z-40 select-none font-['Chakra_Petch'] origin-bottom scale-[0.82] xs:scale-90 sm:scale-100 pointer-events-auto"
     >
       {/* Tooltip Hover Item (Ringan, Tanpa Blur) */}
       {hoveredItem && hoveredItem.item && (

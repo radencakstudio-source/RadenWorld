@@ -23,11 +23,21 @@ class User extends Authenticatable
         'email',
         'birth_date',
         'password',
+        'provider',
+        'provider_id',
+        'google_email',
+        'facebook_email',
         'avatar',
+        'avatar_url',
+        'gold',
+        'diamonds',
         'level',
         'exp',
         'title',
         'role',
+        'is_banned',
+        'ban_reason',
+        'wallet_hash',
     ];
 
     /**
@@ -39,6 +49,14 @@ class User extends Authenticatable
     }
 
     /**
+     * Hitung checksum anti-tamper untuk saldo dompet
+     */
+    public function calculateWalletHash(): string
+    {
+        return hash_hmac('sha256', "{$this->id}:{$this->gold}:{$this->diamonds}", config('app.key', 'RadenWorldSecureSalt'));
+    }
+
+    /**
      * The attributes that should be hidden for serialization.
      *
      * @var list<string>
@@ -46,6 +64,7 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
+        'wallet_hash',
     ];
 
     /**
@@ -61,6 +80,9 @@ class User extends Authenticatable
             'avatar' => 'array',
             'level' => 'integer',
             'exp' => 'integer',
+            'gold' => 'integer',
+            'diamonds' => 'integer',
+            'is_banned' => 'boolean',
         ];
     }
 }

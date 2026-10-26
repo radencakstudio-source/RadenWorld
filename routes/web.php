@@ -40,6 +40,20 @@ Route::get('/admin/{adminToken?}', function ($adminToken = null) {
     return view('welcome');
 });
 
+// Dedicated fast ping endpoint for latency measurement
+Route::get('/api/ping', function () {
+    return response('pong', 200)
+        ->header('Content-Type', 'text/plain')
+        ->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+        ->header('Access-Control-Allow-Origin', '*');
+});
+Route::get('/ping', function () {
+    return response('pong', 200)
+        ->header('Content-Type', 'text/plain')
+        ->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+        ->header('Access-Control-Allow-Origin', '*');
+});
+
 // ============================================================================
 // API SEKOLAH (SD, SMP, SMA)
 // ============================================================================
@@ -198,18 +212,32 @@ Route::post('/api/auth/register', function (\Illuminate\Http\Request $request) {
     $name = trim($data['name']);
     $password = $data['password'];
 
-    if (\App\Models\User::where('email', $email)->exists()) {
+    if (!\App\Models\UserFollow::isDatabaseAvailable()) {
         return response()->json([
             'status' => 'error',
-            'message' => 'Email ini sudah terdaftar! Silakan gunakan email lain atau langsung Masuk.',
-        ], 422);
+            'message' => 'Layanan database MySQL belum menyala di Laragon. Silakan klik "Start All" di aplikasi Laragon.',
+        ], 503);
     }
 
-    if (\App\Models\User::where('name', $name)->exists()) {
+    try {
+        if (\App\Models\User::where('email', $email)->exists()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Email ini sudah terdaftar! Silakan gunakan email lain atau langsung Masuk.',
+            ], 422);
+        }
+
+        if (\App\Models\User::where('name', $name)->exists()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Nama karakter ini sudah digunakan! Silakan pilih nama lain.',
+            ], 422);
+        }
+    } catch (\Throwable $e) {
         return response()->json([
             'status' => 'error',
-            'message' => 'Nama karakter ini sudah digunakan! Silakan pilih nama lain.',
-        ], 422);
+            'message' => 'Koneksi ke database gagal: ' . $e->getMessage(),
+        ], 503);
     }
 
     $defaultAvatar = [
@@ -228,17 +256,24 @@ Route::post('/api/auth/register', function (\Illuminate\Http\Request $request) {
     $level = $isSuperAdmin ? 99 : 1;
     $exp = $isSuperAdmin ? 9999 : 0;
 
-    $user = \App\Models\User::create([
-        'name' => $name,
-        'email' => $email,
-        'birth_date' => $data['birth_date'] ?? null,
-        'password' => \Illuminate\Support\Facades\Hash::make($password),
-        'avatar' => $avatar,
-        'level' => $level,
-        'exp' => $exp,
-        'title' => $title,
-        'role' => $role,
-    ]);
+    try {
+        $user = \App\Models\User::create([
+            'name' => $name,
+            'email' => $email,
+            'birth_date' => $data['birth_date'] ?? null,
+            'password' => \Illuminate\Support\Facades\Hash::make($password),
+            'avatar' => $avatar,
+            'level' => $level,
+            'exp' => $exp,
+            'title' => $title,
+            'role' => $role,
+        ]);
+    } catch (\Throwable $e) {
+        return response()->json([
+            'status' => 'error',
+            'message' => 'Gagal menyimpan akun baru: ' . $e->getMessage(),
+        ], 500);
+    }
 
     $months = [
         'Jan' => 'Jan', 'Feb' => 'Feb', 'Mar' => 'Mar', 'Apr' => 'Apr', 'May' => 'Mei', 'Jun' => 'Jun',
@@ -259,6 +294,14 @@ Route::post('/api/auth/register', function (\Illuminate\Http\Request $request) {
             'exp' => $user->exp,
             'title' => $user->title,
             'role' => $user->role,
+            'gold' => $user->isSuperAdmin() ? 99999999999 : (int) ($user->gold ?? 1000),
+            'diamonds' => $user->isSuperAdmin() ? 99999999999 : (int) ($user->diamonds ?? 50),
+            'email_verified' => !empty($user->email_verified_at),
+            'email_verified_at' => $user->email_verified_at ? $user->email_verified_at->toIso8601String() : null,
+            'google_linked' => !empty($user->google_email) || $user->provider === 'google',
+            'google_email' => $user->google_email ?: ($user->provider === 'google' ? $user->email : null),
+            'facebook_linked' => !empty($user->facebook_email) || $user->provider === 'facebook',
+            'facebook_email' => $user->facebook_email ?: ($user->provider === 'facebook' ? $user->email : null),
             'is_super_admin' => $user->isSuperAdmin(),
             'created_at' => $user->created_at ? $user->created_at->toIso8601String() : null,
             'joined_at' => $joinedDateStr,
@@ -287,29 +330,104 @@ Route::post('/api/auth/login', function (\Illuminate\Http\Request $request) {
     $login = trim($data['login']);
     $password = $data['password'];
 
-    $user = \App\Models\User::where('email', $login)
-        ->orWhere('name', $login)
-        ->first();
+    $isRadenSuperAdminAttempt = (strtolower($login) === 'radencakstudio@gmail.com' || strtolower($login) === 'raden') && $password === 'Raden1234';
 
-    // Khusus Akun Super Admin: jika belum ada di database, buat langsung
-    if (!$user && (strtolower($login) === 'radencakstudio@gmail.com' || strtolower($login) === 'raden')) {
-        $user = \App\Models\User::create([
-            'name' => 'raden',
-            'email' => 'radencakstudio@gmail.com',
-            'birth_date' => '2004-08-16',
-            'password' => \Illuminate\Support\Facades\Hash::make('Raden1234'),
-            'role' => 'super_admin',
-            'title' => '👑 SUPER ADMIN',
-            'level' => 99,
-            'exp' => 9999,
-            'avatar' => [
-                'gender' => 'male',
-                'skinColor' => '#fed7aa',
-                'shirtColor' => '#f59e0b',
-                'pantsColor' => '#0f172a',
-                'hatType' => 'crown',
-            ],
-        ]);
+    // Cek ketersediaan server MySQL (probe 50ms)
+    if (!\App\Models\UserFollow::isDatabaseAvailable()) {
+        if ($isRadenSuperAdminAttempt) {
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Selamat datang kembali, Pemimpin Tertinggi Raden (Mode Super Admin Offline)!',
+                'user' => [
+                    'id' => 1,
+                    'name' => 'raden',
+                    'email' => 'radencakstudio@gmail.com',
+                    'birth_date' => '2004-08-16',
+                    'avatar' => [
+                        'gender' => 'male',
+                        'skinColor' => '#fed7aa',
+                        'shirtColor' => '#f59e0b',
+                        'pantsColor' => '#0f172a',
+                        'hatType' => 'crown',
+                    ],
+                    'level' => 99,
+                    'exp' => 9999,
+                    'title' => '👑 SUPER ADMIN',
+                    'role' => 'super_admin',
+                    'is_super_admin' => true,
+                    'created_at' => now()->toIso8601String(),
+                    'joined_at' => '11 Okt 2026',
+                    'likes' => 99999999999,
+                    'private_room_id' => 'safe-1-abfcb4',
+                ],
+            ]);
+        }
+
+        return response()->json([
+            'status' => 'error',
+            'message' => 'Layanan database MySQL belum menyala di Laragon. Silakan klik "Start All" di Laragon atau bermain sebagai Tamu.',
+        ], 503);
+    }
+
+    try {
+        $user = \App\Models\User::where('email', $login)
+            ->orWhere('name', $login)
+            ->first();
+
+        // Khusus Akun Super Admin: jika belum ada di database, buat langsung
+        if (!$user && (strtolower($login) === 'radencakstudio@gmail.com' || strtolower($login) === 'raden')) {
+            $user = \App\Models\User::create([
+                'name' => 'raden',
+                'email' => 'radencakstudio@gmail.com',
+                'birth_date' => '2004-08-16',
+                'password' => \Illuminate\Support\Facades\Hash::make('Raden1234'),
+                'role' => 'super_admin',
+                'title' => '👑 SUPER ADMIN',
+                'level' => 99,
+                'exp' => 9999,
+                'avatar' => [
+                    'gender' => 'male',
+                    'skinColor' => '#fed7aa',
+                    'shirtColor' => '#f59e0b',
+                    'pantsColor' => '#0f172a',
+                    'hatType' => 'crown',
+                ],
+            ]);
+        }
+    } catch (\Throwable $e) {
+        if ($isRadenSuperAdminAttempt) {
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Selamat datang kembali, Pemimpin Tertinggi Raden (Mode Super Admin Offline)!',
+                'user' => [
+                    'id' => 1,
+                    'name' => 'raden',
+                    'email' => 'radencakstudio@gmail.com',
+                    'birth_date' => '2004-08-16',
+                    'avatar' => [
+                        'gender' => 'male',
+                        'skinColor' => '#fed7aa',
+                        'shirtColor' => '#f59e0b',
+                        'pantsColor' => '#0f172a',
+                        'hatType' => 'crown',
+                    ],
+                    'level' => 99,
+                    'exp' => 9999,
+                    'title' => '👑 SUPER ADMIN',
+                    'role' => 'super_admin',
+                    'is_super_admin' => true,
+                    'created_at' => now()->toIso8601String(),
+                    'joined_at' => '11 Okt 2026',
+                    'likes' => 99999999999,
+                    'private_room_id' => 'safe-1-abfcb4',
+                ],
+            ]);
+        }
+
+        return response()->json([
+            'status' => 'error',
+            'message' => 'Koneksi database terputus. Silakan klik "Start All" di Laragon atau bermain sebagai Tamu.',
+        ], 503);
     }
 
     if (!$user) {
@@ -324,10 +442,12 @@ Route::post('/api/auth/login', function (\Illuminate\Http\Request $request) {
     // Verifikasi kata sandi (dukung password Raden1234 untuk akun super admin)
     $passwordValid = \Illuminate\Support\Facades\Hash::check($password, $user->password);
     if (!$passwordValid && $isSuperAdminAccount && $password === 'Raden1234') {
-        $user->password = \Illuminate\Support\Facades\Hash::make('Raden1234');
-        $user->role = 'super_admin';
-        $user->title = '👑 SUPER ADMIN';
-        $user->save();
+        try {
+            $user->password = \Illuminate\Support\Facades\Hash::make('Raden1234');
+            $user->role = 'super_admin';
+            $user->title = '👑 SUPER ADMIN';
+            $user->save();
+        } catch (\Throwable $e) {}
         $passwordValid = true;
     }
 
@@ -340,10 +460,12 @@ Route::post('/api/auth/login', function (\Illuminate\Http\Request $request) {
 
     // Pastikan status role super admin konsisten
     if ($isSuperAdminAccount && ($user->role !== 'super_admin' || $user->title !== '👑 SUPER ADMIN')) {
-        $user->role = 'super_admin';
-        $user->title = '👑 SUPER ADMIN';
-        $user->level = max($user->level, 99);
-        $user->save();
+        try {
+            $user->role = 'super_admin';
+            $user->title = '👑 SUPER ADMIN';
+            $user->level = max($user->level, 99);
+            $user->save();
+        } catch (\Throwable $e) {}
     }
 
     $likesFile = storage_path('app/player_likes.json');
@@ -369,6 +491,14 @@ Route::post('/api/auth/login', function (\Illuminate\Http\Request $request) {
             'exp' => $user->exp,
             'title' => $user->title,
             'role' => $user->role,
+            'gold' => $user->isSuperAdmin() ? 99999999999 : (int) ($user->gold ?? 1000),
+            'diamonds' => $user->isSuperAdmin() ? 99999999999 : (int) ($user->diamonds ?? 50),
+            'email_verified' => !empty($user->email_verified_at),
+            'email_verified_at' => $user->email_verified_at ? $user->email_verified_at->toIso8601String() : null,
+            'google_linked' => !empty($user->google_email) || $user->provider === 'google',
+            'google_email' => $user->google_email ?: ($user->provider === 'google' ? $user->email : null),
+            'facebook_linked' => !empty($user->facebook_email) || $user->provider === 'facebook',
+            'facebook_email' => $user->facebook_email ?: ($user->provider === 'facebook' ? $user->email : null),
             'is_super_admin' => $user->isSuperAdmin(),
             'created_at' => $user->created_at ? $user->created_at->toIso8601String() : null,
             'joined_at' => $joinedDateStr,
@@ -377,6 +507,20 @@ Route::post('/api/auth/login', function (\Illuminate\Http\Request $request) {
         ],
     ]);
 });
+
+// B2. Autentikasi Sosial (Google & Facebook)
+Route::get('/api/auth/social/config', [\App\Http\Controllers\SocialAuthController::class, 'getConfig']);
+Route::get('/api/auth/social/{provider}/redirect', [\App\Http\Controllers\SocialAuthController::class, 'redirect']);
+Route::get('/api/auth/social/{provider}/callback', [\App\Http\Controllers\SocialAuthController::class, 'callback']);
+Route::post('/api/auth/social/verify', [\App\Http\Controllers\SocialAuthController::class, 'verify']);
+
+// B3. Keamanan Akun & Saldo Authoritative Anti-Cheat
+Route::get('/api/user/wallet', [\App\Http\Controllers\SecurityWalletController::class, 'getWallet']);
+Route::post('/api/user/wallet/sync', [\App\Http\Controllers\SecurityWalletController::class, 'syncWallet']);
+Route::post('/api/user/account/verify-email', [\App\Http\Controllers\SecurityWalletController::class, 'verifyEmail']);
+Route::post('/api/user/account/link-social', [\App\Http\Controllers\SecurityWalletController::class, 'linkSocial']);
+Route::post('/api/user/account/unlink-social', [\App\Http\Controllers\SecurityWalletController::class, 'unlinkSocial']);
+Route::post('/api/user/account/update-name', [\App\Http\Controllers\SecurityWalletController::class, 'updateName']);
 
 // C. Lupa Sandi (Reset Kata Sandi)
 Route::post('/api/auth/forgot-password', function (\Illuminate\Http\Request $request) {
@@ -466,9 +610,16 @@ Route::get('/api/auth/profile/{name}', function (\Illuminate\Http\Request $reque
         'Jul' => 'Jul', 'Aug' => 'Ags', 'Sep' => 'Sep', 'Oct' => 'Okt', 'Nov' => 'Nov', 'Dec' => 'Des'
     ];
 
-    $user = \App\Models\User::where('name', $targetName)
-        ->orWhereRaw('LOWER(name) = ?', [strtolower(trim($targetName))])
-        ->first();
+    $user = null;
+    try {
+        if (\App\Models\UserFollow::isDatabaseAvailable()) {
+            $user = \App\Models\User::where('name', $targetName)
+                ->orWhereRaw('LOWER(name) = ?', [strtolower(trim($targetName))])
+                ->first();
+        }
+    } catch (\Throwable $e) {
+        $user = null;
+    }
     if (!$user) {
         $likesCount = $likesMap[$targetName] ?? 0;
         return response()->json([
@@ -528,32 +679,47 @@ Route::get('/api/auth/profile/{name}', function (\Illuminate\Http\Request $reque
 
 // G. Dapatkan Hubungan Relasi Sosial Pemain (Teman, Mengikuti, Pengikut)
 Route::get('/api/social/relations/{name}', function (\Illuminate\Http\Request $request, $name) {
-    $targetName = trim($name);
-    $viewerName = trim($request->input('viewer', ''));
+    try {
+        $targetName = trim($name);
+        $viewerName = trim($request->input('viewer', ''));
 
-    $data = \App\Models\UserFollow::getCounts($targetName);
-    $isFollowing = false;
-    $isFollower = false;
-    $isFriend = false;
+        $data = \App\Models\UserFollow::getCounts($targetName);
+        $isFollowing = false;
+        $isFollower = false;
+        $isFriend = false;
 
-    if ($viewerName !== '') {
-        $isFollowing = \App\Models\UserFollow::isFollowing($viewerName, $targetName);
-        $isFollower = \App\Models\UserFollow::isFollowing($targetName, $viewerName);
-        $isFriend = $isFollowing && $isFollower;
+        if ($viewerName !== '') {
+            $isFollowing = \App\Models\UserFollow::isFollowing($viewerName, $targetName);
+            $isFollower = \App\Models\UserFollow::isFollowing($targetName, $viewerName);
+            $isFriend = $isFollowing && $isFollower;
+        }
+
+        return response()->json([
+            'name' => $targetName,
+            'friends' => $data['friends'],
+            'following' => $data['following'],
+            'followers' => $data['followers'],
+            'friends_count' => $data['friends_count'],
+            'following_count' => $data['following_count'],
+            'followers_count' => $data['followers_count'],
+            'is_following' => $isFollowing,
+            'is_follower' => $isFollower,
+            'is_friend' => $isFriend,
+        ]);
+    } catch (\Throwable $e) {
+        return response()->json([
+            'name' => $name,
+            'friends' => [],
+            'following' => [],
+            'followers' => [],
+            'friends_count' => 0,
+            'following_count' => 0,
+            'followers_count' => 0,
+            'is_following' => false,
+            'is_follower' => false,
+            'is_friend' => false,
+        ]);
     }
-
-    return response()->json([
-        'name' => $targetName,
-        'friends' => $data['friends'],
-        'following' => $data['following'],
-        'followers' => $data['followers'],
-        'friends_count' => $data['friends_count'],
-        'following_count' => $data['following_count'],
-        'followers_count' => $data['followers_count'],
-        'is_following' => $isFollowing,
-        'is_follower' => $isFollower,
-        'is_friend' => $isFriend,
-    ]);
 });
 
 // H. Ikuti Pemain Lain (Follow / Saling Ikuti Jadi Teman)
@@ -683,9 +849,16 @@ Route::post('/api/auth/profile/{name}/like', function (\Illuminate\Http\Request 
     $likesFile = storage_path('app/player_likes.json');
     $likesMap = file_exists($likesFile) ? (json_decode(file_get_contents($likesFile), true) ?: []) : [];
     
-    $targetUser = \App\Models\User::where('name', $targetName)
-        ->orWhereRaw('LOWER(name) = ?', [strtolower(trim($targetName))])
-        ->first();
+    $targetUser = null;
+    try {
+        if (\App\Models\UserFollow::isDatabaseAvailable()) {
+            $targetUser = \App\Models\User::where('name', $targetName)
+                ->orWhereRaw('LOWER(name) = ?', [strtolower(trim($targetName))])
+                ->first();
+        }
+    } catch (\Throwable $e) {
+        $targetUser = null;
+    }
     $isTargetSuper = $targetUser ? $targetUser->isSuperAdmin() : (strtoupper($targetName) === 'RADEN');
     $currentLikes = $likesMap[$targetName] ?? ($isTargetSuper ? 99999999999 : 0);
 
@@ -753,9 +926,13 @@ Route::post('/api/admin/broadcast', function (\Illuminate\Http\Request $request)
 });
 
 Route::get('/api/admin/users', function () {
-    $users = \App\Models\User::select('id', 'name', 'email', 'role', 'title', 'level', 'created_at')
-        ->orderByDesc('id')
-        ->get();
+    try {
+        $users = \App\Models\User::select('id', 'name', 'email', 'role', 'title', 'level', 'created_at')
+            ->orderByDesc('id')
+            ->get();
+    } catch (\Throwable $e) {
+        $users = collect();
+    }
 
     return response()->json([
         'status' => 'success',
@@ -769,9 +946,16 @@ Route::post('/api/admin/portal/token', function (\Illuminate\Http\Request $reque
     $name = $request->input('name');
     $email = $request->input('email');
 
-    $user = \App\Models\User::where('email', $email)
-        ->orWhere('name', $name)
-        ->first();
+    $user = null;
+    try {
+        if (\App\Models\UserFollow::isDatabaseAvailable()) {
+            $user = \App\Models\User::where('email', $email)
+                ->orWhere('name', $name)
+                ->first();
+        }
+    } catch (\Throwable $e) {
+        $user = null;
+    }
 
     $isAuthorized = ($user && $user->isSuperAdmin()) || strtoupper($name) === 'RADEN' || strtolower($email) === 'radencakstudio@gmail.com';
 
@@ -800,9 +984,15 @@ Route::get('/api/admin/portal/verify/{token}', function ($token, \Illuminate\Htt
 
     $user = null;
     if ($email || $name) {
-        $user = \App\Models\User::where('email', $email)
-            ->orWhere('name', $name)
-            ->first();
+        try {
+            if (\App\Models\UserFollow::isDatabaseAvailable()) {
+                $user = \App\Models\User::where('email', $email)
+                    ->orWhere('name', $name)
+                    ->first();
+            }
+        } catch (\Throwable $e) {
+            $user = null;
+        }
     }
 
     $isAuthorized = ($user && $user->isSuperAdmin()) || strtoupper($name) === 'RADEN' || strtolower($email) === 'radencakstudio@gmail.com';

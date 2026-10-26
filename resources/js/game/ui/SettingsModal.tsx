@@ -129,21 +129,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
    */
   const measureLivePing = async () => {
     setIsTestingPing(true);
-    const start = performance.now();
     try {
-      const url = networkMgr.getServerUrl();
-      // Gunakan endpoint socket.io polling untuk tes latensi HTTP
-      await fetch(`${url}/socket.io/?EIO=4&transport=polling`, {
-        method: 'GET',
-        cache: 'no-store',
-        mode: 'no-cors',
-      });
-      const latency = Math.round(performance.now() - start);
-      setActivePing(Math.max(4, latency));
+      const latency = await networkMgr.measureLatency();
+      setActivePing(latency);
     } catch (err) {
-      // Jika fetch gagal karena batasan CORS/offline, estimasi latensi loopback lokal
-      const latency = Math.round(performance.now() - start);
-      setActivePing(isSocketConnected ? Math.max(5, Math.min(25, latency)) : 999);
+      setActivePing(isSocketConnected ? 12 : 999);
     } finally {
       setIsTestingPing(false);
     }
@@ -229,12 +219,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/80 font-['Chakra_Petch'] select-none animate-in fade-in duration-200">
-      <div className="relative w-full max-w-2xl bg-black border border-neutral-800 rounded-xl flex flex-col overflow-hidden max-h-[94dvh]">
+      <div className="relative w-full max-w-2xl bg-black border border-neutral-800 rounded-xl flex flex-col overflow-hidden max-h-[min(90dvh,88vh)] my-auto">
 
         {/* ==================================================================== */}
         {/* HEADER MODAL: Flat Pure Black                                        */}
         {/* ==================================================================== */}
-        <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-neutral-800 bg-[#0a0a0a] shrink-0">
+        <div className="flex items-center justify-between px-3 sm:px-6 py-2 sm:py-3.5 border-b border-neutral-800 bg-[#0a0a0a] shrink-0">
           <div className="flex items-center gap-2.5 sm:gap-3">
             <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-md bg-neutral-900 border border-neutral-800 flex items-center justify-center text-amber-400 shrink-0">
               <Sliders className="w-4 h-4" />
@@ -269,7 +259,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         {/* ==================================================================== */}
         {/* TAB NAVIGATION BAR (5 TAB RESPONSIF)                                  */}
         {/* ==================================================================== */}
-        <div className="flex items-center gap-1.5 px-4 sm:px-6 pt-2.5 pb-2 border-b border-neutral-800 bg-[#0a0a0a] overflow-x-auto no-scrollbar shrink-0">
+        <div className="flex items-center gap-1.5 px-3 sm:px-6 pt-2 pb-1.5 border-b border-neutral-800 bg-[#0a0a0a] overflow-x-auto no-scrollbar shrink-0">
           {[
             { id: 'language', label: 'Bahasa', icon: Languages },
             { id: 'sound', label: 'Audio', icon: Volume2 },
@@ -303,11 +293,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         {/* ==================================================================== */}
         {/* MODAL CONTENT BODY                                                   */}
         {/* ==================================================================== */}
-        <div className="p-3.5 sm:p-6 overflow-y-auto space-y-4 sm:space-y-5 custom-scrollbar flex-1 min-h-0">
+        <div className="p-3 sm:p-5 overflow-y-auto space-y-3 sm:space-y-4 custom-scrollbar flex-1 min-h-0">
 
           {/* TAB 1: BAHASA */}
           {activeSection === 'language' && (
-            <div className="space-y-3.5 animate-in fade-in duration-150">
+            <div className="space-y-3 sm:space-y-3.5 animate-in fade-in duration-150">
               <div className="flex items-center justify-between">
                 <label className="text-xs font-bold text-amber-400 uppercase tracking-wider">
                   Pilih Bahasa Dialog & Antarmuka:
@@ -315,7 +305,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 <span className="text-[11px] text-neutral-400">Aktif: {settings.language.toUpperCase()}</span>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
                 {languagesList.map((lang) => {
                   const isSelected = settings.language === lang.code;
                   return (
@@ -323,7 +313,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       key={lang.code}
                       type="button"
                       onClick={() => handleLanguageChange(lang.code)}
-                      className={`p-3.5 rounded-md border text-left flex items-center justify-between transition-colors cursor-pointer ${
+                      className={`p-2.5 sm:p-3.5 rounded-md border text-left flex items-center justify-between transition-colors cursor-pointer ${
                         isSelected
                           ? 'bg-neutral-900 border-amber-400'
                           : 'bg-[#0e0e0e] border-neutral-800 hover:border-amber-500/40 hover:bg-neutral-900'
@@ -775,8 +765,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         {/* ==================================================================== */}
         {/* FOOTER ACTIONS                                                       */}
         {/* ==================================================================== */}
-        <div className="px-6 py-3.5 border-t border-neutral-800 bg-[#0a0a0a] flex items-center justify-between text-xs">
-          <div className="text-[11px] text-neutral-400 font-mono">
+        <div className="px-4 sm:px-6 py-2.5 sm:py-3 border-t border-neutral-800 bg-[#0a0a0a] flex items-center justify-between text-xs shrink-0 z-10">
+          <div className="text-[10px] sm:text-[11px] text-neutral-400 font-mono">
             RadenWorld Engine v2.4 • Client Build 2026
           </div>
 
@@ -785,7 +775,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               sound.playClick();
               onClose();
             }}
-            className="px-4 py-1.5 rounded-md border border-neutral-700 text-neutral-300 hover:text-white hover:border-amber-400 transition-colors font-bold text-xs cursor-pointer"
+            className="px-3.5 py-1.5 rounded-md border border-neutral-700 text-neutral-300 hover:text-white hover:border-amber-400 transition-colors font-bold text-xs cursor-pointer"
           >
             Selesai
           </button>

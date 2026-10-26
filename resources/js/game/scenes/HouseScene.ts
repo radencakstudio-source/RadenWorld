@@ -33,6 +33,7 @@ export class HouseScene extends Phaser.Scene {
   private customArchitectPropsGroup: (Phaser.GameObjects.Image | Phaser.GameObjects.GameObject)[] = [];
   private customArchitectTerrainsGroup: Phaser.GameObjects.Graphics[] = [];
   private customArchitectTerrainObstacles: Phaser.GameObjects.GameObject[] = [];
+  private occludingProps: Array<{ img: Phaser.GameObjects.Image; left: number; right: number; top: number; bottom: number; baseY: number }> = [];
 
   // Objek interaktif & koordinat zona
   private exitDoorZone!: { x: number; y: number; width: number; height: number };
@@ -190,6 +191,14 @@ export class HouseScene extends Phaser.Scene {
 
     // Tap / Klik lantai ruangan untuk bergerak (Khusus PC & Mobile)
     this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+      if ((window as any).__radenPinching || Date.now() - ((window as any).__radenLastPinchTime || 0) < 400) {
+        if (this.player && this.player.active) this.player.stopNavigation();
+        return;
+      }
+      if ((pointer.event as TouchEvent)?.touches?.length >= 2) {
+        if (this.player && this.player.active) this.player.stopNavigation();
+        return;
+      }
       if (document.activeElement?.tagName === 'INPUT' || document.activeElement?.tagName === 'TEXTAREA') return;
       if (pointer.rightButtonDown()) return;
       if (this.player?.isMovementLocked()) return;
@@ -472,6 +481,20 @@ export class HouseScene extends Phaser.Scene {
     img.setDisplaySize(pixelW, pixelH);
     img.setDepth((gy + gh) * this.tileSize);
 
+    // Daftarkan objek berukuran tinggi (gh >= 2) ke sistem transparansi oklusi
+    if (gh >= 2) {
+      const left = gx * this.tileSize;
+      const right = (gx + gw) * this.tileSize;
+      const top = gy * this.tileSize;
+      const bottom = (gy + gh) * this.tileSize;
+      const occluder = { img, left, right, top, bottom, baseY: bottom };
+      this.occludingProps.push(occluder);
+      img.once(Phaser.GameObjects.Events.DESTROY, () => {
+        const idx = this.occludingProps.indexOf(occluder);
+        if (idx !== -1) this.occludingProps.splice(idx, 1);
+      });
+    }
+
     return img;
   }
 
@@ -632,13 +655,31 @@ export class HouseScene extends Phaser.Scene {
     // Zoom lerp ultra mulus 60 FPS via CameraController
     this.cameraController?.update(time, delta);
 
-    if (!this.player || this.isTransitioning || (typeof window !== 'undefined' && window.location.pathname === '/')) return;
+    if (!this.player || this.isTransitioning) return;
 
     this.player.update(time, delta);
     this.player.setDepth(this.player.y + 60);
 
     const px = this.player.x;
     const py = this.player.y;
+
+    // Transparansi oklusi saat karakter berada di belakang perabotan tinggi
+    if (this.occludingProps.length > 0) {
+      const dt = Math.min(0.05, delta / 1000);
+      const lerpFactor = Math.min(1.0, dt * 10);
+      for (let i = 0; i < this.occludingProps.length; i++) {
+        const prop = this.occludingProps[i];
+        if (!prop.img || !prop.img.active) continue;
+        const isBehindX = (px + 45 >= prop.left) && (px - 45 <= prop.right);
+        const isBehindY = (py + 55 < prop.baseY) && (py >= prop.top - 30);
+        const targetAlpha = (isBehindX && isBehindY) ? 0.38 : 1.0;
+        if (Math.abs(prop.img.alpha - targetAlpha) > 0.005) {
+          prop.img.alpha += (targetAlpha - prop.img.alpha) * lerpFactor;
+        } else if (prop.img.alpha !== targetAlpha) {
+          prop.img.alpha = targetAlpha;
+        }
+      }
+    }
 
     // 1. Cek Pintu Keluar
     const distDoor = Phaser.Math.Distance.Between(px, py, this.exitDoorZone.x, this.exitDoorZone.y);

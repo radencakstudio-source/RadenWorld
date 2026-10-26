@@ -20,14 +20,21 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        if (request()->header('x-forwarded-proto') === 'https' || str_contains((string)request()->getHost(), 'ngrok')) {
+        $host = (string)request()->getHost();
+        $isForwardedHttps = request()->header('x-forwarded-proto') === 'https';
+        $isTunnel = str_contains($host, 'ngrok') ||
+                    str_contains($host, 'trycloudflare') ||
+                    str_contains($host, 'localtunnel') ||
+                    str_contains($host, 'pinggy');
+
+        if ($isForwardedHttps || $isTunnel) {
             \Illuminate\Support\Facades\URL::forceScheme('https');
         }
 
-        if (str_contains((string)request()->getHost(), 'ngrok')) {
-            // Pemain eksternal via ngrok hanya terhubung ke port 3001 (limit 1 tunnel free ngrok).
+        if ($isTunnel || ($isForwardedHttps && !in_array($host, ['localhost', '127.0.0.1']))) {
+            // Pemain eksternal via tunnel (ngrok dll) hanya terhubung ke port 3001 (limit single tunnel port).
             // Arahkan otomatis ke aset bundle build produksi (manifest.json) tanpa butuh port 5173:
-            Vite::useHotFile(storage_path('framework/cache/disabled_hot_for_ngrok'));
+            Vite::useHotFile(storage_path('framework/cache/disabled_hot_for_tunnel'));
         } elseif (file_exists(public_path('hot'))) {
             // Dukungan Akses Fleksibel Jaringan Lokal / Wi-Fi (IP Dinamis):
             // Jika Vite sedang aktif (HMR / public/hot), arahkan URL aset Vite secara dinamis

@@ -314,27 +314,18 @@ export class Player extends Entity {
   /**
    * Mengecek apakah pemain diizinkan bergerak.
    * Pemain tidak boleh bergerak jika:
-   * 1. Berada di tampilan Lobby (window.location.pathname === '/')
-   * 2. Belum login atau daftar akun (dicek berkala, bukan setiap frame)
-   * 3. Sedang dalam dialog NPC atau sedang mengetik di input form
+   * 1. Berada di BootScene (tampilan preview latar belakang Lobby)
+   * 2. Sedang dalam percakapan dialog NPC
+   * 3. Sedang mengetik pesan obrolan di form input/textarea
    */
   public isMovementLocked(): boolean {
+    if (this.scene?.scene?.key === 'BootScene') return true;
     if (this.isDialogueActive) return true;
-    if (document.activeElement?.tagName === 'INPUT' || document.activeElement?.tagName === 'TEXTAREA') return true;
-    if (typeof window !== 'undefined' && window.location.pathname === '/') return true;
-
-    const now = Date.now();
-    if (now - this.lastAuthCheckTime > 2500) {
-      this.lastAuthCheckTime = now;
-      try {
-        const u = JSON.parse(localStorage.getItem('raden_player_user') || '{}');
-        this.isUserAuthedCache = Boolean(u && (u.id || u.name));
-      } catch (e) {
-        this.isUserAuthedCache = true;
-      }
+    const activeEl = document.activeElement;
+    if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA' || (activeEl as HTMLElement).isContentEditable)) {
+      return true;
     }
-
-    return !this.isUserAuthedCache;
+    return false;
   }
 
   public getController(): CharacterController {

@@ -845,6 +845,14 @@ export class CafeScene extends Phaser.Scene {
     });
 
     this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+      if ((window as any).__radenPinching || Date.now() - ((window as any).__radenLastPinchTime || 0) < 400) {
+        if (this.player && this.player.active) this.player.stopNavigation();
+        return;
+      }
+      if ((pointer.event as TouchEvent)?.touches?.length >= 2) {
+        if (this.player && this.player.active) this.player.stopNavigation();
+        return;
+      }
       if (document.activeElement?.tagName === 'INPUT' || document.activeElement?.tagName === 'TEXTAREA') return;
       if (pointer.rightButtonDown()) return;
       if (this.player?.isMovementLocked()) return;
@@ -980,7 +988,7 @@ export class CafeScene extends Phaser.Scene {
     this.networkManager.onWorldInit((data) => {
       if (data && data.players) {
         data.players.forEach((p) => {
-          if (p.id !== this.networkManager.getSocketId() && p.name?.toLowerCase() !== this.playerName.toLowerCase()) {
+          if (p.id !== this.networkManager.getSocketId()) {
             this.addRemotePlayer(p);
           }
         });
@@ -988,7 +996,7 @@ export class CafeScene extends Phaser.Scene {
     });
 
     this.networkManager.onPlayerJoined((p) => {
-      if (p.id !== this.networkManager.getSocketId() && p.name?.toLowerCase() !== this.playerName.toLowerCase()) {
+      if (p.id !== this.networkManager.getSocketId()) {
         this.addRemotePlayer(p);
       }
     });

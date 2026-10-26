@@ -324,15 +324,31 @@ export class CharacterController {
     };
 
     const onPlayerFish = () => {
-      this.handleFishingKeyPress();
+      if (this.fishingState === 'bite') {
+        this.strikeFish();
+      } else {
+        this.handleFishingKeyPress();
+      }
     };
 
     const onFishChargeStart = () => {
-      if (this.fishingState === 'none') this.startChargingCast();
+      if (this.fishingState === 'bite') {
+        this.strikeFish();
+      } else if (this.fishingState === 'waiting' || this.fishingState === 'casting') {
+        this.stopFishing('Membatalkan memancing...');
+      } else if (this.fishingState === 'none') {
+        this.startChargingCast();
+      }
     };
 
     const onFishChargeRelease = () => {
       if (this.fishingState === 'charging') this.releaseCast();
+    };
+
+    const onPlayerAction = () => {
+      if (this.fishingState === 'bite') {
+        this.strikeFish();
+      }
     };
 
     const onFishingMinigameSuccess = (data: { fish: IFishData }) => {
@@ -351,6 +367,7 @@ export class CharacterController {
     EventBus.on('joystick-end', onJoystickEnd);
     EventBus.on('player-jump', onPlayerJump);
     EventBus.on('player-fish', onPlayerFish);
+    EventBus.on('player-action', onPlayerAction);
     EventBus.on('fishing-charge-start', onFishChargeStart);
     EventBus.on('fishing-charge-release', onFishChargeRelease);
     EventBus.on('fishing-minigame-success', onFishingMinigameSuccess);
@@ -367,6 +384,7 @@ export class CharacterController {
       EventBus.off('joystick-end', onJoystickEnd);
       EventBus.off('player-jump', onPlayerJump);
       EventBus.off('player-fish', onPlayerFish);
+      EventBus.off('player-action', onPlayerAction);
       EventBus.off('fishing-charge-start', onFishChargeStart);
       EventBus.off('fishing-charge-release', onFishChargeRelease);
       EventBus.off('fishing-minigame-success', onFishingMinigameSuccess);
@@ -944,6 +962,7 @@ export class CharacterController {
     this.sound.playClick();
     this.player.showSpeechBubble('⏳ Tahan [F] untuk menimbang jarak lemparan!');
 
+    NetworkManager.getInstance().sendFishing('charging');
     EventBus.emit('fishing-charging-started');
     return true;
   }
@@ -999,6 +1018,8 @@ export class CharacterController {
     const powerLabel = this.lastCastPower > 0.75 ? '🌟 LEMPARAN JAUH (Peluang Ikan Langka & Jumbo!)' : this.lastCastPower > 0.4 ? '🎯 LEMPARAN SEDANG' : '🌱 LEMPARAN DEKAT (Ikan Kecil)';
     this.player.showSpeechBubble(`🎣 Lemparan ${powerPct}%\n${powerLabel}`);
 
+    NetworkManager.getInstance().sendFishing('casting', this.bobberPos, this.targetBobberPos);
+
     EventBus.emit('fishing-started', {
       x: this.player.x,
       y: this.player.y,
@@ -1029,6 +1050,8 @@ export class CharacterController {
     this.actionState = 'grounded';
     this.fishingGraphics.clear();
 
+    NetworkManager.getInstance().sendFishing('none');
+
     if (message) {
       this.player.showSpeechBubble(message);
     }
@@ -1049,6 +1072,8 @@ export class CharacterController {
 
     this.sound.playFishSplash();
     this.player.showSpeechBubble('⚡ STRIKE! Tahan joran agar kotak hijau pas di ikan!');
+
+    NetworkManager.getInstance().sendFishing('minigame', this.bobberPos, this.targetBobberPos);
 
     const p = this.lastCastPower; // 0.1 s/d 1.0
     const roll = Math.random() * 100;
@@ -1112,6 +1137,8 @@ export class CharacterController {
   private finishCatch(fish: IFishData): void {
     this.fishingState = 'caught';
     this.fishingStateStartTime = this.scene.time.now;
+
+    NetworkManager.getInstance().sendFishing('caught', this.bobberPos, this.targetBobberPos);
 
     // Tambah reward koin emas ke local storage pemain
     try {
@@ -1224,6 +1251,7 @@ export class CharacterController {
         this.fishingState = 'waiting';
         this.fishingStateStartTime = time;
         this.bobberPos = { ...this.targetBobberPos };
+        NetworkManager.getInstance().sendFishing('waiting', this.bobberPos, this.targetBobberPos);
         // Waktu tunggu ikan menyambar: dipersingkat jika memiliki Ramuan Keberuntungan
         let rawBite = Phaser.Math.Between(2600, 5200);
         if (this.isPotionActive('luck_3')) rawBite = Math.round(rawBite * 0.25);
@@ -1244,6 +1272,7 @@ export class CharacterController {
       if (elapsed >= this.biteTimeout) {
         this.fishingState = 'bite';
         this.fishingStateStartTime = time;
+        NetworkManager.getInstance().sendFishing('bite', this.bobberPos, this.targetBobberPos);
         this.sound.playFishBite();
         this.player.triggerExpression('shock');
         this.player.showSpeechBubble('❗ IKAN MENYAMBAR! TEKAN [SPASI] / [F] SEKARANG!');

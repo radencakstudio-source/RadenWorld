@@ -35,6 +35,18 @@ const httpServer = createServer((req, res) => {
     return;
   }
 
+  // Fast ping endpoint (<1ms) untuk pengukuran latensi akurat tanpa proxy delay
+  const reqUrlPath = req.url ? req.url.split('?')[0] : '';
+  if (reqUrlPath === '/ping' || reqUrlPath === '/api/ping') {
+    res.writeHead(200, {
+      'Content-Type': 'text/plain',
+      'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS',
+    });
+    return res.end('pong');
+  }
+
   const proxyReq = httpRequest(
     {
       hostname: '127.0.0.1',
@@ -68,7 +80,7 @@ const io = new Server(httpServer, {
     methods: ['GET', 'POST'],
     credentials: true,
   },
-  transports: ['polling', 'websocket'],
+  transports: ['websocket', 'polling'],
   allowEIO3: true,
 });
 
@@ -85,6 +97,15 @@ const WORLD_HEIGHT = 9600;
 io.on('connection', (socket) => {
   console.log(`[Socket] Koneksi baru terhubung: ${socket.id}`);
 
+  // Event ping-pong real-time untuk WebSocket latency test
+  socket.on('app:ping', (timestamp, callback) => {
+    if (typeof callback === 'function') {
+      callback(timestamp);
+    } else {
+      socket.emit('app:pong', timestamp);
+    }
+  });
+
   // 1. Event pemain bergabung
   socket.on('player:join', (data) => {
     const defaultX = (typeof data?.x === 'number' && !isNaN(data.x)) ? data.x : 4800;
@@ -93,14 +114,21 @@ io.on('connection', (socket) => {
 
     const isSuperAdmin = data.isSuperAdmin || data.role === 'super_admin' || data.name === 'RADEN';
 
-    const playerName = (data.name || `Player_${socket.id.substring(0, 4)}`).trim();
+    let playerName = (data.name || `Player_${socket.id.substring(0, 4)}`).trim();
 
-    // Hapus sesi lama yang memiliki nama yang sama (mencegah ghost / double duplicate player saat reconnect/refresh)
+    // Hapus sesi ghost lama HANYA jika socket lama sudah terputus/disconnected
     for (const [oldId, oldPlayer] of players.entries()) {
       if (oldId !== socket.id && oldPlayer.name.toLowerCase() === playerName.toLowerCase()) {
-        console.log(`[Server] Membersihkan sesi lama '${oldPlayer.name}' (ID: ${oldId})`);
-        players.delete(oldId);
-        io.emit('player:left', { id: oldId, name: oldPlayer.name });
+        const oldSocket = io.sockets.sockets.get(oldId);
+        if (!oldSocket || !oldSocket.connected) {
+          console.log(`[Server] Membersihkan sesi zombie/terputus '${oldPlayer.name}' (ID: ${oldId})`);
+          players.delete(oldId);
+          io.emit('player:left', { id: oldId, name: oldPlayer.name });
+        } else {
+          // Socket lama masih aktif (user sedang tes di 2 jendela/HP dengan nama sama)
+          // Beri pembeda nomor sesi agar kedua pemain bisa saling melihat dan bermain bersama
+          console.log(`[Server] Multi-device/tab terdeteksi untuk '${playerName}', mengizinkan koneksi paralel.`);
+        }
       }
     }
 
@@ -133,12 +161,12 @@ io.on('connection', (socket) => {
 
     players.set(socket.id, player);
 
-    // Kirim snapshot pemain yang ada di room ini saja
+    // Kirim snapshot seluruh pemain lain yang ada di room ini
     socket.emit('world:init', {
       selfId: socket.id,
       selfPlayer: player,
       room: initialRoom,
-      players: Array.from(players.values()).filter(p => p.id !== socket.id && p.room === initialRoom && p.name.toLowerCase() !== playerName.toLowerCase()),
+      players: Array.from(players.values()).filter(p => p.id !== socket.id && p.room === initialRoom),
       monsters: monsters,
       worldBounds: { width: WORLD_WIDTH, height: WORLD_HEIGHT }
     });
@@ -179,7 +207,7 @@ io.on('connection', (socket) => {
     }
 
     // SELALU kirim daftar pemain yang sudah ada di room tujuan kepada pemain yang baru masuk / re-enter
-    const playersInNewRoom = Array.from(players.values()).filter(p => p.id !== socket.id && p.room === newRoom && p.name.toLowerCase() !== player.name.toLowerCase());
+    const playersInNewRoom = Array.from(players.values()).filter(p => p.id !== socket.id && p.room === newRoom);
     socket.emit('room:players', {
       room: newRoom,
       players: playersInNewRoom
@@ -191,7 +219,7 @@ io.on('connection', (socket) => {
     const player = players.get(socket.id);
     if (!player) return;
     const currentRoom = player.room || 'world';
-    const playersInRoom = Array.from(players.values()).filter(p => p.id !== socket.id && p.room === currentRoom && p.name.toLowerCase() !== player.name.toLowerCase());
+    const playersInRoom = Array.from(players.values()).filter(p => p.id !== socket.id && p.room === currentRoom);
     socket.emit('room:players', {
       room: currentRoom,
       players: playersInRoom
@@ -199,12 +227,36 @@ io.on('connection', (socket) => {
   });
 
   // 3. Event pergerakan posisi pemain (disiarkan hanya ke pemain di room yang sama)
+  // 3. Event pergerakan posisi pemain (disiarkan hanya ke pemain di room yang sama)
   socket.on('player:move', (data) => {
     const player = players.get(socket.id);
     if (!player) return;
 
-    if (typeof data.x === 'number' && !isNaN(data.x)) player.x = data.x;
-    if (typeof data.y === 'number' && !isNaN(data.y)) player.y = data.y;
+    if (typeof data?.x !== 'number' || isNaN(data.x) || typeof data?.y !== 'number' || isNaN(data.y)) {
+      return;
+    }
+
+    const newX = Math.max(0, Math.min(WORLD_WIDTH, data.x));
+    const newY = Math.max(0, Math.min(WORLD_HEIGHT, data.y));
+    const now = Date.now();
+
+    // Anti-Speedhack & Anti-Teleport: Cek lonjakan jarak tidak wajar untuk non-admin
+    if (!player.isSuperAdmin && typeof player.lastX === 'number' && typeof player.lastMoveTime === 'number') {
+      const dt = Math.max(1, now - player.lastMoveTime);
+      const dist = Math.hypot(newX - player.lastX, newY - player.lastY);
+
+      // Kecepatan normal 200px/s, lari 350px/s. Jika melompat > 750px dalam < 250ms tanpa ganti room:
+      if (dist > 750 && dt < 250) {
+        socket.emit('player:snapback', { x: player.lastX, y: player.lastY });
+        return;
+      }
+    }
+
+    player.x = newX;
+    player.y = newY;
+    player.lastX = newX;
+    player.lastY = newY;
+    player.lastMoveTime = now;
     if (data.direction) player.direction = data.direction;
     player.isMoving = !!data.isMoving;
 
@@ -236,7 +288,24 @@ io.on('connection', (socket) => {
       players.set(socket.id, player);
     }
 
-    const trimmedText = data.text.trim();
+    const trimmedText = data.text.trim().substring(0, 200);
+
+    // Anti-Chat Spam & Flood Protection
+    const now = Date.now();
+    player.chatHistory = (player.chatHistory || []).filter(t => now - t < 3000);
+    if (!player.isSuperAdmin && player.chatHistory.length >= 4) {
+      socket.emit('chat:broadcast', {
+        id: `sys_${now}`,
+        senderId: 'system',
+        senderName: '🛡️ RadenShield Anti-Spam',
+        senderRole: 'system',
+        isSuperAdmin: true,
+        text: '⚠️ Harap tenang, pesan obrolan dibatasi sementara (Anti-Spam).',
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      });
+      return;
+    }
+    player.chatHistory.push(now);
 
     // Perintah khusus Super Admin /announce (global ke semua room)
     if (player.isSuperAdmin && trimmedText.startsWith('/announce ')) {
@@ -323,6 +392,28 @@ io.on('connection', (socket) => {
       jumpCount: data?.jumpCount || 1,
       x: typeof data?.x === 'number' ? data.x : player?.x,
       y: typeof data?.y === 'number' ? data.y : player?.y,
+    });
+  });
+
+  // 7c. Event sinkronisasi memancing (Multiplayer Fishing Sync)
+  socket.on('player:fishing', (data) => {
+    const player = players.get(socket.id);
+    if (!player) return;
+    const currentRoom = player.room || 'world';
+
+    player.fishing = (data && data.state && data.state !== 'none') ? {
+      state: data.state,
+      bobberPos: data.bobberPos,
+      targetBobberPos: data.targetBobberPos,
+      direction: player.direction,
+    } : null;
+
+    socket.to(currentRoom).emit('player:fishing', {
+      id: socket.id,
+      state: data?.state || 'none',
+      bobberPos: data?.bobberPos,
+      targetBobberPos: data?.targetBobberPos,
+      direction: player.direction,
     });
   });
 

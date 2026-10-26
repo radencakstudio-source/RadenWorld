@@ -94,11 +94,18 @@ export class RemotePlayer extends Entity {
       body.enable = false;
     }
 
+    // Graphics untuk merender joran, senar pancing, dan pelampung saat pemain lain memancing
+    this.fishingGraphics = scene.add.graphics();
+    this.fishingGraphics.setDepth(this.y + 120);
+
     this.once(Phaser.GameObjects.Events.DESTROY, () => {
       if (this.chargeTimer) this.chargeTimer.remove();
       if (this.inAirTimer) this.inAirTimer.remove();
       if (this.landingTimer) this.landingTimer.remove();
       if (this.whiteFlashTimer) this.whiteFlashTimer.remove();
+      if (this.fishingGraphics) {
+        this.fishingGraphics.destroy();
+      }
     });
   }
 
@@ -118,6 +125,31 @@ export class RemotePlayer extends Entity {
   private landingSquashTween: Phaser.Tweens.Tween | null = null;
 
   private lastAfkTickTime: number = 0;
+
+  // Status Sinkronisasi Memancing Multiplayer
+  private fishingGraphics: Phaser.GameObjects.Graphics;
+  private fishingState: string = 'none';
+  private remoteBobberPos: { x: number; y: number } = { x: 0, y: 0 };
+  private remoteTargetBobberPos: { x: number; y: number } = { x: 0, y: 0 };
+  private fishingStateStartTime: number = 0;
+
+  public setFishingState(state: string, bobberPos?: { x: number; y: number }, targetBobberPos?: { x: number; y: number }): void {
+    this.fishingState = state || 'none';
+    this.fishingStateStartTime = Date.now();
+    if (bobberPos && typeof bobberPos.x === 'number') {
+      this.remoteBobberPos = { x: bobberPos.x, y: bobberPos.y };
+    }
+    if (targetBobberPos && typeof targetBobberPos.x === 'number') {
+      this.remoteTargetBobberPos = { x: targetBobberPos.x, y: targetBobberPos.y };
+    }
+    if (this.fishingState === 'none' && this.fishingGraphics) {
+      this.fishingGraphics.clear();
+    }
+  }
+
+  public getFishingState(): string {
+    return this.fishingState;
+  }
 
   public getJumpVisualStage(): JumpVisualStage {
     return this.jumpVisualStage;
@@ -460,6 +492,109 @@ export class RemotePlayer extends Entity {
           },
         });
       }
+    }
+
+    // 4. Update visual memancing pemain lain (Multiplayer Fishing Sync)
+    this.updateFishing(time, delta);
+  }
+
+  /**
+   * Menggambar visual joran, senar pancing melengkung, pelampung, dan riak air pemain lain
+   */
+  private updateFishing(time: number, delta: number): void {
+    if (!this.fishingGraphics) return;
+
+    if (this.fishingState === 'none') {
+      this.fishingGraphics.clear();
+      return;
+    }
+
+    this.fishingGraphics.clear();
+    this.fishingGraphics.setDepth(this.y + 120);
+
+    const elapsed = Date.now() - this.fishingStateStartTime;
+
+    // A. Fase Charging: Karakter memegang joran condong ke belakang
+    if (this.fishingState === 'charging') {
+      const hx = this.x + (this.currentDirection === 'left' ? 18 : -18);
+      const hy = this.y - 75;
+      this.fishingGraphics.lineStyle(3, 0xb45309, 1.0);
+      this.fishingGraphics.lineBetween(this.x, this.y - 45, hx, hy);
+      return;
+    }
+
+    // B. Hitung koordinat pelampung
+    let curBobX = this.remoteBobberPos.x || this.x;
+    let curBobY = this.remoteBobberPos.y || this.y;
+
+    if (this.fishingState === 'casting') {
+      const progress = Math.min(1, elapsed / 380);
+      curBobX = Phaser.Math.Linear(this.x, this.remoteTargetBobberPos.x, progress);
+      const arcZ = Math.sin(progress * Math.PI) * 45;
+      curBobY = Phaser.Math.Linear(this.y - 20, this.remoteTargetBobberPos.y, progress) - arcZ;
+    } else if (this.fishingState === 'waiting') {
+      const bobY = Math.sin(time * 0.005) * 3;
+      curBobY = this.remoteTargetBobberPos.y + bobY;
+      curBobX = this.remoteTargetBobberPos.x;
+    } else if (this.fishingState === 'bite') {
+      const shakeX = (Math.random() - 0.5) * 6;
+      const shakeY = 6 + Math.sin(time * 0.04) * 5;
+      curBobX = this.remoteTargetBobberPos.x + shakeX;
+      curBobY = this.remoteTargetBobberPos.y + shakeY;
+    } else if (this.fishingState === 'minigame') {
+      const shakeX = (Math.random() - 0.5) * 8;
+      const shakeY = 4 + Math.sin(time * 0.04) * 6;
+      curBobX = this.remoteTargetBobberPos.x + shakeX;
+      curBobY = this.remoteTargetBobberPos.y + shakeY;
+    } else if (this.fishingState === 'caught') {
+      if (elapsed > 2200) {
+        this.fishingState = 'none';
+        this.fishingGraphics.clear();
+        return;
+      }
+    }
+
+    // Posisi tangan karakter remote
+    const handX = this.x + (this.currentDirection === 'left' ? -20 : this.currentDirection === 'right' ? 20 : 0);
+    const handY = this.y - 50;
+
+    // Senar pancing melengkung (Bezier Curve Approximation)
+    const midX = (handX + curBobX) / 2;
+    const sag = this.fishingState === 'bite' ? -10 : 25;
+    const midY = (handY + curBobY) / 2 + sag;
+
+    this.fishingGraphics.lineStyle(1.5, 0xffffff, 0.75);
+    this.fishingGraphics.beginPath();
+    this.fishingGraphics.moveTo(handX, handY);
+    const steps = 16;
+    for (let i = 1; i <= steps; i++) {
+      const st = i / steps;
+      const qx = (1 - st) * (1 - st) * handX + 2 * (1 - st) * st * midX + st * st * curBobX;
+      const qy = (1 - st) * (1 - st) * handY + 2 * (1 - st) * st * midY + st * st * curBobY;
+      this.fishingGraphics.lineTo(qx, qy);
+    }
+    this.fishingGraphics.strokePath();
+
+    // Riak air beranimasi di sekitar pelampung
+    const rippleRadius = 8 + (Math.sin(time * 0.008) + 1) * 6;
+    const rippleAlpha = Math.max(0.1, 0.6 - (rippleRadius / 22));
+    this.fishingGraphics.lineStyle(1.5, 0x38bdf8, rippleAlpha);
+    this.fishingGraphics.strokeEllipse(curBobX, curBobY + 4, rippleRadius * 2, rippleRadius);
+
+    // Pelampung (Merah di atas, Putih di bawah)
+    this.fishingGraphics.fillStyle(0xef4444, 1.0);
+    this.fishingGraphics.fillCircle(curBobX, curBobY - 2, 5);
+    this.fishingGraphics.fillStyle(0xffffff, 1.0);
+    this.fishingGraphics.fillCircle(curBobX, curBobY + 2, 4);
+
+    // Indikator tanda seru jika ikan menyambar
+    if (this.fishingState === 'bite') {
+      const alertY = this.y - 180 + Math.sin(time * 0.02) * 5;
+      this.fishingGraphics.fillStyle(0xef4444, 1.0);
+      this.fishingGraphics.fillCircle(this.x, alertY, 14);
+      this.fishingGraphics.fillStyle(0xffffff, 1.0);
+      this.fishingGraphics.fillRect(this.x - 2, alertY - 8, 4, 10);
+      this.fishingGraphics.fillCircle(this.x, alertY + 6, 2.5);
     }
   }
 

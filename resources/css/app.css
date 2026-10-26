@@ -17,6 +17,13 @@
 }
 
 /* Custom Game Styles */
+:root {
+    --sat: env(safe-area-inset-top, 0px);
+    --sar: env(safe-area-inset-right, 0px);
+    --sab: env(safe-area-inset-bottom, 0px);
+    --sal: env(safe-area-inset-left, 0px);
+}
+
 html, body {
     margin: 0;
     padding: 0;
@@ -24,33 +31,49 @@ html, body {
     width: 100dvw;
     height: 100%;
     height: 100dvh;
+    min-height: -webkit-fill-available;
     overflow: hidden;
+    overscroll-behavior: none;
+    -webkit-overflow-scrolling: auto;
     background-color: #000000;
     font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
     user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none !important; /* Mencegah popup bawaan browser saat menahan tombol mancing / analog */
     touch-action: none; /* Prevents mobile tap gesture delay (300ms) */
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    position: fixed;
+    inset: 0;
+}
+
+/* Izinkan seleksi teks hanya pada input form dan textarea */
+input, textarea, [contenteditable="true"] {
+    user-select: auto !important;
+    -webkit-user-select: auto !important;
+    -webkit-touch-callout: default !important;
 }
 
 #raden-game-app {
+    position: fixed;
+    inset: 0;
     width: 100%;
     width: 100dvw;
     height: 100%;
     height: 100dvh;
+    min-height: -webkit-fill-available;
     overflow: hidden;
     touch-action: none;
-    position: relative;
+    overscroll-behavior: none;
 }
 
 #game-container {
-    width: 100vw;
-    width: 100dvw;
-    height: 100vh;
-    height: 100dvh;
     position: absolute;
-    top: 0;
-    left: 0;
+    inset: 0;
+    width: 100%;
+    width: 100dvw;
+    height: 100%;
+    height: 100dvh;
     z-index: 1;
     touch-action: none;
     transform: translateZ(0);

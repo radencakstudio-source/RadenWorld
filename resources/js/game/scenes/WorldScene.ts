@@ -146,6 +146,7 @@ export class WorldScene extends Phaser.Scene {
     this.digTiles = terrain.digTiles;
 
     // 6. Tempatkan Lampu Jalan (44 Lampu), Kustom Props Arsitek, & Slot Gedung Baru (WorldProps)
+    WorldProps.resetProps();
     WorldProps.spawnWorldLamps((key, gx, gy, gw, gh, isObstacle, interactiveCallback, obstacleRows) =>
       this.addGridProp(key, gx, gy, gw, gh, isObstacle, interactiveCallback, obstacleRows)
     );
@@ -814,6 +815,15 @@ export class WorldScene extends Phaser.Scene {
     });
 
     this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+      // Cegah tap-movement saat gesture zoom 2 jari (pinch-in/pinch-out) aktif di mobile
+      if ((window as any).__radenPinching || Date.now() - ((window as any).__radenLastPinchTime || 0) < 400) {
+        if (this.player && this.player.active) this.player.stopNavigation();
+        return;
+      }
+      if ((pointer.event as TouchEvent)?.touches?.length >= 2) {
+        if (this.player && this.player.active) this.player.stopNavigation();
+        return;
+      }
       if (document.activeElement?.tagName === 'INPUT' || document.activeElement?.tagName === 'TEXTAREA') return;
       if (pointer.rightButtonDown()) return;
       if (!this.player || !this.player.active || this.player.isMovementLocked()) return;
@@ -976,6 +986,13 @@ export class WorldScene extends Phaser.Scene {
     };
     EventBus.on('local-player-speaking', onLocalSpeaking);
 
+    const onCancelNavigation = () => {
+      if (this.player && this.player.active) {
+        this.player.stopNavigation();
+      }
+    };
+    EventBus.on('cancel-player-navigation', onCancelNavigation);
+
     this.events.once('shutdown', () => {
       EventBus.off('server-switched', onServerSwitched);
       EventBus.off('join-game', onJoinGame);
@@ -986,6 +1003,7 @@ export class WorldScene extends Phaser.Scene {
       EventBus.off('architect-config-updated', onArchitectConfigUpdated);
       EventBus.off('player-speaking-status', onSpeakingStatus);
       EventBus.off('local-player-speaking', onLocalSpeaking);
+      EventBus.off('cancel-player-navigation', onCancelNavigation);
     });
   }
 
@@ -1004,7 +1022,6 @@ export class WorldScene extends Phaser.Scene {
 
       data.players.forEach(p => {
         if (p.id === myId || p.id === data.selfId) return;
-        if (myName && p.name && p.name.trim().toLowerCase() === myName) return;
         this.addRemotePlayer(p);
       });
       EventBus.emit('player-count-updated', this.remotePlayers.size + 1);
@@ -1012,11 +1029,9 @@ export class WorldScene extends Phaser.Scene {
 
     this.networkManager.onPlayerJoined((playerData: IPlayerData) => {
       if (!this.sys || !this.sys.displayList || !this.scene.isActive()) return;
-      const myName = (this.player?.getEntityName() || this.pendingPlayerName || '').trim().toLowerCase();
       const myId = this.networkManager.getSocketId();
 
       if (playerData.id === myId) return;
-      if (myName && playerData.name && playerData.name.trim().toLowerCase() === myName) return;
 
       this.addRemotePlayer(playerData);
       EventBus.emit('player-count-updated', this.remotePlayers.size + 1);
@@ -1088,15 +1103,21 @@ export class WorldScene extends Phaser.Scene {
         remote.triggerExpression(data.type);
       }
     });
+
+    this.networkManager.onPlayerFishing((data) => {
+      if (!this.sys || !this.sys.displayList || !this.scene.isActive()) return;
+      const remote = this.remotePlayers.get(data.id);
+      if (remote && remote.active) {
+        remote.setFishingState(data.state, data.bobberPos, data.targetBobberPos);
+      }
+    });
   }
 
   private addRemotePlayer(p: IPlayerData): void {
     if (!this.sys || !this.sys.displayList || !this.scene.isActive()) return;
-    const myName = (this.player?.getEntityName() || this.pendingPlayerName || '').trim().toLowerCase();
     const myId = this.networkManager.getSocketId();
 
     if (p.id === myId) return;
-    if (myName && p.name && p.name.trim().toLowerCase() === myName) return;
 
     if (this.remotePlayers.has(p.id)) {
       const existing = this.remotePlayers.get(p.id);
@@ -1162,6 +1183,11 @@ export class WorldScene extends Phaser.Scene {
       });
 
       this.remotePlayers.set(p.id, remote);
+
+      if ((p as any).fishing) {
+        const f = (p as any).fishing;
+        remote.setFishingState(f.state, f.bobberPos, f.targetBobberPos);
+      }
     } catch (err) {
       console.warn('[WorldScene] Gagal menambahkan remote player:', err);
     }
@@ -1190,6 +1216,9 @@ export class WorldScene extends Phaser.Scene {
 
     // 2b. Interaksi rumput bergoyang saat diinjak / didekati & pemain bergerak
     WorldProps.updateWildGrassSway(time, this.player, this.remotePlayers);
+
+    // 2c. Efek transparansi gedung & pohon saat karakter berada di belakangnya (Occlusion Transparency)
+    WorldProps.updateBuildingOcclusion(time, delta, this.player);
 
     const px = this.player.x;
     const py = this.player.y;

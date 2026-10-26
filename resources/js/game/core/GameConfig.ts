@@ -38,12 +38,12 @@ export function createGameConfig(parentContainerId: string = 'game-container'): 
     },
     input: {
       touch: {
-        capture: true,
+        capture: false,
       },
       mouse: {
-        preventDefaultWheel: true,
+        preventDefaultWheel: false,
       },
-      activePointers: 2,
+      activePointers: 4,
     },
     disableContextMenu: true,
     render: {

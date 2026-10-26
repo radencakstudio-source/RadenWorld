@@ -40,6 +40,7 @@ import { SoundManager } from './game/core/SoundManager';
 import { NetworkManager } from './game/core/NetworkManager';
 import { IAvatarCustomization, IChatMessage } from './game/types';
 import { IFishData } from './game/controllers/CharacterController';
+import { Zap } from 'lucide-react';
 import { PoliceReportModal } from './game/ui/PoliceReportModal';
 import { BankModal } from './game/ui/BankModal';
 import { PharmacyModal } from './game/ui/PharmacyModal';
@@ -371,6 +372,7 @@ export const GameApp: React.FC = () => {
   // Minigame Memancing Interaktif Bergaya Stardew Valley
   const [fishingMinigameData, setFishingMinigameData] = useState<IFishData | null>(null);
   const [isFishingMinigameOpen, setIsFishingMinigameOpen] = useState(false);
+  const [isFishBiting, setIsFishBiting] = useState(false);
 
   const [wardrobeAvatar, setWardrobeAvatar] = useState<IAvatarCustomization>(() => {
     try {
@@ -413,6 +415,131 @@ export const GameApp: React.FC = () => {
         .catch(() => {});
     }
   }, [playerStats?.name]);
+
+  // Sinkronisasi Saldo & Keamanan Akun Authoritative dari MySQL
+  const fetchAuthoritativeWallet = useCallback(async () => {
+    try {
+      const u = JSON.parse(localStorage.getItem('raden_player_user') || '{}');
+      if (!u.id && !u.email && !playerStats?.name) return;
+
+      const res = await fetch('/api/user/wallet', {
+        headers: {
+          'X-User-Id': u.id?.toString() || '',
+          'X-User-Email': u.email || '',
+          'X-User-Name': u.name || playerStats?.name || '',
+        },
+      });
+
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data.status === 'success' && data.wallet) {
+        const w = data.wallet;
+        const isAdmin = Boolean(
+          u.role === 'admin' ||
+          u.role === 'super_admin' ||
+          u.is_super_admin === true ||
+          u.email === 'radencakstudio@gmail.com' ||
+          u.name?.toUpperCase() === 'RADEN'
+        );
+
+        if (!isAdmin) {
+          if (typeof w.gold === 'number') {
+            setPlayerGold(w.gold);
+            localStorage.setItem('raden_player_gold', w.gold.toString());
+          }
+          if (typeof w.diamonds === 'number') {
+            setPlayerDiamonds(w.diamonds);
+            localStorage.setItem('raden_player_diamonds', w.diamonds.toString());
+          }
+        }
+
+        // Update objek local user
+        u.gold = w.gold;
+        u.diamonds = w.diamonds;
+        u.email_verified = Boolean(w.email_verified);
+        u.email_verified_at = w.email_verified_at;
+        u.google_linked = Boolean(w.google_linked);
+        u.google_email = w.google_email;
+        u.facebook_linked = Boolean(w.facebook_linked);
+        u.facebook_email = w.facebook_email;
+        localStorage.setItem('raden_player_user', JSON.stringify(u));
+      }
+    } catch (e) {
+      console.warn('Gagal memuat saldo authoritative:', e);
+    }
+  }, [playerStats?.name]);
+
+  // Transaksi Saldo Terproteksi Anti-Cheat Server
+  const syncWalletWithServer = useCallback(async (deltaGold: number, deltaDiamonds: number, action: string) => {
+    try {
+      const u = JSON.parse(localStorage.getItem('raden_player_user') || '{}');
+      if (!u.id && !u.email && !playerStats?.name) return;
+
+      const res = await fetch('/api/user/wallet/sync', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-User-Id': u.id?.toString() || '',
+          'X-User-Email': u.email || '',
+          'X-User-Name': u.name || playerStats?.name || '',
+        },
+        body: JSON.stringify({
+          user_id: u.id,
+          delta_gold: deltaGold,
+          delta_diamonds: deltaDiamonds,
+          action,
+        }),
+      });
+
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data.status === 'success') {
+        const isAdmin = Boolean(
+          u.role === 'admin' ||
+          u.role === 'super_admin' ||
+          u.is_super_admin === true ||
+          u.email === 'radencakstudio@gmail.com' ||
+          u.name?.toUpperCase() === 'RADEN'
+        );
+
+        if (!isAdmin) {
+          if (typeof data.gold === 'number') {
+            setPlayerGold(data.gold);
+            localStorage.setItem('raden_player_gold', data.gold.toString());
+          }
+          if (typeof data.diamonds === 'number') {
+            setPlayerDiamonds(data.diamonds);
+            localStorage.setItem('raden_player_diamonds', data.diamonds.toString());
+          }
+        }
+        u.gold = data.gold;
+        u.diamonds = data.diamonds;
+        localStorage.setItem('raden_player_user', JSON.stringify(u));
+      }
+    } catch (e) {
+      console.warn('Gagal sinkronisasi transaksi dompet:', e);
+    }
+  }, [playerStats?.name]);
+
+  // Sinkronisasi wallet saat awal bermain atau saat nama user aktif berubah
+  useEffect(() => {
+    fetchAuthoritativeWallet();
+  }, [fetchAuthoritativeWallet]);
+
+  // Handle reward mancing disinkronkan ke MySQL authoritatif
+  useEffect(() => {
+    const handleFishingCaught = (data: { fish: any }) => {
+      if (data?.fish) {
+        const goldReward = data.fish.goldReward || 0;
+        const diamondReward = data.fish.diamondReward || 0;
+        syncWalletWithServer(goldReward, diamondReward, `catch_fish_${data.fish.name || 'fish'}`);
+      }
+    };
+    EventBus.on('fishing-caught', handleFishingCaught);
+    return () => {
+      EventBus.off('fishing-caught', handleFishingCaught);
+    };
+  }, [syncWalletWithServer]);
 
   useEffect(() => {
     // 1. Stats updates from Phaser engine (X, Y, Name, Room)
@@ -536,6 +663,12 @@ export const GameApp: React.FC = () => {
     };
     EventBus.on('open-creator-studio', handleOpenCreatorStudio);
 
+    const handlePlayerNameChanged = (newName: string) => {
+      setPlayerStats((prev) => ({ ...prev, name: newName }));
+      EventBus.emit('update-player-name', newName);
+    };
+    EventBus.on('player-name-changed', handlePlayerNameChanged);
+
     const handleInspectProfile = (target: any) => {
       const myName = (playerStats?.name || '').trim().toLowerCase();
       const targetName = (target?.name || '').trim().toLowerCase();
@@ -636,15 +769,29 @@ export const GameApp: React.FC = () => {
       setIsSchoolSubjectsOpen(true);
       EventBus.emit('dialogue-active', true);
     };
+    EventBus.on('open-school-subjects', handleOpenSchoolSubjects);
+
     // Tangani event pembukaan Minigame Memancing Interaktif Stardew Valley
     const handleOpenFishingMinigame = (data: { fish: IFishData }) => {
       if (data?.fish) {
+        setIsFishBiting(false);
         sound.playOpenModal();
         setFishingMinigameData(data.fish);
         setIsFishingMinigameOpen(true);
       }
     };
     EventBus.on('open-fishing-minigame', handleOpenFishingMinigame);
+
+    const handleFishBite = () => setIsFishBiting(true);
+    const handleFishBiteEnd = () => setIsFishBiting(false);
+    const handleFishStateChange = (state: string) => {
+      if (state !== 'bite') setIsFishBiting(false);
+    };
+
+    EventBus.on('fishing-bite', handleFishBite);
+    EventBus.on('fishing-ended', handleFishBiteEnd);
+    EventBus.on('fishing-minigame-start', handleFishBiteEnd);
+    EventBus.on('fishing-state-changed', handleFishStateChange);
 
     // Tangani event pembukaan modal Mata Pelajaran khusus SD dari Meja Guru / Meja Siswa (Legacy wrapper)
     const handleOpenSdSubjects = (data?: { deskType?: 'guru' | 'siswa' }) => {
@@ -881,9 +1028,14 @@ export const GameApp: React.FC = () => {
       EventBus.off('player-unfollowed-by', handleUnfollowedBy);
       EventBus.off('open-wardrobe', handleOpenWardrobe);
       EventBus.off('open-creator-studio', handleOpenCreatorStudio);
+      EventBus.off('player-name-changed', handlePlayerNameChanged);
       EventBus.off('open-school-grade-select', handleOpenGradeSelect);
       EventBus.off('open-school-subjects', handleOpenSchoolSubjects);
       EventBus.off('open-fishing-minigame', handleOpenFishingMinigame);
+      EventBus.off('fishing-bite', handleFishBite);
+      EventBus.off('fishing-ended', handleFishBiteEnd);
+      EventBus.off('fishing-minigame-start', handleFishBiteEnd);
+      EventBus.off('fishing-state-changed', handleFishStateChange);
       EventBus.off('open-sd-subjects', handleOpenSdSubjects);
       EventBus.off('incoming-friend-request', handleIncomingFriend);
       EventBus.off('friend-response-result', handleFriendResponse);
@@ -1120,6 +1272,7 @@ export const GameApp: React.FC = () => {
 
   // Top Up Berlian Handler
   const handleSuccessTopUp = (addedDiamonds: number) => {
+    syncWalletWithServer(0, addedDiamonds, 'topup_purchase');
     setPlayerDiamonds((prev) => {
       const next = prev + addedDiamonds;
       try {
@@ -1133,7 +1286,7 @@ export const GameApp: React.FC = () => {
     EventBus.emit('new-chat-message', {
       id: `topup_succ_${Date.now()}`,
       sender: 'SISTEM',
-      text: `💎 Top Up Berhasil! +${addedDiamonds} Berlian telah masuk ke saldo!`,
+      text: `💎 Top Up Berhasil! +${addedDiamonds} Berlian telah masuk ke saldo terproteksi server!`,
       timestamp: Date.now(),
       isSystem: true,
     });
@@ -1170,11 +1323,11 @@ export const GameApp: React.FC = () => {
     } catch (e) {}
 
     const safeRoomId = privateRoomId || (isSuperAdmin ? 'safe-raden-admin' : `safe-${Date.now().toString(36)}`);
-    const housePath = `/home/${safeRoomId}`;
-    if (window.location.pathname !== housePath) {
-      window.history.pushState(null, '', housePath);
+    const worldPath = '/world';
+    if (window.location.pathname !== worldPath) {
+      window.history.pushState(null, '', worldPath);
     }
-    setCurrentPath(housePath);
+    setCurrentPath(worldPath);
     setGameState('playing');
     setWardrobeAvatar(avatar);
     setPlayerStats((prev) => ({
@@ -1185,19 +1338,21 @@ export const GameApp: React.FC = () => {
       role,
       isSuperAdmin,
       title,
-      x: 480,
-      y: 380,
-      gridX: 10,
+      x: 1380,
+      y: 900,
+      gridX: 11,
       gridY: 7,
-      roomName: `RUMAH PRIBADI: RUANG UTAMA (SAFE: ${safeRoomId})`,
-      inHouse: true,
+      roomName: 'RADENWORLD OPEN REALMS',
+      inHouse: false,
       privateRoomId: safeRoomId,
     }));
     EventBus.emit('switch-scene', {
-      scene: 'HouseScene',
+      scene: 'WorldScene',
       name,
       avatar,
       privateRoomId: safeRoomId,
+      spawnNearHouse: true,
+      spawnPos: { x: 1380, y: 900 },
     });
     EventBus.emit('join-game', {
       name,
@@ -1205,6 +1360,7 @@ export const GameApp: React.FC = () => {
       privateRoomId: safeRoomId,
       role,
       isSuperAdmin,
+      room: 'world',
     });
   };
 
@@ -1389,7 +1545,7 @@ export const GameApp: React.FC = () => {
   }, [gameState, playerStats.level, playerStats.isSuperAdmin, playerStats.role, playerStats.name]);
 
   return (
-    <div className="relative w-screen h-screen overflow-hidden bg-[#0a0f1d] font-['Chakra_Petch']">
+    <div className="fixed inset-0 w-full h-full h-[100dvh] overflow-hidden bg-[#0a0f1d] font-['Chakra_Petch'] select-none">
       {/* 2D HTML5 Canvas Game Engine (Phaser 3) */}
       <GameCanvas />
 
@@ -1597,6 +1753,83 @@ export const GameApp: React.FC = () => {
                 onLogout={inspectedPlayer ? undefined : handleLogout}
                 onTeleportToAdminPortal={inspectedPlayer ? undefined : handleTeleportToAdminPortal}
                 onOpenTopUp={inspectedPlayer ? undefined : () => setIsTopUpOpen(true)}
+                email={
+                  inspectedPlayer
+                    ? undefined
+                    : (() => {
+                        try {
+                          const u = JSON.parse(localStorage.getItem('raden_player_user') || '{}');
+                          return u.email || '';
+                        } catch (e) {
+                          return '';
+                        }
+                      })()
+                }
+                emailVerified={
+                  inspectedPlayer
+                    ? undefined
+                    : (() => {
+                        try {
+                          const u = JSON.parse(localStorage.getItem('raden_player_user') || '{}');
+                          return Boolean(u.email_verified || u.email_verified_at);
+                        } catch (e) {
+                          return false;
+                        }
+                      })()
+                }
+                googleLinked={
+                  inspectedPlayer
+                    ? undefined
+                    : (() => {
+                        try {
+                          const u = JSON.parse(localStorage.getItem('raden_player_user') || '{}');
+                          return Boolean(u.google_linked || u.google_email || u.provider === 'google');
+                        } catch (e) {
+                          return false;
+                        }
+                      })()
+                }
+                googleEmail={
+                  inspectedPlayer
+                    ? undefined
+                    : (() => {
+                        try {
+                          const u = JSON.parse(localStorage.getItem('raden_player_user') || '{}');
+                          return u.google_email || (u.provider === 'google' ? u.email : '');
+                        } catch (e) {
+                          return '';
+                        }
+                      })()
+                }
+                facebookLinked={
+                  inspectedPlayer
+                    ? undefined
+                    : (() => {
+                        try {
+                          const u = JSON.parse(localStorage.getItem('raden_player_user') || '{}');
+                          return Boolean(u.facebook_linked || u.facebook_email || u.provider === 'facebook');
+                        } catch (e) {
+                          return false;
+                        }
+                      })()
+                }
+                facebookEmail={
+                  inspectedPlayer
+                    ? undefined
+                    : (() => {
+                        try {
+                          const u = JSON.parse(localStorage.getItem('raden_player_user') || '{}');
+                          return u.facebook_email || (u.provider === 'facebook' ? u.email : '');
+                        } catch (e) {
+                          return '';
+                        }
+                      })()
+                }
+                onRefreshWallet={inspectedPlayer ? undefined : fetchAuthoritativeWallet}
+                onUpdateName={inspectedPlayer ? undefined : (newName: string) => {
+                  setPlayerStats((prev) => ({ ...prev, name: newName }));
+                  EventBus.emit('update-player-name', newName);
+                }}
               />
             );
           })()}
@@ -1735,8 +1968,31 @@ export const GameApp: React.FC = () => {
             }}
           />
 
-          {/* Tombol Kontrol Virtual Layar Sentuh HANYA jika Mode Mobile dipilih (Mencegah muncul di mode PC) */}
-          {settings.controlMode === 'mobile' && (
+          {/* Banner Peringatan Ikan Menyambar Terpusat di Mobile Landscape & Portrait */}
+          {isFishBiting && (
+            <div
+              onPointerDown={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                SoundManager.getInstance().playClick();
+                setIsFishBiting(false);
+                EventBus.emit('player-strike');
+                EventBus.emit('fishing-charge-start');
+              }}
+              onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); }}
+              className="fixed top-12 left-1/2 -translate-x-1/2 z-50 bg-gradient-to-r from-amber-600 via-amber-400 to-amber-600 text-black px-5 py-2.5 rounded-full shadow-[0_0_35px_rgba(245,158,11,1)] border-2 border-white flex items-center gap-2 cursor-pointer animate-bounce select-none touch-none"
+              style={{ touchAction: 'none' }}
+              title="Ketuk untuk Menarik Kail Ikan!"
+            >
+              <Zap className="w-5 h-5 text-black stroke-[3] animate-pulse" />
+              <span className="font-['Chakra_Petch'] font-black text-xs sm:text-sm uppercase tracking-wider">
+                ⚡ IKAN MENYAMBAR! KETUK DI SINI UNTUK TARIK!
+              </span>
+            </div>
+          )}
+
+          {/* Tombol Kontrol Virtual Layar Sentuh jika Mode Mobile dipilih ATAU perangkat sentuh mobile */}
+          {(settings.controlMode === 'mobile' || (typeof window !== 'undefined' && window.innerWidth < 768 && ('ontouchstart' in window || navigator.maxTouchPoints > 0))) && (
             <VirtualControls
               onActionPress={handleVirtualAction}
               onDirectionPress={handleVirtualDirectionPress}
@@ -1791,6 +2047,10 @@ export const GameApp: React.FC = () => {
             }}
             playerGold={playerGold}
             onUpdateGold={(g) => {
+              const delta = g - playerGold;
+              if (delta !== 0) {
+                syncWalletWithServer(delta, 0, 'bank_transaction');
+              }
               if (isCurrentUserAdmin) {
                 setPlayerGold(99999999999);
                 localStorage.setItem('raden_player_gold', '99999999999');
@@ -1811,6 +2071,10 @@ export const GameApp: React.FC = () => {
             }}
             playerDiamonds={playerDiamonds}
             onUpdateDiamonds={(d) => {
+              const delta = d - playerDiamonds;
+              if (delta !== 0) {
+                syncWalletWithServer(0, delta, 'pharmacy_purchase');
+              }
               if (isCurrentUserAdmin) {
                 setPlayerDiamonds(99999999999);
                 localStorage.setItem('raden_player_diamonds', '99999999999');
@@ -1831,6 +2095,10 @@ export const GameApp: React.FC = () => {
             }}
             playerGold={playerGold}
             onUpdateGold={(g) => {
+              const delta = g - playerGold;
+              if (delta !== 0) {
+                syncWalletWithServer(delta, 0, 'market_transaction');
+              }
               if (isCurrentUserAdmin) {
                 setPlayerGold(99999999999);
                 localStorage.setItem('raden_player_gold', '99999999999');

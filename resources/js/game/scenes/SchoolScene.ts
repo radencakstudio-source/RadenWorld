@@ -88,6 +88,7 @@ export class SchoolScene extends Phaser.Scene {
   private customArchitectPropsGroup: (Phaser.GameObjects.Image | Phaser.GameObjects.GameObject)[] = [];
   private customArchitectTerrainsGroup: Phaser.GameObjects.Graphics[] = [];
   private customArchitectTerrainObstacles: Phaser.GameObjects.GameObject[] = [];
+  private occludingProps: Array<{ img: Phaser.GameObjects.Image; left: number; right: number; top: number; bottom: number; baseY: number }> = [];
 
   // Zona Interaktif
   private exitDoorZone = { x: 1080, y: 1370 };
@@ -476,6 +477,14 @@ export class SchoolScene extends Phaser.Scene {
 
     // Tap / Klik lantai ruangan untuk navigasi
     this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+      if ((window as any).__radenPinching || Date.now() - ((window as any).__radenLastPinchTime || 0) < 400) {
+        if (this.player && this.player.active) this.player.stopNavigation();
+        return;
+      }
+      if ((pointer.event as TouchEvent)?.touches?.length >= 2) {
+        if (this.player && this.player.active) this.player.stopNavigation();
+        return;
+      }
       if (document.activeElement?.tagName === 'INPUT' || document.activeElement?.tagName === 'TEXTAREA') return;
       if (pointer.rightButtonDown()) return;
       if (this.player?.isMovementLocked()) return;
@@ -576,7 +585,7 @@ export class SchoolScene extends Phaser.Scene {
     this.networkManager.onWorldInit((data) => {
       if (data && data.players) {
         data.players.forEach((p) => {
-          if (p.id !== this.networkManager.getSocketId() && p.name?.toLowerCase() !== this.playerName.toLowerCase()) {
+          if (p.id !== this.networkManager.getSocketId()) {
             this.addRemotePlayer(p);
           }
         });
@@ -584,7 +593,7 @@ export class SchoolScene extends Phaser.Scene {
     });
 
     this.networkManager.onPlayerJoined((p) => {
-      if (p.id !== this.networkManager.getSocketId() && p.name?.toLowerCase() !== this.playerName.toLowerCase()) {
+      if (p.id !== this.networkManager.getSocketId()) {
         this.addRemotePlayer(p);
       }
     });
@@ -1396,6 +1405,20 @@ export class SchoolScene extends Phaser.Scene {
       this.addGridObstacle(gx, gy + gh - 1, gw, 1);
     }
 
+    // Daftarkan objek berukuran tinggi (gh >= 2) ke sistem transparansi oklusi
+    if (gh >= 2) {
+      const left = gx * this.tileSize;
+      const right = (gx + gw) * this.tileSize;
+      const top = gy * this.tileSize;
+      const bottom = (gy + gh) * this.tileSize;
+      const occluder = { img, left, right, top, bottom, baseY: bottom };
+      this.occludingProps.push(occluder);
+      img.once(Phaser.GameObjects.Events.DESTROY, () => {
+        const idx = this.occludingProps.indexOf(occluder);
+        if (idx !== -1) this.occludingProps.splice(idx, 1);
+      });
+    }
+
     return img;
   }
 
@@ -1708,6 +1731,24 @@ export class SchoolScene extends Phaser.Scene {
 
     const px = this.player.x;
     const py = this.player.y;
+
+    // Transparansi oklusi saat karakter berada di belakang objek
+    if (this.occludingProps.length > 0) {
+      const dt = Math.min(0.05, delta / 1000);
+      const lerpFactor = Math.min(1.0, dt * 10);
+      for (let i = 0; i < this.occludingProps.length; i++) {
+        const prop = this.occludingProps[i];
+        if (!prop.img || !prop.img.active) continue;
+        const isBehindX = (px + 45 >= prop.left) && (px - 45 <= prop.right);
+        const isBehindY = (py + 55 < prop.baseY) && (py >= prop.top - 30);
+        const targetAlpha = (isBehindX && isBehindY) ? 0.38 : 1.0;
+        if (Math.abs(prop.img.alpha - targetAlpha) > 0.005) {
+          prop.img.alpha += (targetAlpha - prop.img.alpha) * lerpFactor;
+        } else if (prop.img.alpha !== targetAlpha) {
+          prop.img.alpha = targetAlpha;
+        }
+      }
+    }
 
     // Cek kedekatan pintu keluar & zona interaksi
     const distExit = Phaser.Math.Distance.Between(px, py, this.exitDoorZone.x, this.exitDoorZone.y);

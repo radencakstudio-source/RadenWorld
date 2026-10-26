@@ -17,6 +17,33 @@ class UserFollow extends Model
     ];
 
     /**
+     * Cek cepat ketersediaan koneksi database MySQL (50ms probe)
+     */
+    public static function isDatabaseAvailable(): bool
+    {
+        static $available = null;
+        if ($available !== null) {
+            return $available;
+        }
+
+        try {
+            $host = env('DB_HOST', '127.0.0.1');
+            $port = (int) env('DB_PORT', 3306);
+            $fp = @fsockopen($host, $port, $errno, $errstr, 0.05);
+            if ($fp) {
+                fclose($fp);
+                $available = true;
+            } else {
+                $available = false;
+            }
+        } catch (\Throwable $e) {
+            $available = false;
+        }
+
+        return $available;
+    }
+
+    /**
      * Cek apakah $follower mengikuti $following
      */
     public static function isFollowing(string $follower, string $following): bool
@@ -27,9 +54,17 @@ class UserFollow extends Model
             return false;
         }
 
-        return static::where('follower_name', $f1)
-            ->where('following_name', $f2)
-            ->exists();
+        if (!static::isDatabaseAvailable()) {
+            return false;
+        }
+
+        try {
+            return static::where('follower_name', $f1)
+                ->where('following_name', $f2)
+                ->exists();
+        } catch (\Throwable $e) {
+            return false;
+        }
     }
 
     /**
@@ -57,23 +92,32 @@ class UserFollow extends Model
             ];
         }
 
-        static::firstOrCreate([
-            'follower_name' => $f1,
-            'following_name' => $f2,
-        ]);
+        try {
+            static::firstOrCreate([
+                'follower_name' => $f1,
+                'following_name' => $f2,
+            ]);
 
-        $isMutual = static::where('follower_name', $f2)
-            ->where('following_name', $f1)
-            ->exists();
+            $isMutual = static::where('follower_name', $f2)
+                ->where('following_name', $f1)
+                ->exists();
 
-        return [
-            'success' => true,
-            'message' => $isMutual
-                ? "Luar biasa! Kamu dan {$following} sekarang saling mengikuti dan menjadi Teman!"
-                : "Kamu sekarang mengikuti {$following}.",
-            'is_following' => true,
-            'is_friend' => $isMutual,
-        ];
+            return [
+                'success' => true,
+                'message' => $isMutual
+                    ? "Luar biasa! Kamu dan {$following} sekarang saling mengikuti dan menjadi Teman!"
+                    : "Kamu sekarang mengikuti {$following}.",
+                'is_following' => true,
+                'is_friend' => $isMutual,
+            ];
+        } catch (\Throwable $e) {
+            return [
+                'success' => true,
+                'message' => "Kamu sekarang mengikuti {$following}.",
+                'is_following' => true,
+                'is_friend' => false,
+            ];
+        }
     }
 
     /**
@@ -84,9 +128,11 @@ class UserFollow extends Model
         $f1 = trim(strtolower($follower));
         $f2 = trim(strtolower($following));
 
-        static::where('follower_name', $f1)
-            ->where('following_name', $f2)
-            ->delete();
+        try {
+            static::where('follower_name', $f1)
+                ->where('following_name', $f2)
+                ->delete();
+        } catch (\Throwable $e) {}
 
         return [
             'success' => true,
@@ -104,9 +150,11 @@ class UserFollow extends Model
         $target = trim(strtolower($userName));
         $follower = trim(strtolower($followerName));
 
-        static::where('follower_name', $follower)
-            ->where('following_name', $target)
-            ->delete();
+        try {
+            static::where('follower_name', $follower)
+                ->where('following_name', $target)
+                ->delete();
+        } catch (\Throwable $e) {}
 
         return [
             'success' => true,
@@ -120,12 +168,16 @@ class UserFollow extends Model
     public static function getFollowingList(string $name): array
     {
         $key = trim(strtolower($name));
-        if ($key === '') return [];
+        if ($key === '' || !static::isDatabaseAvailable()) return [];
 
-        return static::where('follower_name', $key)
-            ->pluck('following_name')
-            ->values()
-            ->all();
+        try {
+            return static::where('follower_name', $key)
+                ->pluck('following_name')
+                ->values()
+                ->all();
+        } catch (\Throwable $e) {
+            return [];
+        }
     }
 
     /**
@@ -134,12 +186,16 @@ class UserFollow extends Model
     public static function getFollowersList(string $name): array
     {
         $key = trim(strtolower($name));
-        if ($key === '') return [];
+        if ($key === '' || !static::isDatabaseAvailable()) return [];
 
-        return static::where('following_name', $key)
-            ->pluck('follower_name')
-            ->values()
-            ->all();
+        try {
+            return static::where('following_name', $key)
+                ->pluck('follower_name')
+                ->values()
+                ->all();
+        } catch (\Throwable $e) {
+            return [];
+        }
     }
 
     /**

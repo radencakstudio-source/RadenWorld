@@ -23,11 +23,33 @@ export interface ILampCoord {
   gy: number;
 }
 
+export interface IOccludingProp {
+  img: Phaser.GameObjects.Image;
+  left: number;
+  right: number;
+  top: number;
+  bottom: number;
+  baseY: number;
+}
+
 export class WorldProps {
   /**
    * Kumpulan sprite rumput liar untuk interaksi goyangan saat diinjak / didekati pemain yang bergerak
    */
   public static wildGrassSprites: Phaser.GameObjects.Image[] = [];
+
+  /**
+   * Kumpulan gedung dan prop tinggi untuk efek transparansi ketika karakter berada di belakangnya (Occlusion Transparency)
+   */
+  public static occludingProps: IOccludingProp[] = [];
+
+  /**
+   * Reset seluruh kumpulan props saat inisialisasi ulang scene
+   */
+  public static resetProps(): void {
+    this.wildGrassSprites = [];
+    this.occludingProps = [];
+  }
 
   /**
    * Kumpulan koordinat 44 Lampu Jalan (prop-lampu 1x3) 100% Sesuai Blueprint Peta
@@ -160,6 +182,32 @@ export class WorldProps {
       // Collision selalu di bagian baris dasar objek (default 1 baris)
       const rows = obstacleRows || 1;
       addObstacleFn(gx, gy + gh - rows, gw, rows);
+    }
+
+    // Daftarkan objek berukuran tinggi (Gedung, Rumah, Pohon, Pagar Batu dll: gh >= 2) ke sistem transparansi oklusi
+    if (gh >= 2 && !isWildGrass && !isTamanRumput && !isGroundCourt) {
+      const left = gx * tileSize;
+      const right = (gx + gw) * tileSize;
+      const top = gy * tileSize;
+      const bottom = (gy + gh) * tileSize;
+
+      const propItem: IOccludingProp = {
+        img,
+        left,
+        right,
+        top,
+        bottom,
+        baseY: bottom,
+      };
+
+      this.occludingProps.push(propItem);
+
+      img.once(Phaser.GameObjects.Events.DESTROY, () => {
+        const idx = this.occludingProps.indexOf(propItem);
+        if (idx !== -1) {
+          this.occludingProps.splice(idx, 1);
+        }
+      });
     }
 
     return img;
@@ -628,6 +676,48 @@ export class WorldProps {
             grass.angle = 0;
           }
         }
+      }
+    }
+  }
+
+  /**
+   * Mengatur efek transparansi (Occlusion Transparency) ketika karakter berada di belakang objek/gedung/pohon.
+   * Objek di depan karakter akan memudar halus (alpha 0.38) sehingga pemain selalu dapat melihat karakternya dengan jelas dari sudut pandangnya (POV).
+   */
+  public static updateBuildingOcclusion(
+    time: number,
+    delta: number,
+    localPlayer: { x: number; y: number } | null
+  ): void {
+    if (!this.occludingProps || this.occludingProps.length === 0 || !localPlayer) return;
+
+    const px = localPlayer.x;
+    const py = localPlayer.y;
+
+    const dt = Math.min(0.05, delta / 1000);
+    // Transisi pemudaran halus (Fade transition ~120-150ms)
+    const lerpFactor = Math.min(1.0, dt * 10);
+
+    for (let i = 0; i < this.occludingProps.length; i++) {
+      const prop = this.occludingProps[i];
+      if (!prop.img || !prop.img.active) continue;
+
+      // Cek apakah posisi horizontal karakter berada di dalam rentang lebar bangunan (dengan padding 45px)
+      const isBehindX = (px + 45 >= prop.left) && (px - 45 <= prop.right);
+
+      // Cek apakah posisi vertikal karakter berada di belakang objek:
+      // 1. py + 55 < prop.baseY -> Kedalaman karakter lebih kecil dari dasar objek (karakter di belakang objek)
+      // 2. py >= prop.top - 30 -> Karakter berada di area bangunan / atap (bukan jauh di utara)
+      const isBehindY = (py + 55 < prop.baseY) && (py >= prop.top - 30);
+
+      const isOccluded = isBehindX && isBehindY;
+      const targetAlpha = isOccluded ? 0.38 : 1.0;
+
+      // Lerp alpha menuju target
+      if (Math.abs(prop.img.alpha - targetAlpha) > 0.005) {
+        prop.img.alpha += (targetAlpha - prop.img.alpha) * lerpFactor;
+      } else if (prop.img.alpha !== targetAlpha) {
+        prop.img.alpha = targetAlpha;
       }
     }
   }

@@ -162,15 +162,8 @@ export const ServerModal: React.FC<ServerModalProps> = ({
    */
   const testAllServerLatencies = async () => {
     setIsPinging(true);
-    const start = performance.now();
     try {
-      const url = networkMgr.getServerUrl();
-      await fetch(`${url}/socket.io/?EIO=4&transport=polling`, {
-        method: 'GET',
-        cache: 'no-store',
-        mode: 'no-cors',
-      });
-      const realLatency = Math.round(performance.now() - start);
+      const realLatency = await networkMgr.measureLatency();
       setServerPings({
         'Asia 1': Math.max(6, realLatency),
         'Asia 3': Math.max(4, Math.round(realLatency * 0.7)),
@@ -178,13 +171,11 @@ export const ServerModal: React.FC<ServerModalProps> = ({
         'Asia 4': Math.max(45, Math.round(realLatency * 2.8)),
       });
     } catch (e) {
-      // Fallback perkiraan jika fetch ditolak mode offline
-      const latency = Math.round(performance.now() - start);
       setServerPings({
-        'Asia 1': Math.max(10, Math.min(30, latency)),
-        'Asia 3': Math.max(6, Math.min(20, Math.round(latency * 0.8))),
-        'Asia 2': Math.max(25, Math.min(60, Math.round(latency * 1.5))),
-        'Asia 4': Math.max(55, Math.min(120, Math.round(latency * 2.6))),
+        'Asia 1': 15,
+        'Asia 3': 10,
+        'Asia 2': 28,
+        'Asia 4': 65,
       });
     } finally {
       setIsPinging(false);

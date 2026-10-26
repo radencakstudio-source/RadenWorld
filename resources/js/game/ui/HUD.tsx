@@ -22,7 +22,7 @@
 
 import React from 'react';
 import { IAvatarCustomization, Direction, IPlayerData } from '../types';
-import { Server, MessageSquare, Zap, User, Users, Info, Mic, MicOff, Settings, Globe, ArrowRightLeft, Coins, Gem, Plus, Sun, Moon, Sunset, Map, MapPin, Compass, Maximize2, ChevronDown, ChevronUp, X, Navigation, Building2, ZoomIn, ZoomOut, RotateCcw, Grid, Trash2 } from 'lucide-react';
+import { Server, MessageSquare, Zap, User, Users, Info, Mic, MicOff, Settings, Globe, ArrowRightLeft, Coins, Gem, Plus, Sun, Moon, Sunset, Map, MapPin, Compass, Maximize2, ChevronDown, ChevronUp, X, Navigation, Building2, ZoomIn, ZoomOut, RotateCcw, Grid, Trash2, BookOpen } from 'lucide-react';
 import { EventBus } from '../core/EventBus';
 import { SoundManager } from '../core/SoundManager';
 import { VoiceManager } from '../core/VoiceManager';
@@ -339,7 +339,15 @@ export const HUD: React.FC<HUDProps> = ({
   };
 
   return (
-    <div className="pointer-events-none fixed inset-0 z-40 flex flex-col justify-between p-2 sm:p-3 md:p-5 font-['Chakra_Petch']">
+    <div
+      className="pointer-events-none fixed inset-0 z-40 flex flex-col justify-between font-['Chakra_Petch']"
+      style={{
+        paddingTop: 'max(0.5rem, env(safe-area-inset-top, 0.5rem))',
+        paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom, 0.5rem))',
+        paddingLeft: 'max(0.5rem, env(safe-area-inset-left, 0.5rem))',
+        paddingRight: 'max(0.5rem, env(safe-area-inset-right, 0.5rem))',
+      }}
+    >
       {/* ==================================================================== */}
       {/* 1. TOP BAR: KIRI (PROFIL & CHAT) | TENGAH (UI JAM) | KANAN (SERVER) */}
       {/* ==================================================================== */}
@@ -509,6 +517,22 @@ export const HUD: React.FC<HUDProps> = ({
               </div>
             </div>
           </button>
+
+          {/* Tombol Cepat Buka Kurikulum Pelajaran jika berada di Ruang Sekolah SD / SMP / SMA */}
+          {(rawLoc.includes('SD') || rawLoc.includes('SMP') || rawLoc.includes('SMA') || rawLoc.includes('Sekolah')) && (
+            <button
+              onClick={() => {
+                sound.playClick();
+                const sType = rawLoc.includes('SMP') ? 'smp' : rawLoc.includes('SMA') ? 'sma' : 'sd';
+                EventBus.emit('open-school-subjects', { schoolType: sType });
+              }}
+              className="pointer-events-auto h-8 sm:h-9 md:h-10 flex items-center gap-1.5 px-2 sm:px-2.5 rounded-md bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-400 text-amber-300 hover:text-white font-bold text-xs uppercase tracking-wider transition-all shadow-md shrink-0 cursor-pointer"
+              title="Buka Buku Pelajaran & Kurikulum Sekolah"
+            >
+              <BookOpen className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+              <span className="text-[9px] sm:text-[10px] font-black tracking-wider">KURIKULUM</span>
+            </button>
+          )}
 
           {/* Tombol Pengaturan */}
           {onOpenSettings && (
@@ -724,9 +748,9 @@ export const HUD: React.FC<HUDProps> = ({
       {/* ==================================================================== */}
       {isFullMapOpen && !stats.inHouse && (
         <div className="fixed inset-0 z-[95] flex items-center justify-center p-2 sm:p-4 bg-black/85 pointer-events-auto animate-in fade-in duration-200">
-          <div className="relative w-full max-w-xl bg-neutral-950 border border-neutral-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[94dvh]">
+          <div className="relative w-full max-w-xl bg-neutral-950 border border-neutral-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[min(90dvh,88vh)] my-auto">
             {/* Header Modal */}
-            <div className="flex items-center justify-between px-3 sm:px-4 py-2.5 sm:py-3 bg-neutral-900/90 border-b border-neutral-800 shrink-0">
+            <div className="flex items-center justify-between px-3 sm:px-4 py-2 sm:py-2.5 bg-neutral-900/90 border-b border-neutral-800 shrink-0">
               <div className="flex items-center gap-2">
                 <Map className="w-4 h-4 text-amber-400" />
                 <span className="font-bold text-xs sm:text-sm tracking-wider text-white">ATLAS DUNIA RADENWORLD</span>
@@ -823,7 +847,7 @@ export const HUD: React.FC<HUDProps> = ({
 
               {/* Viewport Peta dengan Pan & Zoom */}
               <div
-                className={`w-[260px] h-[260px] sm:w-[380px] sm:h-[380px] md:w-[440px] md:h-[440px] max-w-[88vw] max-h-[48dvh] bg-[#001026] border border-neutral-800 rounded-xl relative overflow-hidden shadow-2xl select-none shrink-0 ${
+                className={`w-full max-w-[340px] xs:max-w-[400px] sm:max-w-[440px] h-[150px] xs:h-[180px] sm:h-[300px] md:h-[380px] bg-[#001026] border border-neutral-800 rounded-xl relative overflow-hidden shadow-2xl select-none shrink-0 ${
                   mapZoom > 1 ? (isDraggingMap ? 'cursor-grabbing' : 'cursor-grab') : 'cursor-crosshair'
                 }`}
                 onMouseDown={handleMapMouseDown}

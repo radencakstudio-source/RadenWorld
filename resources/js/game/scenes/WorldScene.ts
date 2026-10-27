@@ -454,6 +454,20 @@ export class WorldScene extends Phaser.Scene {
       return;
     }
 
+    // 11. Interaksi Lapangan Sepak Bola (Mini Game)
+    const gx = Math.floor(px / this.tileSize);
+    const gy = Math.floor(py / this.tileSize);
+    if (gx >= 23 && gx <= 34 && gy >= 50 && gy <= 56) {
+      EventBus.emit('open-sports-modal', 'soccer');
+      return;
+    }
+
+    // 12. Interaksi Lapangan Bola Basket (Mini Game)
+    if (gx >= 45 && gx <= 56 && gy >= 50 && gy <= 56) {
+      EventBus.emit('open-sports-modal', 'basketball');
+      return;
+    }
+
     // 9. Interaksi dengan NPC terdekat
     for (const npc of this.npcs) {
       const dist = Phaser.Math.Distance.Between(px, py, npc.x, npc.y);
@@ -993,6 +1007,23 @@ export class WorldScene extends Phaser.Scene {
     };
     EventBus.on('cancel-player-navigation', onCancelNavigation);
 
+    const onRemotePlayerUpdated = (data: { id: string; name?: string; avatar?: any; role?: string; isSuperAdmin?: boolean }) => {
+      const remote = this.remotePlayers.get(data.id);
+      if (remote && remote.active) {
+        if (data.name) remote.setName(data.name);
+        if (data.avatar) remote.setAvatar(data.avatar);
+      }
+    };
+    EventBus.on('remote-player-updated', onRemotePlayerUpdated);
+
+    const onUpdateLocalPlayerName = (newName: string) => {
+      this.pendingPlayerName = newName;
+      if (this.player && this.player.active) {
+        this.player.setName(newName);
+      }
+    };
+    EventBus.on('update-player-name', onUpdateLocalPlayerName);
+
     this.events.once('shutdown', () => {
       EventBus.off('server-switched', onServerSwitched);
       EventBus.off('join-game', onJoinGame);
@@ -1004,6 +1035,8 @@ export class WorldScene extends Phaser.Scene {
       EventBus.off('player-speaking-status', onSpeakingStatus);
       EventBus.off('local-player-speaking', onLocalSpeaking);
       EventBus.off('cancel-player-navigation', onCancelNavigation);
+      EventBus.off('remote-player-updated', onRemotePlayerUpdated);
+      EventBus.off('update-player-name', onUpdateLocalPlayerName);
     });
   }
 

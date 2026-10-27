@@ -35,6 +35,11 @@ Route::get('/library', function () {
     return view('welcome');
 });
 
+// Route Khusus Mini Game Olahraga (Head Soccer & Head Basketball)
+Route::get('/minigame/{sport?}', function ($sport = null) {
+    return view('welcome');
+});
+
 // Route Khusus Portal Super Admin (Dengan random token ID berkeamanan tinggi)
 Route::get('/admin/{adminToken?}', function ($adminToken = null) {
     return view('welcome');
@@ -1351,3 +1356,20 @@ Route::post('/api/pixel-canvas/reset', function () {
         'message' => 'Seluruh kanvas iklan telah dikosongkan.',
     ]);
 });
+
+// ============================================================================
+// API MINI GAME OLAHRAGA (HEAD SOCCER & HEAD BASKETBALL)
+// ============================================================================
+Route::post('/api/sports/match-result', [\App\Http\Controllers\SportsMiniGameController::class, 'recordMatchResult']);
+Route::get('/api/sports/leaderboard', [\App\Http\Controllers\SportsMiniGameController::class, 'getLeaderboard']);
+Route::get('/api/sports/stats/{playerName}', [\App\Http\Controllers\SportsMiniGameController::class, 'getPlayerStats']);
+Route::post('/api/sports/session', [\App\Http\Controllers\SportsMiniGameController::class, 'saveSession']);
+Route::get('/api/sports/session', [\App\Http\Controllers\SportsMiniGameController::class, 'getSession']);
+Route::delete('/api/sports/session', [\App\Http\Controllers\SportsMiniGameController::class, 'clearSession']);
+Route::post('/api/sports/matchmaking/queue', [\App\Http\Controllers\SportsMiniGameController::class, 'queueMatchmaking']);
+Route::get('/api/sports/matchmaking/status', [\App\Http\Controllers\SportsMiniGameController::class, 'getMatchmakingStatus']);
+Route::post('/api/sports/matchmaking/cancel', [\App\Http\Controllers\SportsMiniGameController::class, 'cancelMatchmaking']);
+Route::post('/api/sports/matchmaking/find-rival', [\App\Http\Controllers\SportsMiniGameController::class, 'findRivalAthlete']);
+
+
+

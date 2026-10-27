@@ -449,19 +449,19 @@ export class WorldProps {
       5,
       false,
       () => {
-        const p = (scene as any).player;
-        if (p) {
-          p.showSpeechBubble('⚽ Oper ke depan dan... TENDANG! GOOOOL!! 🥅🔥', 2500);
-          try {
-            SoundManager.getInstance().playClick();
-          } catch (e) {}
-        }
+        try {
+          SoundManager.getInstance().playClick();
+        } catch (e) {}
+        EventBus.emit('open-sports-modal', 'soccer');
       }
     );
 
-    // Rintangan fisik tiang gawang sepak bola (Kiri & Kanan)
-    WorldProps.addGridObstacle(scene, tileSize, obstacles, 23.6, 52.8, 0.7, 1.4);
-    WorldProps.addGridObstacle(scene, tileSize, obstacles, 33.7, 52.8, 0.7, 1.4);
+    // Rintangan fisik pembatas & pagar lapangan sepak bola (dengan pintu masuk di tengah gx: 28.2..29.8)
+    WorldProps.addGridObstacle(scene, tileSize, obstacles, 23.6, 51.0, 0.6, 4.8); // Sisi Kiri
+    WorldProps.addGridObstacle(scene, tileSize, obstacles, 33.7, 51.0, 0.6, 4.8); // Sisi Kanan
+    WorldProps.addGridObstacle(scene, tileSize, obstacles, 24.0, 55.7, 9.8, 0.5); // Sisi Bawah
+    WorldProps.addGridObstacle(scene, tileSize, obstacles, 24.0, 50.6, 4.2, 0.5); // Sisi Atas (Kiri Gerbang)
+    WorldProps.addGridObstacle(scene, tileSize, obstacles, 29.8, 50.6, 4.0, 0.5); // Sisi Atas (Kanan Gerbang)
 
     // b. Lapangan Bola Basket (10x5)
     addGridPropFn(
@@ -472,19 +472,19 @@ export class WorldProps {
       5,
       false,
       () => {
-        const p = (scene as any).player;
-        if (p) {
-          p.showSpeechBubble('🏀 Dribble melewati lawan, lompat dan... SLAM DUNK! 💥🏀', 2500);
-          try {
-            SoundManager.getInstance().playClick();
-          } catch (e) {}
-        }
+        try {
+          SoundManager.getInstance().playClick();
+        } catch (e) {}
+        EventBus.emit('open-sports-modal', 'basketball');
       }
     );
 
-    // Rintangan fisik tiang ring basket (Kiri & Kanan)
-    WorldProps.addGridObstacle(scene, tileSize, obstacles, 45.7, 53.0, 0.6, 1.0);
-    WorldProps.addGridObstacle(scene, tileSize, obstacles, 55.7, 53.0, 0.6, 1.0);
+    // Rintangan fisik pembatas & pagar lapangan basket (dengan pintu masuk di tengah gx: 50.2..51.8)
+    WorldProps.addGridObstacle(scene, tileSize, obstacles, 45.6, 51.0, 0.6, 4.8); // Sisi Kiri
+    WorldProps.addGridObstacle(scene, tileSize, obstacles, 55.7, 51.0, 0.6, 4.8); // Sisi Kanan
+    WorldProps.addGridObstacle(scene, tileSize, obstacles, 46.0, 55.7, 9.8, 0.5); // Sisi Bawah
+    WorldProps.addGridObstacle(scene, tileSize, obstacles, 46.0, 50.6, 4.2, 0.5); // Sisi Atas (Kiri Gerbang)
+    WorldProps.addGridObstacle(scene, tileSize, obstacles, 51.8, 50.6, 4.0, 0.5); // Sisi Atas (Kanan Gerbang)
 
     // ========================================================================
     // KAWASAN KOMERSIAL & LAYANAN PUBLIK BARAT (6 Gedung 5x5 Petak Grid)

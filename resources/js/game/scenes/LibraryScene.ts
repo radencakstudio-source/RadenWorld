@@ -205,7 +205,6 @@ export class LibraryScene extends Phaser.Scene {
       if (this.player && this.player.active && this.player.scene) {
         this.player.showSpeechBubble(text);
       }
-      this.networkManager.sendChat(text, this.playerName);
     };
     EventBus.on('send-chat', onSendChat);
 
@@ -222,10 +221,29 @@ export class LibraryScene extends Phaser.Scene {
     };
     EventBus.on('trigger-interaction', onTriggerInteraction);
 
+    const onRemotePlayerUpdated = (data: { id: string; name?: string; avatar?: any; role?: string; isSuperAdmin?: boolean }) => {
+      const remote = this.remotePlayers.get(data.id);
+      if (remote && remote.active) {
+        if (data.name) remote.setName(data.name);
+        if (data.avatar) remote.setAvatar(data.avatar);
+      }
+    };
+    EventBus.on('remote-player-updated', onRemotePlayerUpdated);
+
+    const onUpdateLocalPlayerName = (newName: string) => {
+      this.playerName = newName;
+      if (this.player && this.player.active) {
+        this.player.setName(newName);
+      }
+    };
+    EventBus.on('update-player-name', onUpdateLocalPlayerName);
+
     const cleanupLibrary = () => {
       EventBus.off('send-chat', onSendChat);
       EventBus.off('trigger-expression', onTriggerExpression);
       EventBus.off('trigger-interaction', onTriggerInteraction);
+      EventBus.off('remote-player-updated', onRemotePlayerUpdated);
+      EventBus.off('update-player-name', onUpdateLocalPlayerName);
       EventBus.emit('interaction-prompt', null);
 
       this.remotePlayers.forEach((r) => r.destroy());

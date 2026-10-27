@@ -440,6 +440,18 @@ export class NetworkManager {
       this.listeners.playerJoined.forEach((cb) => cb(player));
     });
 
+    this.socket.on('player:updated', (data: { id: string; name?: string; avatar?: IAvatarCustomization; role?: string; isSuperAdmin?: boolean }) => {
+      const existing = this.serverPlayers.get(data.id);
+      if (existing) {
+        if (data.name) existing.name = data.name;
+        if (data.avatar) existing.avatar = data.avatar;
+        if (data.role) existing.role = data.role;
+        if (typeof data.isSuperAdmin === 'boolean') existing.isSuperAdmin = data.isSuperAdmin;
+        this.emitServerPlayersUpdated();
+      }
+      EventBus.emit('remote-player-updated', data);
+    });
+
     this.socket.on('player:moved', (data) => {
       this.listeners.playerMoved.forEach((cb) => cb(data));
     });
@@ -578,15 +590,46 @@ export class NetworkManager {
   }
 
   /**
-   * Mengirim pesan chat ke obrolan global server
+   * Mengirim pembaruan profil pemain lokal (nama / avatar) ke server multiplayer
    */
-  public sendChat(text: string, senderName?: string, senderRole?: string, isSuperAdmin?: boolean): void {
+  public sendPlayerUpdate(data: { name?: string; avatar?: IAvatarCustomization }): void {
+    if (this.lastJoinData) {
+      if (data.name) this.lastJoinData.name = data.name;
+      if (data.avatar) this.lastJoinData.avatar = data.avatar;
+    }
+    const myId = this.getSocketId() || 'local-me';
+    const me = this.serverPlayers.get(myId);
+    if (me) {
+      if (data.name) me.name = data.name;
+      if (data.avatar) me.avatar = data.avatar;
+      this.emitServerPlayersUpdated();
+    }
+    if (!this.socket || !this.isConnected) return;
+    this.socket.emit('player:update', data);
+  }
+
+  /**
+   * Mengirim pesan chat ke server (bisa obrolan global atau bisikan pribadi)
+   */
+  public sendChat(
+    text: string,
+    senderName?: string,
+    senderRole?: string,
+    isSuperAdmin?: boolean,
+    recipientName?: string,
+    isPrivate?: boolean
+  ): void {
+    if (senderName && this.lastJoinData) {
+      this.lastJoinData.name = senderName;
+    }
     if (!this.socket || !this.isConnected) return;
     this.socket.emit('chat:message', {
       text,
       senderName: senderName || this.lastJoinData?.name,
       senderRole: senderRole || this.lastJoinData?.role,
       isSuperAdmin: isSuperAdmin ?? this.lastJoinData?.isSuperAdmin,
+      recipientName,
+      isPrivate: Boolean(isPrivate || recipientName),
     });
   }
 

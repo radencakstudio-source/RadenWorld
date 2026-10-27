@@ -446,7 +446,11 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
   const handleSaveName = async (e: React.FormEvent) => {
     e.preventDefault();
     const trimmed = newNameInput.trim();
-    if (!trimmed || trimmed.length < 3 || trimmed === currentDisplayName) {
+    if (!trimmed || trimmed.length < 3) {
+      setAccountFeedback('Nama karakter harus terdiri dari minimal 3 karakter.');
+      return;
+    }
+    if (trimmed === currentDisplayName) {
       setIsEditingName(false);
       return;
     }
@@ -463,10 +467,12 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
           'Content-Type': 'application/json',
           'X-User-Id': u.id?.toString() || '',
           'X-User-Email': u.email || accountEmail || '',
-          'X-User-Name': u.name || currentDisplayName || '',
+          'X-User-Name': currentDisplayName || u.name || name || '',
         },
         body: JSON.stringify({
-          user_id: u.id,
+          user_id: u.id || undefined,
+          current_name: currentDisplayName || u.name || name || '',
+          email: u.email || accountEmail || undefined,
           name: trimmed,
         }),
       });
@@ -476,7 +482,13 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
         sound.playSuccess();
         setCurrentDisplayName(trimmed);
         setIsEditingName(false);
-        u.name = trimmed;
+        if (data.user) {
+          u.id = data.user.id || u.id;
+          u.name = data.user.name || trimmed;
+          u.email = data.user.email || u.email;
+        } else {
+          u.name = trimmed;
+        }
         localStorage.setItem('raden_player_user', JSON.stringify(u));
         setAccountFeedback(data.message || `✓ Nama karakter berhasil diubah menjadi ${trimmed}!`);
         if (onUpdateName) onUpdateName(trimmed);
@@ -1444,57 +1456,25 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
 
               <div className="flex flex-col flex-1 min-w-0">
                 <div className="flex items-center justify-between gap-1">
-                  {isEditingName ? (
-                    <form onSubmit={handleSaveName} className="flex items-center gap-1.5 flex-1 min-w-0 mr-1">
-                      <input
-                        type="text"
-                        value={newNameInput}
-                        onChange={(e) => setNewNameInput(e.target.value)}
-                        placeholder="Nama baru..."
-                        maxLength={20}
-                        required
-                        autoFocus
-                        className="w-full px-2 py-0.5 rounded bg-black border border-amber-500 text-sm font-bold text-amber-400 focus:outline-none"
-                      />
-                      <button
-                        type="submit"
-                        disabled={isSavingName || newNameInput.trim().length < 3}
-                        className="px-2 py-0.5 rounded bg-amber-500 hover:bg-amber-400 text-black text-[10px] font-black uppercase shrink-0 disabled:opacity-50 cursor-pointer"
-                      >
-                        {isSavingName ? '...' : 'Simpan'}
-                      </button>
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <span className="text-base font-bold text-amber-400 uppercase tracking-wide truncate">
+                      {currentDisplayName || name}
+                    </span>
+                    {!isInspecting && (
                       <button
                         type="button"
                         onClick={() => {
-                          setIsEditingName(false);
-                          setNewNameInput(currentDisplayName);
+                          sound.playClick();
+                          setNewNameInput(currentDisplayName || name);
+                          setIsEditingName(true);
                         }}
-                        className="px-1.5 py-0.5 rounded bg-neutral-800 hover:bg-neutral-700 text-neutral-300 text-[10px] font-bold shrink-0 cursor-pointer"
+                        className="p-1 rounded hover:bg-neutral-800 text-neutral-400 hover:text-amber-400 transition-colors cursor-pointer shrink-0"
+                        title="Ganti Nama Karakter (Nickname)"
                       >
-                        Batal
+                        <Edit3 className="w-3.5 h-3.5" />
                       </button>
-                    </form>
-                  ) : (
-                    <div className="flex items-center gap-1.5 min-w-0">
-                      <span className="text-base font-bold text-amber-400 uppercase tracking-wide truncate">
-                        {currentDisplayName || name}
-                      </span>
-                      {!isInspecting && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            sound.playClick();
-                            setNewNameInput(currentDisplayName || name);
-                            setIsEditingName(true);
-                          }}
-                          className="p-1 rounded hover:bg-neutral-800 text-neutral-400 hover:text-amber-400 transition-colors cursor-pointer shrink-0"
-                          title="Ganti Nama Karakter (Nickname)"
-                        >
-                          <Edit3 className="w-3.5 h-3.5" />
-                        </button>
-                      )}
-                    </div>
-                  )}
+                    )}
+                  </div>
                   <span className="text-[10px] font-black bg-amber-500 text-black px-1.5 py-0.5 rounded shrink-0">
                     LV. {effectiveLevel}
                   </span>
@@ -2039,6 +2019,102 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
           </div>
         )}
       </div>
+
+      {/* ==================================================================== */}
+      {/* MODAL FORM GANTI NAMA KARAKTER: Responsif Mobile Tegak/Miring & PC   */}
+      {/* ==================================================================== */}
+      {isEditingName && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="relative w-full max-w-sm sm:max-w-md bg-[#0e0e0e] border border-amber-500/50 rounded-xl p-4 sm:p-6 shadow-2xl space-y-4">
+            
+            {/* Header Form */}
+            <div className="flex items-center justify-between border-b border-neutral-800 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
+                  <Edit3 className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm sm:text-base font-bold text-white uppercase tracking-wider">
+                    GANTI NAMA KARAKTER
+                  </h3>
+                  <p className="text-[11px] text-neutral-400">
+                    Nama baru petualang di RadenWorld.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  sound.playClick();
+                  setIsEditingName(false);
+                  setNewNameInput(currentDisplayName);
+                }}
+                className="p-1.5 rounded-md text-neutral-400 hover:text-white hover:bg-neutral-800 transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Input Form */}
+            <form onSubmit={handleSaveName} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-neutral-300 uppercase tracking-wide mb-1.5">
+                  Nama Karakter Baru
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={newNameInput}
+                    onChange={(e) => setNewNameInput(e.target.value)}
+                    placeholder="Masukkan nama baru..."
+                    maxLength={20}
+                    autoFocus
+                    disabled={isSavingName}
+                    className="w-full bg-[#181818] border border-neutral-700 focus:border-amber-400 rounded-lg px-3.5 py-2.5 text-sm text-amber-300 font-bold placeholder:text-neutral-500 focus:outline-none transition-all font-sans"
+                  />
+                  <span className="absolute right-3 top-2.5 text-xs text-neutral-500 font-mono">
+                    {newNameInput.trim().length}/20
+                  </span>
+                </div>
+                <p className="text-[10px] text-neutral-500 mt-1.5">
+                  Minimal 3 karakter, maksimal 20 karakter. Langsung tersimpan permanen ke server database.
+                </p>
+              </div>
+
+              {/* Action Buttons: Batal & Simpan */}
+              <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-neutral-800">
+                <button
+                  type="button"
+                  onClick={() => {
+                    sound.playClick();
+                    setIsEditingName(false);
+                    setNewNameInput(currentDisplayName);
+                  }}
+                  disabled={isSavingName}
+                  className="px-4 py-2 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-200 text-xs font-bold transition-colors cursor-pointer"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSavingName || newNameInput.trim().length < 3 || newNameInput.trim() === currentDisplayName}
+                  className="px-5 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 disabled:opacity-40 disabled:hover:bg-amber-500 text-black text-xs font-bold transition-all shadow cursor-pointer flex items-center gap-1.5"
+                >
+                  {isSavingName ? (
+                    <>
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                      <span>Menyimpan...</span>
+                    </>
+                  ) : (
+                    <span>Simpan Nama</span>
+                  )}
+                </button>
+              </div>
+            </form>
+
+          </div>
+        </div>
+      )}
 
       {/* SOCIAL ACCOUNT CHOOSER MODAL (GOOGLE / FACEBOOK) */}
       <SocialAccountChooserModal

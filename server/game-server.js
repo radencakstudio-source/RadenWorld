@@ -272,6 +272,35 @@ io.on('connection', (socket) => {
     });
   });
 
+  // 3b. Event pembaruan profil pemain (ganti nama / avatar secara real-time)
+  socket.on('player:update', (data) => {
+    const player = players.get(socket.id);
+    if (!player || !data) return;
+
+    if (typeof data.name === 'string' && data.name.trim()) {
+      const oldName = player.name;
+      player.name = data.name.trim();
+      if (player.name.toUpperCase() === 'RADEN') {
+        player.isSuperAdmin = true;
+        player.role = 'super_admin';
+      }
+      console.log(`[Player] ${socket.id} memperbarui nama: '${oldName}' -> '${player.name}'`);
+    }
+
+    if (data.avatar && typeof data.avatar === 'object') {
+      player.avatar = { ...player.avatar, ...data.avatar };
+    }
+
+    const currentRoom = player.room || 'world';
+    socket.to(currentRoom).emit('player:updated', {
+      id: socket.id,
+      name: player.name,
+      avatar: player.avatar,
+      role: player.role,
+      isSuperAdmin: player.isSuperAdmin,
+    });
+  });
+
   // 4. Event pesan obrolan (chat)
   socket.on('chat:message', (data) => {
     if (!data || typeof data.text !== 'string' || !data.text.trim()) return;
@@ -286,6 +315,16 @@ io.on('connection', (socket) => {
         isSuperAdmin: Boolean(data.isSuperAdmin || data.senderName?.toUpperCase() === 'RADEN'),
       };
       players.set(socket.id, player);
+    } else if (data.senderName && typeof data.senderName === 'string' && data.senderName.trim()) {
+      // Selalu sinkronkan nama pemain di memori server jika client mengirim nama terbaru
+      const trimmedSenderName = data.senderName.trim();
+      if (player.name !== trimmedSenderName) {
+        player.name = trimmedSenderName;
+        if (player.name.toUpperCase() === 'RADEN') {
+          player.isSuperAdmin = true;
+          player.role = 'super_admin';
+        }
+      }
     }
 
     const trimmedText = data.text.trim().substring(0, 200);
@@ -322,10 +361,68 @@ io.on('connection', (socket) => {
       return;
     }
 
+    // 4b. Deteksi Pesan Pribadi (Private Chat / Bisikan)
+    let targetRecipientName = data.recipientName ? data.recipientName.trim() : null;
+    let actualText = trimmedText;
+
+    if (!targetRecipientName) {
+      const whisperMatch = trimmedText.match(/^(?:@|\/w\s+|\/whisper\s+|\/msg\s+)([a-zA-Z0-9_\s]{2,25}?)\s+(.+)$/i);
+      if (whisperMatch) {
+        targetRecipientName = whisperMatch[1].trim();
+        actualText = whisperMatch[2].trim();
+      }
+    }
+
+    if (targetRecipientName) {
+      let targetSocket = null;
+      let targetPlayer = null;
+
+      for (const [sId, p] of players.entries()) {
+        if (p.name && p.name.trim().toLowerCase() === targetRecipientName.toLowerCase()) {
+          targetSocket = io.sockets.sockets.get(sId);
+          targetPlayer = p;
+          break;
+        }
+      }
+
+      if (targetPlayer && targetSocket && targetSocket.connected) {
+        const privatePacket = {
+          id: `chat_priv_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+          senderId: socket.id,
+          senderName: player.name || (data.senderName ? data.senderName.trim() : 'Petualang'),
+          senderRole: player.role || data.senderRole || 'player',
+          isSuperAdmin: Boolean(player.isSuperAdmin || data.isSuperAdmin || player.name?.toUpperCase() === 'RADEN'),
+          recipientName: targetPlayer.name,
+          recipientId: targetPlayer.id,
+          isPrivate: true,
+          text: actualText,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        };
+
+        // Kirim hanya ke target penerima dan pengirim sendiri
+        targetSocket.emit('chat:broadcast', privatePacket);
+        socket.emit('chat:broadcast', privatePacket);
+        return;
+      } else {
+        socket.emit('chat:broadcast', {
+          id: `sys_${now}`,
+          senderId: 'system',
+          senderName: 'SISTEM',
+          senderRole: 'system',
+          isSuperAdmin: true,
+          recipientName: targetRecipientName,
+          isPrivate: true,
+          text: `⚠️ Petualang '${targetRecipientName}' tidak ditemukan atau sedang offline.`,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        });
+        return;
+      }
+    }
+
     const chatPacket = {
       id: `chat_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
       senderId: socket.id,
-      senderName: player.name || data.senderName || 'Petualang',
+      senderName: player.name || (data.senderName ? data.senderName.trim() : 'Petualang'),
       senderRole: player.role || data.senderRole || 'player',
       isSuperAdmin: Boolean(player.isSuperAdmin || data.isSuperAdmin || player.name?.toUpperCase() === 'RADEN'),
       text: trimmedText,

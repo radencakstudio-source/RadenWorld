@@ -50,6 +50,9 @@ export interface IChatMessage {
   isSuperAdmin?: boolean;
   text: string;
   timestamp: string;
+  recipientName?: string;
+  recipientId?: string;
+  isPrivate?: boolean;
 }
 
 export interface IWorldInitData {

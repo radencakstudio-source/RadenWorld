@@ -401,7 +401,6 @@ export class SchoolScene extends Phaser.Scene {
       if (this.player && this.player.active && this.player.scene) {
         this.player.showSpeechBubble(text);
       }
-      this.networkManager.sendChat(text, this.playerName);
     };
     EventBus.on('send-chat', onSendChat);
 
@@ -434,7 +433,23 @@ export class SchoolScene extends Phaser.Scene {
         this.spawnArchitectCustomProps();
       }
     };
-    EventBus.on('architect-config-updated', onArchitectConfigUpdated);
+    // Tangani pembaruan profil pemain lain / lokal
+    const onRemotePlayerUpdated = (data: { id: string; name?: string; avatar?: any; role?: string; isSuperAdmin?: boolean }) => {
+      const remote = this.remotePlayers.get(data.id);
+      if (remote && remote.active) {
+        if (data.name) remote.setName(data.name);
+        if (data.avatar) remote.setAvatar(data.avatar);
+      }
+    };
+    EventBus.on('remote-player-updated', onRemotePlayerUpdated);
+
+    const onUpdateLocalPlayerName = (newName: string) => {
+      this.playerName = newName;
+      if (this.player && this.player.active) {
+        this.player.setName(newName);
+      }
+    };
+    EventBus.on('update-player-name', onUpdateLocalPlayerName);
 
     // Tangani pergantian kelas di dalam ruangan (misal dari modal mapel) secara realtime
     const onGradeSwitched = (data: { schoolType: SchoolType; grade: number }) => {
@@ -564,6 +579,8 @@ export class SchoolScene extends Phaser.Scene {
       EventBus.off('trigger-interaction', onTriggerInteraction);
       EventBus.off('architect-config-updated', onArchitectConfigUpdated);
       EventBus.off('school-grade-switched', onGradeSwitched);
+      EventBus.off('remote-player-updated', onRemotePlayerUpdated);
+      EventBus.off('update-player-name', onUpdateLocalPlayerName);
       EventBus.emit('interaction-prompt', null);
       if (this.player) {
         this.player.destroy();

@@ -10,27 +10,41 @@ use Illuminate\Support\Facades\Log;
 class SecurityWalletController extends Controller
 {
     /**
-     * Resolusi user aktif berdasarkan id / email / name dari sesi atau payload
+     * Resolusi user aktif berdasarkan auth, id, email, atau nama dari sesi/payload
      */
     private function resolveUser(Request $request): ?User
     {
-        $userId = $request->input('user_id') ?? $request->header('X-User-Id');
-        $userEmail = $request->input('email') ?? $request->header('X-User-Email');
-        $userName = $request->input('name') ?? $request->header('X-User-Name');
+        if (auth()->check()) {
+            return auth()->user();
+        }
 
+        $userId = $request->input('user_id') ?: $request->header('X-User-Id');
         if ($userId) {
             $user = User::find($userId);
             if ($user) return $user;
         }
 
+        $userEmail = $request->input('email') ?: $request->header('X-User-Email');
         if ($userEmail) {
             $user = User::where('email', $userEmail)->first();
             if ($user) return $user;
         }
 
+        // PENTING: Untuk mencari identitas user lama, prioritaskan current_name atau header X-User-Name
+        $userName = $request->input('current_name') ?: $request->header('X-User-Name');
         if ($userName) {
             $user = User::where('name', $userName)->first();
             if ($user) return $user;
+        }
+
+        // Jangan gunakan $request->input('name') jika endpoint adalah update-name karena itu adalah nama baru
+        $path = $request->path();
+        if (strpos($path, 'update-name') === false) {
+            $inputName = $request->input('name');
+            if ($inputName) {
+                $user = User::where('name', $inputName)->first();
+                if ($user) return $user;
+            }
         }
 
         return null;
@@ -294,10 +308,25 @@ class SecurityWalletController extends Controller
     {
         $user = $this->resolveUser($request);
 
+        // Fallback jika belum terselesaikan oleh resolveUser
+        if (!$user) {
+            $currentName = trim($request->input('current_name') ?: $request->header('X-User-Name', ''));
+            if ($currentName) {
+                $user = User::where('name', $currentName)->first();
+            }
+        }
+
+        if (!$user) {
+            $userEmail = trim($request->input('email') ?: $request->header('X-User-Email', ''));
+            if ($userEmail) {
+                $user = User::where('email', $userEmail)->first();
+            }
+        }
+
         if (!$user) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'Sesi akun tidak ditemukan.',
+                'message' => 'Sesi akun tidak ditemukan. Pastikan Anda telah masuk ke dalam permainan.',
             ], 401);
         }
 
@@ -322,11 +351,41 @@ class SecurityWalletController extends Controller
         $user->name = $newName;
         $user->save();
 
+        // Migrasikan riwayat statistik olahraga mini game jika ada
+        try {
+            $sportsStatsPath = storage_path('app/sports_stats.json');
+            if (file_exists($sportsStatsPath)) {
+                $allStats = json_decode(file_get_contents($sportsStatsPath), true);
+                if (is_array($allStats)) {
+                    $oldKey = strtolower($oldName);
+                    $newKey = strtolower($newName);
+                    if (isset($allStats[$oldKey])) {
+                        $pStats = $allStats[$oldKey];
+                        $pStats['name'] = $newName;
+                        $allStats[$newKey] = $pStats;
+                        if ($oldKey !== $newKey) {
+                            unset($allStats[$oldKey]);
+                        }
+                        @file_put_contents($sportsStatsPath, json_encode($allStats, JSON_PRETTY_PRINT));
+                    }
+                }
+            }
+        } catch (\Throwable $e) {}
+
         return response()->json([
             'status' => 'success',
             'message' => "✓ Nama karakter berhasil diubah menjadi {$newName}!",
             'old_name' => $oldName,
             'new_name' => $newName,
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'gold' => $user->gold ?? 0,
+                'diamonds' => $user->diamonds ?? 0,
+                'level' => $user->level ?? 1,
+                'exp' => $user->exp ?? 0,
+            ],
         ]);
     }
 }

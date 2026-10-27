@@ -235,6 +235,57 @@ export class BootScene extends Phaser.Scene {
 
     // Pisahkan inisialisasi scene berikutnya dari 'load' handler browser agar tidak memblokir thread (kurangi ms violation)
     this.time.delayedCall(16, () => {
+      // 1. Cek Sesi Aktif Mini Game Olahraga (Head Soccer / Head Basketball)
+      // Supaya saat browser di-refresh, pemain tetap berada di arena mini game tanpa kembali ke World!
+      let activeMiniGame: any = null;
+      try {
+        const stored = localStorage.getItem('raden_active_minigame');
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (parsed && parsed.sport && (!parsed.timestamp || Date.now() - parsed.timestamp < 14400000)) {
+            activeMiniGame = parsed;
+          }
+        }
+      } catch (e) {}
+
+      // Deteksi juga jika URL langsung mengarah ke /minigame/soccer atau /minigame/basketball
+      if (!activeMiniGame && pathname.startsWith('/minigame')) {
+        const urlParams = new URLSearchParams(window.location.search);
+        const sportParam = pathname.includes('basket') ? 'basketball' : 'soccer';
+        const modeParam = (urlParams.get('mode') as any) || 'ai';
+        activeMiniGame = {
+          sport: sportParam,
+          mode: modeParam,
+          returnPos: sportParam === 'soccer' ? { x: 3480, y: 6040 } : { x: 6060, y: 6040 },
+        };
+      }
+
+      if (activeMiniGame) {
+        let savedName = activeMiniGame.name || '';
+        let savedAvatar = activeMiniGame.avatar || undefined;
+        try {
+          const u = JSON.parse(localStorage.getItem('raden_player_user') || '{}');
+          if (!savedName && u.name) savedName = u.name;
+          const a = localStorage.getItem('raden_player_avatar');
+          if (!savedAvatar && a) savedAvatar = JSON.parse(a);
+        } catch (e) {}
+
+        const targetSceneKey = activeMiniGame.sport === 'soccer' ? 'SoccerMiniGameScene' : 'BasketballMiniGameScene';
+        const returnX = activeMiniGame.returnPos?.x || (activeMiniGame.sport === 'soccer' ? 3480 : 6060);
+        const returnY = activeMiniGame.returnPos?.y || 6040;
+
+        EventBus.emit('minigame-active', true);
+        EventBus.emit('location-updated', activeMiniGame.sport === 'soccer' ? 'ARENA STADION: HEAD SOCCER' : 'ARENA STREETBALL: HEAD BASKETBALL');
+        this.scene.start(targetSceneKey, {
+          mode: activeMiniGame.mode || 'ai',
+          name: savedName || 'Petualang',
+          avatar: savedAvatar,
+          returnX,
+          returnY,
+        });
+        return;
+      }
+
       if (pathname.startsWith('/admin')) {
         let adminToken = 'raden-master-key';
         if (pathname.startsWith('/admin/')) {

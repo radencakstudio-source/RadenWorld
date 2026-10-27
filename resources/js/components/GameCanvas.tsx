@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import Phaser from 'phaser';
 import { createGameConfig } from '../game/core/GameConfig';
 import { EventBus } from '../game/core/EventBus';
+import { NetworkManager } from '../game/core/NetworkManager';
 
 export const GameCanvas: React.FC = () => {
   const gameRef = useRef<Phaser.Game | null>(null);
@@ -43,6 +44,10 @@ export const GameCanvas: React.FC = () => {
 
     // Handler update nama karakter secara dinamis di Phaser & multiplayer
     const handleUpdatePlayerName = (newName: string) => {
+      try {
+        NetworkManager.getInstance().sendPlayerUpdate({ name: newName });
+      } catch (e) {}
+
       if (!gameRef.current || !gameRef.current.scene) return;
       try {
         const activeScenes = gameRef.current.scene.getScenes(true);
@@ -50,8 +55,11 @@ export const GameCanvas: React.FC = () => {
           if (s.player && typeof s.player.setName === 'function') {
             s.player.setName(newName);
           }
-          if (s.networkManager && typeof s.networkManager.sendPlayerUpdate === 'function') {
-            s.networkManager.sendPlayerUpdate({ name: newName });
+          if ('playerName' in s) {
+            s.playerName = newName;
+          }
+          if ('pendingPlayerName' in s) {
+            s.pendingPlayerName = newName;
           }
         });
       } catch (err) {

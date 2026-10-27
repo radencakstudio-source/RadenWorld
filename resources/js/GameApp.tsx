@@ -45,13 +45,24 @@ import { PoliceReportModal } from './game/ui/PoliceReportModal';
 import { BankModal } from './game/ui/BankModal';
 import { PharmacyModal } from './game/ui/PharmacyModal';
 import { MarketRealtorModal } from './game/ui/MarketRealtorModal';
+import { SportsMiniGameModal } from './game/ui/SportsMiniGameModal';
 
 export const GameApp: React.FC = () => {
-  // Check initial URL pathname
+  // Check initial URL pathname & active minigame session
   const initialPath = typeof window !== 'undefined' ? window.location.pathname : '/';
-  const isDirectInGame = initialPath.startsWith('/home') || initialPath.startsWith('/world') || initialPath.startsWith('/admin');
+  const isMiniGameInitial = initialPath.startsWith('/minigame') || (() => {
+    try {
+      const stored = localStorage.getItem('raden_active_minigame');
+      if (stored) {
+        const p = JSON.parse(stored);
+        return Boolean(p && p.sport);
+      }
+    } catch (e) {}
+    return false;
+  })();
+  const isDirectInGame = initialPath.startsWith('/home') || initialPath.startsWith('/world') || initialPath.startsWith('/admin') || isMiniGameInitial;
 
-  // Screen state: 'home' (Lobby /) | 'playing' (Safe House, Open World, atau Portal Admin)
+  // Screen state: 'home' (Lobby /) | 'playing' (Safe House, Open World, Portal Admin, atau Mini Game)
   const [gameState, setGameState] = useState<'home' | 'playing'>(isDirectInGame ? 'playing' : 'home');
   const [currentPath, setCurrentPath] = useState<string>(initialPath);
   const [isLoadingScreen, setIsLoadingScreen] = useState(true);
@@ -369,6 +380,13 @@ export const GameApp: React.FC = () => {
   const [isBankModalOpen, setIsBankModalOpen] = useState(false);
   const [isPharmacyModalOpen, setIsPharmacyModalOpen] = useState(false);
   const [isRealtorModalOpen, setIsRealtorModalOpen] = useState(false);
+  // Modal Mini Game Olahraga (Sepak Bola & Bola Basket)
+  const [sportsModal, setSportsModal] = useState<{
+    isOpen: boolean;
+    sport: 'soccer' | 'basketball' | null;
+  }>({ isOpen: false, sport: null });
+  // Mode Mini Game (Sembunyikan UI World, HUD, Chat & Virtual Controls saat bermain sepak bola / basket)
+  const [isMiniGameMode, setIsMiniGameMode] = useState<boolean>(isMiniGameInitial);
   // Minigame Memancing Interaktif Bergaya Stardew Valley
   const [fishingMinigameData, setFishingMinigameData] = useState<IFishData | null>(null);
   const [isFishingMinigameOpen, setIsFishingMinigameOpen] = useState(false);
@@ -576,8 +594,6 @@ export const GameApp: React.FC = () => {
     const handleChat = (msg: IChatMessage) => {
       setMessages((prev) => {
         if (!msg || !msg.text) return prev;
-        // Mencegah duplikasi pesan jika ID sudah ada atau pesan identik dari pengirim yang sama
-        if (prev.some((m) => m.id === msg.id || (m.senderName === msg.senderName && m.text === msg.text))) return prev;
         
         let formattedTime = msg.timestamp;
         if (typeof formattedTime === 'number' || (typeof formattedTime === 'string' && /^\d{10,14}$/.test(formattedTime))) {
@@ -585,7 +601,37 @@ export const GameApp: React.FC = () => {
           formattedTime = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
         }
 
-        return [...prev.slice(-50), { ...msg, timestamp: formattedTime }];
+        const mySocketId = NetworkManager.getInstance().getSocketId();
+        const incomingText = msg.text.trim();
+        const incomingSenderName = (msg.senderName || '').trim().toLowerCase();
+
+        // Cari apakah ada pesan yang identik (misal pesan optimistik lokal yang menunggu konfirmasi broadcast server)
+        const existingIndex = prev.findIndex((m) => {
+          if (m.id === msg.id) return true;
+          if (m.text && m.text.trim() === incomingText) {
+            // Jika dikirim dari socket kita sendiri (apapun nama lokal vs nama server)
+            if (mySocketId && msg.senderId === mySocketId && (m.senderId === mySocketId || m.senderId === 'local_player')) {
+              return true;
+            }
+            // Jika nama pengirim sama
+            const mSender = (m.senderName || '').trim().toLowerCase();
+            if (mSender && incomingSenderName && mSender === incomingSenderName) {
+              return true;
+            }
+          }
+          return false;
+        });
+
+        const formattedMsg = { ...msg, timestamp: formattedTime };
+
+        if (existingIndex !== -1) {
+          // Gantikan pesan optimistik sebelumnya dengan data resmi broadcast server agar tidak ganda
+          const updated = [...prev];
+          updated[existingIndex] = { ...updated[existingIndex], ...formattedMsg };
+          return updated;
+        }
+
+        return [...prev.slice(-50), formattedMsg];
       });
     };
 
@@ -666,6 +712,9 @@ export const GameApp: React.FC = () => {
     const handlePlayerNameChanged = (newName: string) => {
       setPlayerStats((prev) => ({ ...prev, name: newName }));
       EventBus.emit('update-player-name', newName);
+      try {
+        NetworkManager.getInstance().sendPlayerUpdate({ name: newName });
+      } catch (e) {}
     };
     EventBus.on('player-name-changed', handlePlayerNameChanged);
 
@@ -820,11 +869,30 @@ export const GameApp: React.FC = () => {
       setIsRealtorModalOpen(true);
       EventBus.emit('dialogue-active', true);
     };
+    const handleOpenSports = (sport: 'soccer' | 'basketball') => {
+      sound.playOpenModal();
+      setSportsModal({ isOpen: true, sport });
+      EventBus.emit('dialogue-active', true);
+    };
 
     EventBus.on('open-police-modal', handleOpenPolice);
     EventBus.on('open-bank-modal', handleOpenBank);
     EventBus.on('open-pharmacy-modal', handleOpenPharmacy);
     EventBus.on('open-realtor-modal', handleOpenRealtor);
+    EventBus.on('open-sports-modal', handleOpenSports);
+
+    const handleSwitchSceneEvent = (data: { scene: string }) => {
+      if (data?.scene) {
+        const isSports = data.scene === 'SoccerMiniGameScene' || data.scene === 'BasketballMiniGameScene';
+        setIsMiniGameMode(isSports);
+      }
+    };
+    const handleMiniGameActive = (active: boolean) => {
+      setIsMiniGameMode(Boolean(active));
+    };
+
+    EventBus.on('switch-scene', handleSwitchSceneEvent);
+    EventBus.on('minigame-active', handleMiniGameActive);
 
     const handleIncomingFriend = (req: IFriendRequest) => {
       console.log('[GameApp] Notifikasi permintaan pertemanan diterima:', req);
@@ -1043,6 +1111,9 @@ export const GameApp: React.FC = () => {
       EventBus.off('open-bank-modal', handleOpenBank);
       EventBus.off('open-pharmacy-modal', handleOpenPharmacy);
       EventBus.off('open-realtor-modal', handleOpenRealtor);
+      EventBus.off('open-sports-modal', handleOpenSports);
+      EventBus.off('switch-scene', handleSwitchSceneEvent);
+      EventBus.off('minigame-active', handleMiniGameActive);
     };
   }, []);
 
@@ -1364,9 +1435,21 @@ export const GameApp: React.FC = () => {
     });
   };
 
-  const handleSendMessage = (text: string) => {
+  const handleSendMessage = (text: string, recipientName?: string) => {
     const trimmed = text ? text.trim() : '';
     if (!trimmed) return;
+
+    let targetRecipient = recipientName;
+    let cleanText = trimmed;
+    if (!targetRecipient) {
+      const match = trimmed.match(/^(?:@|\/w\s+|\/whisper\s+|\/msg\s+)([a-zA-Z0-9_\s]{2,25}?)\s+(.+)$/i);
+      if (match) {
+        targetRecipient = match[1].trim();
+        cleanText = match[2].trim();
+      }
+    }
+
+    const isPrivate = Boolean(targetRecipient);
 
     const isSuper = Boolean(
       playerStats.isSuperAdmin ||
@@ -1383,18 +1466,29 @@ export const GameApp: React.FC = () => {
       senderName: playerStats.name || 'Petualang',
       senderRole: playerStats.role || 'player',
       isSuperAdmin: isSuper,
-      text: trimmed,
+      text: cleanText,
       timestamp: timeStr,
+      recipientName: targetRecipient,
+      isPrivate,
     };
 
-    // 1. Optimistic Update: Langsung tambahkan ke riwayat pesan lokal agar seketika muncul
-    setMessages((prev) => [...prev.slice(-50), localMsg]);
+    // 1. Optimistic Update: Langsung tambahkan ke riwayat pesan lokal
+    setMessages((prev) => [...prev.slice(-100), localMsg]);
 
-    // 2. Tampilkan balon kata di atas kepala karakter lokal di scene Phaser yang sedang berjalan
-    EventBus.emit('send-chat', trimmed);
+    // 2. Balon kata di atas kepala karakter lokal di scene Phaser HANYA jika bukan bisikan pribadi
+    if (!isPrivate) {
+      EventBus.emit('send-chat', cleanText);
+    }
 
     // 3. Kirim paket obrolan ke server WebSocket multiplayer
-    NetworkManager.getInstance().sendChat(trimmed, playerStats.name, playerStats.role, isSuper);
+    NetworkManager.getInstance().sendChat(
+      cleanText,
+      playerStats.name,
+      playerStats.role,
+      isSuper,
+      targetRecipient,
+      isPrivate
+    );
   };
 
   const handleTriggerInteraction = () => {
@@ -1550,7 +1644,7 @@ export const GameApp: React.FC = () => {
       <GameCanvas />
 
       {/* Sinar Cahaya Mentari dari Atas Kiri Nyorot ke Tengah (Bebas Kotak & Kebal Zoom) */}
-      {!isLoadingScreen && gameState === 'playing' && !playerStats.inHouse && (
+      {!isLoadingScreen && gameState === 'playing' && !playerStats.inHouse && !isMiniGameMode && (
         <SunbeamOverlay />
       )}
 
@@ -1576,7 +1670,10 @@ export const GameApp: React.FC = () => {
       {/* 2. TAMPILAN DALAM PERMAINAN (IN-GAME HUD, CHAT & HOUSE/WORLD SCENE) */}
       {gameState === 'playing' && (
         <>
-          <HUD
+          {/* Sembunyikan seluruh UI World / HUD / ChatBox saat sedang dalam mini game olahraga */}
+          {!isMiniGameMode && (
+            <>
+              <HUD
             playerStats={playerStats}
             serverCode={serverCode}
             onToggleChat={() => setIsChatOpen(!isChatOpen)}
@@ -1748,7 +1845,7 @@ export const GameApp: React.FC = () => {
                 onWhisper={(targetName) => {
                   setIsProfileOpen(false);
                   setIsChatOpen(true);
-                  EventBus.emit('chat-prefill', `@${targetName} `);
+                  EventBus.emit('open-private-chat', targetName);
                 }}
                 onLogout={inspectedPlayer ? undefined : handleLogout}
                 onTeleportToAdminPortal={inspectedPlayer ? undefined : handleTeleportToAdminPortal}
@@ -1829,6 +1926,9 @@ export const GameApp: React.FC = () => {
                 onUpdateName={inspectedPlayer ? undefined : (newName: string) => {
                   setPlayerStats((prev) => ({ ...prev, name: newName }));
                   EventBus.emit('update-player-name', newName);
+                  try {
+                    NetworkManager.getInstance().sendPlayerUpdate({ name: newName });
+                  } catch (e) {}
                 }}
               />
             );
@@ -1840,6 +1940,7 @@ export const GameApp: React.FC = () => {
             isOpen={isChatOpen}
             onClose={() => setIsChatOpen(false)}
             gender={((playerStats?.avatar?.gender || wardrobeAvatar.gender) === 'female' ? 'female' : 'male')}
+            currentPlayerName={playerStats?.name || 'Petualang'}
           />
 
           {/* Dialog Narasi NPC Bergaya RPG (Next, Before, Skip) */}
@@ -2000,6 +2101,8 @@ export const GameApp: React.FC = () => {
               isActionActive={!!interactionPrompt}
             />
           )}
+            </>
+          )}
 
           {/* Modal Top Up Berlian */}
           <TopUpModal
@@ -2108,6 +2211,76 @@ export const GameApp: React.FC = () => {
               }
             }}
             isAdmin={isCurrentUserAdmin}
+          />
+
+          {/* Modal Mini Game Olahraga (Sepak Bola & Bola Basket) */}
+          <SportsMiniGameModal
+            isOpen={sportsModal.isOpen}
+            sport={sportsModal.sport}
+            playerName={playerStats.name || 'Petualang'}
+            onClose={() => {
+              setSportsModal({ isOpen: false, sport: null });
+              EventBus.emit('dialogue-active', false);
+            }}
+            onSelectMode={(sport, mode, opponent) => {
+              setSportsModal({ isOpen: false, sport: null });
+              EventBus.emit('dialogue-active', false);
+              setIsMiniGameMode(true);
+
+              const targetScene = sport === 'soccer' ? 'SoccerMiniGameScene' : 'BasketballMiniGameScene';
+              const returnPos = sport === 'soccer'
+                ? { x: 3480, y: 6040 }
+                : { x: 6060, y: 6040 };
+
+              try {
+                localStorage.setItem(
+                  'raden_active_minigame',
+                  JSON.stringify({
+                    sport,
+                    mode,
+                    name: playerStats.name,
+                    avatar: playerStats.avatar || wardrobeAvatar,
+                    returnPos,
+                    opponentName: opponent?.name,
+                    opponentServer: opponent?.server,
+                    opponentPvpStreak: opponent?.pvp_streak,
+                    opponentPvpSticks: opponent?.pvp_sticks,
+                    timestamp: Date.now(),
+                  })
+                );
+                if (window.history && window.history.replaceState) {
+                  window.history.replaceState({}, '', `/minigame/${sport}?mode=${mode}`);
+                }
+              } catch (e) {}
+
+              fetch('/api/sports/session', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-User-Name': playerStats.name },
+                body: JSON.stringify({
+                  sport,
+                  mode,
+                  player_name: playerStats.name,
+                  avatar: playerStats.avatar || wardrobeAvatar,
+                  return_x: returnPos.x,
+                  return_y: returnPos.y,
+                  opponent_name: opponent?.name,
+                  opponent_server: opponent?.server,
+                }),
+              }).catch(() => {});
+
+              EventBus.emit('switch-scene', {
+                scene: targetScene,
+                mode: mode,
+                name: playerStats.name,
+                avatar: playerStats.avatar || wardrobeAvatar,
+                returnX: returnPos.x,
+                returnY: returnPos.y,
+                opponentName: opponent?.name,
+                opponentServer: opponent?.server,
+                opponentPvpStreak: opponent?.pvp_streak,
+                opponentPvpSticks: opponent?.pvp_sticks,
+              });
+            }}
           />
         </>
       )}

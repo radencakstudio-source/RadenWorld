@@ -197,10 +197,10 @@ export class WorldInteractions {
       if (!prompt) {
         const gx = Math.floor(px / tileSize);
         const gy = Math.floor(py / tileSize);
-        if (gx >= 24 && gx <= 33 && gy >= 51 && gy <= 55) {
-          prompt = 'KLIK / SENTUH LAPANGAN UNTUK MENGOPER & MENENDANG BOLA SEPAK ⚽';
-        } else if (gx >= 46 && gx <= 55 && gy >= 51 && gy <= 55) {
-          prompt = 'KLIK / SENTUH LAPANGAN UNTUK DRIBBLE & SLAM DUNK BOLA BASKET 🏀';
+        if (gx >= 23 && gx <= 34 && gy >= 50 && gy <= 56) {
+          prompt = 'TEKAN [E] / SENTUH UNTUK MAIN MINI GAME SEPAKBOLA ⚽';
+        } else if (gx >= 45 && gx <= 56 && gy >= 50 && gy <= 56) {
+          prompt = 'TEKAN [E] / SENTUH UNTUK MAIN MINI GAME BASKETBALL 🏀';
         } else {
           const isPierOrWaterfront = (
             (gx >= 61 && gx <= 74 && gy >= 23 && gy <= 56) ||

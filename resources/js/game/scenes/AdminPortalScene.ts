@@ -145,11 +145,19 @@ export class AdminPortalScene extends Phaser.Scene {
     };
     EventBus.on('trigger-expression', onTriggerExpression);
 
+    const onUpdateLocalPlayerName = (newName: string) => {
+      if (this.player && this.player.active) {
+        this.player.setName(newName);
+      }
+    };
+    EventBus.on('update-player-name', onUpdateLocalPlayerName);
+
     const cleanupScene = () => {
       this.cameras?.main?.stopFollow();
       EventBus.off('trigger-interaction', onTriggerInteraction);
       EventBus.off('send-chat', onSendChat);
       EventBus.off('trigger-expression', onTriggerExpression);
+      EventBus.off('update-player-name', onUpdateLocalPlayerName);
       EventBus.emit('interaction-prompt', null);
       if (this.player) {
         this.player.destroy();

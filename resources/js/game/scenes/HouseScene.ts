@@ -237,6 +237,14 @@ export class HouseScene extends Phaser.Scene {
     };
     EventBus.on('local-player-speaking', onLocalSpeaking);
 
+    const onUpdateLocalPlayerName = (newName: string) => {
+      this.playerName = newName;
+      if (this.player && this.player.active) {
+        this.player.setName(newName);
+      }
+    };
+    EventBus.on('update-player-name', onUpdateLocalPlayerName);
+
     // Bersihkan listener saat shutdown dan destroy
     const cleanupScene = () => {
       this.cameras?.main?.stopFollow();
@@ -247,6 +255,7 @@ export class HouseScene extends Phaser.Scene {
       EventBus.off('local-player-speaking', onLocalSpeaking);
       EventBus.off('trigger-interaction', onTriggerInteraction);
       EventBus.off('architect-config-updated', onArchitectConfigUpdated);
+      EventBus.off('update-player-name', onUpdateLocalPlayerName);
       EventBus.emit('interaction-prompt', null);
       if (this.player) {
         this.player.destroy();

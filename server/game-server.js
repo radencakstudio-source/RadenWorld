@@ -35,16 +35,24 @@ const httpServer = createServer((req, res) => {
     return;
   }
 
-  // Fast ping endpoint (<1ms) untuk pengukuran latensi akurat tanpa proxy delay
+  // Fast ping & status endpoints untuk Cron-job.org dan monitoring cloud
   const reqUrlPath = req.url ? req.url.split('?')[0] : '';
   if (reqUrlPath === '/ping' || reqUrlPath === '/api/ping') {
     res.writeHead(200, {
-      'Content-Type': 'text/plain',
+      'Content-Type': 'text/plain; charset=utf-8',
       'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS',
     });
-    return res.end('pong');
+    return res.end('Server RPG Aktif 24 Jam!');
+  }
+
+  if (reqUrlPath === '/' || reqUrlPath === '') {
+    res.writeHead(200, {
+      'Content-Type': 'text/plain; charset=utf-8',
+      'Access-Control-Allow-Origin': '*',
+    });
+    return res.end('RadenWorld Multiplayer Game Server Online & Siap Digunakan!');
   }
 
   const proxyReq = httpRequest(

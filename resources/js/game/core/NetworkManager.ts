@@ -137,6 +137,12 @@ export class NetworkManager {
    * Mengambil URL server Socket.io yang efektif
    */
   public static getEffectiveServerUrl(): string {
+    // 1. Prioritaskan URL server dari variabel lingkungan Vite (misal dari Render.com)
+    const viteServerUrl = (import.meta as any).env?.VITE_GAME_SERVER_URL?.trim();
+    if (viteServerUrl) {
+      return viteServerUrl;
+    }
+
     if (typeof window !== 'undefined') {
       const isCurrentLocal = window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost';
       if (isCurrentLocal) {

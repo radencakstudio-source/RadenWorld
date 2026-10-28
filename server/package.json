@@ -1,0 +1,13 @@
+{
+  "name": "radenworld-multiplayer-server",
+  "version": "1.0.0",
+  "description": "Standalone real-time Multiplayer WebSocket server for RadenWorld RPG",
+  "main": "game-server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node game-server.js"
+  },
+  "dependencies": {
+    "socket.io": "^4.8.4"
+  }
+}

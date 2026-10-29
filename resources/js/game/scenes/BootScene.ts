@@ -808,36 +808,52 @@ export class BootScene extends Phaser.Scene {
       }
     }
 
-    // Helper Generator Tekstur Awan Cumulus HD (Super Cepat & Halus dengan Radial Gradient)
+    // Helper Generator Tekstur Awan Organik HD (Super Halus, Bebas Lingkaran Cincin dengan Gaussian Blur)
     const createCloudTexture = (key: string, w: number, h: number, puffs: { x: number; y: number; r: number }[]) => {
       if (this.textures.exists(key)) return;
-      // Gunakan resolusi 0.5x dengan WebGL bilinear filter untuk menghasilkan bayangan awan halus tanpa membebani CPU
-      const scale = 0.5;
-      const sw = Math.round(w * scale);
-      const sh = Math.round(h * scale);
+      const pad = 48; // Padding ekstra agar blur halus di tepi tidak terpotong kanvas
+      const cw = w + pad * 2;
+      const ch = h + pad * 2;
       const canvas = document.createElement('canvas');
-      canvas.width = sw;
-      canvas.height = sh;
+      canvas.width = cw;
+      canvas.height = ch;
       const ctx = canvas.getContext('2d');
       if (!ctx) return;
 
-      ctx.clearRect(0, 0, sw, sh);
+      ctx.clearRect(0, 0, cw, ch);
 
-      // Render bulatan awan dengan radial gradient (0ms CPU delay, selembut sutra)
+      // Gunakan Gaussian blur alami untuk melebur seluruh bulatan menjadi satu gumpalan awan mulus
+      try {
+        ctx.filter = 'blur(26px)';
+      } catch (e) {}
+
+      // 1. Gambar seluruh puff sebagai SATU KESATUAN SILUET SOLID (Unified Silhouette)
+      // Menggunakan single path terpadu sehingga 100% BEBAS dari lingkaran/cincin tumpang tindih
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.45)';
+      ctx.beginPath();
       puffs.forEach(p => {
-        const px = p.x * scale;
-        const py = p.y * scale;
-        const pr = p.r * scale;
-        const grad = ctx.createRadialGradient(px, py, pr * 0.2, px, py, pr);
-        grad.addColorStop(0, 'rgba(15, 23, 42, 0.44)');
-        grad.addColorStop(0.65, 'rgba(15, 23, 42, 0.28)');
-        grad.addColorStop(1, 'rgba(15, 23, 42, 0)');
-
-        ctx.fillStyle = grad;
-        ctx.beginPath();
-        ctx.arc(px, py, pr, 0, Math.PI * 2);
-        ctx.fill();
+        const px = p.x + pad;
+        const py = p.y + pad;
+        ctx.moveTo(px + p.r, py);
+        ctx.arc(px, py, p.r, 0, Math.PI * 2);
       });
+      ctx.fill();
+
+      // 2. Lapisan kepadatan inti tengah (soft core body) yang menyatu alami
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.25)';
+      ctx.beginPath();
+      puffs.forEach(p => {
+        const px = p.x + pad;
+        const py = p.y + pad;
+        const cr = p.r * 0.65;
+        ctx.moveTo(px + cr, py);
+        ctx.arc(px, py, cr, 0, Math.PI * 2);
+      });
+      ctx.fill();
+
+      try {
+        ctx.filter = 'none';
+      } catch (e) {}
 
       const tex = this.textures.addCanvas(key, canvas);
       tex.setFilter(Phaser.Textures.FilterMode.LINEAR);

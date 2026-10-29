@@ -84,48 +84,48 @@ export const SunbeamOverlay: React.FC = React.memo(() => {
   // Konfigurasi warna berkas sinar (Sinar Biru Rembulan Halus di Malam Hari vs Sinar Emas Transparan di Siang Hari)
   const beamColors = useMemo(() => {
     if (lighting.isNight) {
-      // Sinar Rembulan Biru Langit Malam Halus & Transparan (Ethereal Moonlight Beams)
+      // Sinar Rembulan Biru Langit Malam Halus & Sejuk (Ethereal Moonlight Beams)
       return {
-        coronaCenter: '#93c5fd', // Soft blue light
-        coronaMid: '#60a5fa',    // Sky blue
-        coronaOuter: '#3b82f6',  // Moonlight blue
-        beamStop0: '#bfdbfe',    // Pale blue glow
-        beamStop20: '#93c5fd',
-        beamStop50: '#60a5fa',
-        beamStop80: '#3b82f6',
-        beamStop100: '#1d4ed8',
-        beamOpacity: 0.18,       // Halus, transparan, menyatu dengan langit malam
+        coronaCenter: '#f0f9ff', // Soft silver-blue light
+        coronaMid: '#bae6fd',    // Sky blue
+        coronaOuter: '#60a5fa',  // Moonlight blue
+        beamStop0: '#e0f2fe',    // Pale blue glow
+        beamStop20: '#bae6fd',
+        beamStop50: '#7dd3fc',
+        beamStop80: '#38bdf8',
+        beamStop100: '#0284c7',
+        beamOpacity: 0.52,       // Terlihat nyata dan sejuk di malam hari
         mixMode: 'screen' as const,
       };
     }
 
     if (lighting.isSunset) {
-      // Sinar Senja Oranye Keemasan Lembut & Transparan (Sunset Soft Glow)
+      // Sinar Senja Oranye Keemasan Hangat (Sunset God Rays)
       return {
         coronaCenter: '#fff7ed',
         coronaMid: '#fed7aa',
-        coronaOuter: '#f97316',
+        coronaOuter: '#fb923c',
         beamStop0: '#fff7ed',
         beamStop20: '#fed7aa',
         beamStop50: '#fb923c',
         beamStop80: '#ea580c',
         beamStop100: '#c2410c',
-        beamOpacity: 0.22,       // Halus dan tidak menyilaukan
+        beamOpacity: 0.68,       // Terlihat nyata dan dramatis di langit senja
         mixMode: 'screen' as const,
       };
     }
 
-    // Sinar Mentari Siang Lembut, Halus & Transparan Alami (Natural Soft God Rays)
+    // Sinar Mentari Siang Emas Berpendar Indah (Cinematic Tropical Sunbeams)
     return {
       coronaCenter: '#ffffff',
-      coronaMid: '#fef9c3',
-      coronaOuter: '#fef08a',
+      coronaMid: '#fef08a',
+      coronaOuter: '#facc15',
       beamStop0: '#ffffff',
-      beamStop20: '#fef9c3',
+      beamStop20: '#fffbeb',
       beamStop50: '#fef08a',
       beamStop80: '#fde047',
       beamStop100: '#eab308',
-      beamOpacity: 0.20,         // Transparan lembut (tidak tebal/kasar)
+      beamOpacity: 0.64,         // Terlihat jelas, hangat, dan megah menyinari dunia
       mixMode: 'screen' as const,
     };
   }, [lighting.isNight, lighting.isSunset]);
@@ -175,7 +175,7 @@ export const SunbeamOverlay: React.FC = React.memo(() => {
       )}
 
       {/* ==================================================================== */}
-      {/* 2. BERKAS SINAR DIAGONAL DARI ATAS KIRI KE TENGAH                    */}
+      {/* 2. BERKAS SINAR DIAGONAL DARI ATAS KIRI KE TENGAH (GOD RAYS)         */}
       {/* Siang: Sinar Mentari Keemasan | Malam: Sinar Rembulan Perak Sejuk   */}
       {/* ==================================================================== */}
       <svg
@@ -190,51 +190,66 @@ export const SunbeamOverlay: React.FC = React.memo(() => {
         }}
       >
         <defs>
-          {/* Filter blur halus untuk melembutkan tepi berkas sinar agar terlihat alami seperti debu cahaya */}
-          <filter id="softRayBlur" x="-10%" y="-10%" width="120%" height="120%">
-            <feGaussianBlur stdDeviation="16" />
+          {/* Filter blur halus untuk melembutkan tepi berkas sinar agar terlihat alami */}
+          <filter id="softRayBlur" x="-20%" y="-20%" width="140%" height="140%">
+            <feGaussianBlur stdDeviation="22" />
           </filter>
 
-          {/* Gradien linear berkas sinar diagonal dari (0,0) menuju tengah layar */}
-          <linearGradient id="godRayGradient" x1="0%" y1="0%" x2="72%" y2="72%">
-            <stop offset="0%" stopColor={beamColors.beamStop0} stopOpacity="0.25" />
-            <stop offset="25%" stopColor={beamColors.beamStop20} stopOpacity="0.14" />
-            <stop offset="55%" stopColor={beamColors.beamStop50} stopOpacity="0.06" />
-            <stop offset="80%" stopColor={beamColors.beamStop80} stopOpacity="0.015" />
+          {/* Gradien linear berkas sinar diagonal dari (0,0) menuju tengah layar (Vibrant Visibility) */}
+          <linearGradient id="godRayGradient" x1="0%" y1="0%" x2="75%" y2="75%">
+            <stop offset="0%" stopColor={beamColors.beamStop0} stopOpacity="0.82" />
+            <stop offset="20%" stopColor={beamColors.beamStop20} stopOpacity="0.65" />
+            <stop offset="45%" stopColor={beamColors.beamStop50} stopOpacity="0.45" />
+            <stop offset="70%" stopColor={beamColors.beamStop80} stopOpacity="0.22" />
+            <stop offset="90%" stopColor={beamColors.beamStop100} stopOpacity="0.06" />
             <stop offset="100%" stopColor={beamColors.beamStop100} stopOpacity="0" />
           </linearGradient>
 
-          {/* Pendaran sumber cahaya (Corona Flare) di sudut kiri atas */}
-          <radialGradient id="celestialCorona" cx="0%" cy="0%" r="42%">
-            <stop offset="0%" stopColor={beamColors.coronaCenter} stopOpacity={lighting.isNight ? "0.26" : "0.32"} />
-            <stop offset="30%" stopColor={beamColors.coronaMid} stopOpacity={lighting.isNight ? "0.12" : "0.15"} />
-            <stop offset="65%" stopColor={beamColors.coronaOuter} stopOpacity={lighting.isNight ? "0.03" : "0.04"} />
+          {/* Gradien khusus sorotan utama di tengah layar (Hero Center Shaft) */}
+          <linearGradient id="heroRayGradient" x1="0%" y1="0%" x2="80%" y2="80%">
+            <stop offset="0%" stopColor={beamColors.beamStop0} stopOpacity="0.95" />
+            <stop offset="20%" stopColor={beamColors.beamStop20} stopOpacity="0.80" />
+            <stop offset="45%" stopColor={beamColors.beamStop50} stopOpacity="0.55" />
+            <stop offset="70%" stopColor={beamColors.beamStop80} stopOpacity="0.28" />
+            <stop offset="90%" stopColor={beamColors.beamStop100} stopOpacity="0.08" />
+            <stop offset="100%" stopColor={beamColors.beamStop100} stopOpacity="0" />
+          </linearGradient>
+
+          {/* Pendaran sumber cahaya mentari / rembulan (Corona Flare) di sudut kiri atas */}
+          <radialGradient id="celestialCorona" cx="0%" cy="0%" r="48%">
+            <stop offset="0%" stopColor={beamColors.coronaCenter} stopOpacity={lighting.isNight ? "0.62" : "0.78"} />
+            <stop offset="25%" stopColor={beamColors.coronaMid} stopOpacity={lighting.isNight ? "0.36" : "0.48"} />
+            <stop offset="55%" stopColor={beamColors.coronaOuter} stopOpacity={lighting.isNight ? "0.14" : "0.20"} />
+            <stop offset="85%" stopColor={beamColors.coronaOuter} stopOpacity="0.04" />
             <stop offset="100%" stopColor={beamColors.coronaOuter} stopOpacity="0" />
           </radialGradient>
         </defs>
 
         {/* Sumber Pendaran Cahaya di Sudut Kiri Atas */}
-        <circle cx="0" cy="0" r="420" fill="url(#celestialCorona)" />
+        <circle cx="0" cy="0" r="500" fill="url(#celestialCorona)" />
 
         {/* Gugusan Berkas Sinar Menyorot Diagonal dengan Filter Blur Alami */}
         <g filter="url(#softRayBlur)">
-          {/* Sinar 1: Atas-Tengah */}
-          <polygon points="0,0 480,1080 760,1080" fill="url(#godRayGradient)" opacity={beamColors.beamOpacity * 0.8} />
+          {/* Sinar 1: Atas-Kiri */}
+          <polygon points="0,0 360,1080 620,1080" fill="url(#godRayGradient)" opacity={beamColors.beamOpacity * 0.75} />
 
-          {/* Sinar 2: Tengah Utama (Melintasi Pusat Layar) */}
-          <polygon points="0,0 820,1080 1240,1080" fill="url(#godRayGradient)" opacity={beamColors.beamOpacity * 1.0} />
+          {/* Sinar 2: Tengah Utama (Melintasi Pusat Layar dengan Gradien Utama) */}
+          <polygon points="0,0 720,1080 1180,1080" fill="url(#heroRayGradient)" opacity={beamColors.beamOpacity * 1.0} />
 
-          {/* Sinar 3: Tengah Lebar Lembut */}
-          <polygon points="0,0 1280,1080 1660,1080" fill="url(#godRayGradient)" opacity={beamColors.beamOpacity * 0.85} />
+          {/* Sinar 3: Tengah Kanan */}
+          <polygon points="0,0 1240,1080 1560,1080" fill="url(#godRayGradient)" opacity={beamColors.beamOpacity * 0.85} />
 
           {/* Sinar 4: Diagonal Bawah Kanan */}
-          <polygon points="0,0 1920,620 1920,960" fill="url(#godRayGradient)" opacity={beamColors.beamOpacity * 0.8} />
+          <polygon points="0,0 1620,1080 1920,950" fill="url(#godRayGradient)" opacity={beamColors.beamOpacity * 0.75} />
 
           {/* Sinar 5: Sisi Kanan Tengah */}
-          <polygon points="0,0 1920,280 1920,560" fill="url(#godRayGradient)" opacity={beamColors.beamOpacity * 0.65} />
+          <polygon points="0,0 1920,540 1920,840" fill="url(#godRayGradient)" opacity={beamColors.beamOpacity * 0.70} />
 
-          {/* Sinar 6: Kerucut Sorot Latar Halus */}
-          <polygon points="0,0 600,1080 1800,1080 1920,800 1920,200" fill="url(#godRayGradient)" opacity={beamColors.beamOpacity * 0.3} />
+          {/* Sinar 6: Sisi Kanan Atas */}
+          <polygon points="0,0 1920,200 1920,480" fill="url(#godRayGradient)" opacity={beamColors.beamOpacity * 0.60} />
+
+          {/* Sinar 7: Kerucut Sorot Latar Halus Penyatu Suasana */}
+          <polygon points="0,0 500,1080 1920,1080 1920,200" fill="url(#godRayGradient)" opacity={beamColors.beamOpacity * 0.35} />
         </g>
       </svg>
     </div>

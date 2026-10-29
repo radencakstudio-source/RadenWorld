@@ -780,7 +780,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
                       required
                       value={forgotBirthDate}
                       onChange={(e) => setForgotBirthDate(e.target.value)}
-                      max={todayDateString}
+                      max={todayDate}
                       className="w-full px-3.5 py-2.5 bg-black border border-neutral-800 rounded-md text-xs text-white focus:outline-none focus:border-amber-400 font-mono transition-colors"
                     />
                   </div>

@@ -630,8 +630,8 @@ export class WorldTerrain {
         .setScale(scaleX, scaleY)
         .setAngle(angle)
         .setFlip(flipX, flipY)
-        .setTint(0x334155)
-        .setAlpha(0.26)
+        .setAlpha(0.24)
+        .setBlendMode(Phaser.BlendModes.MULTIPLY)
         .setDepth(99999); // Di atas karakter & bangunan (Single WebGL Batch)
 
       clouds.push({

@@ -62,7 +62,7 @@ export const FishingMinigame: React.FC<FishingMinigameProps> = ({
 
   // Dimensi Track Minigame dinamis agar pas 100% di semua HP (baik landscape maupun portrait)
   const TRACK_HEIGHT = isLandscape ? 140 : isShortScreen ? 180 : 220;
-  const BAR_HEIGHT = Math.round(TRACK_HEIGHT * (fishData.rarity === 'Legendary' ? 0.32 : fishData.rarity === 'Rare' ? 0.38 : 0.44));
+  const BAR_HEIGHT = Math.round(TRACK_HEIGHT * (fishData.rarity === 'Legendary' ? 0.36 : fishData.rarity === 'Rare' ? 0.42 : 0.48));
   const FISH_SIZE = 24;
 
   // Status Fisika Bar Hijau (0 = bawah, TRACK_HEIGHT - BAR_HEIGHT = atas)
@@ -77,8 +77,8 @@ export const FishingMinigame: React.FC<FishingMinigameProps> = ({
   const fishNextMoveTimeRef = useRef<number>(0);
 
   // Meteran Tangkapan (0.0 s/d 100.0)
-  const progressRef = useRef<number>(38); // Modal awal 38%
-  const [displayProgress, setDisplayProgress] = useState<number>(38);
+  const progressRef = useRef<number>(40); // Modal awal nyaman 40%
+  const [displayProgress, setDisplayProgress] = useState<number>(40);
   const [displayBarY, setDisplayBarY] = useState<number>(20);
   const [displayFishY, setDisplayFishY] = useState<number>(40);
   const [isFishInside, setIsFishInside] = useState<boolean>(false);
@@ -88,7 +88,7 @@ export const FishingMinigame: React.FC<FishingMinigameProps> = ({
   const animFrameRef = useRef<number | null>(null);
   const lastTimeRef = useRef<number>(performance.now());
 
-  // Input Mouse / Keyboard / Touch (Responsif dengan Instant Upward Impulse)
+  // Input Mouse / Keyboard / Touch (Dorongan Angkat Halus & Terkontrol)
   const handlePressStart = useCallback((e?: React.SyntheticEvent) => {
     if (e) {
       e.preventDefault();
@@ -96,8 +96,8 @@ export const FishingMinigame: React.FC<FishingMinigameProps> = ({
     }
     if (!isPressingRef.current) {
       sound.playClick();
-      // Dorongan ke atas instan agar saat tombol diketuk/ditekan, kotak hijau langsung melompat naik lincah
-      barVelocityRef.current = Math.max(barVelocityRef.current + 200, 260);
+      // Dorongan ke atas lembut dan nyaman saat diketuk (tidak melesat kencang)
+      barVelocityRef.current = Math.max(barVelocityRef.current + 65, 95);
     }
     isPressingRef.current = true;
     setIsReeling(true);
@@ -119,7 +119,7 @@ export const FishingMinigame: React.FC<FishingMinigameProps> = ({
         e.preventDefault();
         if (!isPressingRef.current) {
           sound.playClick();
-          barVelocityRef.current = Math.max(barVelocityRef.current + 200, 260);
+          barVelocityRef.current = Math.max(barVelocityRef.current + 65, 95);
         }
         isPressingRef.current = true;
         setIsReeling(true);
@@ -164,12 +164,12 @@ export const FishingMinigame: React.FC<FishingMinigameProps> = ({
     lastTimeRef.current = performance.now();
     let isGameOver = false;
 
-    // Parameter kesulitan berdasarkan rarity
+    // Parameter kesulitan berdasarkan rarity (Kecepatan tenang & ritmis, tidak lagi liar)
     const rarity = fishData.rarity;
-    const fishSpeed = rarity === 'Legendary' ? 1.65 : rarity === 'Rare' ? 1.25 : rarity === 'Uncommon' ? 0.95 : 0.75;
-    const fishChangeInterval = rarity === 'Legendary' ? 1200 : rarity === 'Rare' ? 1600 : 2100;
-    const progressGainRate = 22; // +22% per detik saat di dalam kotak
-    const progressDrainRate = rarity === 'Legendary' ? 10 : 8; // -8% s/d -10% per detik saat di luar kotak
+    const fishSpeed = rarity === 'Legendary' ? 1.05 : rarity === 'Rare' ? 0.80 : rarity === 'Uncommon' ? 0.60 : 0.45;
+    const fishChangeInterval = rarity === 'Legendary' ? 1800 : rarity === 'Rare' ? 2400 : 3000;
+    const progressGainRate = 24; // +24% per detik saat di dalam kotak
+    const progressDrainRate = rarity === 'Legendary' ? 9 : 7; // -7% s/d -9% per detik saat di luar kotak
 
     const gameLoop = (currentTime: number) => {
       if (isGameOver) return;
@@ -178,9 +178,9 @@ export const FishingMinigame: React.FC<FishingMinigameProps> = ({
       lastTimeRef.current = currentTime;
       const dt = deltaMs / 1000;
 
-      // 1. FISIKA KOTAK HIJAU (Lincah & Empuk Bergaya Stardew Valley)
-      const gravity = -420;
-      const lift = 960;
+      // 1. FISIKA KOTAK HIJAU (Halus, Stabil, & Nyaman Dikontrol)
+      const gravity = -250; // Kecepatan turun yang tenang & wajar (sebelumnya -420, terlalu curam)
+      const lift = 520;    // Kecepatan angkat joran stabil (sebelumnya 960, melesat ke atas)
 
       if (isPressingRef.current) {
         barVelocityRef.current += lift * dt;
@@ -188,17 +188,17 @@ export const FishingMinigame: React.FC<FishingMinigameProps> = ({
         barVelocityRef.current += gravity * dt;
       }
 
-      // Redaman halus agar momentum tetap empuk dan tidak berat
-      barVelocityRef.current *= Math.pow(0.96, dt * 60);
-      barVelocityRef.current = Math.max(-420, Math.min(420, barVelocityRef.current));
+      // Redaman halus agar momentum tetap empuk dan tidak liar
+      barVelocityRef.current *= Math.pow(0.93, dt * 60);
+      barVelocityRef.current = Math.max(-230, Math.min(250, barVelocityRef.current));
 
       barYRef.current += barVelocityRef.current * dt;
 
       // Batas Bawah & Pantulan Ringan
       if (barYRef.current <= 0) {
         barYRef.current = 0;
-        if (barVelocityRef.current < -50) {
-          barVelocityRef.current = -barVelocityRef.current * 0.25;
+        if (barVelocityRef.current < -40) {
+          barVelocityRef.current = -barVelocityRef.current * 0.18;
         } else {
           barVelocityRef.current = 0;
         }
@@ -208,23 +208,19 @@ export const FishingMinigame: React.FC<FishingMinigameProps> = ({
       const maxBarY = TRACK_HEIGHT - BAR_HEIGHT;
       if (barYRef.current >= maxBarY) {
         barYRef.current = maxBarY;
-        if (barVelocityRef.current > 50) {
-          barVelocityRef.current = -barVelocityRef.current * 0.15;
-        } else {
-          barVelocityRef.current = 0;
-        }
+        barVelocityRef.current = 0;
       }
 
-      // 2. AI PERILAKU IKAN (BERENANG NAIK-TURUN HALUS & STABIL)
+      // 2. AI PERILAKU IKAN (BERENANG TENANG, REALISTIS, & BERIRAMA)
       if (currentTime > fishNextMoveTimeRef.current) {
-        fishNextMoveTimeRef.current = currentTime + fishChangeInterval + Math.random() * 500;
+        fishNextMoveTimeRef.current = currentTime + fishChangeInterval + Math.random() * 800;
         const maxFishY = TRACK_HEIGHT - FISH_SIZE;
         fishTargetYRef.current = Math.random() * maxFishY;
       }
 
-      // Gerakkan ikan ke target dengan interpolasi halus berirama
+      // Gerakkan ikan ke target dengan luncuran renang halus alami
       const dy = fishTargetYRef.current - fishYRef.current;
-      fishYRef.current += dy * Math.min(1.0, fishSpeed * dt * 1.5);
+      fishYRef.current += dy * Math.min(1.0, fishSpeed * dt * 2.2);
 
       // 3. DETEKSI APAKAH IKAN BERADA DI DALAM KOTAK HIJAU
       const fishCenter = fishYRef.current + FISH_SIZE / 2;

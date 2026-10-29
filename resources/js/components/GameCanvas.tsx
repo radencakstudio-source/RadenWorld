@@ -21,19 +21,55 @@ export const GameCanvas: React.FC = React.memo(() => {
         const targetSceneKey = data.scene;
         const sceneManager = gameRef.current.scene;
         const targetScene = sceneManager.getScene(targetSceneKey);
-        if (targetScene) {
-          // Hentikan SEMUA scene yang sedang berjalan (termasuk jika targetScene sedang aktif)
-          // agar scene di-restart secara bersih dan EventBus 'scene-ready' selalu terpancar
+        if (!targetScene) {
+          console.warn(`[GameCanvas] Target scene '${targetSceneKey}' tidak ditemukan.`);
+          return;
+        }
+
+        // Jika scene target SUDAH aktif berjalan (misal WorldScene sudah running di background Lobby),
+        // JANGAN panggil s.scene.stop() pada dirinya sendiri karena di Phaser 3 calling stop() dan start()
+        // bersamaan menyebabkan scene shutdown permanen (blank/black screen).
+        if (targetScene.scene.isActive()) {
           const activeScenes = sceneManager.getScenes(true);
           activeScenes.forEach((s) => {
-            try {
-              s.scene.stop();
-            } catch (e) {}
+            if (s.scene.key !== targetSceneKey) {
+              try {
+                s.scene.stop();
+              } catch (e) {}
+            }
           });
-          sceneManager.start(targetSceneKey, data);
-        } else {
-          console.warn(`[GameCanvas] Target scene '${targetSceneKey}' tidak ditemukan.`);
+
+          // Perbarui data user dan posisi pemain jika ada
+          try {
+            if (typeof (targetScene as any).init === 'function') {
+              (targetScene as any).init(data);
+            }
+            if ((targetScene as any).player && (targetScene as any).player.active) {
+              if (data.name) (targetScene as any).player.setEntityName(data.name);
+              if (data.avatar) (targetScene as any).player.setAvatar(data.avatar);
+              if (data.spawnPos) {
+                (targetScene as any).player.setPosition(data.spawnPos.x, data.spawnPos.y);
+                (targetScene as any).cameras?.main?.centerOn(data.spawnPos.x, data.spawnPos.y);
+              }
+            } else if (typeof (targetScene as any).spawnLocalPlayer === 'function') {
+              (targetScene as any).spawnLocalPlayer(data.name || 'Petualang', data.avatar, !!data.spawnNearHouse);
+            }
+            EventBus.emit('scene-ready', targetSceneKey);
+          } catch (e) {
+            console.warn('[GameCanvas] Error updating active scene state:', e);
+            targetScene.scene.restart(data);
+          }
+          return;
         }
+
+        // Jika scene target belum aktif (misal transisi normal antar scene berbeda):
+        const activeScenes = sceneManager.getScenes(true);
+        activeScenes.forEach((s) => {
+          try {
+            s.scene.stop();
+          } catch (e) {}
+        });
+        sceneManager.start(targetSceneKey, data);
       } catch (err) {
         console.error('[GameCanvas] Error switching scene:', err);
       }

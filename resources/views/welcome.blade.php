@@ -32,6 +32,9 @@
     @viteReactRefresh
     @vite(['resources/css/app.css', 'resources/js/app.tsx'])
 
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+
     <!-- Zero-CLS Global Layout Styling & Anti-Shift Containers -->
     <style>
         html, body {
@@ -65,6 +68,17 @@
             }
             e.preventDefault();
         }, { passive: false });
+
+        // Registrasi Service Worker untuk Cache-First Aset Game (Mengurangi request Wasmer hingga 95%+)
+        if ('serviceWorker' in navigator && (window.location.protocol === 'https:' || window.location.hostname === 'localhost')) {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register('/sw.js').then(function(reg) {
+                    console.log('[RadenWorld] PWA Cache Aktif:', reg.scope);
+                }).catch(function(err) {
+                    console.warn('[RadenWorld] Service Worker gagal didaftarkan:', err);
+                });
+            });
+        }
     </script>
 </head>
 <body class="bg-black text-neutral-100 antialiased overflow-hidden select-none">

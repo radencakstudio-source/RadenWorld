@@ -20,6 +20,18 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Auto-ensure sqlite file exists so it never throws 'Database file does not exist'
+        if (config('database.default') === 'sqlite') {
+            $dbPath = config('database.connections.sqlite.database');
+            if ($dbPath && !file_exists($dbPath) && !str_starts_with($dbPath, ':memory:')) {
+                $dir = dirname($dbPath);
+                if (!is_dir($dir)) {
+                    @mkdir($dir, 0755, true);
+                }
+                @touch($dbPath);
+            }
+        }
+
         $host = (string)request()->getHost();
         $isForwardedHttps = request()->header('x-forwarded-proto') === 'https';
         $isTunnel = str_contains($host, 'ngrok') ||

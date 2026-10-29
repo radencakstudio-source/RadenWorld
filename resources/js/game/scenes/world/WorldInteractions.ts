@@ -98,8 +98,8 @@ export class WorldInteractions {
     if (gx <= 18 && gy >= 14 && gy <= 63) return 'BOULEVARD LAYANAN PUBLIK & PERKANTORAN';
 
     // 5. Alun-Alun Pusat Kota (gx: 22..57, gy: 22..58)
-    if (gx >= 24 && gx <= 33 && gy >= 51 && gy <= 55) return 'ALUN-ALUN: LAPANGAN SEPAK BOLA';
-    if (gx >= 46 && gx <= 55 && gy >= 51 && gy <= 55) return 'ALUN-ALUN: LAPANGAN BASKET';
+    if (gx >= 24 && gx <= 33 && gy >= 53 && gy <= 57) return 'ALUN-ALUN: LAPANGAN SEPAK BOLA';
+    if (gx >= 46 && gx <= 55 && gy >= 53 && gy <= 57) return 'ALUN-ALUN: LAPANGAN BASKET';
     if (gx >= 22 && gx <= 57 && gy >= 22 && gy <= 58) return 'Alun Alun';
     if (gx >= 22 && gx <= 57 && gy >= 16 && gy <= 61) return 'Alun Alun';
 
@@ -180,11 +180,13 @@ export class WorldInteractions {
       prompt = 'TEKAN [E] / KLIK UNTUK KONSULTASI MAKELAR PROPERTI 🏠';
       locationName = 'KAWASAN PROPERTI: KANTOR MAKELAR';
     } else if (
-      Phaser.Math.Distance.Between(px, py, 30 * tileSize, 48 * tileSize) < 240 ||
-      Phaser.Math.Distance.Between(px, py, 50 * tileSize, 48 * tileSize) < 240
+      ((Math.floor(px / tileSize) >= 21 && Math.floor(px / tileSize) <= 32) ||
+       (Math.floor(px / tileSize) >= 44 && Math.floor(px / tileSize) <= 55)) &&
+      Math.floor(py / tileSize) >= 39 &&
+      Math.floor(py / tileSize) <= 51
     ) {
-      prompt = 'TEKAN [E] / KLIK UNTUK MEMBUKA PAPAN INFORMASI (world/popup)';
-      locationName = 'ALUN-ALUN PUSAT: PAPAN POPUP INFORMASI';
+      prompt = 'TEKAN [E] / KLIK UNTUK MEMBUKA PAPAN INFORMASI (world/popup) 📢';
+      locationName = 'ALUN-ALUN: PAPAN POPUP 10x10';
     } else {
       for (const npc of npcs) {
         const dist = Phaser.Math.Distance.Between(px, py, npc.x, npc.y);
@@ -197,9 +199,9 @@ export class WorldInteractions {
       if (!prompt) {
         const gx = Math.floor(px / tileSize);
         const gy = Math.floor(py / tileSize);
-        if (gx >= 23 && gx <= 34 && gy >= 50 && gy <= 56) {
+        if (gx >= 23 && gx <= 34 && gy >= 52 && gy <= 58) {
           prompt = 'TEKAN [E] / SENTUH UNTUK MAIN MINI GAME SEPAKBOLA ⚽';
-        } else if (gx >= 45 && gx <= 56 && gy >= 50 && gy <= 56) {
+        } else if (gx >= 45 && gx <= 56 && gy >= 52 && gy <= 58) {
           prompt = 'TEKAN [E] / SENTUH UNTUK MAIN MINI GAME BASKETBALL 🏀';
         } else {
           const isPierOrWaterfront = (

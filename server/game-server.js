@@ -47,13 +47,13 @@ const httpServer = createServer((req, res) => {
     return res.end('Server RPG Aktif 24 Jam!');
   }
 
-  if (reqUrlPath === '/' || reqUrlPath === '') {
-    res.writeHead(200, {
-      'Content-Type': 'text/plain; charset=utf-8',
-      'Access-Control-Allow-Origin': '*',
-    });
-    return res.end('RadenWorld Multiplayer Game Server Online & Siap Digunakan!');
-  }
+  const proxyHeaders = {
+    ...req.headers,
+    host: `127.0.0.1:${LARAVEL_PORT}`,
+    connection: 'close',
+    'x-forwarded-host': req.headers.host || '',
+    'x-forwarded-proto': req.headers['x-forwarded-proto'] || 'http',
+  };
 
   const proxyReq = httpRequest(
     {
@@ -61,12 +61,7 @@ const httpServer = createServer((req, res) => {
       port: LARAVEL_PORT,
       path: req.url,
       method: req.method,
-      headers: {
-        ...req.headers,
-        host: req.headers.host || `127.0.0.1:${LARAVEL_PORT}`,
-        'x-forwarded-host': req.headers.host,
-        'x-forwarded-proto': req.headers['x-forwarded-proto'] || 'http',
-      },
+      headers: proxyHeaders,
     },
     (proxyRes) => {
       res.writeHead(proxyRes.statusCode, proxyRes.headers);
@@ -74,12 +69,17 @@ const httpServer = createServer((req, res) => {
     }
   );
 
-  proxyReq.on('error', () => {
+  proxyReq.on('error', (err) => {
+    console.error('[Proxy Error]:', err.message);
     res.writeHead(502, { 'Content-Type': 'text/plain' });
     res.end('Bad Gateway: Laravel is not responding on port 8000');
   });
 
-  req.pipe(proxyReq, { end: true });
+  if (req.method === 'GET' || req.method === 'HEAD') {
+    proxyReq.end();
+  } else {
+    req.pipe(proxyReq, { end: true });
+  }
 });
 
 const io = new Server(httpServer, {

@@ -55,36 +55,57 @@ class SecurityWalletController extends Controller
      */
     public function getWallet(Request $request)
     {
-        $user = $this->resolveUser($request);
+        try {
+            $user = $this->resolveUser($request);
 
-        if (!$user) {
+            if (!$user) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Sesi akun tidak ditemukan. Silakan login terlebih dahulu.',
+                    'gold' => 1000,
+                    'diamonds' => 50,
+                ], 401);
+            }
+
+            $isSuper = $user->isSuperAdmin();
+            $gold = $isSuper ? 99999999999 : (int) ($user->gold ?? 1000);
+            $diamonds = $isSuper ? 99999999999 : (int) ($user->diamonds ?? 50);
+
+            $walletData = [
+                'gold' => $gold,
+                'diamonds' => $diamonds,
+                'email_verified' => !empty($user->email_verified_at),
+                'email_verified_at' => $user->email_verified_at ? $user->email_verified_at->toIso8601String() : null,
+                'email' => $user->email,
+                'google_linked' => !empty($user->google_email) || $user->provider === 'google',
+                'google_email' => $user->google_email ?: ($user->provider === 'google' ? $user->email : null),
+                'facebook_linked' => !empty($user->facebook_email) || $user->provider === 'facebook',
+                'facebook_email' => $user->facebook_email ?: ($user->provider === 'facebook' ? $user->email : null),
+                'is_super_admin' => $isSuper,
+            ];
+
+            return response()->json(array_merge([
+                'status' => 'success',
+                'wallet' => $walletData,
+                'anti_cheat' => [
+                    'status' => 'ACTIVE',
+                    'engine' => 'RadenShield Anti-Cheat Core v2.4',
+                    'server_authoritative' => true,
+                    'integrity' => 'SECURED',
+                ],
+            ], $walletData));
+        } catch (\Throwable $e) {
             return response()->json([
-                'status' => 'error',
-                'message' => 'Sesi akun tidak ditemukan. Silakan login terlebih dahulu.',
-            ], 401);
+                'status' => 'fallback',
+                'message' => 'Koneksi database dalam mode transisi: ' . $e->getMessage(),
+                'gold' => 1000,
+                'diamonds' => 50,
+                'wallet' => [
+                    'gold' => 1000,
+                    'diamonds' => 50,
+                ],
+            ], 200);
         }
-
-        $isSuper = $user->isSuperAdmin();
-
-        return response()->json([
-            'status' => 'success',
-            'gold' => $isSuper ? 99999999999 : (int) ($user->gold ?? 1000),
-            'diamonds' => $isSuper ? 99999999999 : (int) ($user->diamonds ?? 50),
-            'email_verified' => !empty($user->email_verified_at),
-            'email_verified_at' => $user->email_verified_at ? $user->email_verified_at->toIso8601String() : null,
-            'email' => $user->email,
-            'google_linked' => !empty($user->google_email) || $user->provider === 'google',
-            'google_email' => $user->google_email ?: ($user->provider === 'google' ? $user->email : null),
-            'facebook_linked' => !empty($user->facebook_email) || $user->provider === 'facebook',
-            'facebook_email' => $user->facebook_email ?: ($user->provider === 'facebook' ? $user->email : null),
-            'is_super_admin' => $isSuper,
-            'anti_cheat' => [
-                'status' => 'ACTIVE',
-                'engine' => 'RadenShield Anti-Cheat Core v2.4',
-                'server_authoritative' => true,
-                'integrity' => 'SECURED',
-            ],
-        ]);
     }
 
     /**

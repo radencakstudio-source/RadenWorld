@@ -21,12 +21,12 @@ export const AvatarPreview: React.FC<AvatarPreviewProps> = ({ avatar, size = 120
 
   const isFemale = avatar?.gender === 'female';
   const primaryAvatarSrc = isFemale
-    ? '/assets/sprites/characters/Player/Female/FemaleAvatar.png'
-    : '/assets/sprites/characters/Player/Male/MaleAvatar.png';
+    ? '/assets/sprites/characters/Player/Female/FemaleAvatar.webp'
+    : '/assets/sprites/characters/Player/Male/MaleAvatar.webp';
 
   const fallbackIdleSrc = isFemale
-    ? '/assets/sprites/characters/Player/Female/Idle/Front/Front%20Female.png'
-    : '/assets/sprites/characters/Player/Male/Idle/Front/Front%20Male.png';
+    ? '/assets/sprites/characters/Player/Female/Idle/Front/Front%20Female.webp'
+    : '/assets/sprites/characters/Player/Male/Idle/Front/Front%20Male.webp';
 
   return (
     <div

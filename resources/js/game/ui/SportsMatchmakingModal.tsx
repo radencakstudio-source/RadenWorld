@@ -80,24 +80,16 @@ export const SportsMatchmakingModal: React.FC<SportsMatchmakingModalProps> = ({
         setSearchSeconds((prev) => prev + 1);
       }, 1000);
 
-      // Polling Status Antrean
+      // Polling Status Antrean Real-time
       pollRef.current = setInterval(() => {
         if (!hasMatchedRef.current) {
           checkQueueStatus();
         }
       }, 1500);
 
-      // Fallback: Jika setelah 3.5 detik belum ada manusia lain, cari rival dari server lain
-      const rivalTimeout = setTimeout(() => {
-        if (!hasMatchedRef.current) {
-          findRivalOpponent();
-        }
-      }, 3500);
-
       return () => {
         clearInterval(timerRef.current);
         clearInterval(pollRef.current);
-        clearTimeout(rivalTimeout);
         if (countdownRef.current) clearInterval(countdownRef.current);
         EventBus.emit('dialogue-active', false);
       };
@@ -338,9 +330,13 @@ export const SportsMatchmakingModal: React.FC<SportsMatchmakingModalProps> = ({
                     <div className="absolute inset-0 rounded-full border border-amber-400/30 animate-ping" />
                     <RefreshCw className="w-6 h-6 text-amber-400 animate-spin" />
                   </div>
-                  <div className="text-xs font-bold text-neutral-300">Mencari Lawan...</div>
-                  <p className="text-[10px] text-neutral-500 max-w-[200px]">
-                    Memindai petualang yang siap duel dari server Garuda & Nusantara
+                  <div className="text-xs font-bold text-neutral-200">
+                    {searchSeconds > 15 ? 'Menunggu Pemain Lain...' : 'Mencari Lawan Online...'}
+                  </div>
+                  <p className="text-[10px] text-neutral-400 max-w-[220px] leading-relaxed">
+                    {searchSeconds > 15
+                      ? 'Belum ada petualang lain di antrean server saat ini. Tetap menunggu atau batalkan untuk main 2P Lokal.'
+                      : 'Memindai petualang aktif yang siap tanding PvP 1v1 di server database RadenWorld.'}
                   </p>
                 </div>
               ) : (

@@ -107,7 +107,7 @@ export const SportsMiniGameModal: React.FC<SportsMiniGameModalProps> = ({
   if (!isOpen) return null;
 
   const isSoccer = selectedSport === 'soccer';
-  const sportTitle = isSoccer ? 'HEAD SOCCER' : 'HEAD BASKETBALL';
+  const sportTitle = isSoccer ? 'SOCCER' : 'BASKETBALL';
   const sportSub = isSoccer
     ? 'Stadion Mini Alun-Alun • Arcade 1v1'
     : 'Streetball Court Alun-Alun • Arcade 1v1';
@@ -121,19 +121,19 @@ export const SportsMiniGameModal: React.FC<SportsMiniGameModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/85 backdrop-blur-sm select-none animate-in fade-in duration-200 font-['Chakra_Petch']">
-      <div className="relative w-full max-w-2xl bg-black border border-neutral-800 rounded-xl flex flex-col overflow-hidden max-h-[94dvh] shadow-2xl">
+      <div className="relative w-full max-w-3xl bg-black border border-neutral-800 rounded-2xl flex flex-col overflow-hidden max-h-[94dvh] shadow-2xl">
         
         {/* ==================================================================== */}
         {/* 1. HEADER MODAL: Simpel & Elegan Khas RadenWorld                     */}
         {/* ==================================================================== */}
         <div className="flex items-center justify-between px-4 sm:px-6 py-2.5 sm:py-3.5 border-b border-neutral-800 bg-[#0a0a0a] shrink-0">
           <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
-            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-md bg-neutral-900 border border-neutral-800 flex items-center justify-center text-lg sm:text-xl shrink-0">
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-neutral-900 border border-neutral-800 flex items-center justify-center text-lg sm:text-xl shrink-0 shadow-inner">
               {sportEmoji}
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <h2 className="text-sm sm:text-base font-bold text-amber-400 tracking-wider uppercase truncate">
+                <h2 className="text-sm sm:text-base font-black text-amber-400 tracking-wider uppercase truncate">
                   {sportTitle}
                 </h2>
                 <span className="text-[9px] sm:text-[10px] font-mono font-bold bg-amber-500 text-black px-1.5 py-0.5 rounded shrink-0">
@@ -146,7 +146,43 @@ export const SportsMiniGameModal: React.FC<SportsMiniGameModalProps> = ({
             </div>
           </div>
 
-          <div className="flex items-center gap-1.5 shrink-0 ml-2">
+          <div className="flex items-center gap-2 shrink-0 ml-2">
+            {/* Quick Sport Toggle Pill */}
+            <div className="hidden sm:flex items-center p-0.5 rounded-lg bg-neutral-950 border border-neutral-800 text-xs font-bold">
+              <button
+                type="button"
+                onClick={() => {
+                  sound.playClick();
+                  setSelectedSport('soccer');
+                  setLeaderboardCategory('soccer');
+                }}
+                className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                  isSoccer
+                    ? 'bg-amber-500 text-black shadow-md font-black'
+                    : 'text-neutral-400 hover:text-white'
+                }`}
+              >
+                <span>⚽</span>
+                <span>SOCCER</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  sound.playClick();
+                  setSelectedSport('basketball');
+                  setLeaderboardCategory('basketball');
+                }}
+                className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                  !isSoccer
+                    ? 'bg-amber-500 text-black shadow-md font-black'
+                    : 'text-neutral-400 hover:text-white'
+                }`}
+              >
+                <span>🏀</span>
+                <span>BASKETBALL</span>
+              </button>
+            </div>
+
             <button
               type="button"
               onClick={() => {
@@ -200,7 +236,7 @@ export const SportsMiniGameModal: React.FC<SportsMiniGameModalProps> = ({
             }`}
           >
             <Trophy className="w-3.5 h-3.5" />
-            <span>LEADERBOARD NYATA</span>
+            <span>LEADERBOARD</span>
           </button>
 
           <button
@@ -222,11 +258,11 @@ export const SportsMiniGameModal: React.FC<SportsMiniGameModalProps> = ({
         {/* ==================================================================== */}
         <div className="p-3 sm:p-5 overflow-y-auto space-y-3 sm:space-y-4 custom-scrollbar flex-1 min-h-0">
           
-          {/* TAB 1: PILIHAN 3 MODE PERTANDINGAN */}
+          {/* TAB 1: PILIHAN MODE PERTANDINGAN (4 MODE LENGKAP & ELEGAN) */}
           {activeTab === 'modes' && (
             <>
               {/* Reward Banner Sederhana */}
-              <div className="flex items-center justify-between p-2.5 sm:p-3 bg-[#0e0e0e] border border-neutral-800 rounded-md text-xs">
+              <div className="flex items-center justify-between p-2.5 sm:p-3 bg-gradient-to-r from-neutral-950 via-[#0e0e0e] to-neutral-950 border border-neutral-800 rounded-xl text-xs shadow-sm">
                 <div className="flex items-center gap-2 flex-wrap text-neutral-300">
                   <span className="text-neutral-400 font-bold">Hadiah Kemenangan:</span>
                   <span className="text-amber-400 font-mono font-bold">+100 Koin</span>
@@ -237,152 +273,216 @@ export const SportsMiniGameModal: React.FC<SportsMiniGameModalProps> = ({
                   <span className="text-neutral-500">•</span>
                   <span className="text-amber-400 font-bold">Khusus Duel PvP: +1 Stik Menang 🏒 & Streak 🔥</span>
                 </div>
-                <span className="text-[10px] text-neutral-500 hidden sm:inline">Tersimpan ke Akun</span>
+                <span className="text-[10px] text-neutral-500 hidden sm:inline font-mono">Tersimpan ke Akun</span>
               </div>
 
-              {/* 3 OPSI MODE PERTANDINGAN: Responsif Mobile Vertikal & Horizontal */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3.5">
+              {/* 4 OPSI MODE PERTANDINGAN: Responsive 2x2 Grid Desktop, Stacked Mobile */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                 
-                {/* 1. LATIHAN (PRACTICE) */}
-                <div
-                  onClick={() => handleChoose('practice')}
-                  className="group relative p-3.5 sm:p-4 rounded-md bg-[#0e0e0e] border border-neutral-800 hover:border-amber-400/80 hover:bg-neutral-900 transition-all cursor-pointer flex flex-col justify-between"
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="w-8 h-8 rounded-md bg-neutral-900 border border-neutral-800 flex items-center justify-center text-amber-400 group-hover:scale-105 transition-transform shrink-0">
-                      <Target className="w-4 h-4" />
-                    </div>
-                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-neutral-800 text-neutral-300 uppercase tracking-wider">
-                      BEBAS
-                    </span>
-                  </div>
-
-                  <div className="mt-2.5 sm:mt-3">
-                    <h3 className="text-xs sm:text-sm font-bold text-white group-hover:text-amber-300 transition-colors uppercase tracking-wider">
-                      1. LATIHAN
-                    </h3>
-                    <p className="text-[11px] sm:text-xs text-neutral-400 mt-1 leading-relaxed line-clamp-2 sm:line-clamp-none">
-                      Asah teknik tendang, pukul, sundulan kepala, dan super move tanpa batas waktu.
-                    </p>
-
-                    <div className="mt-2.5 space-y-1 text-[10px] sm:text-[11px] text-neutral-400">
-                      <div className="flex items-center gap-1.5">
-                        <Clock className="w-3 h-3 text-neutral-400" />
-                        <span>Tanpa Batas Waktu</span>
+                {/* 1. CARI LAWAN (ONLINE PVP 1V1 MATCHMAKING) */}
+                <div className="group relative p-4 rounded-xl bg-gradient-to-b from-[#181106] via-[#0d0a04] to-[#080808] border border-amber-500/40 hover:border-amber-400 transition-all flex flex-col justify-between shadow-[0_4px_20px_rgba(245,158,11,0.06)] hover:shadow-[0_4px_28px_rgba(245,158,11,0.18)]">
+                  <div>
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="w-9 h-9 rounded-lg bg-neutral-950 border border-amber-500/50 flex items-center justify-center text-amber-400 group-hover:scale-105 transition-transform shrink-0 shadow-[0_0_15px_rgba(245,158,11,0.2)]">
+                        <Swords className="w-5 h-5" />
                       </div>
-                      <div className="flex items-center gap-1.5">
-                        <Flame className="w-3 h-3 text-amber-400" />
-                        <span>Gol & Streak Tercatat Riil</span>
+                      <div className="flex items-center gap-1.5 flex-wrap justify-end">
+                        <span className="flex items-center gap-1 text-[9px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 font-mono">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                          ONLINE
+                        </span>
+                        <span className="text-[9px] font-bold px-2 py-0.5 rounded bg-amber-500 text-black uppercase tracking-wider font-mono">
+                          🔥 STIK MENANG
+                        </span>
                       </div>
                     </div>
-                  </div>
 
-                  <button
-                    type="button"
-                    className="mt-3 sm:mt-4 w-full py-2 rounded-md bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
-                  >
-                    <Play className="w-3.5 h-3.5 fill-black" />
-                    <span>MAIN LATIHAN</span>
-                  </button>
-                </div>
+                    <div className="mt-3">
+                      <h3 className="text-sm sm:text-base font-black text-amber-300 group-hover:text-amber-200 transition-colors uppercase tracking-wider flex items-center gap-1.5">
+                        <span>1. CARI LAWAN (ONLINE PVP)</span>
+                      </h3>
+                      <p className="text-[11px] sm:text-xs text-neutral-300 mt-1 leading-relaxed">
+                        Tanding duel 1 lawan 1 secara online lintas server real-time melawan pemain lain. Pemenang mendapatkan <strong className="text-amber-300">Stik Menang khusus PvP</strong> & naik peringkat global!
+                      </p>
 
-                {/* 2. PVP (DUEL 2 PEMAIN / MATCHMAKING LINTAS SERVER) */}
-                <div
-                  className="group relative p-3.5 sm:p-4 rounded-md bg-[#0e0e0e] border border-amber-500/40 hover:border-amber-400 hover:bg-neutral-900 transition-all flex flex-col justify-between"
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="w-8 h-8 rounded-md bg-neutral-900 border border-amber-500/40 flex items-center justify-center text-amber-400 group-hover:scale-105 transition-transform shrink-0">
-                      <Swords className="w-4 h-4" />
-                    </div>
-                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-500 text-black uppercase tracking-wider">
-                      STIK MENANG 🔥
-                    </span>
-                  </div>
-
-                  <div className="mt-2.5 sm:mt-3">
-                    <h3 className="text-xs sm:text-sm font-bold text-white group-hover:text-amber-300 transition-colors uppercase tracking-wider">
-                      2. PVP (DUEL 1V1)
-                    </h3>
-                    <p className="text-[11px] sm:text-xs text-neutral-400 mt-1 leading-relaxed line-clamp-2 sm:line-clamp-none">
-                      Tanding duel 1 lawan 1 lawan pemain lain di semua server. Pemenang mendapatkan Stik Menang khusus PvP!
-                    </p>
-
-                    <div className="mt-2.5 space-y-1 text-[10px] sm:text-[11px] text-neutral-400">
-                      <div className="flex items-center gap-1.5">
-                        <Clock className="w-3 h-3 text-neutral-400" />
-                        <span>Timer 1 Menit (60s) • Darah 100 HP</span>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <Flame className="w-3 h-3 text-amber-400" />
-                        <span className="text-amber-300 font-bold">Reward: +1 Stik Menang Khusus PvP 🏒</span>
+                      <div className="mt-3 space-y-1.5 text-[10px] sm:text-[11px] text-neutral-400">
+                        <div className="flex items-center gap-1.5">
+                          <Clock className="w-3.5 h-3.5 text-neutral-400 shrink-0" />
+                          <span>Timer 1 Menit (60s) • Darah 100 HP</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <Flame className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                          <span className="text-amber-300 font-bold">Reward: +1 Stik Menang Khusus PvP 🏒 & Win Streak 🔥</span>
+                        </div>
                       </div>
                     </div>
                   </div>
 
-                  <div className="mt-3 sm:mt-4 flex items-center gap-1.5">
+                  <div className="mt-4 pt-2 border-t border-neutral-900">
                     <button
                       type="button"
                       onClick={() => {
                         sound.playClick();
                         setIsMatchmakingOpen(true);
                       }}
-                      className="flex-1 py-2 rounded-md bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow"
+                      className="w-full py-2.5 sm:py-3 px-4 rounded-xl bg-gradient-to-r from-amber-400 via-amber-500 to-yellow-400 hover:from-amber-300 hover:via-amber-400 hover:to-yellow-300 text-black font-black text-xs sm:text-sm uppercase tracking-wider flex items-center justify-center gap-2 transition-all cursor-pointer shadow-[0_0_20px_rgba(245,158,11,0.35)] hover:shadow-[0_0_30px_rgba(245,158,11,0.6)] active:scale-[0.98] border border-amber-300/50"
                     >
-                      <Swords className="w-3.5 h-3.5" />
-                      <span>CARI LAWAN</span>
+                      <Swords className="w-4 h-4 text-black stroke-[2.5]" />
+                      <span>CARI LAWAN ONLINE</span>
                     </button>
+                    <span className="text-[10px] text-amber-400/80 text-center block mt-1.5 font-medium">
+                      ⚡ Matchmaking instan di semua server Garuda & Nusantara
+                    </span>
+                  </div>
+                </div>
+
+                {/* 2. 2P LOKAL (VS TEMAN 1 LAYAR / 1 KEYBOARD) */}
+                <div className="group relative p-4 rounded-xl bg-gradient-to-b from-[#180a22] via-[#0f0617] to-[#080808] border border-purple-500/40 hover:border-purple-400 transition-all flex flex-col justify-between shadow-[0_4px_20px_rgba(168,85,247,0.06)] hover:shadow-[0_4px_28px_rgba(168,85,247,0.18)]">
+                  <div>
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="w-9 h-9 rounded-lg bg-neutral-950 border border-purple-500/50 flex items-center justify-center text-purple-400 group-hover:scale-105 transition-transform shrink-0 shadow-[0_0_15px_rgba(168,85,247,0.2)]">
+                        <Gamepad2 className="w-5 h-5" />
+                      </div>
+                      <div className="flex items-center gap-1.5 flex-wrap justify-end">
+                        <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/40 font-mono">
+                          1 KEYBOARD
+                        </span>
+                        <span className="text-[9px] font-bold px-2 py-0.5 rounded bg-purple-600 text-white uppercase tracking-wider font-mono">
+                          2 PEMAIN
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="mt-3">
+                      <h3 className="text-sm sm:text-base font-black text-purple-300 group-hover:text-purple-200 transition-colors uppercase tracking-wider flex items-center gap-1.5">
+                        <span>2. 2P LOKAL (VS TEMAN)</span>
+                      </h3>
+                      <p className="text-[11px] sm:text-xs text-neutral-300 mt-1 leading-relaxed">
+                        Tantang temanmu langsung di satu perangkat/keyboard yang sama! Tidak perlu koneksi terpisah, langsung seru-seruan bareng dalam 1 layar.
+                      </p>
+
+                      <div className="mt-3 space-y-1.5 text-[10px] sm:text-[11px] text-neutral-400">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-amber-400 font-bold shrink-0">P1:</span>
+                          <span className="text-neutral-300">[WASD] Gerak/Lompat • [F/R] Tendang/Pukul • [G] Super</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-purple-400 font-bold shrink-0">P2:</span>
+                          <span className="text-neutral-300">[Panah] Gerak/Lompat • [Enter] Aksi • [/] Pukul • [L] Super</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 pt-2 border-t border-neutral-900">
                     <button
                       type="button"
                       onClick={() => handleChoose('pvp')}
-                      className="py-2 px-2 rounded-md bg-neutral-800 hover:bg-neutral-700 text-neutral-300 text-xs font-bold transition-colors cursor-pointer"
-                      title="Main 2 Pemain di 1 Keyboard/HP"
+                      className="w-full py-2.5 sm:py-3 px-4 rounded-xl bg-gradient-to-r from-violet-600 via-purple-600 to-fuchsia-600 hover:from-violet-500 hover:via-purple-500 hover:to-fuchsia-500 text-white font-black text-xs sm:text-sm uppercase tracking-wider flex items-center justify-center gap-2 transition-all cursor-pointer shadow-[0_0_20px_rgba(168,85,247,0.35)] hover:shadow-[0_0_30px_rgba(168,85,247,0.6)] active:scale-[0.98] border border-purple-400/50"
                     >
-                      2P LOKAL
+                      <Gamepad2 className="w-4 h-4 text-white stroke-[2.5]" />
+                      <span>MAIN 2P LOKAL (1 LAYAR)</span>
                     </button>
+                    <span className="text-[10px] text-purple-300/80 text-center block mt-1.5 font-medium">
+                      🎮 Kontrol keyboard split untuk 2 pemain di satu layar
+                    </span>
                   </div>
                 </div>
 
                 {/* 3. KOMPUTER (VS BOT AI) */}
-                <div
-                  onClick={() => handleChoose('ai')}
-                  className="group relative p-3.5 sm:p-4 rounded-md bg-[#0e0e0e] border border-neutral-800 hover:border-amber-400/80 hover:bg-neutral-900 transition-all cursor-pointer flex flex-col justify-between"
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="w-8 h-8 rounded-md bg-neutral-900 border border-neutral-800 flex items-center justify-center text-amber-400 group-hover:scale-105 transition-transform shrink-0">
-                      <Bot className="w-4 h-4" />
+                <div className="group relative p-4 rounded-xl bg-gradient-to-b from-[#0a1410] via-[#070e0b] to-[#080808] border border-neutral-800 hover:border-emerald-500/50 transition-all flex flex-col justify-between shadow-sm">
+                  <div>
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="w-9 h-9 rounded-lg bg-neutral-950 border border-neutral-800 flex items-center justify-center text-emerald-400 group-hover:scale-105 transition-transform shrink-0">
+                        <Bot className="w-5 h-5" />
+                      </div>
+                      <span className="text-[9px] font-bold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 uppercase font-mono tracking-wider">
+                        BOT AI CERDAS
+                      </span>
                     </div>
-                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30 uppercase tracking-wider">
-                      POPULER
+
+                    <div className="mt-3">
+                      <h3 className="text-sm sm:text-base font-bold text-white group-hover:text-emerald-300 transition-colors uppercase tracking-wider">
+                        3. VS KOMPUTER (BOT AI)
+                      </h3>
+                      <p className="text-[11px] sm:text-xs text-neutral-400 mt-1 leading-relaxed">
+                        Lawan bot AI cerdas yang lihai sundulan, tendangan jarak jauh, tinju, dan tembakan super!
+                      </p>
+
+                      <div className="mt-3 space-y-1.5 text-[10px] sm:text-[11px] text-neutral-400">
+                        <div className="flex items-center gap-1.5">
+                          <Clock className="w-3.5 h-3.5 text-neutral-400 shrink-0" />
+                          <span>Timer 1 Menit (60s)</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                          <span className="text-emerald-300">Reward: +100 Koin • +50 EXP • +1 Diamond</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 pt-2 border-t border-neutral-900">
+                    <button
+                      type="button"
+                      onClick={() => handleChoose('ai')}
+                      className="w-full py-2.5 sm:py-3 px-4 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-emerald-400 hover:text-emerald-300 border border-emerald-500/40 hover:border-emerald-400 font-bold text-xs sm:text-sm uppercase tracking-wider flex items-center justify-center gap-2 transition-all cursor-pointer shadow active:scale-[0.98]"
+                    >
+                      <Bot className="w-4 h-4" />
+                      <span>LAWAN BOT AI</span>
+                    </button>
+                    <span className="text-[10px] text-neutral-500 text-center block mt-1.5 font-medium">
+                      Cocok untuk pemanasan & mengumpulkan koin
                     </span>
                   </div>
+                </div>
 
-                  <div className="mt-2.5 sm:mt-3">
-                    <h3 className="text-xs sm:text-sm font-bold text-white group-hover:text-amber-300 transition-colors uppercase tracking-wider">
-                      3. VS KOMPUTER
-                    </h3>
-                    <p className="text-[11px] sm:text-xs text-neutral-400 mt-1 leading-relaxed line-clamp-2 sm:line-clamp-none">
-                      Lawan bot AI cerdas yang lihai sundul, tendang, tinju, dan tembakan super!
-                    </p>
-
-                    <div className="mt-2.5 space-y-1 text-[10px] sm:text-[11px] text-neutral-400">
-                      <div className="flex items-center gap-1.5">
-                        <Clock className="w-3 h-3 text-neutral-400" />
-                        <span>Timer 1 Menit (60s)</span>
+                {/* 4. LATIHAN BEBAS (SOLO PRACTICE) */}
+                <div className="group relative p-4 rounded-xl bg-gradient-to-b from-[#121214] via-[#0d0d0e] to-[#080808] border border-neutral-800 hover:border-neutral-600 transition-all flex flex-col justify-between shadow-sm">
+                  <div>
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="w-9 h-9 rounded-lg bg-neutral-950 border border-neutral-800 flex items-center justify-center text-amber-400 group-hover:scale-105 transition-transform shrink-0">
+                        <Target className="w-5 h-5" />
                       </div>
-                      <div className="flex items-center gap-1.5">
-                        <ShieldCheck className="w-3 h-3 text-amber-400" />
-                        <span>Reward Koin, EXP, Diamond</span>
+                      <span className="text-[9px] font-bold px-2 py-0.5 rounded bg-neutral-800 text-neutral-300 uppercase font-mono tracking-wider">
+                        FREE PLAY
+                      </span>
+                    </div>
+
+                    <div className="mt-3">
+                      <h3 className="text-sm sm:text-base font-bold text-white group-hover:text-amber-300 transition-colors uppercase tracking-wider">
+                        4. LATIHAN BEBAS (SOLO)
+                      </h3>
+                      <p className="text-[11px] sm:text-xs text-neutral-400 mt-1 leading-relaxed">
+                        Asah teknik tendang melengkung, sundulan kepala, dash, dan jurus tembakan super tanpa tekanan waktu.
+                      </p>
+
+                      <div className="mt-3 space-y-1.5 text-[10px] sm:text-[11px] text-neutral-400">
+                        <div className="flex items-center gap-1.5">
+                          <Clock className="w-3.5 h-3.5 text-neutral-400 shrink-0" />
+                          <span>Tanpa Batas Waktu • Bebas Bereksplorasi</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <Flame className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                          <span>Gol & Streak Latihan Tercatat Riil</span>
+                        </div>
                       </div>
                     </div>
                   </div>
 
-                  <button
-                    type="button"
-                    className="mt-3 sm:mt-4 w-full py-2 rounded-md bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
-                  >
-                    <Play className="w-3.5 h-3.5 fill-black" />
-                    <span>LAWAN BOT</span>
-                  </button>
+                  <div className="mt-4 pt-2 border-t border-neutral-900">
+                    <button
+                      type="button"
+                      onClick={() => handleChoose('practice')}
+                      className="w-full py-2.5 sm:py-3 px-4 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-neutral-200 hover:text-white border border-neutral-700 hover:border-neutral-500 font-bold text-xs sm:text-sm uppercase tracking-wider flex items-center justify-center gap-2 transition-all cursor-pointer shadow active:scale-[0.98]"
+                    >
+                      <Target className="w-4 h-4 text-neutral-400" />
+                      <span>MASUK LATIHAN</span>
+                    </button>
+                    <span className="text-[10px] text-neutral-500 text-center block mt-1.5 font-medium">
+                      Latihan teknik & super move sepuasnya
+                    </span>
+                  </div>
                 </div>
 
               </div>
@@ -688,19 +788,24 @@ export const SportsMiniGameModal: React.FC<SportsMiniGameModalProps> = ({
         {/* ==================================================================== */}
         {/* 4. FOOTER PANDUAN KONTROL: Responsif & Rapi                          */}
         {/* ==================================================================== */}
-        <div className="px-3 sm:px-6 py-2.5 border-t border-neutral-800 bg-[#0a0a0a] flex flex-col sm:flex-row items-center justify-between gap-1.5 text-[10px] sm:text-[11px] text-neutral-400 shrink-0">
+        <div className="px-3 sm:px-6 py-2.5 border-t border-neutral-800 bg-[#0a0a0a] flex flex-col md:flex-row items-center justify-between gap-2 text-[10px] sm:text-[11px] text-neutral-400 shrink-0">
           <div className="flex items-center gap-1.5 truncate max-w-full">
             <Keyboard className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-            <span className="font-bold text-neutral-200">PC:</span>
+            <span className="font-bold text-neutral-200">P1:</span>
             <span className="truncate">
-              [Spasi] Lompat (2x) • [Q/E] Dash • {isSoccer ? '[F] Tendang • [R] Pukul' : '[F] Pukul • [R] Tendang'} • [G] Super
+              [Spasi] Lompat (2x) • [Q/E] Dash • {isSoccer ? '[F] Tendang • [R] Pukul' : '[F] Shoot • [R] Pukul'} • [G] Super
             </span>
           </div>
 
-          <div className="flex items-center gap-1.5 shrink-0">
-            <Smartphone className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-            <span className="font-bold text-neutral-200">HP:</span>
-            <span>Tap 2x Kiri/Kanan: Dash ⚡ • ▲ Lompat (2x)</span>
+          <div className="flex items-center gap-3 shrink-0 flex-wrap justify-end">
+            <div className="flex items-center gap-1.5">
+              <span className="font-bold text-purple-400">P2 (2P Lokal):</span>
+              <span>[▲] Lompat • [Enter] {isSoccer ? 'Tendang' : 'Shoot'} • [/] Pukul • [L] Super</span>
+            </div>
+            <div className="hidden sm:flex items-center gap-1 text-neutral-500">
+              <Smartphone className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+              <span>HP: Analog Virtual + Tombol Aksi</span>
+            </div>
           </div>
         </div>
 

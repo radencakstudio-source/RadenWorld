@@ -74,7 +74,7 @@ interface HUDProps {
   onAddFriend?: (targetId: string, targetName: string) => void;
 }
 
-export const HUD: React.FC<HUDProps> = ({
+export const HUD: React.FC<HUDProps> = React.memo(({
   playerStats,
   serverCode = 'Asia 1',
   onToggleChat,
@@ -527,10 +527,10 @@ export const HUD: React.FC<HUDProps> = ({
                 EventBus.emit('open-school-subjects', { schoolType: sType });
               }}
               className="pointer-events-auto h-8 sm:h-9 md:h-10 flex items-center gap-1.5 px-2 sm:px-2.5 rounded-md bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-400 text-amber-300 hover:text-white font-bold text-xs uppercase tracking-wider transition-all shadow-md shrink-0 cursor-pointer"
-              title="Buka Buku Pelajaran & Kurikulum Sekolah"
+              title="Buka Teks Quiz Sekolah"
             >
               <BookOpen className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-              <span className="text-[9px] sm:text-[10px] font-black tracking-wider">KURIKULUM</span>
+              <span className="text-[9px] sm:text-[10px] font-black tracking-wider">TEKS QUIZ</span>
             </button>
           )}
 
@@ -955,4 +955,5 @@ export const HUD: React.FC<HUDProps> = ({
       />
     </div>
   );
-};
+});
+HUD.displayName = 'HUD';

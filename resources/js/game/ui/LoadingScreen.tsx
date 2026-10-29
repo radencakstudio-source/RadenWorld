@@ -27,13 +27,21 @@ interface LoadingScreenProps {
 export const LoadingScreen: React.FC<LoadingScreenProps> = ({
   onComplete,
   serverCode = 'ASIA - 0001',
-  minDisplayTimeMs = 500,
-  maxTimeoutMs = 12000,
+  minDisplayTimeMs = 400,
+  maxTimeoutMs = 2500,
 }) => {
   const [progress, setProgress] = useState(8);
   const [dots, setDots] = useState('..........');
   const [walkFrame, setWalkFrame] = useState(1);
-  const [stageText, setStageText] = useState('mengunduh aset karakter & lingkungan');
+
+  // Derive stageText langsung dari progress untuk menghemat 50% siklus render React
+  const stageText = React.useMemo(() => {
+    if (progress < 40) return 'mengunduh berkas karakter & lingkungan';
+    if (progress < 75) return 'memuat tekstur map & audio dunia';
+    if (progress < 92) return 'menyiapkan animasi & interior ruangan';
+    if (progress < 100) return `menghubungkan ke server ${serverCode}`;
+    return 'dunia siap, selamat berpetualang';
+  }, [progress, serverCode]);
 
   const isCompleteRef = useRef(false);
   const onCompleteRef = useRef(onComplete);
@@ -49,7 +57,7 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
   useEffect(() => {
     const dotInterval = setInterval(() => {
       setDots((prev) => (prev.length >= 10 ? '..' : prev + '.'));
-    }, 260);
+    }, 300);
     return () => clearInterval(dotInterval);
   }, []);
 
@@ -57,7 +65,7 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
   useEffect(() => {
     const walkInterval = setInterval(() => {
       setWalkFrame((prev) => (prev >= 8 ? 1 : prev + 1));
-    }, 100);
+    }, 140);
     return () => clearInterval(walkInterval);
   }, []);
 
@@ -65,14 +73,18 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
   useEffect(() => {
     startTimeRef.current = Date.now();
     isCompleteRef.current = false;
-    sceneReadyRef.current = false;
-    targetProgressRef.current = 15;
+
+    const alreadyReady = Boolean(
+      (EventBus as any).lastSceneReady ||
+      (typeof window !== 'undefined' && (window as any).__raden_last_scene_ready)
+    );
+    sceneReadyRef.current = alreadyReady;
+    targetProgressRef.current = alreadyReady ? 100 : 15;
 
     const triggerComplete = () => {
       if (isCompleteRef.current) return;
       isCompleteRef.current = true;
       setProgress(100);
-      setStageText('dunia siap, selamat berpetualang');
       setTimeout(() => {
         if (onCompleteRef.current) {
           onCompleteRef.current();
@@ -97,7 +109,7 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
       targetProgressRef.current = 100;
     };
 
-    // Ticker untuk pergerakan bar progres yang halus (smooth lerp)
+    // Ticker untuk pergerakan bar progres yang di-throttle ke 90ms (~11 FPS yang sangat ringan)
     const progressTicker = setInterval(() => {
       const elapsed = Date.now() - startTimeRef.current;
       const target = targetProgressRef.current;
@@ -107,29 +119,13 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
 
         let next = current;
         if (sceneReadyRef.current && elapsed >= minDisplayTimeMs) {
-          // Scene sudah siap dan durasi minimum tercapai -> langsung tuntaskan ke 100%
-          const step = Math.max(2, Math.ceil((100 - current) * 0.35));
+          const step = Math.max(3, Math.ceil((100 - current) * 0.4));
           next = Math.min(100, current + step);
         } else if (current < target) {
-          // Menyesuaikan dengan progres unduhan aset riil
-          const step = Math.max(1, Math.ceil((target - current) * 0.2));
+          const step = Math.max(1, Math.ceil((target - current) * 0.25));
           next = Math.min(sceneReadyRef.current ? 100 : 94, current + step);
         } else if (current < 90 && elapsed > 400) {
-          // Laju bertahap halus sambil menunggu aset selesai diproses
           next = Math.min(90, current + 1);
-        }
-
-        // Perbarui teks status berdasarkan progres riil
-        if (next < 40) {
-          setStageText('mengunduh berkas karakter & lingkungan');
-        } else if (next < 75) {
-          setStageText('memuat tekstur map & audio dunia');
-        } else if (next < 92) {
-          setStageText('menyiapkan animasi & interior ruangan');
-        } else if (next < 100) {
-          setStageText(`menghubungkan ke server ${serverCode}`);
-        } else {
-          setStageText('dunia siap, selamat berpetualang');
         }
 
         if (next >= 100) {
@@ -139,7 +135,7 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
 
         return next;
       });
-    }, 35);
+    }, 90);
 
     // Hard fallback safety: Jika jaringan offline/sangat lambat, jangan gantung selamanya
     const fallbackTimer = setTimeout(() => {
@@ -219,11 +215,11 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
             style={{ left: `${boyLeftPercent}%`, transform: 'translateX(-50%)' }}
           >
             <img
-              src={`/assets/sprites/characters/Player/Male/MovementSide/MaleWalkSide${walkFrame}.png`}
+              src={`/assets/sprites/characters/Player/Male/MovementSide/MaleWalkSide${walkFrame}.webp`}
               alt="Male Walking"
               className="relative z-10 w-12 sm:w-16 md:w-20 h-14 sm:h-20 md:h-24 object-contain pixelated pointer-events-none"
               onError={(e) => {
-                (e.target as HTMLImageElement).src = '/assets/sprites/characters/Player/Male/Idle/Front/Front%20Male.png';
+                (e.target as HTMLImageElement).src = '/assets/sprites/characters/Player/Male/Idle/Front/Front%20Male.webp';
               }}
             />
             {/* Bayangan Lantai Cowok (di bawah kaki) */}
@@ -236,7 +232,7 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
             style={{ left: '88%', transform: 'translateX(-50%)' }}
           >
             <img
-              src="/assets/sprites/characters/Player/Female/Idle/Front/Front%20Female.png"
+              src="/assets/sprites/characters/Player/Female/Idle/Front/Front%20Female.webp"
               alt="Female Idle"
               className="relative z-10 w-12 sm:w-16 md:w-20 h-14 sm:h-20 md:h-24 object-contain pixelated pointer-events-none"
             />

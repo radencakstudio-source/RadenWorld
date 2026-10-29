@@ -30,6 +30,7 @@ import { CreatorStudioModal } from './game/ui/CreatorStudioModal';
 import { SdSubjectsModal } from './game/ui/SdSubjectsModal';
 import { SchoolGradeSelectModal } from './game/ui/SchoolGradeSelectModal';
 import { SchoolSubjectsModal } from './game/ui/SchoolSubjectsModal';
+import { LibraryMaterialsModal } from './game/ui/LibraryMaterialsModal';
 import { FishingMinigame } from './game/ui/FishingMinigame';
 import { Hotbar } from './game/ui/Hotbar';
 import { InventoryModal } from './game/ui/InventoryModal';
@@ -50,22 +51,14 @@ import { SportsMiniGameModal } from './game/ui/SportsMiniGameModal';
 export const GameApp: React.FC = () => {
   // Check initial URL pathname & active minigame session
   const initialPath = typeof window !== 'undefined' ? window.location.pathname : '/';
-  const isMiniGameInitial = initialPath.startsWith('/minigame') || (() => {
-    try {
-      const stored = localStorage.getItem('raden_active_minigame');
-      if (stored) {
-        const p = JSON.parse(stored);
-        return Boolean(p && p.sport);
-      }
-    } catch (e) {}
-    return false;
-  })();
+  const isMiniGameInitial = initialPath.startsWith('/minigame');
   const isDirectInGame = initialPath.startsWith('/home') || initialPath.startsWith('/world') || initialPath.startsWith('/admin') || isMiniGameInitial;
 
   // Screen state: 'home' (Lobby /) | 'playing' (Safe House, Open World, Portal Admin, atau Mini Game)
   const [gameState, setGameState] = useState<'home' | 'playing'>(isDirectInGame ? 'playing' : 'home');
   const [currentPath, setCurrentPath] = useState<string>(initialPath);
-  const [isLoadingScreen, setIsLoadingScreen] = useState(true);
+  // LoadingScreen hanya aktif saat masuk langsung ke dalam game (In-Game), Lobby beranda tampil instan
+  const [isLoadingScreen, setIsLoadingScreen] = useState<boolean>(isDirectInGame);
 
   // Game Settings State
   const [settings, setSettings] = useState<GameSettings>({
@@ -375,6 +368,11 @@ export const GameApp: React.FC = () => {
   const [schoolSubjectsGrade, setSchoolSubjectsGrade] = useState<number>(1);
   const [schoolSubjectsDeskType, setSchoolSubjectsDeskType] = useState<'guru' | 'siswa'>('guru');
 
+  // Modal Ensiklopedia & Visual Edukasi Perpustakaan Kota (SD, SMP, SMA)
+  const [isLibraryModalOpen, setIsLibraryModalOpen] = useState(false);
+  const [librarySchoolType, setLibrarySchoolType] = useState<'sd' | 'smp' | 'sma'>('sd');
+  const [libraryGrade, setLibraryGrade] = useState<number>(1);
+
   // Modal Layanan Publik & Komersial Barat (Polisi, Bank, Apotek, Makelar)
   const [isPoliceModalOpen, setIsPoliceModalOpen] = useState(false);
   const [isBankModalOpen, setIsBankModalOpen] = useState(false);
@@ -577,17 +575,11 @@ export const GameApp: React.FC = () => {
         }
         return { ...prev, ...stats, name: resolvedName };
       });
-      if (stats.avatar) {
-        setWardrobeAvatar((prev) => {
-          if (JSON.stringify(prev) === JSON.stringify(stats.avatar)) return prev;
-          return stats.avatar;
-        });
-      }
     };
 
-    // 2. Interaction prompt updates from proximity detection
+    // 2. Interaction prompt updates from proximity detection (bail out if identical)
     const handlePrompt = (prompt: string | null) => {
-      setInteractionPrompt(prompt);
+      setInteractionPrompt((prev) => (prev === prompt ? prev : prompt));
     };
 
     // 3. New chat message received
@@ -881,6 +873,32 @@ export const GameApp: React.FC = () => {
     EventBus.on('open-realtor-modal', handleOpenRealtor);
     EventBus.on('open-sports-modal', handleOpenSports);
 
+    // Tangani event pembukaan modal Ensiklopedia & Visual Edukasi Perpustakaan Kota
+    const handleOpenLibrary = (data?: { schoolType?: 'sd' | 'smp' | 'sma'; grade?: number }) => {
+      sound.playOpenModal();
+      setLibrarySchoolType(data?.schoolType || 'sd');
+      setLibraryGrade(data?.grade || 1);
+      setIsLibraryModalOpen(true);
+      EventBus.emit('dialogue-active', true);
+    };
+    EventBus.on('open-library-modal', handleOpenLibrary);
+
+    // Tangani reward EXP langsung
+    const handleGainExp = (data: { amount: number; source?: string }) => {
+      if (!data?.amount) return;
+      sound.playSuccess();
+      setPlayerExp((prev) => {
+        const next = prev + data.amount;
+        try {
+          const u = JSON.parse(localStorage.getItem('raden_player_user') || '{}');
+          u.exp = next;
+          localStorage.setItem('raden_player_user', JSON.stringify(u));
+        } catch (e) {}
+        return next;
+      });
+    };
+    EventBus.on('gain-exp', handleGainExp);
+
     const handleSwitchSceneEvent = (data: { scene: string }) => {
       if (data?.scene) {
         const isSports = data.scene === 'SoccerMiniGameScene' || data.scene === 'BasketballMiniGameScene';
@@ -1112,6 +1130,8 @@ export const GameApp: React.FC = () => {
       EventBus.off('open-pharmacy-modal', handleOpenPharmacy);
       EventBus.off('open-realtor-modal', handleOpenRealtor);
       EventBus.off('open-sports-modal', handleOpenSports);
+      EventBus.off('open-library-modal', handleOpenLibrary);
+      EventBus.off('gain-exp', handleGainExp);
       EventBus.off('switch-scene', handleSwitchSceneEvent);
       EventBus.off('minigame-active', handleMiniGameActive);
     };
@@ -1371,6 +1391,8 @@ export const GameApp: React.FC = () => {
   const handleStartGame = (name: string, avatar: IAvatarCustomization, privateRoomId?: string) => {
     // Tampilkan LoadingScreen animasi retro boy walking to girl saat masuk bermain
     setIsLoadingScreen(true);
+    setIsMiniGameMode(false);
+    try { localStorage.removeItem('raden_active_minigame'); } catch (e) {}
 
     let isSuperAdmin = name.toUpperCase() === 'RADEN';
     let role = isSuperAdmin ? 'super_admin' : 'player';
@@ -1491,10 +1513,10 @@ export const GameApp: React.FC = () => {
     );
   };
 
-  const handleTriggerInteraction = () => {
-    sound.playClick();
+  const handleTriggerInteraction = useCallback(() => {
+    SoundManager.getInstance().playClick();
     EventBus.emit('trigger-interaction');
-  };
+  }, []);
 
   // Teleportasi ke Portal Admin (Khusus Super Admin)
   const handleTeleportToAdminPortal = async () => {
@@ -1553,7 +1575,7 @@ export const GameApp: React.FC = () => {
   };
 
   // Virtual Controls Handlers (Khusus Mode Mobile)
-  const handleVirtualDirectionPress = (dir: 'up' | 'down' | 'left' | 'right') => {
+  const handleVirtualDirectionPress = useCallback((dir: 'up' | 'down' | 'left' | 'right') => {
     const keyMap = {
       up: 'ArrowUp',
       down: 'ArrowDown',
@@ -1561,17 +1583,17 @@ export const GameApp: React.FC = () => {
       right: 'ArrowRight',
     };
     window.dispatchEvent(new KeyboardEvent('keydown', { key: keyMap[dir] }));
-  };
+  }, []);
 
-  const handleVirtualDirectionRelease = () => {
+  const handleVirtualDirectionRelease = useCallback(() => {
     ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].forEach((k) => {
       window.dispatchEvent(new KeyboardEvent('keyup', { key: k }));
     });
-  };
+  }, []);
 
-  const handleVirtualAction = () => {
+  const handleVirtualAction = useCallback(() => {
     handleTriggerInteraction();
-  };
+  }, [handleTriggerInteraction]);
 
   // Fitur LOGOUT Akun
   const handleLogout = () => {
@@ -1705,15 +1727,17 @@ export const GameApp: React.FC = () => {
           />
 
           {/* Modal Tas Inventaris Lengkap 30 Slot (Buka dengan [B] atau klik tombol Tas) */}
-          <InventoryModal
-            isOpen={isBackpackOpen}
-            onClose={() => setIsBackpackOpen(false)}
-            gold={playerGold}
-            diamonds={playerDiamonds}
-            isAdmin={isCurrentUserAdmin}
-          />
+          {isBackpackOpen && (
+            <InventoryModal
+              isOpen={isBackpackOpen}
+              onClose={() => setIsBackpackOpen(false)}
+              gold={playerGold}
+              diamonds={playerDiamonds}
+              isAdmin={isCurrentUserAdmin}
+            />
+          )}
 
-          {(() => {
+          {isProfileOpen && (() => {
             const isTargetAdmin = inspectedPlayer
               ? Boolean(
                   inspectedPlayer.isSuperAdmin ||
@@ -1946,130 +1970,161 @@ export const GameApp: React.FC = () => {
           {/* Dialog Narasi NPC Bergaya RPG (Next, Before, Skip) */}
           <DialogueBox />
 
-          <ControlGuide
-            isOpen={isGuideOpen}
-            onClose={() => setIsGuideOpen(false)}
-            controlMode={settings.controlMode}
-          />
+          {isGuideOpen && (
+            <ControlGuide
+              isOpen={isGuideOpen}
+              onClose={() => setIsGuideOpen(false)}
+              controlMode={settings.controlMode}
+            />
+          )}
 
           {/* Modal Lemari Pakaian (Ganti Ava di dalam Rumah) */}
-          <WardrobeModal
-            isOpen={isWardrobeOpen}
-            onClose={() => setIsWardrobeOpen(false)}
-            currentAvatar={wardrobeAvatar}
-          />
+          {isWardrobeOpen && (
+            <WardrobeModal
+              isOpen={isWardrobeOpen}
+              onClose={() => setIsWardrobeOpen(false)}
+              currentAvatar={wardrobeAvatar}
+            />
+          )}
 
           {/* Modal Panel Arsitek Pencipta (Tahta Agung Pencipta Raden) */}
-          <CreatorStudioModal
-            isOpen={isCreatorStudioOpen}
-            onClose={() => setIsCreatorStudioOpen(false)}
-          />
+          {isCreatorStudioOpen && (
+            <CreatorStudioModal
+              isOpen={isCreatorStudioOpen}
+              onClose={() => setIsCreatorStudioOpen(false)}
+            />
+          )}
 
           {/* Modal Pemilihan Kelas Sekolah (Sebelum Masuk Gedung SD, SMP, SMA) */}
-          <SchoolGradeSelectModal
-            isOpen={isGradeSelectOpen}
-            schoolType={gradeSelectSchoolType}
-            onClose={() => {
-              sound.playClick();
-              setIsGradeSelectOpen(false);
-              EventBus.emit('dialogue-active', false);
-            }}
-            onSelectGrade={(selectedGrade) => {
-              setIsGradeSelectOpen(false);
-              EventBus.emit('dialogue-active', false);
-              try {
-                localStorage.setItem(`raden_school_${gradeSelectSchoolType}_grade`, selectedGrade.toString());
-              } catch (e) {}
-              EventBus.emit('enter-school-with-grade', {
-                schoolType: gradeSelectSchoolType,
-                grade: selectedGrade,
-                returnX: gradeSelectReturnPos?.x,
-                returnY: gradeSelectReturnPos?.y,
-              });
-            }}
-          />
+          {isGradeSelectOpen && (
+            <SchoolGradeSelectModal
+              isOpen={isGradeSelectOpen}
+              schoolType={gradeSelectSchoolType}
+              onClose={() => {
+                sound.playClick();
+                setIsGradeSelectOpen(false);
+                EventBus.emit('dialogue-active', false);
+              }}
+              onSelectGrade={(selectedGrade) => {
+                setIsGradeSelectOpen(false);
+                EventBus.emit('dialogue-active', false);
+                try {
+                  localStorage.setItem(`raden_school_${gradeSelectSchoolType}_grade`, selectedGrade.toString());
+                } catch (e) {}
+                EventBus.emit('enter-school-with-grade', {
+                  schoolType: gradeSelectSchoolType,
+                  grade: selectedGrade,
+                  returnX: gradeSelectReturnPos?.x,
+                  returnY: gradeSelectReturnPos?.y,
+                });
+              }}
+            />
+          )}
 
           {/* Modal Mata Pelajaran Sekolah Lucu & Ceria (SD 1-6, SMP 1-3, SMA 1-3) */}
-          <SchoolSubjectsModal
-            isOpen={isSchoolSubjectsOpen}
-            schoolType={schoolSubjectsType}
-            grade={schoolSubjectsGrade}
-            deskType={schoolSubjectsDeskType}
-            onClose={() => {
-              sound.playClick();
-              setIsSchoolSubjectsOpen(false);
-              EventBus.emit('dialogue-active', false);
-            }}
-            onStudySubject={(subjectName, expEarned) => {
-              sound.playSuccess();
-              setPlayerExp((prev) => {
-                const next = prev + expEarned;
-                try {
-                  const u = JSON.parse(localStorage.getItem('raden_player_user') || '{}');
-                  u.exp = next;
-                  localStorage.setItem('raden_player_user', JSON.stringify(u));
-                } catch (e) {}
-                return next;
-              });
-              EventBus.emit('new-chat-message', {
-                id: `study_msg_${Date.now()}`,
-                sender: schoolSubjectsType.toUpperCase(),
-                text: `✨ Kamu asyik belajar ${subjectName} di ${schoolSubjectsDeskType === 'guru' ? 'Meja Guru' : 'Meja Belajar Siswa'}! (+${expEarned} EXP)`,
-                timestamp: Date.now(),
-                isSystem: true,
-              });
-            }}
-          />
+          {isSchoolSubjectsOpen && (
+            <SchoolSubjectsModal
+              isOpen={isSchoolSubjectsOpen}
+              schoolType={schoolSubjectsType}
+              grade={schoolSubjectsGrade}
+              deskType={schoolSubjectsDeskType}
+              onClose={() => {
+                sound.playClick();
+                setIsSchoolSubjectsOpen(false);
+                EventBus.emit('dialogue-active', false);
+              }}
+              onStudySubject={(subjectName, expEarned) => {
+                sound.playSuccess();
+                setPlayerExp((prev) => {
+                  const next = prev + expEarned;
+                  try {
+                    const u = JSON.parse(localStorage.getItem('raden_player_user') || '{}');
+                    u.exp = next;
+                    localStorage.setItem('raden_player_user', JSON.stringify(u));
+                  } catch (e) {}
+                  return next;
+                });
+                EventBus.emit('new-chat-message', {
+                  id: `study_msg_${Date.now()}`,
+                  sender: schoolSubjectsType.toUpperCase(),
+                  text: `✨ Kamu asyik belajar ${subjectName} di ${schoolSubjectsDeskType === 'guru' ? 'Meja Guru' : 'Meja Belajar Siswa'}! (+${expEarned} EXP)`,
+                  timestamp: Date.now(),
+                  isSystem: true,
+                });
+              }}
+            />
+          )}
+
+          {/* Modal Ensiklopedia & Visual Edukasi Perpustakaan Kota (SD, SMP, SMA) */}
+          {isLibraryModalOpen && (
+            <LibraryMaterialsModal
+              isOpen={isLibraryModalOpen}
+              initialSchoolType={librarySchoolType}
+              initialGrade={libraryGrade}
+              onClose={() => {
+                sound.playClick();
+                setIsLibraryModalOpen(false);
+                EventBus.emit('dialogue-active', false);
+              }}
+              onGainExp={(amount, source) => {
+                EventBus.emit('gain-exp', { amount, source });
+              }}
+            />
+          )}
 
           {/* Modal Mata Pelajaran Khusus SD (Legacy fallback) */}
-          <SdSubjectsModal
-            isOpen={isSdSubjectsOpen}
-            onClose={() => {
-              sound.playClick();
-              setIsSdSubjectsOpen(false);
-              EventBus.emit('dialogue-active', false);
-            }}
-            deskType={sdDeskType}
-            onStudySubject={(subjectName, expEarned) => {
-              sound.playSuccess();
-              setPlayerExp((prev) => {
-                const next = prev + expEarned;
-                try {
-                  const u = JSON.parse(localStorage.getItem('raden_player_user') || '{}');
-                  u.exp = next;
-                  localStorage.setItem('raden_player_user', JSON.stringify(u));
-                } catch (e) {}
-                return next;
-              });
-              EventBus.emit('new-chat-message', {
-                id: `study_msg_${Date.now()}`,
-                sender: 'KELAS SD',
-                text: `📚 Kamu tekun belajar ${subjectName} di ${sdDeskType === 'guru' ? 'Meja Guru' : 'Meja Belajar Siswa'}! (+${expEarned} EXP)`,
-                timestamp: Date.now(),
-                isSystem: true,
-              });
-            }}
-          />
+          {isSdSubjectsOpen && (
+            <SdSubjectsModal
+              isOpen={isSdSubjectsOpen}
+              onClose={() => {
+                sound.playClick();
+                setIsSdSubjectsOpen(false);
+                EventBus.emit('dialogue-active', false);
+              }}
+              deskType={sdDeskType}
+              onStudySubject={(subjectName, expEarned) => {
+                sound.playSuccess();
+                setPlayerExp((prev) => {
+                  const next = prev + expEarned;
+                  try {
+                    const u = JSON.parse(localStorage.getItem('raden_player_user') || '{}');
+                    u.exp = next;
+                    localStorage.setItem('raden_player_user', JSON.stringify(u));
+                  } catch (e) {}
+                  return next;
+                });
+                EventBus.emit('new-chat-message', {
+                  id: `study_msg_${Date.now()}`,
+                  sender: 'KELAS SD',
+                  text: `📚 Kamu tekun belajar ${subjectName} di ${sdDeskType === 'guru' ? 'Meja Guru' : 'Meja Belajar Siswa'}! (+${expEarned} EXP)`,
+                  timestamp: Date.now(),
+                  isSystem: true,
+                });
+              }}
+            />
+          )}
 
           {/* Minigame Memancing Interaktif Bergaya Stardew Valley */}
-          <FishingMinigame
-            isOpen={isFishingMinigameOpen}
-            fishData={fishingMinigameData}
-            onSuccess={(fish) => {
-              setIsFishingMinigameOpen(false);
-              EventBus.emit('fishing-minigame-success', { fish });
-            }}
-            onFailed={() => {
-              setIsFishingMinigameOpen(false);
-              EventBus.emit('fishing-minigame-failed');
-            }}
-            onClose={() => {
-              setIsFishingMinigameOpen(false);
-              EventBus.emit('fishing-minigame-failed');
-            }}
-          />
+          {isFishingMinigameOpen && (
+            <FishingMinigame
+              isOpen={isFishingMinigameOpen}
+              fishData={fishingMinigameData}
+              onSuccess={(fish) => {
+                setIsFishingMinigameOpen(false);
+                EventBus.emit('fishing-minigame-success', { fish });
+              }}
+              onFailed={() => {
+                setIsFishingMinigameOpen(false);
+                EventBus.emit('fishing-minigame-failed');
+              }}
+              onClose={() => {
+                setIsFishingMinigameOpen(false);
+                EventBus.emit('fishing-minigame-failed');
+              }}
+            />
+          )}
 
-          {/* Banner Peringatan Ikan Menyambar Terpusat di Mobile Landscape & Portrait */}
+          {/* Banner Peringatan Ikan Menyambar: Simpel, Elegan, Tanpa Shadow & Hover, Border Radius Tegas (rounded-sm) */}
           {isFishBiting && (
             <div
               onPointerDown={(e) => {
@@ -2081,14 +2136,26 @@ export const GameApp: React.FC = () => {
                 EventBus.emit('fishing-charge-start');
               }}
               onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); }}
-              className="fixed top-12 left-1/2 -translate-x-1/2 z-50 bg-gradient-to-r from-amber-600 via-amber-400 to-amber-600 text-black px-5 py-2.5 rounded-full shadow-[0_0_35px_rgba(245,158,11,1)] border-2 border-white flex items-center gap-2 cursor-pointer animate-bounce select-none touch-none"
-              style={{ touchAction: 'none' }}
+              className="fixed left-1/2 -translate-x-1/2 z-50 bg-neutral-900 border border-neutral-700 text-neutral-100 px-3 py-1.5 sm:px-4 sm:py-2 rounded-sm flex items-center justify-between gap-3 cursor-pointer select-none touch-none max-w-[calc(100vw-1.5rem)] sm:max-w-md w-auto"
+              style={{
+                top: 'max(0.75rem, env(safe-area-inset-top, 0.75rem))',
+                touchAction: 'none'
+              }}
               title="Ketuk untuk Menarik Kail Ikan!"
             >
-              <Zap className="w-5 h-5 text-black stroke-[3] animate-pulse" />
-              <span className="font-['Chakra_Petch'] font-black text-xs sm:text-sm uppercase tracking-wider">
-                ⚡ IKAN MENYAMBAR! KETUK DI SINI UNTUK TARIK!
-              </span>
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="w-2 h-2 bg-amber-400 shrink-0" />
+                <span className="font-mono text-[10px] sm:text-xs font-bold tracking-wider text-amber-400 uppercase shrink-0">
+                  IKAN MENYAMBAR
+                </span>
+                <span className="text-neutral-500 hidden sm:inline">•</span>
+                <span className="text-[11px] sm:text-xs text-neutral-300 font-medium truncate">
+                  Tarik kail sekarang!
+                </span>
+              </div>
+              <div className="bg-neutral-800 border border-neutral-700 text-neutral-300 text-[10px] font-mono px-2 py-0.5 rounded-sm shrink-0 whitespace-nowrap">
+                KETUK / [F]
+              </div>
             </div>
           )}
 
@@ -2099,18 +2166,21 @@ export const GameApp: React.FC = () => {
               onDirectionPress={handleVirtualDirectionPress}
               onDirectionRelease={handleVirtualDirectionRelease}
               isActionActive={!!interactionPrompt}
+              isChatOpen={isChatOpen}
             />
           )}
             </>
           )}
 
           {/* Modal Top Up Berlian */}
-          <TopUpModal
-            isOpen={isTopUpOpen}
-            onClose={() => setIsTopUpOpen(false)}
-            currentDiamonds={playerDiamonds}
-            onSuccessTopUp={handleSuccessTopUp}
-          />
+          {isTopUpOpen && (
+            <TopUpModal
+              isOpen={isTopUpOpen}
+              onClose={() => setIsTopUpOpen(false)}
+              currentDiamonds={playerDiamonds}
+              onSuccessTopUp={handleSuccessTopUp}
+            />
+          )}
 
           {/* Pop-up Notifikasi Permintaan Pertemanan di Kanan Layar (Timer 1 Menit) */}
           <FriendRequestNotification
@@ -2120,187 +2190,201 @@ export const GameApp: React.FC = () => {
           />
 
           {/* Modal Pengaturan jika dibuka */}
-          <SettingsModal
-            isOpen={inGameSettingsOpen}
-            onClose={() => setInGameSettingsOpen(false)}
-            settings={settings}
-            onUpdateSettings={handleUpdateSettings}
-            onOpenServerModal={() => {
-              setInGameSettingsOpen(false);
-              setIsServerModalOpen(true);
-            }}
-          />
+          {inGameSettingsOpen && (
+            <SettingsModal
+              isOpen={inGameSettingsOpen}
+              onClose={() => setInGameSettingsOpen(false)}
+              settings={settings}
+              onUpdateSettings={handleUpdateSettings}
+              onOpenServerModal={() => {
+                setInGameSettingsOpen(false);
+                setIsServerModalOpen(true);
+              }}
+            />
+          )}
 
           {/* Modal Layanan Polisi (Report Player) */}
-          <PoliceReportModal
-            isOpen={isPoliceModalOpen}
-            onClose={() => {
-              setIsPoliceModalOpen(false);
-              EventBus.emit('dialogue-active', false);
-            }}
-            currentPlayerName={playerStats.name}
-          />
+          {isPoliceModalOpen && (
+            <PoliceReportModal
+              isOpen={isPoliceModalOpen}
+              onClose={() => {
+                setIsPoliceModalOpen(false);
+                EventBus.emit('dialogue-active', false);
+              }}
+              currentPlayerName={playerStats.name}
+            />
+          )}
 
           {/* Modal Layanan Bank (Investasi & Tabungan Koin) */}
-          <BankModal
-            isOpen={isBankModalOpen}
-            onClose={() => {
-              setIsBankModalOpen(false);
-              EventBus.emit('dialogue-active', false);
-            }}
-            playerGold={playerGold}
-            onUpdateGold={(g) => {
-              const delta = g - playerGold;
-              if (delta !== 0) {
-                syncWalletWithServer(delta, 0, 'bank_transaction');
-              }
-              if (isCurrentUserAdmin) {
-                setPlayerGold(99999999999);
-                localStorage.setItem('raden_player_gold', '99999999999');
-              } else {
-                setPlayerGold(g);
-                localStorage.setItem('raden_player_gold', g.toString());
-              }
-            }}
-            isAdmin={isCurrentUserAdmin}
-          />
+          {isBankModalOpen && (
+            <BankModal
+              isOpen={isBankModalOpen}
+              onClose={() => {
+                setIsBankModalOpen(false);
+                EventBus.emit('dialogue-active', false);
+              }}
+              playerGold={playerGold}
+              onUpdateGold={(g) => {
+                const delta = g - playerGold;
+                if (delta !== 0) {
+                  syncWalletWithServer(delta, 0, 'bank_transaction');
+                }
+                if (isCurrentUserAdmin) {
+                  setPlayerGold(99999999999);
+                  localStorage.setItem('raden_player_gold', '99999999999');
+                } else {
+                  setPlayerGold(g);
+                  localStorage.setItem('raden_player_gold', g.toString());
+                }
+              }}
+              isAdmin={isCurrentUserAdmin}
+            />
+          )}
 
           {/* Modal Apotek Ramuan Ajaib (Beli Ramuan dengan Diamond) */}
-          <PharmacyModal
-            isOpen={isPharmacyModalOpen}
-            onClose={() => {
-              setIsPharmacyModalOpen(false);
-              EventBus.emit('dialogue-active', false);
-            }}
-            playerDiamonds={playerDiamonds}
-            onUpdateDiamonds={(d) => {
-              const delta = d - playerDiamonds;
-              if (delta !== 0) {
-                syncWalletWithServer(0, delta, 'pharmacy_purchase');
-              }
-              if (isCurrentUserAdmin) {
-                setPlayerDiamonds(99999999999);
-                localStorage.setItem('raden_player_diamonds', '99999999999');
-              } else {
-                setPlayerDiamonds(d);
-                localStorage.setItem('raden_player_diamonds', d.toString());
-              }
-            }}
-            isAdmin={isCurrentUserAdmin}
-          />
+          {isPharmacyModalOpen && (
+            <PharmacyModal
+              isOpen={isPharmacyModalOpen}
+              onClose={() => {
+                setIsPharmacyModalOpen(false);
+                EventBus.emit('dialogue-active', false);
+              }}
+              playerDiamonds={playerDiamonds}
+              onUpdateDiamonds={(d) => {
+                const delta = d - playerDiamonds;
+                if (delta !== 0) {
+                  syncWalletWithServer(0, delta, 'pharmacy_purchase');
+                }
+                if (isCurrentUserAdmin) {
+                  setPlayerDiamonds(99999999999);
+                  localStorage.setItem('raden_player_diamonds', '99999999999');
+                } else {
+                  setPlayerDiamonds(d);
+                  localStorage.setItem('raden_player_diamonds', d.toString());
+                }
+              }}
+              isAdmin={isCurrentUserAdmin}
+            />
+          )}
 
           {/* Modal Makelar Hasil Bumi & Pasar Alat (Beli Alat/Biji, Jual Panen/Ikan) */}
-          <MarketRealtorModal
-            isOpen={isRealtorModalOpen}
-            onClose={() => {
-              setIsRealtorModalOpen(false);
-              EventBus.emit('dialogue-active', false);
-            }}
-            playerGold={playerGold}
-            onUpdateGold={(g) => {
-              const delta = g - playerGold;
-              if (delta !== 0) {
-                syncWalletWithServer(delta, 0, 'market_transaction');
-              }
-              if (isCurrentUserAdmin) {
-                setPlayerGold(99999999999);
-                localStorage.setItem('raden_player_gold', '99999999999');
-              } else {
-                setPlayerGold(g);
-                localStorage.setItem('raden_player_gold', g.toString());
-              }
-            }}
-            isAdmin={isCurrentUserAdmin}
-          />
+          {isRealtorModalOpen && (
+            <MarketRealtorModal
+              isOpen={isRealtorModalOpen}
+              onClose={() => {
+                setIsRealtorModalOpen(false);
+                EventBus.emit('dialogue-active', false);
+              }}
+              playerGold={playerGold}
+              onUpdateGold={(g) => {
+                const delta = g - playerGold;
+                if (delta !== 0) {
+                  syncWalletWithServer(delta, 0, 'market_transaction');
+                }
+                if (isCurrentUserAdmin) {
+                  setPlayerGold(99999999999);
+                  localStorage.setItem('raden_player_gold', '99999999999');
+                } else {
+                  setPlayerGold(g);
+                  localStorage.setItem('raden_player_gold', g.toString());
+                }
+              }}
+              isAdmin={isCurrentUserAdmin}
+            />
+          )}
 
           {/* Modal Mini Game Olahraga (Sepak Bola & Bola Basket) */}
-          <SportsMiniGameModal
-            isOpen={sportsModal.isOpen}
-            sport={sportsModal.sport}
-            playerName={playerStats.name || 'Petualang'}
-            onClose={() => {
-              setSportsModal({ isOpen: false, sport: null });
-              EventBus.emit('dialogue-active', false);
-            }}
-            onSelectMode={(sport, mode, opponent) => {
-              setSportsModal({ isOpen: false, sport: null });
-              EventBus.emit('dialogue-active', false);
-              setIsMiniGameMode(true);
+          {sportsModal.isOpen && (
+            <SportsMiniGameModal
+              isOpen={sportsModal.isOpen}
+              sport={sportsModal.sport}
+              playerName={playerStats.name || 'Petualang'}
+              onClose={() => {
+                setSportsModal({ isOpen: false, sport: null });
+                EventBus.emit('dialogue-active', false);
+              }}
+              onSelectMode={(sport, mode, opponent) => {
+                setSportsModal({ isOpen: false, sport: null });
+                EventBus.emit('dialogue-active', false);
+                setIsMiniGameMode(true);
 
-              const targetScene = sport === 'soccer' ? 'SoccerMiniGameScene' : 'BasketballMiniGameScene';
-              const returnPos = sport === 'soccer'
-                ? { x: 3480, y: 6040 }
-                : { x: 6060, y: 6040 };
+                const targetScene = sport === 'soccer' ? 'SoccerMiniGameScene' : 'BasketballMiniGameScene';
+                const returnPos = sport === 'soccer'
+                  ? { x: 3480, y: 6040 }
+                  : { x: 6060, y: 6040 };
 
-              try {
-                localStorage.setItem(
-                  'raden_active_minigame',
-                  JSON.stringify({
+                try {
+                  localStorage.setItem(
+                    'raden_active_minigame',
+                    JSON.stringify({
+                      sport,
+                      mode,
+                      name: playerStats.name,
+                      avatar: playerStats.avatar || wardrobeAvatar,
+                      returnPos,
+                      opponentName: opponent?.name,
+                      opponentServer: opponent?.server,
+                      opponentPvpStreak: opponent?.pvp_streak,
+                      opponentPvpSticks: opponent?.pvp_sticks,
+                      timestamp: Date.now(),
+                    })
+                  );
+                  if (window.history && window.history.replaceState) {
+                    window.history.replaceState({}, '', `/minigame/${sport}?mode=${mode}`);
+                  }
+                } catch (e) {}
+
+                fetch('/api/sports/session', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json', 'X-User-Name': playerStats.name },
+                  body: JSON.stringify({
                     sport,
                     mode,
-                    name: playerStats.name,
+                    player_name: playerStats.name,
                     avatar: playerStats.avatar || wardrobeAvatar,
-                    returnPos,
-                    opponentName: opponent?.name,
-                    opponentServer: opponent?.server,
-                    opponentPvpStreak: opponent?.pvp_streak,
-                    opponentPvpSticks: opponent?.pvp_sticks,
-                    timestamp: Date.now(),
-                  })
-                );
-                if (window.history && window.history.replaceState) {
-                  window.history.replaceState({}, '', `/minigame/${sport}?mode=${mode}`);
-                }
-              } catch (e) {}
+                    return_x: returnPos.x,
+                    return_y: returnPos.y,
+                    opponent_name: opponent?.name,
+                    opponent_server: opponent?.server,
+                  }),
+                }).catch(() => {});
 
-              fetch('/api/sports/session', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-User-Name': playerStats.name },
-                body: JSON.stringify({
-                  sport,
-                  mode,
-                  player_name: playerStats.name,
+                EventBus.emit('switch-scene', {
+                  scene: targetScene,
+                  mode: mode,
+                  name: playerStats.name,
                   avatar: playerStats.avatar || wardrobeAvatar,
-                  return_x: returnPos.x,
-                  return_y: returnPos.y,
-                  opponent_name: opponent?.name,
-                  opponent_server: opponent?.server,
-                }),
-              }).catch(() => {});
-
-              EventBus.emit('switch-scene', {
-                scene: targetScene,
-                mode: mode,
-                name: playerStats.name,
-                avatar: playerStats.avatar || wardrobeAvatar,
-                returnX: returnPos.x,
-                returnY: returnPos.y,
-                opponentName: opponent?.name,
-                opponentServer: opponent?.server,
-                opponentPvpStreak: opponent?.pvp_streak,
-                opponentPvpSticks: opponent?.pvp_sticks,
-              });
-            }}
-          />
+                  returnX: returnPos.x,
+                  returnY: returnPos.y,
+                  opponentName: opponent?.name,
+                  opponentServer: opponent?.server,
+                  opponentPvpStreak: opponent?.pvp_streak,
+                  opponentPvpSticks: opponent?.pvp_sticks,
+                });
+              }}
+            />
+          )}
         </>
       )}
 
       {/* Modal Pemilih & Pindah Server (Bisa Diakses Global dari Home maupun In-Game) */}
-      <ServerModal
-        isOpen={isServerModalOpen}
-        onClose={() => setIsServerModalOpen(false)}
-        currentServerCode={serverCode}
-        onSelectServer={(server: IGameServerOption) => {
-          setServerCode(server.code);
-          EventBus.emit('new-chat-message', {
-            id: `sys_srv_${Date.now()}`,
-            sender: 'SISTEM',
-            text: `🌐 Berhasil beralih ke server ${server.name} (${server.code})!`,
-            timestamp: Date.now(),
-            isSystem: true,
-          });
-        }}
-      />
+      {isServerModalOpen && (
+        <ServerModal
+          isOpen={isServerModalOpen}
+          onClose={() => setIsServerModalOpen(false)}
+          currentServerCode={serverCode}
+          onSelectServer={(server: IGameServerOption) => {
+            setServerCode(server.code);
+            EventBus.emit('new-chat-message', {
+              id: `sys_srv_${Date.now()}`,
+              sender: 'SISTEM',
+              text: `🌐 Berhasil beralih ke server ${server.name} (${server.code})!`,
+              timestamp: Date.now(),
+              isSystem: true,
+            });
+          }}
+        />
+      )}
     </div>
   );
 };

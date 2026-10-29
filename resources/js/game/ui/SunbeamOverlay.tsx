@@ -18,7 +18,7 @@ import React, { useState, useEffect, useMemo } from 'react';
  * 4. POINTER EVENTS NONE: Tidak menghalangi interaksi game apa pun.
  * ============================================================================
  */
-export const SunbeamOverlay: React.FC = () => {
+export const SunbeamOverlay: React.FC = React.memo(() => {
   const [currentTime, setCurrentTime] = useState<Date>(new Date());
 
   useEffect(() => {
@@ -239,4 +239,5 @@ export const SunbeamOverlay: React.FC = () => {
       </svg>
     </div>
   );
-};
+});
+SunbeamOverlay.displayName = 'SunbeamOverlay';

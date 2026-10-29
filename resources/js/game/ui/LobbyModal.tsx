@@ -50,7 +50,7 @@ export const LobbyModal: React.FC<LobbyModalProps> = ({ onJoin }) => {
         <div className="text-center space-y-2">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-neutral-900 border border-neutral-800 text-amber-400 text-xs font-semibold uppercase tracking-wider">
             <Globe className="w-3.5 h-3.5" />
-            2D Open World RPG • Multiplayer
+            2D Open World Simulasi • Multiplayer
           </div>
           <h1 className="text-3xl font-extrabold tracking-tight text-white">
             Raden<span className="text-amber-400">World</span>

@@ -18,5 +18,24 @@
 
 import Phaser from 'phaser';
 
+class ExtendedEventBus extends Phaser.Events.EventEmitter {
+  public lastSceneReady: string | null = null;
+
+  public override emit(event: string | symbol, ...args: any[]): boolean {
+    if (event === 'scene-ready') {
+      this.lastSceneReady = (args[0] as string) || 'ready';
+      if (typeof window !== 'undefined') {
+        (window as any).__raden_last_scene_ready = this.lastSceneReady;
+      }
+    } else if (event === 'switch-scene') {
+      this.lastSceneReady = null;
+      if (typeof window !== 'undefined') {
+        (window as any).__raden_last_scene_ready = null;
+      }
+    }
+    return super.emit(event, ...args);
+  }
+}
+
 /** Instansi EventEmitter murni yang kompatibel 100% dengan browser modern */
-export const EventBus = new Phaser.Events.EventEmitter();
+export const EventBus = new ExtendedEventBus();

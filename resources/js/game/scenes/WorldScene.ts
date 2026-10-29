@@ -445,10 +445,12 @@ export class WorldScene extends Phaser.Scene {
       return;
     }
 
-    // 8. Interaksi dengan Papan Popup Alun-Alun (world/popup)
+    // 8. Interaksi dengan 2 Papan Popup Reklame 10x10 (world/popup) di y: 49/50 (gx: 22 & gx: 45)
+    const pGx = Math.floor(px / this.tileSize);
+    const pGy = Math.floor(py / this.tileSize);
     if (
-      Phaser.Math.Distance.Between(px, py, 30 * this.tileSize, 48 * this.tileSize) < 240 ||
-      Phaser.Math.Distance.Between(px, py, 50 * this.tileSize, 48 * this.tileSize) < 240
+      ((pGx >= 21 && pGx <= 32) || (pGx >= 44 && pGx <= 55)) &&
+      (pGy >= 39 && pGy <= 51)
     ) {
       window.open('/world/popup', '_blank');
       return;
@@ -457,13 +459,13 @@ export class WorldScene extends Phaser.Scene {
     // 11. Interaksi Lapangan Sepak Bola (Mini Game)
     const gx = Math.floor(px / this.tileSize);
     const gy = Math.floor(py / this.tileSize);
-    if (gx >= 23 && gx <= 34 && gy >= 50 && gy <= 56) {
+    if (gx >= 23 && gx <= 34 && gy >= 52 && gy <= 58) {
       EventBus.emit('open-sports-modal', 'soccer');
       return;
     }
 
     // 12. Interaksi Lapangan Bola Basket (Mini Game)
-    if (gx >= 45 && gx <= 56 && gy >= 50 && gy <= 56) {
+    if (gx >= 45 && gx <= 56 && gy >= 52 && gy <= 58) {
       EventBus.emit('open-sports-modal', 'basketball');
       return;
     }
@@ -829,6 +831,10 @@ export class WorldScene extends Phaser.Scene {
     });
 
     this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+      // Cegah kebocoran sentuhan saat tombol kontrol virtual (analog / aksi / lompat / mancing) aktif
+      if ((window as any).__raden_virtual_control_active) return;
+      if (pointer?.event?.target && (pointer.event.target as HTMLElement).tagName !== 'CANVAS') return;
+
       // Cegah tap-movement saat gesture zoom 2 jari (pinch-in/pinch-out) aktif di mobile
       if ((window as any).__radenPinching || Date.now() - ((window as any).__radenLastPinchTime || 0) < 400) {
         if (this.player && this.player.active) this.player.stopNavigation();
@@ -1245,7 +1251,7 @@ export class WorldScene extends Phaser.Scene {
 
     if (!this.player || !this.player.active) return;
     this.player.update(time, delta);
-    this.player.setDepth(this.player.y + 60);
+    this.player.setDepth(Math.floor(this.player.y + 60));
 
     // 2b. Interaksi rumput bergoyang saat diinjak / didekati & pemain bergerak
     WorldProps.updateWildGrassSway(time, this.player, this.remotePlayers);
@@ -1282,8 +1288,8 @@ export class WorldScene extends Phaser.Scene {
     const gridY = Math.floor(py / this.tileSize);
     const locChanged = locationName !== this.lastLocationName;
     const gridChanged = gridX !== this.lastGridX || gridY !== this.lastGridY;
-    const periodicTimeout = time - this.lastStatsEmitTime > 1500;
-    const movementThrottle = time - this.lastStatsEmitTime > 250;
+    const periodicTimeout = time - this.lastStatsEmitTime > 2000;
+    const movementThrottle = time - this.lastStatsEmitTime > 1000;
 
     if (locChanged || (gridChanged && movementThrottle) || periodicTimeout) {
       this.lastStatsEmitTime = time;
@@ -1318,7 +1324,7 @@ export class WorldScene extends Phaser.Scene {
 
     this.remotePlayers.forEach(p => {
       p.update(time, delta);
-      p.setDepth(p.y + 60);
+      p.setDepth(Math.floor(p.y + 60));
     });
   }
 

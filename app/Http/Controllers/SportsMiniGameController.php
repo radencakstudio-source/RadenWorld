@@ -33,17 +33,63 @@ class SportsMiniGameController extends Controller
         return storage_path('app/sports_history.json');
     }
 
-    /** Membaca seluruh statistik pemain dari penyimpanan */
+    /** Membaca seluruh statistik pemain dari database riil dan penyimpanan */
     private function loadStatsData(): array
     {
         $path = $this->getStatsFilePath();
+        $stored = [];
         if (file_exists($path)) {
             $data = json_decode(file_get_contents($path), true);
-            if (is_array($data) && count($data) > 0) {
-                return $data;
+            if (is_array($data)) {
+                $stored = $data;
             }
         }
-        return $this->initializeDefaultStats();
+
+        // Ambil seluruh akun terdaftar dari database MySQL
+        $realUsers = [];
+        try {
+            $realUsers = User::all(['id', 'name', 'level', 'avatar', 'role']);
+        } catch (\Throwable $e) {}
+
+        $result = [];
+
+        foreach ($realUsers as $u) {
+            $name = trim($u->name);
+            if (empty($name)) continue;
+            $key = strtolower($name);
+
+            $st = $stored[$key] ?? [];
+            $result[$key] = [
+                'user_id' => $u->id,
+                'name' => $u->name,
+                'level' => (int) ($u->level ?? 1),
+                'avatar' => $u->avatar,
+                'role' => $u->role ?? 'player',
+                'matches_total' => (int) ($st['matches_total'] ?? 0),
+                'wins' => (int) ($st['wins'] ?? 0),
+                'losses' => (int) ($st['losses'] ?? 0),
+                'draws' => (int) ($st['draws'] ?? 0),
+                'soccer_goals' => (int) ($st['soccer_goals'] ?? 0),
+                'basketball_points' => (int) ($st['basketball_points'] ?? 0),
+                'current_streak' => (int) ($st['current_streak'] ?? 0),
+                'highest_streak' => (int) ($st['highest_streak'] ?? 0),
+                'pvp_wins' => (int) ($st['pvp_wins'] ?? 0),
+                'pvp_matches' => (int) ($st['pvp_matches'] ?? 0),
+                'pvp_streak' => (int) ($st['pvp_streak'] ?? 0),
+                'pvp_highest_streak' => (int) ($st['pvp_highest_streak'] ?? 0),
+                'pvp_sticks' => (int) ($st['pvp_sticks'] ?? 0),
+                'last_played' => $st['last_played'] ?? null,
+            ];
+        }
+
+        // Pertahankan riwayat pemain aktif yang tersimpan jika bukan bot dummy
+        foreach ($stored as $k => $item) {
+            if (!isset($result[$k]) && !empty($item['name']) && !in_array($item['name'], ['Cyber Dunker', 'Garuda Striker', 'Bintang Alun', 'Super Goalie', 'King Slam', 'Nusantara Playmaker'])) {
+                $result[$k] = $item;
+            }
+        }
+
+        return $result;
     }
 
     /** Inisialisasi data atlet perdana berbasis akun riil di database RadenWorld */
@@ -963,7 +1009,7 @@ class SportsMiniGameController extends Controller
 
     /**
      * POST /api/sports/matchmaking/find-rival
-     * Mencari atlet rival dari server lain jika tidak ada pemain manusia live yang antre
+     * Mencari lawan pemain online nyata dari antrean server (Bukan Bot Dummy)
      */
     public function findRivalAthlete(Request $request)
     {
@@ -971,57 +1017,44 @@ class SportsMiniGameController extends Controller
         $sport = $request->input('sport', 'soccer');
         $playerKey = strtolower($playerName);
 
-        $allStats = $this->loadStatsData();
+        $data = $this->loadMatchmakingData();
 
-        // Kumpulkan daftar atlet yang bukan pemain aktif
-        $rivalCandidates = [];
-        $serverList = [
-            'Server 1: Garuda',
-            'Server 2: Nusantara',
-            'Server 3: Merdeka',
-            'Server 4: Cakrawala',
-        ];
+        // Cari apakah ada pemain nyata lain di antrean yang sedang menunggu
+        foreach ($data['queue'] as $k => $queued) {
+            if ($k !== $playerKey && ($queued['sport'] ?? '') === $sport && (time() - ($queued['queued_at'] ?? 0)) < 60) {
+                // Pasangkan kedua pemain nyata
+                $matchId = 'match_' . uniqid();
+                $newMatch = [
+                    'match_id' => $matchId,
+                    'sport' => $sport,
+                    'created_at' => time(),
+                    'p1' => ['player_name' => $playerName, 'server' => 'Server 1: Garuda'],
+                    'p2' => $queued,
+                ];
+                $data['matches'][$matchId] = $newMatch;
+                unset($data['queue'][$k]);
+                unset($data['queue'][$playerKey]);
+                $this->saveMatchmakingData($data);
 
-        foreach ($allStats as $k => $stats) {
-            if ($k !== $playerKey) {
-                $rivalCandidates[] = $stats;
+                return response()->json([
+                    'status' => 'matched',
+                    'message' => 'Lawan pemain online ditemukan!',
+                    'opponent' => [
+                        'name' => $queued['player_name'],
+                        'server' => $queued['server'] ?? 'Server 1: Garuda',
+                        'pvp_streak' => $queued['pvp_streak'] ?? 0,
+                        'pvp_sticks' => $queued['pvp_sticks'] ?? 0,
+                        'avatar' => $queued['avatar'] ?? null,
+                        'is_live_player' => true,
+                    ],
+                ]);
             }
         }
 
-        if (empty($rivalCandidates)) {
-            $rivalCandidates[] = [
-                'name' => 'KsatriaBintang',
-                'pvp_streak' => 2,
-                'pvp_sticks' => 4,
-                'wins' => 9,
-                'matches_total' => 12,
-            ];
-        }
-
-        // Acak lawan
-        $selectedRival = $rivalCandidates[array_rand($rivalCandidates)];
-        $randomServer = $serverList[array_rand($serverList)];
-
-        // Hapus pemain dari antrean jika ada
-        $data = $this->loadMatchmakingData();
-        if ($playerKey && isset($data['queue'][$playerKey])) {
-            unset($data['queue'][$playerKey]);
-            $this->saveMatchmakingData($data);
-        }
-
+        // Jika tidak ada pemain lain yang online, tetap dalam antrean mencari
         return response()->json([
-            'status' => 'matched',
-            'message' => 'Lawan petualang ditemukan!',
-            'opponent' => [
-                'name' => $selectedRival['name'],
-                'server' => $randomServer,
-                'pvp_streak' => $selectedRival['pvp_streak'] ?? 1,
-                'pvp_sticks' => $selectedRival['pvp_sticks'] ?? 2,
-                'wins' => $selectedRival['wins'] ?? 5,
-                'win_rate' => $selectedRival['win_rate'] ?? 75,
-                'avatar' => null,
-                'is_cross_server' => true,
-            ],
+            'status' => 'waiting',
+            'message' => 'Belum ada petualang lain di antrean server saat ini.',
         ]);
     }
 }

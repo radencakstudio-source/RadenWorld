@@ -1456,25 +1456,53 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
 
               <div className="flex flex-col flex-1 min-w-0">
                 <div className="flex items-center justify-between gap-1">
-                  <div className="flex items-center gap-1.5 min-w-0">
-                    <span className="text-base font-bold text-amber-400 uppercase tracking-wide truncate">
-                      {currentDisplayName || name}
-                    </span>
-                    {!isInspecting && (
+                  {!isEditingName ? (
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <span className="text-base font-bold text-amber-400 uppercase tracking-wide truncate">
+                        {currentDisplayName || name}
+                      </span>
+                      {!isInspecting && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            sound.playClick();
+                            setNewNameInput(currentDisplayName || name);
+                            setIsEditingName(true);
+                          }}
+                          className="p-1 rounded hover:bg-neutral-800 text-neutral-400 hover:text-amber-400 transition-colors cursor-pointer shrink-0"
+                          title="Ganti Nama Karakter (Nickname)"
+                        >
+                          <Edit3 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  ) : (
+                    <form onSubmit={handleSaveName} className="flex items-center gap-1.5 min-w-0 flex-1">
+                      <input
+                        type="text"
+                        value={newNameInput}
+                        onChange={(e) => setNewNameInput(e.target.value)}
+                        maxLength={25}
+                        autoFocus
+                        placeholder="Nama baru..."
+                        className="px-2 py-0.5 bg-black border border-amber-500 rounded text-amber-300 text-xs sm:text-sm font-bold focus:outline-none w-full max-w-[140px] sm:max-w-[180px]"
+                      />
+                      <button
+                        type="submit"
+                        disabled={isSavingName}
+                        className="px-2 py-0.5 bg-amber-500 hover:bg-amber-400 text-black rounded text-[11px] font-bold disabled:opacity-50 cursor-pointer shrink-0"
+                      >
+                        {isSavingName ? '...' : 'Simpan'}
+                      </button>
                       <button
                         type="button"
-                        onClick={() => {
-                          sound.playClick();
-                          setNewNameInput(currentDisplayName || name);
-                          setIsEditingName(true);
-                        }}
-                        className="p-1 rounded hover:bg-neutral-800 text-neutral-400 hover:text-amber-400 transition-colors cursor-pointer shrink-0"
-                        title="Ganti Nama Karakter (Nickname)"
+                        onClick={() => setIsEditingName(false)}
+                        className="px-1.5 py-0.5 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 rounded text-[11px] font-bold cursor-pointer shrink-0"
                       >
-                        <Edit3 className="w-3.5 h-3.5" />
+                        Batal
                       </button>
-                    )}
-                  </div>
+                    </form>
+                  )}
                   <span className="text-[10px] font-black bg-amber-500 text-black px-1.5 py-0.5 rounded shrink-0">
                     LV. {effectiveLevel}
                   </span>

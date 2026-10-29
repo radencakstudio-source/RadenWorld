@@ -873,6 +873,26 @@ export class LibraryScene extends Phaser.Scene {
         }
       }
 
+      // 2. Cek apakah pemain mengklik Meja Pustakawati Siti
+      const distToLib = Phaser.Math.Distance.Between(wx, wy, this.librarianZone.x, this.librarianZone.y);
+      if (distToLib < 120) {
+        SoundManager.getInstance().playClick();
+        this.player?.showSpeechBubble('👩‍💼 Siti: "Selamat datang di Perpustakaan! Mari kita buka katalog visual!"', 2500);
+        EventBus.emit('open-library-modal', { schoolType: 'sd', grade: 1 });
+        return;
+      }
+
+      // 3. Cek apakah pemain mengklik salah satu rak buku
+      for (const shelf of this.bookshelfZones) {
+        const distToShelf = Phaser.Math.Distance.Between(wx, wy, shelf.x, shelf.y);
+        if (distToShelf < 150) {
+          SoundManager.getInstance().playClick();
+          this.player?.showSpeechBubble(`📖 Membuka Ensiklopedia & Visual Materi ${shelf.category.toUpperCase()}...`, 2000);
+          EventBus.emit('open-library-modal', { schoolType: shelf.category, grade: 1 });
+          return;
+        }
+      }
+
       if (this.player && this.player.active) {
         this.spawnTapRipple(wx, wy);
         this.player.navigateTo(wx, wy);
@@ -898,14 +918,14 @@ export class LibraryScene extends Phaser.Scene {
     if (distExit < 140) {
       prompt = 'TEKAN [E] / KLIK UNTUK KEMBALI KE KOTA 🚪';
     } else if (distLib < 140) {
-      prompt = 'TEKAN [E] / KLIK UNTUK BICARA DENGAN PUSTAKAWATI SITI 👩‍💼';
+      prompt = 'TEKAN [E] / KLIK KATALOG BUKU ENSIKLOPEDIA & VISUAL SITI 👩‍💼';
     } else {
       // Periksa rak buku terdekat
       for (const shelf of this.bookshelfZones) {
         const dist = Phaser.Math.Distance.Between(px, py, shelf.x, shelf.y);
         if (dist < 150) {
           const catLabel = shelf.category.toUpperCase();
-          prompt = `TEKAN [E] / KLIK BACA BUKU MATERI ${catLabel} 📖 (+${shelf.expGain} EXP)`;
+          prompt = `TEKAN [E] / KLIK BACA ENSIKLOPEDIA & VISUAL MATERI ${catLabel} 📖`;
           this.activeShelf = shelf;
           break;
         }
@@ -935,26 +955,15 @@ export class LibraryScene extends Phaser.Scene {
     } else if (distLib < 150) {
       SoundManager.getInstance().playClick();
       this.player.showSpeechBubble(
-        '👩‍💼 Siti: "Selamat datang di Perpustakaan Kota! Buku di sisi kiri untuk SD, dan sisi kanan untuk SMP & SMA. Selamat membaca!"',
-        4000
+        '👩‍💼 Siti: "Selamat datang di Perpustakaan Kota! Mari buka katalog materi dan visual edukasi!"',
+        3000
       );
+      EventBus.emit('open-library-modal', { schoolType: 'sd', grade: 1 });
     } else if (this.activeShelf) {
       const shelf = this.activeShelf;
       SoundManager.getInstance().playSuccess();
-
-      // Pilih kutipan materi secara acak
-      const detail = shelf.details[Math.floor(Math.random() * shelf.details.length)];
-      this.player.showSpeechBubble(`📖 Membaca Materi ${shelf.category.toUpperCase()}:\n${detail} (+${shelf.expGain} EXP)`, 4000);
-
-      // Berikan reward EXP ke sistem game
-      EventBus.emit('gain-exp', { amount: shelf.expGain, source: `Membaca Buku ${shelf.category.toUpperCase()}` });
-      EventBus.emit('new-chat-message', {
-        id: `lib_read_${Date.now()}`,
-        sender: 'PERPUSTAKAAN KOTA',
-        text: `📚 Kamu tekun membaca ${shelf.title}! Wawasanmu bertambah (+${shelf.expGain} EXP).`,
-        timestamp: Date.now(),
-        isSystem: true,
-      });
+      this.player.showSpeechBubble(`📖 Membuka Ensiklopedia & Visual Materi ${shelf.category.toUpperCase()}...`, 2000);
+      EventBus.emit('open-library-modal', { schoolType: shelf.category, grade: 1 });
     }
   }
 

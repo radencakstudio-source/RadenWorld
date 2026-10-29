@@ -57,164 +57,164 @@ export class BootScene extends Phaser.Scene {
 
     // 1. Aset Karakter Male (Laki-laki)
     // Idle (Front, Back, Side)
-    this.load.image('player-male-idle-front', '/assets/sprites/characters/Player/Male/Idle/Front/Front%20Male.png');
-    this.load.image('player-male-idle-back', '/assets/sprites/characters/Player/Male/Idle/Back/Back%20Male.png');
-    this.load.image('player-male-idle-side', '/assets/sprites/characters/Player/Male/Idle/Side/Side%20Male.png');
+    this.load.image('player-male-idle-front', '/assets/sprites/characters/Player/Male/Idle/Front/Front%20Male.webp');
+    this.load.image('player-male-idle-back', '/assets/sprites/characters/Player/Male/Idle/Back/Back%20Male.webp');
+    this.load.image('player-male-idle-side', '/assets/sprites/characters/Player/Male/Idle/Side/Side%20Male.webp');
     // Movement (Walk Front, Back, Side: frame 1 s/d 8)
     for (let i = 1; i <= 8; i++) {
-      this.load.image(`player-male-walk-front-${i}`, `/assets/sprites/characters/Player/Male/MovementFront/MaleWalkFront${i}.png`);
-      this.load.image(`player-male-walk-back-${i}`, `/assets/sprites/characters/Player/Male/MovementBack/MaleWalkBack${i}.png`);
-      this.load.image(`player-male-walk-side-${i}`, `/assets/sprites/characters/Player/Male/MovementSide/MaleWalkSide${i}.png`);
+      this.load.image(`player-male-walk-front-${i}`, `/assets/sprites/characters/Player/Male/MovementFront/MaleWalkFront${i}.webp`);
+      this.load.image(`player-male-walk-back-${i}`, `/assets/sprites/characters/Player/Male/MovementBack/MaleWalkBack${i}.webp`);
+      this.load.image(`player-male-walk-side-${i}`, `/assets/sprites/characters/Player/Male/MovementSide/MaleWalkSide${i}.webp`);
     }
     // Animasi Lompat Male (Charge, Lompat/Takeoff, Di Udara/InAir, Landing)
-    this.load.image('player-male-jump-charge-front', '/assets/sprites/characters/Player/Male/Lompat/Charge/Front/MaleJumpCharge%20Front.png');
-    this.load.image('player-male-jump-charge-back', '/assets/sprites/characters/Player/Male/Lompat/Charge/Back/MaleJumpChargeBack.png');
-    this.load.image('player-male-jump-charge-side', '/assets/sprites/characters/Player/Male/Lompat/Charge/Side/MaleJumpChargeSide.png');
-    this.load.image('player-male-jump-takeoff-front', '/assets/sprites/characters/Player/Male/Lompat/Lompat/Front/MaleJumpFront.png');
-    this.load.image('player-male-jump-takeoff-back', '/assets/sprites/characters/Player/Male/Lompat/Lompat/Back/MaleJumpBack.png');
-    this.load.image('player-male-jump-takeoff-side', '/assets/sprites/characters/Player/Male/Lompat/Lompat/Side/MaleJumpSide.png');
-    this.load.image('player-male-jump-air-front', '/assets/sprites/characters/Player/Male/Lompat/Di%20Udara/Front/MaleJumpAirFront.png');
-    this.load.image('player-male-jump-air-back', '/assets/sprites/characters/Player/Male/Lompat/Di%20Udara/Back/MaleJumpAirBack.png');
-    this.load.image('player-male-jump-air-side', '/assets/sprites/characters/Player/Male/Lompat/Di%20Udara/Side/MaleJumpAirSide.png');
-    this.load.image('player-male-jump-landing-front', '/assets/sprites/characters/Player/Male/Lompat/Landing/Front/MaleJumpLandingFront.png');
-    this.load.image('player-male-jump-landing-back', '/assets/sprites/characters/Player/Male/Lompat/Landing/Back/MaleJumpLandingBack.png');
-    this.load.image('player-male-jump-landing-side', '/assets/sprites/characters/Player/Male/Lompat/Landing/Side/MaleJumpLandingSide.png');
+    this.load.image('player-male-jump-charge-front', '/assets/sprites/characters/Player/Male/Lompat/Charge/Front/MaleJumpCharge%20Front.webp');
+    this.load.image('player-male-jump-charge-back', '/assets/sprites/characters/Player/Male/Lompat/Charge/Back/MaleJumpChargeBack.webp');
+    this.load.image('player-male-jump-charge-side', '/assets/sprites/characters/Player/Male/Lompat/Charge/Side/MaleJumpChargeSide.webp');
+    this.load.image('player-male-jump-takeoff-front', '/assets/sprites/characters/Player/Male/Lompat/Lompat/Front/MaleJumpFront.webp');
+    this.load.image('player-male-jump-takeoff-back', '/assets/sprites/characters/Player/Male/Lompat/Lompat/Back/MaleJumpBack.webp');
+    this.load.image('player-male-jump-takeoff-side', '/assets/sprites/characters/Player/Male/Lompat/Lompat/Side/MaleJumpSide.webp');
+    this.load.image('player-male-jump-air-front', '/assets/sprites/characters/Player/Male/Lompat/Di%20Udara/Front/MaleJumpAirFront.webp');
+    this.load.image('player-male-jump-air-back', '/assets/sprites/characters/Player/Male/Lompat/Di%20Udara/Back/MaleJumpAirBack.webp');
+    this.load.image('player-male-jump-air-side', '/assets/sprites/characters/Player/Male/Lompat/Di%20Udara/Side/MaleJumpAirSide.webp');
+    this.load.image('player-male-jump-landing-front', '/assets/sprites/characters/Player/Male/Lompat/Landing/Front/MaleJumpLandingFront.webp');
+    this.load.image('player-male-jump-landing-back', '/assets/sprites/characters/Player/Male/Lompat/Landing/Back/MaleJumpLandingBack.webp');
+    this.load.image('player-male-jump-landing-side', '/assets/sprites/characters/Player/Male/Lompat/Landing/Side/MaleJumpLandingSide.webp');
 
     // 2. Aset Karakter Female (Perempuan)
     // Idle (Front, Back, Side)
-    this.load.image('player-female-idle-front', '/assets/sprites/characters/Player/Female/Idle/Front/Front%20Female.png');
-    this.load.image('player-female-idle-back', '/assets/sprites/characters/Player/Female/Idle/Back/Back%20Female.png');
-    this.load.image('player-female-idle-side', '/assets/sprites/characters/Player/Female/Idle/Side/Side%20Female.png');
+    this.load.image('player-female-idle-front', '/assets/sprites/characters/Player/Female/Idle/Front/Front%20Female.webp');
+    this.load.image('player-female-idle-back', '/assets/sprites/characters/Player/Female/Idle/Back/Back%20Female.webp');
+    this.load.image('player-female-idle-side', '/assets/sprites/characters/Player/Female/Idle/Side/Side%20Female.webp');
     // Movement (Walk Front, Back, Side: frame 1 s/d 8)
     for (let i = 1; i <= 8; i++) {
-      this.load.image(`player-female-walk-front-${i}`, `/assets/sprites/characters/Player/Female/MovementFront/FemaleWalkFront${i}.png`);
-      this.load.image(`player-female-walk-back-${i}`, `/assets/sprites/characters/Player/Female/MovementBack/FemaleWalkBack${i}.png`);
-      this.load.image(`player-female-walk-side-${i}`, `/assets/sprites/characters/Player/Female/MovementSide/FemaleWalkSide${i}.png`);
+      this.load.image(`player-female-walk-front-${i}`, `/assets/sprites/characters/Player/Female/MovementFront/FemaleWalkFront${i}.webp`);
+      this.load.image(`player-female-walk-back-${i}`, `/assets/sprites/characters/Player/Female/MovementBack/FemaleWalkBack${i}.webp`);
+      this.load.image(`player-female-walk-side-${i}`, `/assets/sprites/characters/Player/Female/MovementSide/FemaleWalkSide${i}.webp`);
     }
     // Animasi Lompat Female (Charge, Lompat/Takeoff, Di Udara/InAir, Landing)
-    this.load.image('player-female-jump-charge-front', '/assets/sprites/characters/Player/Female/Lompat/Charge/Front/FemaleJumpCharge%20Front.png');
-    this.load.image('player-female-jump-charge-back', '/assets/sprites/characters/Player/Female/Lompat/Charge/Back/FemaleJumpChargeBack.png');
-    this.load.image('player-female-jump-charge-side', '/assets/sprites/characters/Player/Female/Lompat/Charge/Side/FemaleJumpChargeSide.png');
-    this.load.image('player-female-jump-takeoff-front', '/assets/sprites/characters/Player/Female/Lompat/Lompat/Front/FemaleJumpFront.png');
-    this.load.image('player-female-jump-takeoff-back', '/assets/sprites/characters/Player/Female/Lompat/Lompat/Back/FemaleJumpBack.png');
-    this.load.image('player-female-jump-takeoff-side', '/assets/sprites/characters/Player/Female/Lompat/Lompat/Side/FemaleJumpSide.png');
-    this.load.image('player-female-jump-air-front', '/assets/sprites/characters/Player/Female/Lompat/Di%20Udara/Front/FemaleJumpAirFront.png');
-    this.load.image('player-female-jump-air-back', '/assets/sprites/characters/Player/Female/Lompat/Di%20Udara/Back/FemaleJumpAirBack.png');
-    this.load.image('player-female-jump-air-side', '/assets/sprites/characters/Player/Female/Lompat/Di%20Udara/Side/FemaleJumpAirSide.png');
-    this.load.image('player-female-jump-landing-front', '/assets/sprites/characters/Player/Female/Lompat/Landing/Front/FemaleJumpLandingFront.png');
-    this.load.image('player-female-jump-landing-back', '/assets/sprites/characters/Player/Female/Lompat/Landing/Back/FemaleJumpLandingBack.png');
-    this.load.image('player-female-jump-landing-side', '/assets/sprites/characters/Player/Female/Lompat/Landing/Side/FemaleJumpLandingSide.png');
+    this.load.image('player-female-jump-charge-front', '/assets/sprites/characters/Player/Female/Lompat/Charge/Front/FemaleJumpCharge%20Front.webp');
+    this.load.image('player-female-jump-charge-back', '/assets/sprites/characters/Player/Female/Lompat/Charge/Back/FemaleJumpChargeBack.webp');
+    this.load.image('player-female-jump-charge-side', '/assets/sprites/characters/Player/Female/Lompat/Charge/Side/FemaleJumpChargeSide.webp');
+    this.load.image('player-female-jump-takeoff-front', '/assets/sprites/characters/Player/Female/Lompat/Lompat/Front/FemaleJumpFront.webp');
+    this.load.image('player-female-jump-takeoff-back', '/assets/sprites/characters/Player/Female/Lompat/Lompat/Back/FemaleJumpBack.webp');
+    this.load.image('player-female-jump-takeoff-side', '/assets/sprites/characters/Player/Female/Lompat/Lompat/Side/FemaleJumpSide.webp');
+    this.load.image('player-female-jump-air-front', '/assets/sprites/characters/Player/Female/Lompat/Di%20Udara/Front/FemaleJumpAirFront.webp');
+    this.load.image('player-female-jump-air-back', '/assets/sprites/characters/Player/Female/Lompat/Di%20Udara/Back/FemaleJumpAirBack.webp');
+    this.load.image('player-female-jump-air-side', '/assets/sprites/characters/Player/Female/Lompat/Di%20Udara/Side/FemaleJumpAirSide.webp');
+    this.load.image('player-female-jump-landing-front', '/assets/sprites/characters/Player/Female/Lompat/Landing/Front/FemaleJumpLandingFront.webp');
+    this.load.image('player-female-jump-landing-back', '/assets/sprites/characters/Player/Female/Lompat/Landing/Back/FemaleJumpLandingBack.webp');
+    this.load.image('player-female-jump-landing-side', '/assets/sprites/characters/Player/Female/Lompat/Landing/Side/FemaleJumpLandingSide.webp');
 
     // Avatar Portret HD
-    this.load.image('player-male-avatar', '/assets/sprites/characters/Player/Male/MaleAvatar.png');
-    this.load.image('player-female-avatar', '/assets/sprites/characters/Player/Female/FemaleAvatar.png');
+    this.load.image('player-male-avatar', '/assets/sprites/characters/Player/Male/MaleAvatar.webp');
+    this.load.image('player-female-avatar', '/assets/sprites/characters/Player/Female/FemaleAvatar.webp');
 
     // 3. Aset Reaksi Ekspresi Wajah Asli (Normal, Senang, Kaget, Marah)
     // Male Expressions
-    this.load.image('expr-male-normal', '/assets/sprites/characters/Player/Male/Ekspression/NormalMale.png');
-    this.load.image('expr-male-smile', '/assets/sprites/characters/Player/Male/Ekspression/SenangMale.png');
-    this.load.image('expr-male-shock', '/assets/sprites/characters/Player/Male/Ekspression/KagetMale.png');
-    this.load.image('expr-male-angry', '/assets/sprites/characters/Player/Male/Ekspression/MarahMale.png');
+    this.load.image('expr-male-normal', '/assets/sprites/characters/Player/Male/Ekspression/NormalMale.webp');
+    this.load.image('expr-male-smile', '/assets/sprites/characters/Player/Male/Ekspression/SenangMale.webp');
+    this.load.image('expr-male-shock', '/assets/sprites/characters/Player/Male/Ekspression/KagetMale.webp');
+    this.load.image('expr-male-angry', '/assets/sprites/characters/Player/Male/Ekspression/MarahMale.webp');
 
     // Female Expressions
-    this.load.image('expr-female-normal', '/assets/sprites/characters/Player/Female/Ekspression/NormalFemale.png');
-    this.load.image('expr-female-smile', '/assets/sprites/characters/Player/Female/Ekspression/SenangFemale.png');
-    this.load.image('expr-female-shock', '/assets/sprites/characters/Player/Female/Ekspression/KagetFemale.png');
-    this.load.image('expr-female-angry', '/assets/sprites/characters/Player/Female/Ekspression/MarahFemale.png');
+    this.load.image('expr-female-normal', '/assets/sprites/characters/Player/Female/Ekspression/NormalFemale.webp');
+    this.load.image('expr-female-smile', '/assets/sprites/characters/Player/Female/Ekspression/SenangFemale.webp');
+    this.load.image('expr-female-shock', '/assets/sprites/characters/Player/Female/Ekspression/KagetFemale.webp');
+    this.load.image('expr-female-angry', '/assets/sprites/characters/Player/Female/Ekspression/MarahFemale.webp');
 
     // 4. Aset Bangunan Sekolah (SD, SMP, SMA - 5x10 Petak Grid)
-    this.load.image('school-sd-building', '/assets/maps/SD/5x10%20Gedung%20SD.png');
-    this.load.image('school-smp-building', '/assets/maps/SMP/5x10%20Gedung%20SMP.png');
-    this.load.image('school-sma-building', '/assets/maps/SMA/5x10%20Gedung%20SMA.png');
+    this.load.image('school-sd-building', '/assets/maps/SD/5x10%20Gedung%20SD.webp');
+    this.load.image('school-smp-building', '/assets/maps/SMP/5x10%20Gedung%20SMP.webp');
+    this.load.image('school-sma-building', '/assets/maps/SMA/5x10%20Gedung%20SMA.webp');
 
     // 5. Aset Gerobak Kuliner Nusantara & Rumah Modern
-    this.load.image('house-5x5', '/assets/maps/World/Assets/5x5%20Rumah.png');
-    this.load.image('cart-bakso', '/assets/maps/World/Assets/3x3%20Gerobak%20Bakso.png');
-    this.load.image('cart-mie-ayam', '/assets/maps/World/Assets/3x3%20Gerobak%20Mie%20Ayam.png');
-    this.load.image('cart-soto', '/assets/maps/World/Assets/3x3%20Gerobak%20Soto.png');
+    this.load.image('house-5x5', '/assets/maps/World/Assets/5x5%20Rumah.webp');
+    this.load.image('cart-bakso', '/assets/maps/World/Assets/3x3%20Gerobak%20Bakso.webp');
+    this.load.image('cart-mie-ayam', '/assets/maps/World/Assets/3x3%20Gerobak%20Mie%20Ayam.webp');
+    this.load.image('cart-soto', '/assets/maps/World/Assets/3x3%20Gerobak%20Soto.webp');
 
     // 6. Aset Properti & Fasilitas Kota Open World
-    this.load.image('court-basket', '/assets/maps/World/Assets/10X5%20LapanganBasket.png');
-    this.load.image('court-bola', '/assets/maps/World/Assets/10X5%20LapanganBola.png');
-    this.load.image('plaza-stage', '/assets/maps/World/Assets/10X8%20Panggung.png');
-    this.load.image('building-cafe', '/assets/maps/World/Assets/5x5%20Cafe.png');
-    this.load.image('building-perpustakaan', '/assets/maps/World/Assets/5x5%20Perpustakaan.png');
-    this.load.image('building-kantor-polisi', '/assets/maps/World/Assets/5x5%20KantorPolisi.png');
-    this.load.image('building-bank', '/assets/maps/World/Assets/5x5%20Bank.png');
-    this.load.image('building-apotek', '/assets/maps/World/Assets/5x5%20Apotek.png');
-    this.load.image('building-hospital', '/assets/maps/World/Assets/5x5%20Apotek.png');
-    this.load.image('building-makelar', '/assets/maps/World/Assets/5x5%20Makelar.png');
-    this.load.image('prop-pagar-batu', '/assets/maps/World/Assets/1x2%20PagarBatu.png');
-    this.load.image('trash-organik', '/assets/maps/World/Assets/1x2%20TongSampahDaurUlangOrganik.png');
-    this.load.image('trash-plastik', '/assets/maps/World/Assets/1x2%20TongSampahDaurUlangPlastik.png');
-    this.load.image('trash-kertas', '/assets/maps/World/Assets/1x2%20TongSampahDaurUlangKertas.png');
-    this.load.image('trash-logam', '/assets/maps/World/Assets/1x2%20TongSampahDaurUlangLogam.png');
-    this.load.image('trash-b3', '/assets/maps/World/Assets/1x2%20TongSampahDaurUlangB3.png');
-    this.load.image('popup-billboard', '/assets/maps/World/Assets/10X10%20Popup.png');
+    this.load.image('court-basket', '/assets/maps/World/Assets/10X5%20LapanganBasket.webp');
+    this.load.image('court-bola', '/assets/maps/World/Assets/10X5%20LapanganBola.webp');
+    this.load.image('plaza-stage', '/assets/maps/World/Assets/10X8%20Panggung.webp');
+    this.load.image('building-cafe', '/assets/maps/World/Assets/5x5%20Cafe.webp');
+    this.load.image('building-perpustakaan', '/assets/maps/World/Assets/5x5%20Perpustakaan.webp');
+    this.load.image('building-kantor-polisi', '/assets/maps/World/Assets/5x5%20KantorPolisi.webp');
+    this.load.image('building-bank', '/assets/maps/World/Assets/5x5%20Bank.webp');
+    this.load.image('building-apotek', '/assets/maps/World/Assets/5x5%20Apotek.webp');
+    this.load.image('building-hospital', '/assets/maps/World/Assets/5x5%20Apotek.webp');
+    this.load.image('building-makelar', '/assets/maps/World/Assets/5x5%20Makelar.webp');
+    this.load.image('prop-pagar-batu', '/assets/maps/World/Assets/1x2%20PagarBatu.webp');
+    this.load.image('trash-organik', '/assets/maps/World/Assets/1x2%20TongSampahDaurUlangOrganik.webp');
+    this.load.image('trash-plastik', '/assets/maps/World/Assets/1x2%20TongSampahDaurUlangPlastik.webp');
+    this.load.image('trash-kertas', '/assets/maps/World/Assets/1x2%20TongSampahDaurUlangKertas.webp');
+    this.load.image('trash-logam', '/assets/maps/World/Assets/1x2%20TongSampahDaurUlangLogam.webp');
+    this.load.image('trash-b3', '/assets/maps/World/Assets/1x2%20TongSampahDaurUlangB3.webp');
+    this.load.image('popup-billboard', '/assets/maps/World/Assets/10X10%20Popup.webp');
     // Aset Tembok & Ground Tile Open World (/assets/maps/World/Ground/Tile/)
-    this.load.image('tile-wall-dark', '/assets/maps/World/Ground/Tile/DarkWall.png');
-    this.load.image('tile-wall-light', '/assets/maps/World/Ground/Tile/LightWall.png');
-    this.load.image('tile-wall-top-dark', '/assets/maps/World/Ground/Tile/DarkWall_WithTop.png');
-    this.load.image('tile-wall-top-light', '/assets/maps/World/Ground/Tile/LightWall_WithTop.png');
-    this.load.image('tile-ground-dark', '/assets/maps/World/Ground/Tile/GroundGelap.png');
-    this.load.image('tile-ground-light', '/assets/maps/World/Ground/Tile/GroundTerang.png');
+    this.load.image('tile-wall-dark', '/assets/maps/World/Ground/Tile/DarkWall.webp');
+    this.load.image('tile-wall-light', '/assets/maps/World/Ground/Tile/LightWall.webp');
+    this.load.image('tile-wall-top-dark', '/assets/maps/World/Ground/Tile/DarkWall_WithTop.webp');
+    this.load.image('tile-wall-top-light', '/assets/maps/World/Ground/Tile/LightWall_WithTop.webp');
+    this.load.image('tile-ground-dark', '/assets/maps/World/Ground/Tile/GroundGelap.webp');
+    this.load.image('tile-ground-light', '/assets/maps/World/Ground/Tile/GroundTerang.webp');
 
-    this.load.image('tile-trotoar-alunalun', '/assets/maps/World/Assets/1X1%20Trotoar%20Alunalun.png');
-    this.load.image('trotoar-2', '/assets/maps/World/Assets/1X1%20Trotoar2.png');
-    this.load.image('tile-trotoar-3', '/assets/maps/World/Assets/1X1%20Trotoar2.png');
-    this.load.image('tile-dig', '/assets/maps/World/Assets/1x1%20Dig.png');
-    this.load.image('road-horizontal', '/assets/maps/World/Assets/1x2%20Jalan%20Horizontal.png');
-    this.load.image('road-vertical', '/assets/maps/World/Assets/2x1%20Jalan%20Vertical.png');
-    this.load.image('road-intersection', '/assets/maps/World/Assets/2x2%20JalanTengah.png');
-    this.load.image('trotoar-horizontal', '/assets/maps/World/Assets/1x1%20Trotoar1%20Horizontal.png');
-    this.load.image('trotoar-vertical', '/assets/maps/World/Assets/1x1%20Trotoar1%20vertical.png');
-    this.load.image('trotoar-edge', '/assets/maps/World/Assets/1x1%20Trotoar1%20Edge.png');
-    this.load.image('prop-meja', '/assets/maps/World/Assets/1x1%20Meja.png');
-    this.load.image('prop-batu', '/assets/maps/World/Assets/1x2%20Batu.png');
-    this.load.image('prop-kursi-front', '/assets/maps/World/Assets/1x2%20Kursi%20Taman.png');
-    this.load.image('prop-kursi-side', '/assets/maps/World/Assets/1x2%20Kursi%20Taman%20Side-1.png');
-    this.load.image('prop-kursi-side-1', '/assets/maps/World/Assets/1x2%20Kursi%20Taman%20Side-1.png');
-    this.load.image('prop-kursi-warung', '/assets/maps/World/Assets/1x2%20Kursi%20Taman%20Warung.png');
-    this.load.image('prop-pohon-small', '/assets/maps/World/Assets/1x2%20Pohon.png');
-    this.load.image('prop-pohon-tall', '/assets/maps/World/Assets/1x3%20Pohon.png');
-    this.load.image('prop-rumput', '/assets/maps/World/Assets/1x2%20Rumput.png');
-    this.load.image('prop-taman-rumput', '/assets/maps/World/Assets/2x1%20TamanRumput.png');
-    this.load.image('prop-tong-sampah', '/assets/maps/World/Assets/1x2%20Tong%20Sampah.png');
-    this.load.image('prop-lampu', '/assets/maps/World/Assets/1x3%20Lampu.png');
-    this.load.image('vending-blue', '/assets/maps/World/Assets/1x2%20Vending%20Machine%20Blue.png');
-    this.load.image('vending-green', '/assets/maps/World/Assets/1x2%20Vending%20Machine%20Green.png');
-    this.load.image('vending-red', '/assets/maps/World/Assets/1x2%20Vending%20Machine%20Red.png');
-    this.load.image('vending-yellow', '/assets/maps/World/Assets/1x2%20Vending%20Machine%20Yellow.png');
+    this.load.image('tile-trotoar-alunalun', '/assets/maps/World/Assets/1X1%20Trotoar%20Alunalun.webp');
+    this.load.image('trotoar-2', '/assets/maps/World/Assets/1X1%20Trotoar2.webp');
+    this.load.image('tile-trotoar-3', '/assets/maps/World/Assets/1X1%20Trotoar2.webp');
+    this.load.image('tile-dig', '/assets/maps/World/Assets/1x1%20Dig.webp');
+    this.load.image('road-horizontal', '/assets/maps/World/Assets/1x2%20Jalan%20Horizontal.webp');
+    this.load.image('road-vertical', '/assets/maps/World/Assets/2x1%20Jalan%20Vertical.webp');
+    this.load.image('road-intersection', '/assets/maps/World/Assets/2x2%20JalanTengah.webp');
+    this.load.image('trotoar-horizontal', '/assets/maps/World/Assets/1x1%20Trotoar1%20Horizontal.webp');
+    this.load.image('trotoar-vertical', '/assets/maps/World/Assets/1x1%20Trotoar1%20vertical.webp');
+    this.load.image('trotoar-edge', '/assets/maps/World/Assets/1x1%20Trotoar1%20Edge.webp');
+    this.load.image('prop-meja', '/assets/maps/World/Assets/1x1%20Meja.webp');
+    this.load.image('prop-batu', '/assets/maps/World/Assets/1x2%20Batu.webp');
+    this.load.image('prop-kursi-front', '/assets/maps/World/Assets/1x2%20Kursi%20Taman.webp');
+    this.load.image('prop-kursi-side', '/assets/maps/World/Assets/1x2%20Kursi%20Taman%20Side-1.webp');
+    this.load.image('prop-kursi-side-1', '/assets/maps/World/Assets/1x2%20Kursi%20Taman%20Side-1.webp');
+    this.load.image('prop-kursi-warung', '/assets/maps/World/Assets/1x2%20Kursi%20Taman%20Warung.webp');
+    this.load.image('prop-pohon-small', '/assets/maps/World/Assets/1x2%20Pohon.webp');
+    this.load.image('prop-pohon-tall', '/assets/maps/World/Assets/1x3%20Pohon.webp');
+    this.load.image('prop-rumput', '/assets/maps/World/Assets/1x2%20Rumput.webp');
+    this.load.image('prop-taman-rumput', '/assets/maps/World/Assets/2x1%20TamanRumput.webp');
+    this.load.image('prop-tong-sampah', '/assets/maps/World/Assets/1x2%20Tong%20Sampah.webp');
+    this.load.image('prop-lampu', '/assets/maps/World/Assets/1x3%20Lampu.webp');
+    this.load.image('vending-blue', '/assets/maps/World/Assets/1x2%20Vending%20Machine%20Blue.webp');
+    this.load.image('vending-green', '/assets/maps/World/Assets/1x2%20Vending%20Machine%20Green.webp');
+    this.load.image('vending-red', '/assets/maps/World/Assets/1x2%20Vending%20Machine%20Red.webp');
+    this.load.image('vending-yellow', '/assets/maps/World/Assets/1x2%20Vending%20Machine%20Yellow.webp');
 
     // 7. Aset Eksklusif Ruang Kendali Super Admin (/assets/maps/Admin/Assets/)
-    this.load.image('admin-floor-dark', '/assets/maps/Admin/Assets/1x1%20Lantai%20Admin%20Gelap.png');
-    this.load.image('admin-floor-light', '/assets/maps/Admin/Assets/1x1%20Lantai%20Admin%20Terang.png');
-    this.load.image('admin-carpet-gold', '/assets/maps/Admin/Assets/2x1%20Karpet%20Emas.png');
-    this.load.image('admin-throne', '/assets/maps/Admin/Assets/3x3%20Tahta%20Raden.png');
-    this.load.image('admin-console-broadcast', '/assets/maps/Admin/Assets/2x2%20Konsol%20Broadcast.png');
-    this.load.image('admin-console-database', '/assets/maps/Admin/Assets/2x2%20Konsol%20Database.png');
-    this.load.image('admin-console-godmode', '/assets/maps/Admin/Assets/2x2%20Konsol%20Godmode.png');
-    this.load.image('admin-portal-world', '/assets/maps/Admin/Assets/2x2%20Portal%20World.png');
-    this.load.image('admin-portal-house', '/assets/maps/Admin/Assets/2x2%20Portal%20House.png');
-    this.load.image('admin-pillar', '/assets/maps/Admin/Assets/1x3%20Pilar%20Cyber.png');
-    this.load.image('admin-banner', '/assets/maps/Admin/Assets/1x2%20Banner%20Raden.png');
-    this.load.image('admin-holo-globe', '/assets/maps/Admin/Assets/2x2%20Holo%20Globe.png');
+    this.load.image('admin-floor-dark', '/assets/maps/Admin/Assets/1x1%20Lantai%20Admin%20Gelap.webp');
+    this.load.image('admin-floor-light', '/assets/maps/Admin/Assets/1x1%20Lantai%20Admin%20Terang.webp');
+    this.load.image('admin-carpet-gold', '/assets/maps/Admin/Assets/2x1%20Karpet%20Emas.webp');
+    this.load.image('admin-throne', '/assets/maps/Admin/Assets/3x3%20Tahta%20Raden.webp');
+    this.load.image('admin-console-broadcast', '/assets/maps/Admin/Assets/2x2%20Konsol%20Broadcast.webp');
+    this.load.image('admin-console-database', '/assets/maps/Admin/Assets/2x2%20Konsol%20Database.webp');
+    this.load.image('admin-console-godmode', '/assets/maps/Admin/Assets/2x2%20Konsol%20Godmode.webp');
+    this.load.image('admin-portal-world', '/assets/maps/Admin/Assets/2x2%20Portal%20World.webp');
+    this.load.image('admin-portal-house', '/assets/maps/Admin/Assets/2x2%20Portal%20House.webp');
+    this.load.image('admin-pillar', '/assets/maps/Admin/Assets/1x3%20Pilar%20Cyber.webp');
+    this.load.image('admin-banner', '/assets/maps/Admin/Assets/1x2%20Banner%20Raden.webp');
+    this.load.image('admin-holo-globe', '/assets/maps/Admin/Assets/2x2%20Holo%20Globe.webp');
 
     // 8. Aset Karakter Asli NPC Nusantara (1x2 Petak Grid / 480x960px)
-    this.load.image('npc-badut', '/assets/sprites/NPC/1x2%20NPC%20Badut.png');
-    this.load.image('npc-guru-sd', '/assets/sprites/NPC/1x2%20NPC%20GuruSD.png');
-    this.load.image('npc-guru-smp', '/assets/sprites/NPC/1x2%20NPC%20GuruSMP.png');
-    this.load.image('npc-guru-sma', '/assets/sprites/NPC/1x2%20NPC%20GuruSMA.png');
-    this.load.image('npc-nelayan', '/assets/sprites/NPC/1x2%20NPC%20Nelayan.png');
-    this.load.image('npc-pedagang-bakso', '/assets/sprites/NPC/1x2%20NPC%20Pedangang%20Bakso.png');
-    this.load.image('npc-pedagang-mie-ayam', '/assets/sprites/NPC/1x2%20NPC%20Pedangang%20Mie%20Ayam.png');
-    this.load.image('npc-pedagang-soto', '/assets/sprites/NPC/1x2%20NPC%20Pedangang%20Soto.png');
-    this.load.image('npc-penjaga-pasar', '/assets/sprites/NPC/1x2%20NPC%20PenjagaPasar.png');
-    this.load.image('npc-perawat', '/assets/sprites/NPC/1x2%20NPC%20Perawat.png');
-    this.load.image('npc-petani', '/assets/sprites/NPC/1x2%20NPC%20Petani.png');
-    this.load.image('npc-petugas-kebersihan', '/assets/sprites/NPC/1x2%20NPC%20PetugasKebersihan.png');
-    this.load.image('npc-polisi', '/assets/sprites/NPC/1x2%20NPC%20Polisi.png');
-    this.load.image('npc-polwan', '/assets/sprites/NPC/1x2%20NPC%20Polwan.png');
+    this.load.image('npc-badut', '/assets/sprites/NPC/1x2%20NPC%20Badut.webp');
+    this.load.image('npc-guru-sd', '/assets/sprites/NPC/1x2%20NPC%20GuruSD.webp');
+    this.load.image('npc-guru-smp', '/assets/sprites/NPC/1x2%20NPC%20GuruSMP.webp');
+    this.load.image('npc-guru-sma', '/assets/sprites/NPC/1x2%20NPC%20GuruSMA.webp');
+    this.load.image('npc-nelayan', '/assets/sprites/NPC/1x2%20NPC%20Nelayan.webp');
+    this.load.image('npc-pedagang-bakso', '/assets/sprites/NPC/1x2%20NPC%20Pedangang%20Bakso.webp');
+    this.load.image('npc-pedagang-mie-ayam', '/assets/sprites/NPC/1x2%20NPC%20Pedangang%20Mie%20Ayam.webp');
+    this.load.image('npc-pedagang-soto', '/assets/sprites/NPC/1x2%20NPC%20Pedangang%20Soto.webp');
+    this.load.image('npc-penjaga-pasar', '/assets/sprites/NPC/1x2%20NPC%20PenjagaPasar.webp');
+    this.load.image('npc-perawat', '/assets/sprites/NPC/1x2%20NPC%20Perawat.webp');
+    this.load.image('npc-petani', '/assets/sprites/NPC/1x2%20NPC%20Petani.webp');
+    this.load.image('npc-petugas-kebersihan', '/assets/sprites/NPC/1x2%20NPC%20PetugasKebersihan.webp');
+    this.load.image('npc-polisi', '/assets/sprites/NPC/1x2%20NPC%20Polisi.webp');
+    this.load.image('npc-polwan', '/assets/sprites/NPC/1x2%20NPC%20Polwan.webp');
   }
 
   /**
@@ -226,38 +226,36 @@ export class BootScene extends Phaser.Scene {
     EventBus.emit('assets-loading-progress', 0.96);
     this.initCharacterAnimations();
 
-    // Pastikan seluruh aset sprite memiliki filter tekstur tajam HD
-    this.textures.each((texture: Phaser.Textures.Texture) => {
-      texture.setFilter(Phaser.Textures.FilterMode.LINEAR);
-    }, this);
-
     const pathname = window.location.pathname;
 
     // Pisahkan inisialisasi scene berikutnya dari 'load' handler browser agar tidak memblokir thread (kurangi ms violation)
     this.time.delayedCall(16, () => {
-      // 1. Cek Sesi Aktif Mini Game Olahraga (Head Soccer / Head Basketball)
-      // Supaya saat browser di-refresh, pemain tetap berada di arena mini game tanpa kembali ke World!
+      // 1. Cek Sesi Aktif Mini Game Olahraga (Hanya jika URL berada di /minigame)
       let activeMiniGame: any = null;
-      try {
-        const stored = localStorage.getItem('raden_active_minigame');
-        if (stored) {
-          const parsed = JSON.parse(stored);
-          if (parsed && parsed.sport && (!parsed.timestamp || Date.now() - parsed.timestamp < 14400000)) {
-            activeMiniGame = parsed;
+      if (pathname.startsWith('/minigame')) {
+        try {
+          const stored = localStorage.getItem('raden_active_minigame');
+          if (stored) {
+            const parsed = JSON.parse(stored);
+            if (parsed && parsed.sport && (!parsed.timestamp || Date.now() - parsed.timestamp < 14400000)) {
+              activeMiniGame = parsed;
+            }
           }
-        }
-      } catch (e) {}
+        } catch (e) {}
 
-      // Deteksi juga jika URL langsung mengarah ke /minigame/soccer atau /minigame/basketball
-      if (!activeMiniGame && pathname.startsWith('/minigame')) {
-        const urlParams = new URLSearchParams(window.location.search);
-        const sportParam = pathname.includes('basket') ? 'basketball' : 'soccer';
-        const modeParam = (urlParams.get('mode') as any) || 'ai';
-        activeMiniGame = {
-          sport: sportParam,
-          mode: modeParam,
-          returnPos: sportParam === 'soccer' ? { x: 3480, y: 6040 } : { x: 6060, y: 6040 },
-        };
+        // Deteksi parameter query jika URL langsung mengarah ke /minigame
+        if (!activeMiniGame) {
+          const urlParams = new URLSearchParams(window.location.search);
+          const sportParam = pathname.includes('basket') ? 'basketball' : 'soccer';
+          const modeParam = (urlParams.get('mode') as any) || 'ai';
+          activeMiniGame = {
+            sport: sportParam,
+            mode: modeParam,
+            returnPos: sportParam === 'soccer' ? { x: 3480, y: 6040 } : { x: 6060, y: 6040 },
+          };
+        }
+      } else {
+        try { localStorage.removeItem('raden_active_minigame'); } catch (e) {}
       }
 
       if (activeMiniGame) {
@@ -275,7 +273,7 @@ export class BootScene extends Phaser.Scene {
         const returnY = activeMiniGame.returnPos?.y || 6040;
 
         EventBus.emit('minigame-active', true);
-        EventBus.emit('location-updated', activeMiniGame.sport === 'soccer' ? 'ARENA STADION: HEAD SOCCER' : 'ARENA STREETBALL: HEAD BASKETBALL');
+        EventBus.emit('location-updated', activeMiniGame.sport === 'soccer' ? 'ARENA STADION: SOCCER' : 'ARENA STREETBALL: BASKETBALL');
         this.scene.start(targetSceneKey, {
           mode: activeMiniGame.mode || 'ai',
           name: savedName || 'Petualang',
@@ -810,36 +808,36 @@ export class BootScene extends Phaser.Scene {
       }
     }
 
-    // Helper Generator Tekstur Awan Cumulus HD (Standalone Puffy Cumulus Shadows)
+    // Helper Generator Tekstur Awan Cumulus HD (Super Cepat & Halus dengan Radial Gradient)
     const createCloudTexture = (key: string, w: number, h: number, puffs: { x: number; y: number; r: number }[]) => {
       if (this.textures.exists(key)) return;
+      // Gunakan resolusi 0.5x dengan WebGL bilinear filter untuk menghasilkan bayangan awan halus tanpa membebani CPU
+      const scale = 0.5;
+      const sw = Math.round(w * scale);
+      const sh = Math.round(h * scale);
       const canvas = document.createElement('canvas');
-      canvas.width = w;
-      canvas.height = h;
+      canvas.width = sw;
+      canvas.height = sh;
       const ctx = canvas.getContext('2d');
       if (!ctx) return;
 
-      ctx.clearRect(0, 0, w, h);
-      ctx.filter = 'blur(10px)'; // Feathering lembut alami, tetap mempertahankan siluet awan HD
+      ctx.clearRect(0, 0, sw, sh);
 
-      // Lapisan Bayangan Awan Luar
-      ctx.fillStyle = 'rgba(15, 23, 42, 0.44)';
-      ctx.beginPath();
+      // Render bulatan awan dengan radial gradient (0ms CPU delay, selembut sutra)
       puffs.forEach(p => {
-        ctx.moveTo(p.x + p.r, p.y);
-        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-      });
-      ctx.fill();
+        const px = p.x * scale;
+        const py = p.y * scale;
+        const pr = p.r * scale;
+        const grad = ctx.createRadialGradient(px, py, pr * 0.2, px, py, pr);
+        grad.addColorStop(0, 'rgba(15, 23, 42, 0.44)');
+        grad.addColorStop(0.65, 'rgba(15, 23, 42, 0.28)');
+        grad.addColorStop(1, 'rgba(15, 23, 42, 0)');
 
-      // Lapisan Volume Inti Dalam
-      ctx.filter = 'blur(16px)';
-      ctx.fillStyle = 'rgba(15, 23, 42, 0.22)';
-      ctx.beginPath();
-      puffs.forEach(p => {
-        ctx.moveTo(p.x + p.r * 0.75, p.y);
-        ctx.arc(p.x, p.y, p.r * 0.75, 0, Math.PI * 2);
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(px, py, pr, 0, Math.PI * 2);
+        ctx.fill();
       });
-      ctx.fill();
 
       const tex = this.textures.addCanvas(key, canvas);
       tex.setFilter(Phaser.Textures.FilterMode.LINEAR);

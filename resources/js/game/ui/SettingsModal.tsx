@@ -18,6 +18,7 @@ import React, { useState, useEffect } from 'react';
 import { SoundManager } from '../core/SoundManager';
 import { NetworkManager } from '../core/NetworkManager';
 import { EventBus } from '../core/EventBus';
+import { IVirtualControlsLayout, DEFAULT_CONTROLS_LAYOUT } from './VirtualControls';
 import {
   X,
   Languages,
@@ -40,6 +41,7 @@ import {
   Play,
   Pause,
   Music,
+  Move,
 } from 'lucide-react';
 
 export type LanguageCode = 'id' | 'en' | 'zh' | 'ja' | 'ko' | 'ar' | 'fr' | 'ru' | 'de' | 'es';
@@ -93,6 +95,35 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     return settings.cameraZoom || 0.9;
   });
   const [isBgmPlaying, setIsBgmPlaying] = useState<boolean>(() => sound.getIsBgmPlaying());
+
+  // Kustomisasi Ukuran & Posisi Kontrol Virtual Mobile
+  const [controlsLayout, setControlsLayout] = useState<IVirtualControlsLayout>(() => {
+    try {
+      const saved = localStorage.getItem('raden_virtual_controls_layout');
+      if (saved) return { ...DEFAULT_CONTROLS_LAYOUT, ...JSON.parse(saved) };
+    } catch (e) {}
+    return DEFAULT_CONTROLS_LAYOUT;
+  });
+
+  const handleUpdateControlsLayout = (patch: Partial<IVirtualControlsLayout>) => {
+    setControlsLayout((prev) => {
+      const updated = { ...prev, ...patch };
+      try {
+        localStorage.setItem('raden_virtual_controls_layout', JSON.stringify(updated));
+      } catch (e) {}
+      EventBus.emit('virtual-controls-layout-updated', updated);
+      return updated;
+    });
+  };
+
+  const handleResetControlsLayout = () => {
+    sound.playClick();
+    setControlsLayout(DEFAULT_CONTROLS_LAYOUT);
+    try {
+      localStorage.setItem('raden_virtual_controls_layout', JSON.stringify(DEFAULT_CONTROLS_LAYOUT));
+    } catch (e) {}
+    EventBus.emit('virtual-controls-layout-updated', DEFAULT_CONTROLS_LAYOUT);
+  };
 
   useEffect(() => {
     if (!isOpen) return;
@@ -212,7 +243,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const cameraZoomPresets = [
     { label: 'Panorama Luas (80×80)', value: 0.6, desc: 'Melihat kawasan open world 80x80 ekstra luas' },
     { label: 'Jauh / Luas', value: 0.75, desc: 'Melihat area sekitar lebih lebar' },
-    { label: 'Standar Open World', value: 0.9, desc: 'Tampilan proporsional RPG' },
+    { label: 'Standar Open World', value: 0.9, desc: 'Tampilan proporsional Simulasi' },
     { label: 'Fokus Karakter', value: 1.15, desc: 'Lebih dekat dengan avatar' },
     { label: 'Detail / Zoom In', value: 1.4, desc: 'Melihat ekspresi & tekstur HD' },
   ];
@@ -628,15 +659,59 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   </div>
                 </div>
               ) : (
-                <div className="p-3.5 rounded-md bg-[#0e0e0e] border border-neutral-800 text-xs space-y-2">
-                  <span className="font-bold text-amber-400 uppercase tracking-wider text-[11px]">
-                    Panduan Kontrol Layar Sentuh (Mobile):
-                  </span>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-neutral-300 text-[11px]">
-                    <div>• Analog Kiri : Gerak 360° Mulus</div>
-                    <div>• Tap Lantai : Navigasi Otomatis</div>
-                    <div>• Tombol Bulat AKSI : Bicara & Pintu</div>
-                    <div>• Ikon Chat Profil : Buka Obrolan</div>
+                <div className="space-y-3">
+                  {/* KUSTOMISASI KONTROL LAYAR SENTUH (LANGSUNG DI LAYAR) */}
+                  <div className="p-4 rounded-xl bg-gradient-to-br from-amber-500/10 via-black to-neutral-900 border-2 border-amber-500/30 space-y-3.5 shadow-lg">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Sliders className="w-4 h-4 text-amber-400" />
+                        <span className="font-bold text-amber-400 uppercase tracking-wider text-xs">
+                          Kustomisasi Posisi & Skala Kontrol:
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleResetControlsLayout}
+                        className="px-2.5 py-1 rounded-lg bg-neutral-900 hover:bg-neutral-800 border border-neutral-700 text-[10px] font-bold text-neutral-300 hover:text-amber-400 cursor-pointer flex items-center gap-1 transition-colors"
+                        title="Kembalikan posisi & skala kontrol virtual ke standar pabrik"
+                      >
+                        <RefreshCw className="w-3 h-3" />
+                        <span>Reset Standar</span>
+                      </button>
+                    </div>
+
+                    <p className="text-xs text-neutral-300 leading-relaxed">
+                      Kamu bisa <strong>menggeser analog & setiap tombol langsung dengan jari di layar game</strong>, serta memilih tombol untuk langsung memperbesar (<span className="text-amber-400 font-bold">+</span>) atau memperkecil (<span className="text-amber-400 font-bold">-</span>) ukurannya tanpa perlu repot mengatur slider!
+                    </p>
+
+                    <div className="pt-1">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          handleControlModeChange('mobile');
+                          onClose();
+                          setTimeout(() => {
+                            EventBus.emit('open-controls-layout-editor');
+                          }, 120);
+                        }}
+                        className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-neutral-950 font-black text-xs uppercase tracking-wider shadow-lg flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-98"
+                      >
+                        <Move className="w-4 h-4 stroke-[2.5]" />
+                        <span>📱 Buka Pengatur Kontrol di Layar (Drag & Resize)</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="p-3.5 rounded-md bg-[#0e0e0e] border border-neutral-800 text-xs space-y-2">
+                    <span className="font-bold text-amber-400 uppercase tracking-wider text-[11px]">
+                      Panduan Kontrol Layar Sentuh (Mobile):
+                    </span>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-neutral-300 text-[11px]">
+                      <div>• Analog Kiri : Gerak 360° Mulus</div>
+                      <div>• Tap Lantai : Navigasi Otomatis</div>
+                      <div>• Tombol Bulat AKSI : Bicara & Pintu</div>
+                      <div>• Ikon Chat Profil : Buka Obrolan</div>
+                    </div>
                   </div>
                 </div>
               )}

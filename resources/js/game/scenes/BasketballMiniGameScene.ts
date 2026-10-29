@@ -351,7 +351,7 @@ export class BasketballMiniGameScene extends Phaser.Scene {
       });
     }
 
-    EventBus.emit('location-updated', 'ARENA STREETBALL: HEAD BASKETBALL 1 VS 1');
+    EventBus.emit('location-updated', 'ARENA STREETBALL: BASKETBALL 1 VS 1');
     EventBus.emit('minigame-active', true);
   }
 
@@ -381,7 +381,7 @@ export class BasketballMiniGameScene extends Phaser.Scene {
 
     const banner = this.add.rectangle(width / 2, groundY - 210, Math.min(width * 0.7, 440), 55, 0x090b10, 0.85);
     banner.setStrokeStyle(2, 0xf59e0b);
-    this.add.text(width / 2, groundY - 210, '🏀 RADEN HEAD BASKETBALL ★ DOUBLE JUMP & DASH READY 🏀', {
+    this.add.text(width / 2, groundY - 210, '🏀 RADEN BASKETBALL ★ DOUBLE JUMP & DASH READY 🏀', {
       fontFamily: 'Chakra Petch, sans-serif',
       fontSize: '11px',
       color: '#fbbf24',

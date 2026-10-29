@@ -190,7 +190,7 @@ export class SchoolScene extends Phaser.Scene {
           id: 'npc_guru_sd',
           name: 'Bu Guru Endang',
           role: 'Wali Kelas SD Teladan',
-          avatarUrl: '/assets/sprites/NPC/1x2%20NPC%20GuruSD.png',
+          avatarUrl: '/assets/sprites/NPC/1x2%20NPC%20GuruSD.webp',
           avatarType: 'sage',
           x: 760,
           y: 380,
@@ -206,7 +206,7 @@ export class SchoolScene extends Phaser.Scene {
           id: 'npc_siswa_sd',
           name: 'Budi Kecil',
           role: 'Murid Berprestasi SD (Merah Putih)',
-          avatarUrl: '/assets/sprites/NPC/1x2%20NPC%20GuruSD.png',
+          avatarUrl: '/assets/sprites/NPC/1x2%20NPC%20GuruSD.webp',
           avatarType: 'sage',
           x: 660,
           y: 660,
@@ -225,7 +225,7 @@ export class SchoolScene extends Phaser.Scene {
           id: 'npc_guru_smp',
           name: 'Pak Guru Haryanto',
           role: 'Guru IPA & Pembina OSIS SMP',
-          avatarUrl: '/assets/sprites/NPC/1x2%20NPC%20GuruSMP.png',
+          avatarUrl: '/assets/sprites/NPC/1x2%20NPC%20GuruSMP.webp',
           avatarType: 'sage',
           x: 760,
           y: 380,
@@ -241,7 +241,7 @@ export class SchoolScene extends Phaser.Scene {
           id: 'npc_siswa_smp',
           name: 'Siti Rahma',
           role: 'Juara Olimpiade Sains SMP (Biru Putih)',
-          avatarUrl: '/assets/sprites/NPC/1x2%20NPC%20GuruSMP.png',
+          avatarUrl: '/assets/sprites/NPC/1x2%20NPC%20GuruSMP.webp',
           avatarType: 'sage',
           x: 660,
           y: 660,
@@ -260,7 +260,7 @@ export class SchoolScene extends Phaser.Scene {
           id: 'npc_kepsek_sma',
           name: 'Ibu Dra. Ratna Dewi',
           role: 'Kepala Sekolah SMA Kebangsaan',
-          avatarUrl: '/assets/sprites/NPC/1x2%20NPC%20GuruSMA.png',
+          avatarUrl: '/assets/sprites/NPC/1x2%20NPC%20GuruSMA.webp',
           avatarType: 'sage',
           x: 760,
           y: 380,
@@ -276,7 +276,7 @@ export class SchoolScene extends Phaser.Scene {
           id: 'npc_siswa_sma',
           name: 'Dimas Alamsyah',
           role: 'Ketua OSIS SMA (Abu-Abu Putih)',
-          avatarUrl: '/assets/sprites/NPC/1x2%20NPC%20GuruSMA.png',
+          avatarUrl: '/assets/sprites/NPC/1x2%20NPC%20GuruSMA.webp',
           avatarType: 'sage',
           x: 660,
           y: 660,
@@ -1870,7 +1870,7 @@ export class SchoolScene extends Phaser.Scene {
         grade: this.grade,
         deskType: 'guru',
       });
-      this.player.showSpeechBubble(`Membuka kurikulum mata pelajaran Kelas ${this.grade} di Meja Guru! 📚🎓`);
+      this.player.showSpeechBubble(`Membuka Teks Quiz Kelas ${this.grade} di Meja Guru! 📝🎓`);
       return;
     }
 
@@ -1886,7 +1886,7 @@ export class SchoolScene extends Phaser.Scene {
         grade: this.grade,
         deskType: 'siswa',
       });
-      this.player.showSpeechBubble(`Membuka buku mata pelajaran Kelas ${this.grade} di Meja Siswa! 📝📖`);
+      this.player.showSpeechBubble(`Membuka Teks Quiz Kelas ${this.grade} di Meja Siswa! 📝📖`);
       return;
     }
 

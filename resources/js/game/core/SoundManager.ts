@@ -80,7 +80,7 @@ export class SoundManager {
     try {
       this.bgmAudio = new Audio(this.bgmUrl);
       this.bgmAudio.loop = true;
-      this.bgmAudio.preload = 'auto';
+      this.bgmAudio.preload = 'none'; // Jangan unduh file 3.66MB saat awal buka web, unduh hanya saat dimainkan
       this.updateBgmVolume();
     } catch (e) {
       console.warn('[SoundManager] Inisialisasi BGM audio error:', e);
@@ -399,6 +399,28 @@ export class SoundManager {
       gain.connect(ctx.destination);
       osc.start(now);
       osc.stop(now + 0.22);
+    } catch (e) {}
+  }
+
+  /** Efek suara meletuskan balon (Crisp Balloon Pop Sound) */
+  public playPop(): void {
+    if (this.isMuted) return;
+    const ctx = this.initCtx();
+    if (!ctx) return;
+    try {
+      const now = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(850, now);
+      osc.frequency.exponentialRampToValueAtTime(120, now + 0.09);
+      const vol = this.masterVolume * this.sfxVolume * 0.18;
+      gain.gain.setValueAtTime(vol, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.09);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.09);
     } catch (e) {}
   }
 

@@ -239,7 +239,7 @@ export const ARCHITECT_ASSET_CATALOG: IArchitectAsset[] = [
     gw: 5,
     gh: 10,
     defaultCollision: true,
-    imageSrc: '/assets/maps/SD/5x10%20Gedung%20SD.png',
+    imageSrc: '/assets/maps/SD/5x10%20Gedung%20SD.webp',
     description: 'Gedung megah Sekolah Dasar Negeri beratap genteng merah dan pintu masuk utama.',
   },
   {
@@ -249,7 +249,7 @@ export const ARCHITECT_ASSET_CATALOG: IArchitectAsset[] = [
     gw: 5,
     gh: 10,
     defaultCollision: true,
-    imageSrc: '/assets/maps/SMP/5x10%20Gedung%20SMP.png',
+    imageSrc: '/assets/maps/SMP/5x10%20Gedung%20SMP.webp',
     description: 'Gedung megah Sekolah Menengah Pertama bertingkat dengan arsitektur biru modern.',
   },
   {
@@ -259,7 +259,7 @@ export const ARCHITECT_ASSET_CATALOG: IArchitectAsset[] = [
     gw: 5,
     gh: 10,
     defaultCollision: true,
-    imageSrc: '/assets/maps/SMA/5x10%20Gedung%20SMA.png',
+    imageSrc: '/assets/maps/SMA/5x10%20Gedung%20SMA.webp',
     description: 'Gedung Sekolah Menengah Atas Kebangsaan lantai 2 berfasad abu-abu megah.',
   },
   {
@@ -269,7 +269,7 @@ export const ARCHITECT_ASSET_CATALOG: IArchitectAsset[] = [
     gw: 5,
     gh: 5,
     defaultCollision: true,
-    imageSrc: '/assets/maps/World/Assets/5x5%20Rumah.png',
+    imageSrc: '/assets/maps/World/Assets/5x5%20Rumah.webp',
     description: 'Rumah hunian pribadi dua lantai modern dengan garasi dan jendela kaca.',
   },
 
@@ -283,7 +283,7 @@ export const ARCHITECT_ASSET_CATALOG: IArchitectAsset[] = [
     gw: 3,
     gh: 3,
     defaultCollision: true,
-    imageSrc: '/assets/maps/World/Assets/3x3%20Gerobak%20Bakso.png',
+    imageSrc: '/assets/maps/World/Assets/3x3%20Gerobak%20Bakso.webp',
     description: 'Gerobak kuliner bakso urat kuah kaldu sapi gurih Solo dengan dandang uap.',
   },
   {
@@ -293,7 +293,7 @@ export const ARCHITECT_ASSET_CATALOG: IArchitectAsset[] = [
     gw: 3,
     gh: 3,
     defaultCollision: true,
-    imageSrc: '/assets/maps/World/Assets/3x3%20Gerobak%20Mie%20Ayam.png',
+    imageSrc: '/assets/maps/World/Assets/3x3%20Gerobak%20Mie%20Ayam.webp',
     description: 'Gerobak mie ayam jamur manis gurih dengan mangkok dan rebusan mie.',
   },
   {
@@ -303,7 +303,7 @@ export const ARCHITECT_ASSET_CATALOG: IArchitectAsset[] = [
     gw: 3,
     gh: 3,
     defaultCollision: true,
-    imageSrc: '/assets/maps/World/Assets/3x3%20Gerobak%20Soto.png',
+    imageSrc: '/assets/maps/World/Assets/3x3%20Gerobak%20Soto.webp',
     description: 'Gerobak soto ayam koya gurih Jawa Timur beraroma rempah kunyit harum.',
   },
   {
@@ -313,7 +313,7 @@ export const ARCHITECT_ASSET_CATALOG: IArchitectAsset[] = [
     gw: 1,
     gh: 1,
     defaultCollision: true,
-    imageSrc: '/assets/maps/World/Assets/1x1%20Meja.png',
+    imageSrc: '/assets/maps/World/Assets/1x1%20Meja.webp',
     description: 'Meja bundar kayu untuk tempat makan santai di pujasera.',
   },
   {
@@ -323,7 +323,7 @@ export const ARCHITECT_ASSET_CATALOG: IArchitectAsset[] = [
     gw: 1,
     gh: 2,
     defaultCollision: false,
-    imageSrc: '/assets/maps/World/Assets/1x2%20Kursi%20Taman.png',
+    imageSrc: '/assets/maps/World/Assets/1x2%20Kursi%20Taman.webp',
     description: 'Bangku taman menghadap depan untuk duduk santai menikmati hidangan.',
   },
   {
@@ -333,7 +333,7 @@ export const ARCHITECT_ASSET_CATALOG: IArchitectAsset[] = [
     gw: 1,
     gh: 2,
     defaultCollision: false,
-    imageSrc: '/assets/maps/World/Assets/1x2%20Kursi%20Taman%20Side-1.png',
+    imageSrc: '/assets/maps/World/Assets/1x2%20Kursi%20Taman%20Side-1.webp',
     description: 'Bangku kayu menghadap samping kanan.',
   },
   {
@@ -343,7 +343,7 @@ export const ARCHITECT_ASSET_CATALOG: IArchitectAsset[] = [
     gw: 1,
     gh: 2,
     defaultCollision: false,
-    imageSrc: '/assets/maps/World/Assets/1x2%20Kursi%20Taman%20Side-1.png',
+    imageSrc: '/assets/maps/World/Assets/1x2%20Kursi%20Taman%20Side-1.webp',
     description: 'Bangku kayu menghadap samping kiri.',
   },
   {
@@ -353,7 +353,7 @@ export const ARCHITECT_ASSET_CATALOG: IArchitectAsset[] = [
     gw: 1,
     gh: 2,
     defaultCollision: true,
-    imageSrc: '/assets/maps/World/Assets/1x2%20Tong%20Sampah.png',
+    imageSrc: '/assets/maps/World/Assets/1x2%20Tong%20Sampah.webp',
     description: 'Tempat sampah ramah lingkungan di samping gerobak kuliner.',
   },
   {
@@ -363,7 +363,7 @@ export const ARCHITECT_ASSET_CATALOG: IArchitectAsset[] = [
     gw: 1,
     gh: 2,
     defaultCollision: true,
-    imageSrc: '/assets/maps/World/Assets/1x2%20Vending%20Machine%20Blue.png',
+    imageSrc: '/assets/maps/World/Assets/1x2%20Vending%20Machine%20Blue.webp',
     description: 'Mesin otomatis penjual minuman soda dingin biru.',
   },
   {
@@ -373,7 +373,7 @@ export const ARCHITECT_ASSET_CATALOG: IArchitectAsset[] = [
     gw: 1,
     gh: 2,
     defaultCollision: true,
-    imageSrc: '/assets/maps/World/Assets/1x2%20Vending%20Machine%20Green.png',
+    imageSrc: '/assets/maps/World/Assets/1x2%20Vending%20Machine%20Green.webp',
     description: 'Mesin otomatis penjual teh melati dan air mineral hijau.',
   },
   {
@@ -383,7 +383,7 @@ export const ARCHITECT_ASSET_CATALOG: IArchitectAsset[] = [
     gw: 1,
     gh: 2,
     defaultCollision: true,
-    imageSrc: '/assets/maps/World/Assets/1x2%20Vending%20Machine%20Red.png',
+    imageSrc: '/assets/maps/World/Assets/1x2%20Vending%20Machine%20Red.webp',
     description: 'Mesin otomatis penjual kopi dan jus buah segar merah.',
   },
   {
@@ -393,7 +393,7 @@ export const ARCHITECT_ASSET_CATALOG: IArchitectAsset[] = [
     gw: 1,
     gh: 2,
     defaultCollision: true,
-    imageSrc: '/assets/maps/World/Assets/1x2%20Vending%20Machine%20Yellow.png',
+    imageSrc: '/assets/maps/World/Assets/1x2%20Vending%20Machine%20Yellow.webp',
     description: 'Mesin otomatis penjual minuman isotonik dan lemon kuning.',
   },
 
@@ -407,7 +407,7 @@ export const ARCHITECT_ASSET_CATALOG: IArchitectAsset[] = [
     gw: 2,
     gh: 1,
     defaultCollision: true,
-    imageSrc: '/assets/maps/World/Assets/2x1%20TamanRumput.png',
+    imageSrc: '/assets/maps/World/Assets/2x1%20TamanRumput.webp',
     description: 'Taman rumput hias tertata rapi kotak 2x1 dengan tabrakan fisik solid.',
   },
   {
@@ -417,7 +417,7 @@ export const ARCHITECT_ASSET_CATALOG: IArchitectAsset[] = [
     gw: 1,
     gh: 2,
     defaultCollision: false,
-    imageSrc: '/assets/maps/World/Assets/1x2%20Rumput.png',
+    imageSrc: '/assets/maps/World/Assets/1x2%20Rumput.webp',
     description: 'Rerumputan liar bebas collision (dapat diinjak). Menimpa kaki pemain.',
   },
   {
@@ -427,7 +427,7 @@ export const ARCHITECT_ASSET_CATALOG: IArchitectAsset[] = [
     gw: 1,
     gh: 3,
     defaultCollision: true,
-    imageSrc: '/assets/maps/World/Assets/1x3%20Pohon.png',
+    imageSrc: '/assets/maps/World/Assets/1x3%20Pohon.webp',
     description: 'Pohon rindang besar penyaring polusi udara perkotaan.',
   },
   {
@@ -437,7 +437,7 @@ export const ARCHITECT_ASSET_CATALOG: IArchitectAsset[] = [
     gw: 1,
     gh: 2,
     defaultCollision: true,
-    imageSrc: '/assets/maps/World/Assets/1x2%20Pohon.png',
+    imageSrc: '/assets/maps/World/Assets/1x2%20Pohon.webp',
     description: 'Pohon peneduh pinggir trotoar dan halaman sekolah.',
   },
   {
@@ -447,7 +447,7 @@ export const ARCHITECT_ASSET_CATALOG: IArchitectAsset[] = [
     gw: 1,
     gh: 2,
     defaultCollision: true,
-    imageSrc: '/assets/maps/World/Assets/1x2%20Batu.png',
+    imageSrc: '/assets/maps/World/Assets/1x2%20Batu.webp',
     description: 'Batuan granit alam kokoh di perbukitan timur.',
   },
   {
@@ -457,7 +457,7 @@ export const ARCHITECT_ASSET_CATALOG: IArchitectAsset[] = [
     gw: 1,
     gh: 3,
     defaultCollision: true,
-    imageSrc: '/assets/maps/World/Assets/1x3%20Lampu.png',
+    imageSrc: '/assets/maps/World/Assets/1x3%20Lampu.webp',
     description: 'Tiang lampu penerang jalan raya bergaya eropa klasik.',
   },
 
@@ -471,7 +471,7 @@ export const ARCHITECT_ASSET_CATALOG: IArchitectAsset[] = [
     gw: 3,
     gh: 1,
     defaultCollision: false,
-    imageSrc: '/assets/maps/School/Assets/garuda_presiden.png',
+    imageSrc: '/assets/maps/School/Assets/garuda_presiden.webp',
     description: 'Lambang Negara Burung Garuda & Bingkai Foto Kenegaraan.',
   },
   {
@@ -481,7 +481,7 @@ export const ARCHITECT_ASSET_CATALOG: IArchitectAsset[] = [
     gw: 1,
     gh: 2,
     defaultCollision: true,
-    imageSrc: '/assets/maps/School/Assets/flag.png',
+    imageSrc: '/assets/maps/School/Assets/flag.webp',
     description: 'Tiang bendera kebangsaan Merah Putih berkibar megah.',
   },
   {
@@ -491,7 +491,7 @@ export const ARCHITECT_ASSET_CATALOG: IArchitectAsset[] = [
     gw: 3,
     gh: 1,
     defaultCollision: false,
-    imageSrc: '/assets/maps/School/Assets/whiteboard.png',
+    imageSrc: '/assets/maps/School/Assets/whiteboard.webp',
     description: 'Whiteboard ruang kelas untuk materi pelajaran harian.',
   },
   {
@@ -501,7 +501,7 @@ export const ARCHITECT_ASSET_CATALOG: IArchitectAsset[] = [
     gw: 2,
     gh: 1,
     defaultCollision: true,
-    imageSrc: '/assets/maps/School/Assets/teacher_desk.png',
+    imageSrc: '/assets/maps/School/Assets/teacher_desk.webp',
     description: 'Meja kayu podium pengajar dengan taplak batik.',
   },
   {
@@ -511,7 +511,7 @@ export const ARCHITECT_ASSET_CATALOG: IArchitectAsset[] = [
     gw: 1,
     gh: 1,
     defaultCollision: false,
-    imageSrc: '/assets/maps/School/Assets/teacher_chair.png',
+    imageSrc: '/assets/maps/School/Assets/teacher_chair.webp',
     description: 'Kursi putar empuk pengajar di depan kelas.',
   },
   {
@@ -521,7 +521,7 @@ export const ARCHITECT_ASSET_CATALOG: IArchitectAsset[] = [
     gw: 1,
     gh: 1,
     defaultCollision: true,
-    imageSrc: '/assets/maps/School/Assets/student_desk.png',
+    imageSrc: '/assets/maps/School/Assets/student_desk.webp',
     description: 'Meja belajar siswa standar nasional Indonesia.',
   },
   {
@@ -531,7 +531,7 @@ export const ARCHITECT_ASSET_CATALOG: IArchitectAsset[] = [
     gw: 1,
     gh: 1,
     defaultCollision: false,
-    imageSrc: '/assets/maps/School/Assets/student_chair.png',
+    imageSrc: '/assets/maps/School/Assets/student_chair.webp',
     description: 'Kursi sandaran kayu jati untuk murid.',
   },
   {
@@ -541,7 +541,7 @@ export const ARCHITECT_ASSET_CATALOG: IArchitectAsset[] = [
     gw: 2,
     gh: 2,
     defaultCollision: true,
-    imageSrc: '/assets/maps/School/Assets/bookshelf.png',
+    imageSrc: '/assets/maps/School/Assets/bookshelf.webp',
     description: 'Rak ensiklopedia, kamus, dan buku literasi kelas.',
   },
 
@@ -555,7 +555,7 @@ export const ARCHITECT_ASSET_CATALOG: IArchitectAsset[] = [
     gw: 3,
     gh: 3,
     defaultCollision: true,
-    imageSrc: '/assets/maps/Admin/Assets/3x3%20Tahta%20Raden.png',
+    imageSrc: '/assets/maps/Admin/Assets/3x3%20Tahta%20Raden.webp',
     description: 'Tahta singgasana emas sang Pencipta RadenWorld.',
   },
   {
@@ -565,7 +565,7 @@ export const ARCHITECT_ASSET_CATALOG: IArchitectAsset[] = [
     gw: 2,
     gh: 2,
     defaultCollision: true,
-    imageSrc: '/assets/maps/Admin/Assets/2x2%20Konsol%20Broadcast.png',
+    imageSrc: '/assets/maps/Admin/Assets/2x2%20Konsol%20Broadcast.webp',
     description: 'Mainframe siaran pesan pengumuman ke seluruh dunia.',
   },
   {
@@ -575,7 +575,7 @@ export const ARCHITECT_ASSET_CATALOG: IArchitectAsset[] = [
     gw: 2,
     gh: 2,
     defaultCollision: true,
-    imageSrc: '/assets/maps/Admin/Assets/2x2%20Konsol%20Database.png',
+    imageSrc: '/assets/maps/Admin/Assets/2x2%20Konsol%20Database.webp',
     description: 'Server rack sensus data pemain terdaftar di server.',
   },
   {
@@ -585,7 +585,7 @@ export const ARCHITECT_ASSET_CATALOG: IArchitectAsset[] = [
     gw: 2,
     gh: 2,
     defaultCollision: true,
-    imageSrc: '/assets/maps/Admin/Assets/2x2%20Konsol%20Godmode.png',
+    imageSrc: '/assets/maps/Admin/Assets/2x2%20Konsol%20Godmode.webp',
     description: 'Reaktor kuantum penambah kecepatan 400 Px/s.',
   },
   {
@@ -595,7 +595,7 @@ export const ARCHITECT_ASSET_CATALOG: IArchitectAsset[] = [
     gw: 2,
     gh: 2,
     defaultCollision: false,
-    imageSrc: '/assets/maps/Admin/Assets/2x2%20Portal%20World.png',
+    imageSrc: '/assets/maps/Admin/Assets/2x2%20Portal%20World.webp',
     description: 'Stargate kosmis teleportasi ke dunia luar.',
   },
   {
@@ -605,7 +605,7 @@ export const ARCHITECT_ASSET_CATALOG: IArchitectAsset[] = [
     gw: 2,
     gh: 2,
     defaultCollision: false,
-    imageSrc: '/assets/maps/Admin/Assets/2x2%20Portal%20House.png',
+    imageSrc: '/assets/maps/Admin/Assets/2x2%20Portal%20House.webp',
     description: 'Gerbang teleportasi langsung ke rumah pribadi.',
   },
   {
@@ -615,7 +615,7 @@ export const ARCHITECT_ASSET_CATALOG: IArchitectAsset[] = [
     gw: 1,
     gh: 3,
     defaultCollision: true,
-    imageSrc: '/assets/maps/Admin/Assets/1x3%20Pilar%20Cyber.png',
+    imageSrc: '/assets/maps/Admin/Assets/1x3%20Pilar%20Cyber.webp',
     description: 'Kolom pilar heksagonal kristal penyangga energi.',
   },
   {
@@ -625,7 +625,7 @@ export const ARCHITECT_ASSET_CATALOG: IArchitectAsset[] = [
     gw: 1,
     gh: 2,
     defaultCollision: false,
-    imageSrc: '/assets/maps/Admin/Assets/1x2%20Banner%20Raden.png',
+    imageSrc: '/assets/maps/Admin/Assets/1x2%20Banner%20Raden.webp',
     description: 'Tapestri dinding kerajaan monogram emas RadenWorld.',
   },
   {
@@ -635,7 +635,7 @@ export const ARCHITECT_ASSET_CATALOG: IArchitectAsset[] = [
     gw: 2,
     gh: 2,
     defaultCollision: true,
-    imageSrc: '/assets/maps/Admin/Assets/2x2%20Holo%20Globe.png',
+    imageSrc: '/assets/maps/Admin/Assets/2x2%20Holo%20Globe.webp',
     description: 'Proyektor bola dunia hologram 3D melayang.',
   },
   {
@@ -645,7 +645,7 @@ export const ARCHITECT_ASSET_CATALOG: IArchitectAsset[] = [
     gw: 2,
     gh: 1,
     defaultCollision: false,
-    imageSrc: '/assets/maps/Admin/Assets/2x1%20Karpet%20Emas.png',
+    imageSrc: '/assets/maps/Admin/Assets/2x1%20Karpet%20Emas.webp',
     description: 'Permadani sutra bertepi benang emas di tahta.',
   },
 ];
@@ -657,14 +657,14 @@ const DEFAULT_MAP_CONFIGS: Record<MapTargetType, IMapArchitectConfig> = {
     gridHeight: 80,
     tileSize: 120,
     customProps: [
-      { id: 'def_wb_1', key: 'prop-taman-rumput', name: 'Taman Rumput Rapi (2×1)', gx: 36, gy: 33, gw: 2, gh: 1, isObstacle: true, imageSrc: '/assets/maps/World/Assets/2x1%20TamanRumput.png' },
-      { id: 'def_wb_2', key: 'prop-taman-rumput', name: 'Taman Rumput Rapi (2×1)', gx: 43, gy: 33, gw: 2, gh: 1, isObstacle: true, imageSrc: '/assets/maps/World/Assets/2x1%20TamanRumput.png' },
-      { id: 'def_wb_3', key: 'prop-taman-rumput', name: 'Taman Rumput Rapi (2×1)', gx: 36, gy: 47, gw: 2, gh: 1, isObstacle: true, imageSrc: '/assets/maps/World/Assets/2x1%20TamanRumput.png' },
-      { id: 'def_wb_4', key: 'prop-taman-rumput', name: 'Taman Rumput Rapi (2×1)', gx: 43, gy: 47, gw: 2, gh: 1, isObstacle: true, imageSrc: '/assets/maps/World/Assets/2x1%20TamanRumput.png' },
-      { id: 'def_wg_1', key: 'prop-rumput', name: 'Rumput Liar Alami (1×2)', gx: 19, gy: 20, gw: 1, gh: 2, isObstacle: false, imageSrc: '/assets/maps/World/Assets/1x2%20Rumput.png' },
-      { id: 'def_wg_2', key: 'prop-rumput', name: 'Rumput Liar Alami (1×2)', gx: 20, gy: 20, gw: 1, gh: 2, isObstacle: false, imageSrc: '/assets/maps/World/Assets/1x2%20Rumput.png' },
-      { id: 'def_wp_1', key: 'prop-pohon-tall', name: 'Pohon Tinggi Rindang (1×3)', gx: 36, gy: 22, gw: 1, gh: 3, isObstacle: true, imageSrc: '/assets/maps/World/Assets/1x3%20Pohon.png' },
-      { id: 'def_wp_2', key: 'prop-pohon-tall', name: 'Pohon Tinggi Rindang (1×3)', gx: 44, gy: 22, gw: 1, gh: 3, isObstacle: true, imageSrc: '/assets/maps/World/Assets/1x3%20Pohon.png' },
+      { id: 'def_wb_1', key: 'prop-taman-rumput', name: 'Taman Rumput Rapi (2×1)', gx: 36, gy: 33, gw: 2, gh: 1, isObstacle: true, imageSrc: '/assets/maps/World/Assets/2x1%20TamanRumput.webp' },
+      { id: 'def_wb_2', key: 'prop-taman-rumput', name: 'Taman Rumput Rapi (2×1)', gx: 43, gy: 33, gw: 2, gh: 1, isObstacle: true, imageSrc: '/assets/maps/World/Assets/2x1%20TamanRumput.webp' },
+      { id: 'def_wb_3', key: 'prop-taman-rumput', name: 'Taman Rumput Rapi (2×1)', gx: 36, gy: 47, gw: 2, gh: 1, isObstacle: true, imageSrc: '/assets/maps/World/Assets/2x1%20TamanRumput.webp' },
+      { id: 'def_wb_4', key: 'prop-taman-rumput', name: 'Taman Rumput Rapi (2×1)', gx: 43, gy: 47, gw: 2, gh: 1, isObstacle: true, imageSrc: '/assets/maps/World/Assets/2x1%20TamanRumput.webp' },
+      { id: 'def_wg_1', key: 'prop-rumput', name: 'Rumput Liar Alami (1×2)', gx: 19, gy: 20, gw: 1, gh: 2, isObstacle: false, imageSrc: '/assets/maps/World/Assets/1x2%20Rumput.webp' },
+      { id: 'def_wg_2', key: 'prop-rumput', name: 'Rumput Liar Alami (1×2)', gx: 20, gy: 20, gw: 1, gh: 2, isObstacle: false, imageSrc: '/assets/maps/World/Assets/1x2%20Rumput.webp' },
+      { id: 'def_wp_1', key: 'prop-pohon-tall', name: 'Pohon Tinggi Rindang (1×3)', gx: 36, gy: 22, gw: 1, gh: 3, isObstacle: true, imageSrc: '/assets/maps/World/Assets/1x3%20Pohon.webp' },
+      { id: 'def_wp_2', key: 'prop-pohon-tall', name: 'Pohon Tinggi Rindang (1×3)', gx: 44, gy: 22, gw: 1, gh: 3, isObstacle: true, imageSrc: '/assets/maps/World/Assets/1x3%20Pohon.webp' },
     ],
     customTerrains: [
       { id: 'def_road_v', type: 'road', gx: 39, gy: 18, gw: 3, gh: 42, hasCollision: false },
@@ -678,14 +678,14 @@ const DEFAULT_MAP_CONFIGS: Record<MapTargetType, IMapArchitectConfig> = {
     gridHeight: 12,
     tileSize: 120,
     customProps: [
-      { id: 'def_s_garuda', key: 'school-garuda-presiden', name: 'Garuda & Foto Presiden (3×1)', gx: 7.5, gy: 1, gw: 3, gh: 1, isObstacle: false, imageSrc: '/assets/maps/School/Assets/garuda_presiden.png' },
-      { id: 'def_s_flag', key: 'school-flag', name: 'Tiang Bendera Merah Putih (1×2)', gx: 2, gy: 1, gw: 1, gh: 2, isObstacle: true, imageSrc: '/assets/maps/School/Assets/flag.png' },
-      { id: 'def_s_teacher_d', key: 'school-teacher-desk', name: 'Meja Podium Guru (2×1)', gx: 8, gy: 3, gw: 2, gh: 1, isObstacle: true, imageSrc: '/assets/maps/School/Assets/teacher_desk.png' },
-      { id: 'def_s_teacher_c', key: 'school-teacher-chair', name: 'Kursi Eksekutif Guru (1×1)', gx: 8.5, gy: 2, gw: 1, gh: 1, isObstacle: false, imageSrc: '/assets/maps/School/Assets/teacher_chair.png' },
-      { id: 'def_s_desk_1', key: 'school-student-desk', name: 'Meja Siswa Kayu (1×1)', gx: 3, gy: 5, gw: 1, gh: 1, isObstacle: true, imageSrc: '/assets/maps/School/Assets/student_desk.png' },
-      { id: 'def_s_chair_1', key: 'school-student-chair', name: 'Kursi Siswa Kayu (1×1)', gx: 3, gy: 6, gw: 1, gh: 1, isObstacle: false, imageSrc: '/assets/maps/School/Assets/student_chair.png' },
-      { id: 'def_s_desk_2', key: 'school-student-desk', name: 'Meja Siswa Kayu (1×1)', gx: 5, gy: 5, gw: 1, gh: 1, isObstacle: true, imageSrc: '/assets/maps/School/Assets/student_desk.png' },
-      { id: 'def_s_chair_2', key: 'school-student-chair', name: 'Kursi Siswa Kayu (1×1)', gx: 5, gy: 6, gw: 1, gh: 1, isObstacle: false, imageSrc: '/assets/maps/School/Assets/student_chair.png' },
+      { id: 'def_s_garuda', key: 'school-garuda-presiden', name: 'Garuda & Foto Presiden (3×1)', gx: 7.5, gy: 1, gw: 3, gh: 1, isObstacle: false, imageSrc: '/assets/maps/School/Assets/garuda_presiden.webp' },
+      { id: 'def_s_flag', key: 'school-flag', name: 'Tiang Bendera Merah Putih (1×2)', gx: 2, gy: 1, gw: 1, gh: 2, isObstacle: true, imageSrc: '/assets/maps/School/Assets/flag.webp' },
+      { id: 'def_s_teacher_d', key: 'school-teacher-desk', name: 'Meja Podium Guru (2×1)', gx: 8, gy: 3, gw: 2, gh: 1, isObstacle: true, imageSrc: '/assets/maps/School/Assets/teacher_desk.webp' },
+      { id: 'def_s_teacher_c', key: 'school-teacher-chair', name: 'Kursi Eksekutif Guru (1×1)', gx: 8.5, gy: 2, gw: 1, gh: 1, isObstacle: false, imageSrc: '/assets/maps/School/Assets/teacher_chair.webp' },
+      { id: 'def_s_desk_1', key: 'school-student-desk', name: 'Meja Siswa Kayu (1×1)', gx: 3, gy: 5, gw: 1, gh: 1, isObstacle: true, imageSrc: '/assets/maps/School/Assets/student_desk.webp' },
+      { id: 'def_s_chair_1', key: 'school-student-chair', name: 'Kursi Siswa Kayu (1×1)', gx: 3, gy: 6, gw: 1, gh: 1, isObstacle: false, imageSrc: '/assets/maps/School/Assets/student_chair.webp' },
+      { id: 'def_s_desk_2', key: 'school-student-desk', name: 'Meja Siswa Kayu (1×1)', gx: 5, gy: 5, gw: 1, gh: 1, isObstacle: true, imageSrc: '/assets/maps/School/Assets/student_desk.webp' },
+      { id: 'def_s_chair_2', key: 'school-student-chair', name: 'Kursi Siswa Kayu (1×1)', gx: 5, gy: 6, gw: 1, gh: 1, isObstacle: false, imageSrc: '/assets/maps/School/Assets/student_chair.webp' },
     ],
     customTerrains: [],
   },
@@ -694,8 +694,8 @@ const DEFAULT_MAP_CONFIGS: Record<MapTargetType, IMapArchitectConfig> = {
     gridHeight: 10,
     tileSize: 120,
     customProps: [
-      { id: 'def_h_1', key: 'prop-meja', name: 'Meja Santai Pujasera (1×1)', gx: 7, gy: 5, gw: 1, gh: 1, isObstacle: true, imageSrc: '/assets/maps/World/Assets/1x1%20Meja.png' },
-      { id: 'def_h_2', key: 'prop-kursi-front', name: 'Bangku Pujasera Depan (1×2)', gx: 7, gy: 6, gw: 1, gh: 2, isObstacle: false, imageSrc: '/assets/maps/World/Assets/1x2%20Kursi%20Taman.png' },
+      { id: 'def_h_1', key: 'prop-meja', name: 'Meja Santai Pujasera (1×1)', gx: 7, gy: 5, gw: 1, gh: 1, isObstacle: true, imageSrc: '/assets/maps/World/Assets/1x1%20Meja.webp' },
+      { id: 'def_h_2', key: 'prop-kursi-front', name: 'Bangku Pujasera Depan (1×2)', gx: 7, gy: 6, gw: 1, gh: 2, isObstacle: false, imageSrc: '/assets/maps/World/Assets/1x2%20Kursi%20Taman.webp' },
     ],
     customTerrains: [
       { id: 'def_h_wood', type: 'wood', gx: 4, gy: 3, gw: 6, gh: 4, hasCollision: false },

@@ -245,58 +245,98 @@ export const WorldMapSvg: React.FC<WorldMapSvgProps> = ({
       <rect x="22" y="22" width="36" height="37" fill="#64748b" stroke="#334155" strokeWidth="0.15" opacity="0.95" />
 
       {/* ==================================================================== */}
-      {/* SARANA OLAHRAGA BAGIAN BAWAH ALUN-ALUN (gx: 24..33 & 46..55, gy: 51..55) */}
+      {/* SARANA OLAHRAGA BAGIAN BAWAH ALUN-ALUN (gx: 24..33 & 46..55, gy: 53..57) */}
       {/* ==================================================================== */}
-      {/* a. Lapangan Sepak Bola (10x5 Petak: gx: 24..33, gy: 51..55) */}
+      {/* a. Lapangan Sepak Bola (10x5 Petak: gx: 24..33, gy: 53..57) */}
       <g id="map_soccer_field">
-        <rect x="24" y="51" width="10" height="5" rx="0.15" fill="#15803d" stroke="#14532d" strokeWidth="0.12" />
+        <rect x="24" y="53" width="10" height="5" rx="0.15" fill="#15803d" stroke="#14532d" strokeWidth="0.12" />
         {/* Striping Rumput Lapangan */}
-        <rect x="24.5" y="51.2" width="9" height="4.6" fill="#16a34a" />
+        <rect x="24.5" y="53.2" width="9" height="4.6" fill="#16a34a" />
         {[25.5, 27.5, 29.5, 31.5].map((sx, idx) => (
-          <rect key={`turf_${idx}`} x={sx} y="51.2" width="1" height="4.6" fill="#22c55e" opacity="0.28" />
+          <rect key={`turf_${idx}`} x={sx} y="53.2" width="1" height="4.6" fill="#22c55e" opacity="0.28" />
         ))}
         {/* Garis Batas Putih */}
-        <rect x="24.5" y="51.2" width="9" height="4.6" fill="none" stroke="#ffffff" strokeWidth="0.08" />
+        <rect x="24.5" y="53.2" width="9" height="4.6" fill="none" stroke="#ffffff" strokeWidth="0.08" />
         {/* Garis Tengah */}
-        <line x1="29" y1="51.2" x2="29" y2="55.8" stroke="#ffffff" strokeWidth="0.08" />
+        <line x1="29" y1="53.2" x2="29" y2="57.8" stroke="#ffffff" strokeWidth="0.08" />
         {/* Lingkaran Tengah */}
-        <circle cx="29" cy="53.5" r="0.75" fill="none" stroke="#ffffff" strokeWidth="0.08" />
-        <circle cx="29" cy="53.5" r="0.08" fill="#ffffff" />
+        <circle cx="29" cy="55.5" r="0.75" fill="none" stroke="#ffffff" strokeWidth="0.08" />
+        <circle cx="29" cy="55.5" r="0.08" fill="#ffffff" />
         {/* Kotak Penalti Kiri */}
-        <rect x="24.5" y="52.3" width="1.6" height="2.4" fill="none" stroke="#ffffff" strokeWidth="0.07" />
-        <rect x="24.5" y="52.8" width="0.7" height="1.4" fill="none" stroke="#ffffff" strokeWidth="0.07" />
+        <rect x="24.5" y="54.3" width="1.6" height="2.4" fill="none" stroke="#ffffff" strokeWidth="0.07" />
+        <rect x="24.5" y="54.8" width="0.7" height="1.4" fill="none" stroke="#ffffff" strokeWidth="0.07" />
         {/* Kotak Penalti Kanan */}
-        <rect x="31.9" y="52.3" width="1.6" height="2.4" fill="none" stroke="#ffffff" strokeWidth="0.07" />
-        <rect x="32.8" y="52.8" width="0.7" height="1.4" fill="none" stroke="#ffffff" strokeWidth="0.07" />
+        <rect x="31.9" y="54.3" width="1.6" height="2.4" fill="none" stroke="#ffffff" strokeWidth="0.07" />
+        <rect x="32.8" y="54.8" width="0.7" height="1.4" fill="none" stroke="#ffffff" strokeWidth="0.07" />
         {/* Gawang Kiri & Kanan */}
-        <rect x="24.15" y="52.8" width="0.35" height="1.4" fill="#e2e8f0" stroke="#94a3b8" strokeWidth="0.05" />
-        <rect x="33.5" y="52.8" width="0.35" height="1.4" fill="#e2e8f0" stroke="#94a3b8" strokeWidth="0.05" />
+        <rect x="24.15" y="54.8" width="0.35" height="1.4" fill="#e2e8f0" stroke="#94a3b8" strokeWidth="0.05" />
+        <rect x="33.5" y="54.8" width="0.35" height="1.4" fill="#e2e8f0" stroke="#94a3b8" strokeWidth="0.05" />
       </g>
 
-      {/* b. Lapangan Bola Basket (10x5 Petak: gx: 46..55, gy: 51..55) */}
+      {/* b. Lapangan Bola Basket (10x5 Petak: gx: 46..55, gy: 53..57) */}
       <g id="map_basketball_court">
-        <rect x="46" y="51" width="10" height="5" rx="0.15" fill="#0f172a" stroke="#1e293b" strokeWidth="0.12" />
+        <rect x="46" y="53" width="10" height="5" rx="0.15" fill="#0f172a" stroke="#1e293b" strokeWidth="0.12" />
         {/* Lantai Lapangan Biru Royal */}
-        <rect x="46.5" y="51.2" width="9" height="4.6" fill="#1d4ed8" />
+        <rect x="46.5" y="53.2" width="9" height="4.6" fill="#1d4ed8" />
         {/* Area Key Oranye Terracotta */}
-        <rect x="46.5" y="52.6" width="1.8" height="1.8" fill="#ea580c" />
-        <rect x="53.7" y="52.6" width="1.8" height="1.8" fill="#ea580c" />
+        <rect x="46.5" y="54.6" width="1.8" height="1.8" fill="#ea580c" />
+        <rect x="53.7" y="54.6" width="1.8" height="1.8" fill="#ea580c" />
         {/* Garis Batas Putih */}
-        <rect x="46.5" y="51.2" width="9" height="4.6" fill="none" stroke="#ffffff" strokeWidth="0.08" />
+        <rect x="46.5" y="53.2" width="9" height="4.6" fill="none" stroke="#ffffff" strokeWidth="0.08" />
         {/* Garis Tengah */}
-        <line x1="51" y1="51.2" x2="51" y2="55.8" stroke="#ffffff" strokeWidth="0.08" />
+        <line x1="51" y1="53.2" x2="51" y2="57.8" stroke="#ffffff" strokeWidth="0.08" />
         {/* Lingkaran Tengah */}
-        <circle cx="51" cy="53.5" r="0.7" fill="#ea580c" fillOpacity="0.4" stroke="#ffffff" strokeWidth="0.08" />
+        <circle cx="51" cy="55.5" r="0.7" fill="#ea580c" fillOpacity="0.4" stroke="#ffffff" strokeWidth="0.08" />
         {/* Garis Key Kiri & Kanan */}
-        <rect x="46.5" y="52.6" width="1.8" height="1.8" fill="none" stroke="#ffffff" strokeWidth="0.07" />
-        <rect x="53.7" y="52.6" width="1.8" height="1.8" fill="none" stroke="#ffffff" strokeWidth="0.07" />
-        <circle cx="48.3" cy="53.5" r="0.6" fill="none" stroke="#ffffff" strokeWidth="0.07" />
-        <circle cx="53.7" cy="53.5" r="0.6" fill="none" stroke="#ffffff" strokeWidth="0.07" />
+        <rect x="46.5" y="54.6" width="1.8" height="1.8" fill="none" stroke="#ffffff" strokeWidth="0.07" />
+        <rect x="53.7" y="54.6" width="1.8" height="1.8" fill="none" stroke="#ffffff" strokeWidth="0.07" />
+        <circle cx="48.3" cy="55.5" r="0.6" fill="none" stroke="#ffffff" strokeWidth="0.07" />
+        <circle cx="53.7" cy="55.5" r="0.6" fill="none" stroke="#ffffff" strokeWidth="0.07" />
         {/* Ring & Backboard Kiri & Kanan */}
-        <line x1="47.1" y1="53.0" x2="47.1" y2="54.0" stroke="#ffffff" strokeWidth="0.1" />
-        <circle cx="47.3" cy="53.5" r="0.18" fill="none" stroke="#ef4444" strokeWidth="0.07" />
-        <line x1="54.9" y1="53.0" x2="54.9" y2="54.0" stroke="#ffffff" strokeWidth="0.1" />
-        <circle cx="54.7" cy="53.5" r="0.18" fill="none" stroke="#ef4444" strokeWidth="0.07" />
+        <line x1="47.1" y1="55.0" x2="47.1" y2="56.0" stroke="#ffffff" strokeWidth="0.1" />
+        <circle cx="47.3" cy="55.5" r="0.18" fill="none" stroke="#ef4444" strokeWidth="0.07" />
+        <line x1="54.9" y1="55.0" x2="54.9" y2="56.0" stroke="#ffffff" strokeWidth="0.1" />
+        <circle cx="54.7" cy="55.5" r="0.18" fill="none" stroke="#ef4444" strokeWidth="0.07" />
+      </g>
+
+      {/* ==================================================================== */}
+      {/* 2 PAPAN POPUP REKLAME BILLBOARD 10x10 DI Y = 49/50 (gx: 22 & gx: 45) */}
+      {/* Sesuai asset 10X10 Popup.png (Dasar tiang berdiri di y: 50, collider di y: 49) */}
+      {/* ==================================================================== */}
+      {/* 1. Popup Kiri (gx: 22..31, gy: 40..50) */}
+      <g id="map_popup_billboard_left">
+        {/* Tiang Kaki Penyangga Kiri & Kanan */}
+        <rect x="23.8" y="47.5" width="1.2" height="2.5" rx="0.1" fill="#475569" stroke="#1e293b" strokeWidth="0.08" />
+        <rect x="29.0" y="47.5" width="1.2" height="2.5" rx="0.1" fill="#475569" stroke="#1e293b" strokeWidth="0.08" />
+        {/* Frame Bingkai Layar Reklame */}
+        <rect x="22.0" y="40.0" width="10.0" height="7.5" rx="0.3" fill="#1e293b" stroke="#0f172a" strokeWidth="0.15" />
+        {/* Layar Digital Merah Terang (Sesuai 10X10 Popup.png) */}
+        <rect x="22.4" y="40.4" width="9.2" height="6.7" rx="0.15" fill="#ef4444" stroke="#dc2626" strokeWidth="0.08" />
+        {/* Teks Label Layar Digital */}
+        <text x="27" y="43.5" fill="#ffffff" fontSize="1.0" fontWeight="900" textAnchor="middle" stroke="#7f1d1d" strokeWidth="0.18">
+          POPUP 1
+        </text>
+        <text x="27" y="45.5" fill="#fef08a" fontSize="0.7" fontWeight="bold" textAnchor="middle" stroke="#7f1d1d" strokeWidth="0.12">
+          BILLBOARD
+        </text>
+      </g>
+
+      {/* 2. Popup Kanan (gx: 45..54, gy: 40..50) */}
+      <g id="map_popup_billboard_right">
+        {/* Tiang Kaki Penyangga Kiri & Kanan */}
+        <rect x="46.8" y="47.5" width="1.2" height="2.5" rx="0.1" fill="#475569" stroke="#1e293b" strokeWidth="0.08" />
+        <rect x="52.0" y="47.5" width="1.2" height="2.5" rx="0.1" fill="#475569" stroke="#1e293b" strokeWidth="0.08" />
+        {/* Frame Bingkai Layar Reklame */}
+        <rect x="45.0" y="40.0" width="10.0" height="7.5" rx="0.3" fill="#1e293b" stroke="#0f172a" strokeWidth="0.15" />
+        {/* Layar Digital Merah Terang (Sesuai 10X10 Popup.png) */}
+        <rect x="45.4" y="40.4" width="9.2" height="6.7" rx="0.15" fill="#ef4444" stroke="#dc2626" strokeWidth="0.08" />
+        {/* Teks Label Layar Digital */}
+        <text x="50" y="43.5" fill="#ffffff" fontSize="1.0" fontWeight="900" textAnchor="middle" stroke="#7f1d1d" strokeWidth="0.18">
+          POPUP 2
+        </text>
+        <text x="50" y="45.5" fill="#fef08a" fontSize="0.7" fontWeight="bold" textAnchor="middle" stroke="#7f1d1d" strokeWidth="0.12">
+          BILLBOARD
+        </text>
       </g>
 
       {/* Hamparan Trotoar 2 Utara (gx: 23..42, gy: 0..16) */}
@@ -380,8 +420,104 @@ export const WorldMapSvg: React.FC<WorldMapSvgProps> = ({
       </g>
 
       {/* ==================================================================== */}
-      {/* 4c. KAWASAN KOMERSIAL & LAYANAN PUBLIK BARAT (6 Gedung 5x5)          */}
+      {/* 4c. KAWASAN KOMERSIAL & LAYANAN PUBLIK BARAT (6 Gedung 5x5 + TANAH SEKITAR) */}
       {/* ==================================================================== */}
+      {/* 1. Cafe: tanah1 #9D5333, tanah2 #D49C7F (gx: 1..8, gy: 17..31) */}
+      <g id="map_ground_cafe">
+        {Array.from({ length: 15 }, (_, r) => 17 + r).flatMap((gy) =>
+          Array.from({ length: 8 }, (_, c) => 1 + c).map((gx) => (
+            <rect
+              key={`cafe_soil_${gx}_${gy}`}
+              x={gx}
+              y={gy}
+              width={1}
+              height={1}
+              fill={(gx + gy) % 2 === 0 ? '#9D5333' : '#D49C7F'}
+            />
+          ))
+        )}
+      </g>
+
+      {/* 2. Perpustakaan: tanah1 #B1B1B1, tanah2 #FFFCF9 (gx: 9..16, gy: 17..31) */}
+      <g id="map_ground_library">
+        {Array.from({ length: 15 }, (_, r) => 17 + r).flatMap((gy) =>
+          Array.from({ length: 8 }, (_, c) => 9 + c).map((gx) => (
+            <rect
+              key={`lib_soil_${gx}_${gy}`}
+              x={gx}
+              y={gy}
+              width={1}
+              height={1}
+              fill={(gx + gy) % 2 === 0 ? '#B1B1B1' : '#FFFCF9'}
+            />
+          ))
+        )}
+      </g>
+
+      {/* 3. Kantor Polisi: tanah1 #64799F, tanah2 #C2D7FA (gx: 1..8, gy: 32..47) */}
+      <g id="map_ground_police">
+        {Array.from({ length: 16 }, (_, r) => 32 + r).flatMap((gy) =>
+          Array.from({ length: 8 }, (_, c) => 1 + c).map((gx) => (
+            <rect
+              key={`pol_soil_${gx}_${gy}`}
+              x={gx}
+              y={gy}
+              width={1}
+              height={1}
+              fill={(gx + gy) % 2 === 0 ? '#64799F' : '#C2D7FA'}
+            />
+          ))
+        )}
+      </g>
+
+      {/* 4. Kantor Bank: tanah1 #9497AD, tanah2 #FFF1E9 (gx: 9..16, gy: 32..47) */}
+      <g id="map_ground_bank">
+        {Array.from({ length: 16 }, (_, r) => 32 + r).flatMap((gy) =>
+          Array.from({ length: 8 }, (_, c) => 9 + c).map((gx) => (
+            <rect
+              key={`bank_soil_${gx}_${gy}`}
+              x={gx}
+              y={gy}
+              width={1}
+              height={1}
+              fill={(gx + gy) % 2 === 0 ? '#9497AD' : '#FFF1E9'}
+            />
+          ))
+        )}
+      </g>
+
+      {/* 5. Apotek: tanah1 #359B4D, tanah2 #89FFA5 (gx: 1..8, gy: 48..63) */}
+      <g id="map_ground_pharmacy">
+        {Array.from({ length: 16 }, (_, r) => 48 + r).flatMap((gy) =>
+          Array.from({ length: 8 }, (_, c) => 1 + c).map((gx) => (
+            <rect
+              key={`pharm_soil_${gx}_${gy}`}
+              x={gx}
+              y={gy}
+              width={1}
+              height={1}
+              fill={(gx + gy) % 2 === 0 ? '#359B4D' : '#89FFA5'}
+            />
+          ))
+        )}
+      </g>
+
+      {/* 6. Makelar: tanah1 #874B1E, tanah2 #FFD0AC (gx: 9..16, gy: 48..63) */}
+      <g id="map_ground_realtor">
+        {Array.from({ length: 16 }, (_, r) => 48 + r).flatMap((gy) =>
+          Array.from({ length: 8 }, (_, c) => 9 + c).map((gx) => (
+            <rect
+              key={`realt_soil_${gx}_${gy}`}
+              x={gx}
+              y={gy}
+              width={1}
+              height={1}
+              fill={(gx + gy) % 2 === 0 ? '#874B1E' : '#FFD0AC'}
+            />
+          ))
+        )}
+      </g>
+
       {/* 1. Cafe 5x5 (gx: 1, gy: 21) */}
       <g id="map_building_cafe">
         <rect x="1" y="21" width="5" height="5" rx="0.25" fill="#78350f" stroke="#451a03" strokeWidth="0.12" />

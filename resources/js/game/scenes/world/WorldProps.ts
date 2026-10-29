@@ -37,11 +37,10 @@ export class WorldProps {
    * Kumpulan sprite rumput liar untuk interaksi goyangan saat diinjak / didekati pemain yang bergerak
    */
   public static wildGrassSprites: Phaser.GameObjects.Image[] = [];
-
-  /**
-   * Kumpulan gedung dan prop tinggi untuk efek transparansi ketika karakter berada di belakangnya (Occlusion Transparency)
-   */
   public static occludingProps: IOccludingProp[] = [];
+  private static lastGrassSwayTime: number = 0;
+  private static lastOcclusionTime: number = 0;
+  private static anyGrassSwaying: boolean = false;
 
   /**
    * Reset seluruh kumpulan props saat inisialisasi ulang scene
@@ -49,6 +48,8 @@ export class WorldProps {
   public static resetProps(): void {
     this.wildGrassSprites = [];
     this.occludingProps = [];
+    this.lastGrassSwayTime = 0;
+    this.lastOcclusionTime = 0;
   }
 
   /**
@@ -173,6 +174,8 @@ export class WorldProps {
     if (interactiveCallback) {
       img.setInteractive({ useHandCursor: true });
       img.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+        if ((window as any).__raden_virtual_control_active) return;
+        if (pointer?.event?.target && (pointer.event.target as HTMLElement).tagName !== 'CANVAS') return;
         if (pointer?.event) pointer.event.stopPropagation();
         interactiveCallback();
       });
@@ -444,7 +447,7 @@ export class WorldProps {
     addGridPropFn(
       'court-bola',
       24,
-      51,
+      53,
       10,
       5,
       false,
@@ -457,17 +460,17 @@ export class WorldProps {
     );
 
     // Rintangan fisik pembatas & pagar lapangan sepak bola (dengan pintu masuk di tengah gx: 28.2..29.8)
-    WorldProps.addGridObstacle(scene, tileSize, obstacles, 23.6, 51.0, 0.6, 4.8); // Sisi Kiri
-    WorldProps.addGridObstacle(scene, tileSize, obstacles, 33.7, 51.0, 0.6, 4.8); // Sisi Kanan
-    WorldProps.addGridObstacle(scene, tileSize, obstacles, 24.0, 55.7, 9.8, 0.5); // Sisi Bawah
-    WorldProps.addGridObstacle(scene, tileSize, obstacles, 24.0, 50.6, 4.2, 0.5); // Sisi Atas (Kiri Gerbang)
-    WorldProps.addGridObstacle(scene, tileSize, obstacles, 29.8, 50.6, 4.0, 0.5); // Sisi Atas (Kanan Gerbang)
+    WorldProps.addGridObstacle(scene, tileSize, obstacles, 23.6, 53.0, 0.6, 4.8); // Sisi Kiri
+    WorldProps.addGridObstacle(scene, tileSize, obstacles, 33.7, 53.0, 0.6, 4.8); // Sisi Kanan
+    WorldProps.addGridObstacle(scene, tileSize, obstacles, 24.0, 57.7, 9.8, 0.5); // Sisi Bawah
+    WorldProps.addGridObstacle(scene, tileSize, obstacles, 24.0, 52.6, 4.2, 0.5); // Sisi Atas (Kiri Gerbang)
+    WorldProps.addGridObstacle(scene, tileSize, obstacles, 29.8, 52.6, 4.0, 0.5); // Sisi Atas (Kanan Gerbang)
 
     // b. Lapangan Bola Basket (10x5)
     addGridPropFn(
       'court-basket',
       46,
-      51,
+      53,
       10,
       5,
       false,
@@ -480,11 +483,44 @@ export class WorldProps {
     );
 
     // Rintangan fisik pembatas & pagar lapangan basket (dengan pintu masuk di tengah gx: 50.2..51.8)
-    WorldProps.addGridObstacle(scene, tileSize, obstacles, 45.6, 51.0, 0.6, 4.8); // Sisi Kiri
-    WorldProps.addGridObstacle(scene, tileSize, obstacles, 55.7, 51.0, 0.6, 4.8); // Sisi Kanan
-    WorldProps.addGridObstacle(scene, tileSize, obstacles, 46.0, 55.7, 9.8, 0.5); // Sisi Bawah
-    WorldProps.addGridObstacle(scene, tileSize, obstacles, 46.0, 50.6, 4.2, 0.5); // Sisi Atas (Kiri Gerbang)
-    WorldProps.addGridObstacle(scene, tileSize, obstacles, 51.8, 50.6, 4.0, 0.5); // Sisi Atas (Kanan Gerbang)
+    WorldProps.addGridObstacle(scene, tileSize, obstacles, 45.6, 53.0, 0.6, 4.8); // Sisi Kiri
+    WorldProps.addGridObstacle(scene, tileSize, obstacles, 55.7, 53.0, 0.6, 4.8); // Sisi Kanan
+    WorldProps.addGridObstacle(scene, tileSize, obstacles, 46.0, 57.7, 9.8, 0.5); // Sisi Bawah
+    WorldProps.addGridObstacle(scene, tileSize, obstacles, 46.0, 52.6, 4.2, 0.5); // Sisi Atas (Kiri Gerbang)
+    WorldProps.addGridObstacle(scene, tileSize, obstacles, 51.8, 52.6, 4.0, 0.5); // Sisi Atas (Kanan Gerbang)
+
+    // ========================================================================
+    // c. 2 PAPAN POPUP REKLAME BILLBOARD 10x10 DI Y = 49/50 (gx: 22 dan gx: 45)
+    // Sesuai asset 10X10 Popup.png (BootScene key: 'popup-billboard')
+    // Collider di barisan x 1 baris saja tepat di baris dasar y = 49 (tebal 1 petak)
+    // ========================================================================
+    // 1. Papan Popup Kiri (gx: 22, gy: 40..50, collider 1 baris di y: 49, ukuran 10x10)
+    addGridPropFn(
+      'popup-billboard',
+      22,
+      40,
+      10,
+      10,
+      true, // Collider 1 barisan horizontal sepanjang sumbu X (obstacleRows = 1 di y: 49)
+      () => {
+        window.open('/world/popup', '_blank');
+      },
+      1
+    );
+
+    // 2. Papan Popup Kanan (gx: 45, gy: 40..50, collider 1 baris di y: 49, ukuran 10x10)
+    addGridPropFn(
+      'popup-billboard',
+      45,
+      40,
+      10,
+      10,
+      true, // Collider 1 barisan horizontal sepanjang sumbu X (obstacleRows = 1 di y: 49)
+      () => {
+        window.open('/world/popup', '_blank');
+      },
+      1
+    );
 
     // ========================================================================
     // KAWASAN KOMERSIAL & LAYANAN PUBLIK BARAT (6 Gedung 5x5 Petak Grid)
@@ -603,6 +639,10 @@ export class WorldProps {
   ): void {
     if (!this.wildGrassSprites || this.wildGrassSprites.length === 0) return;
 
+    // Throttle ke ~30 FPS untuk meringankan CPU secara signifikan tanpa mengurangi visual
+    if (time - this.lastGrassSwayTime < 32) return;
+    this.lastGrassSwayTime = time;
+
     const movingPositions: { x: number; y: number }[] = [];
 
     if (localPlayer) {
@@ -620,7 +660,7 @@ export class WorldProps {
       }
     }
 
-    if (remotePlayers) {
+    if (remotePlayers && remotePlayers.size > 0) {
       remotePlayers.forEach((rp) => {
         if (rp && rp.active) {
           const isRemoteMoving =
@@ -635,6 +675,9 @@ export class WorldProps {
     }
 
     const hasMovingPlayers = movingPositions.length > 0;
+    if (!hasMovingPlayers && !this.anyGrassSwaying) return;
+
+    let stillSwaying = false;
     const triggerRadius = 125; // Radius sentuhan ~1 petak di sekeliling rumpun rumput
 
     for (let i = 0; i < this.wildGrassSprites.length; i++) {
@@ -645,13 +688,17 @@ export class WorldProps {
       let minDist = 9999;
 
       if (hasMovingPlayers) {
-        // grass.y berada di titik jangkar akar (bawah).
-        // Titik tengah visual rumput 1x2 berada ~108px di atas akarnya.
         const grassCenterY = grass.y - 108;
 
         for (let j = 0; j < movingPositions.length; j++) {
           const pos = movingPositions[j];
-          const dist = Phaser.Math.Distance.Between(pos.x, pos.y, grass.x, grassCenterY);
+          // Pre-filter bounding box cepat untuk menghindari kalkulasi akar kuadrat berlebih
+          const dx = Math.abs(pos.x - grass.x);
+          if (dx > triggerRadius) continue;
+          const dy = Math.abs(pos.y - grassCenterY);
+          if (dy > triggerRadius) continue;
+
+          const dist = Math.hypot(dx, dy);
           if (dist < triggerRadius && dist < minDist) {
             minDist = dist;
             isTriggered = true;
@@ -662,22 +709,26 @@ export class WorldProps {
       if (isTriggered) {
         // Goyangan rumput alami: terayun jelas (tidak kaku), berayun lembut & wajar (tidak berlebihan)
         const influence = Math.max(0.35, 1 - (minDist / triggerRadius));
-        const swaySpeed = 0.016; // Kecepatan ayunan serasi dengan ketukan langkah kaki
-        const maxSwayAngle = 7.0 * influence; // Maksimal ±7 derajat di pusat sentuhan
+        const swaySpeed = 0.016;
+        const maxSwayAngle = 7.0 * influence;
         const phaseOffset = grass.x * 0.03 + grass.y * 0.02;
         const targetAngle = Math.sin(time * swaySpeed + phaseOffset) * maxSwayAngle;
 
-        grass.angle = Phaser.Math.Linear(grass.angle, targetAngle, 0.2);
+        grass.angle = Phaser.Math.Linear(grass.angle, targetAngle, 0.25);
+        stillSwaying = true;
       } else {
         // Pemain diam / menjauh -> Rumput kembali tegak lurus (0 derajat) secara mulus
         if (grass.angle !== 0) {
-          grass.angle = Phaser.Math.Linear(grass.angle, 0, 0.15);
+          grass.angle = Phaser.Math.Linear(grass.angle, 0, 0.18);
           if (Math.abs(grass.angle) < 0.05) {
             grass.angle = 0;
+          } else {
+            stillSwaying = true;
           }
         }
       }
     }
+    this.anyGrassSwaying = stillSwaying;
   }
 
   /**
@@ -691,16 +742,27 @@ export class WorldProps {
   ): void {
     if (!this.occludingProps || this.occludingProps.length === 0 || !localPlayer) return;
 
+    // Throttle kalkulasi occlusion ke setiap 60ms
+    if (time - this.lastOcclusionTime < 60) return;
+    this.lastOcclusionTime = time;
+
     const px = localPlayer.x;
     const py = localPlayer.y;
 
-    const dt = Math.min(0.05, delta / 1000);
-    // Transisi pemudaran halus (Fade transition ~120-150ms)
+    const dt = Math.min(0.08, delta / 1000);
     const lerpFactor = Math.min(1.0, dt * 10);
 
     for (let i = 0; i < this.occludingProps.length; i++) {
       const prop = this.occludingProps[i];
       if (!prop.img || !prop.img.active) continue;
+
+      // Filter cepat: jika objek berjarak > 600px dari karakter, abaikan kalkulasi
+      const midX = (prop.left + prop.right) * 0.5;
+      const midY = (prop.top + prop.bottom) * 0.5;
+      if (Math.abs(px - midX) > 600 || Math.abs(py - midY) > 600) {
+        if (prop.img.alpha < 1.0) prop.img.alpha = 1.0;
+        continue;
+      }
 
       // Cek apakah posisi horizontal karakter berada di dalam rentang lebar bangunan (dengan padding 45px)
       const isBehindX = (px + 45 >= prop.left) && (px - 45 <= prop.right);

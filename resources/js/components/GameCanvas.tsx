@@ -4,7 +4,7 @@ import { createGameConfig } from '../game/core/GameConfig';
 import { EventBus } from '../game/core/EventBus';
 import { NetworkManager } from '../game/core/NetworkManager';
 
-export const GameCanvas: React.FC = () => {
+export const GameCanvas: React.FC = React.memo(() => {
   const gameRef = useRef<Phaser.Game | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -22,14 +22,13 @@ export const GameCanvas: React.FC = () => {
         const sceneManager = gameRef.current.scene;
         const targetScene = sceneManager.getScene(targetSceneKey);
         if (targetScene) {
-          // Hentikan scene-scene yang sedang berjalan agar transisi bersih & tidak ada event zombie
+          // Hentikan SEMUA scene yang sedang berjalan (termasuk jika targetScene sedang aktif)
+          // agar scene di-restart secara bersih dan EventBus 'scene-ready' selalu terpancar
           const activeScenes = sceneManager.getScenes(true);
           activeScenes.forEach((s) => {
-            if (s.scene.key !== targetSceneKey) {
-              try {
-                s.scene.stop();
-              } catch (e) {}
-            }
+            try {
+              s.scene.stop();
+            } catch (e) {}
           });
           sceneManager.start(targetSceneKey, data);
         } else {
@@ -159,4 +158,5 @@ export const GameCanvas: React.FC = () => {
   }, []);
 
   return <div id="game-container" ref={containerRef} className="absolute inset-0 z-0 bg-slate-950" />;
-};
+});
+GameCanvas.displayName = 'GameCanvas';

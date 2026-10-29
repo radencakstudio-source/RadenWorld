@@ -68,9 +68,11 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
       const saved = localStorage.getItem('raden_player_user');
       if (saved) {
         const u = JSON.parse(saved);
-        if (u && (u.id || u.name)) {
+        if (u && u.id && u.email && u.name && u.name.trim().toLowerCase() !== 'petualang') {
           hasValidUser = true;
           userData = u;
+        } else {
+          localStorage.removeItem('raden_player_user');
         }
       }
     } catch (e) {}
@@ -244,7 +246,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           {/* Karakter Cewek: FemaleAvatar (Flipped via scale-x-[-1]) */}
           <div className="relative flex flex-col items-center -mr-2 sm:-mr-4">
             <img
-              src="/assets/sprites/characters/Player/Female/FemaleAvatar_Lobby.png"
+              src="/assets/sprites/characters/Player/Female/FemaleAvatar_Lobby.webp"
               alt="Female Avatar"
               className="h-[36vh] xs:h-[42vh] sm:h-[52vh] md:h-[64vh] max-h-[460px] object-contain object-bottom scale-x-[-1] transform-gpu will-change-transform"
               loading="eager"
@@ -256,7 +258,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           {/* Karakter Cowok: MaleAvatar */}
           <div className="relative flex flex-col items-center ml-2 sm:ml-4">
             <img
-              src="/assets/sprites/characters/Player/Male/MaleAvatar_Lobby.png"
+              src="/assets/sprites/characters/Player/Male/MaleAvatar_Lobby.webp"
               alt="Male Avatar"
               className="h-[36vh] xs:h-[42vh] sm:h-[52vh] md:h-[64vh] max-h-[460px] object-contain object-bottom transform-gpu will-change-transform"
               loading="eager"

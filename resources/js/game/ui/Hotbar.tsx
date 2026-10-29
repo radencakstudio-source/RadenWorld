@@ -23,7 +23,7 @@ interface HotbarProps {
   isFullMapOpen?: boolean;
 }
 
-export const Hotbar: React.FC<HotbarProps> = ({ onOpenBackpack, isBackpackOpen = false, isFullMapOpen: propIsFullMapOpen }) => {
+export const Hotbar: React.FC<HotbarProps> = React.memo(({ onOpenBackpack, isBackpackOpen = false, isFullMapOpen: propIsFullMapOpen }) => {
   const inv = InventoryManager.getInstance();
   const sound = SoundManager.getInstance();
 
@@ -272,4 +272,5 @@ export const Hotbar: React.FC<HotbarProps> = ({ onOpenBackpack, isBackpackOpen =
       </div>
     </aside>
   );
-};
+});
+Hotbar.displayName = 'Hotbar';

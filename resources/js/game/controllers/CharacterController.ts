@@ -141,9 +141,9 @@ export class CharacterController {
   private readonly maxJumps: number = 2; // Mendukung Lompat 2x (Double Jump)
   private currentJumpZ: number = 0; // Ketinggian visual Z saat ini dalam pixel
   private jumpVelocityZ: number = 0; // Kecepatan vertikal ke atas (px/detik)
-  private readonly jumpGravityZ: number = -1400; // Gravitasi lompatan retro responsif
-  private readonly jumpLaunchVz: number = 660; // Kecepatan awal lompat pertama (~155px ketinggian puncak)
-  private readonly doubleJumpLaunchVz: number = 560; // Dorongan ekstra lompat kedua di udara (melambung dari Z saat ini)
+  private readonly jumpGravityZ: number = -1900; // Gravitasi lompatan gesit & lincah
+  private readonly jumpLaunchVz: number = 640; // Kecepatan awal lompat pertama instan & ringan (~108px puncak)
+  private readonly doubleJumpLaunchVz: number = 520; // Dorongan ekstra lompat kedua di udara
   private jumpLaunchVx: number = 0;
   private jumpLaunchVy: number = 0;
 
@@ -163,8 +163,8 @@ export class CharacterController {
     if (this.scene.scene.key !== 'WorldScene') return false;
     const gx = Math.floor(this.player.x / 120);
     const gy = Math.floor(this.player.y / 120);
-    // Area lapangan olahraga tengah alun-alun (sepakbola, basket, volly: gx 23..56, gy 50..56)
-    return gx >= 23 && gx <= 56 && gy >= 50 && gy <= 56;
+    // Area lapangan olahraga tengah alun-alun (sepakbola, basket, volly: gx 23..56, gy 52..58)
+    return gx >= 23 && gx <= 56 && gy >= 52 && gy <= 58;
   }
 
   /**
@@ -227,6 +227,8 @@ export class CharacterController {
 
   /** Objek Graphics untuk joran, senar pancing melengkung, pelampung & riak air */
   private fishingGraphics: Phaser.GameObjects.Graphics;
+  private isFishingGraphicsDrawn: boolean = false;
+  private isCrystalGraphicsDrawn: boolean = false;
 
   // Key controls
   private keySpace!: Phaser.Input.Keyboard.Key;
@@ -448,67 +450,44 @@ export class CharacterController {
 
     if (this.jumpCount === 0) {
       // ======================================================================
-      // LOMPATAN PERTAMA (4 TAHAP)
-      // 1. Charge dulu di tanah
-      // 2. Animasi Jump saat sebelum lompat max tertinggi (Subtle Stretch)
-      // 3. Saat sampai atas baru animasi InAir sampai turun
-      // 4. Saat hampir menyentuh ground pakai animasi Landing sampai menyentuh ground
+      // LOMPATAN PERTAMA (RESPONSIF, INSTAN & RINGAN TANPA DELAY)
+      // Karakter langsung lepas landas seketika saat tombol ditekan
       // ======================================================================
       this.jumpCount = 1;
       this.isJumping = true;
-      this.isCharging = true;
+      this.isCharging = false;
       this.actionState = 'jumping';
       this.currentJumpZ = 0;
-      this.jumpVelocityZ = 0;
-      this.player.setVisualYOffset(0);
-
-      // Rekam momentum gerakan horizontal
-      const body = this.player.body as Phaser.Physics.Arcade.Body;
-      this.jumpLaunchVx = body ? body.velocity.x : 0;
-      this.jumpLaunchVy = body ? body.velocity.y : 0;
+      this.jumpVelocityZ = this.jumpLaunchVz + (this.isPotionActive('high_jump') ? 240 : 0);
+      this.lastLaunchTime = this.scene.time.now;
 
       // Bersihkan timer lama jika ada
-      if (this.chargeTimer) this.chargeTimer.remove();
+      if (this.chargeTimer) {
+        this.chargeTimer.remove();
+        this.chargeTimer = null;
+      }
 
-      // 1. TAHAP CHARGE DULU: Karakter jongkok persiapan di tanah
-      this.player.setJumpVisualStage('charge');
+      // Suara & animasi langsung lepas landas
+      this.sound.playJump(false);
+      this.player.setJumpVisualStage('jump');
 
-      // Efek Squishy Halus: Sedikit crouch kompresi wajar (~5%)
-      this.currentSquashX = 1.05;
-      this.currentSquashY = 0.95;
+      // Efek Squishy Halus: Angkat vertikal melesat (stretch 5%)
+      this.currentSquashX = 0.96;
+      this.currentSquashY = 1.05;
       this.player.setSquashStretch(this.currentSquashX, this.currentSquashY);
 
-      // Durasi charge yang pas dan mantap (~160ms)
-      this.chargeTimer = this.scene.time.delayedCall(160, () => {
-        this.isCharging = false;
-        if (!this.isJumping) return;
+      // SINKRONISASI JARINGAN MULTIPLAYER KE SERVER
+      NetworkManager.getInstance().sendJump(1, this.player.x, this.player.y);
 
-        this.lastLaunchTime = this.scene.time.now;
+      // Flash putih sekejap dan hembusan debu lepas landas
+      this.player.triggerJumpWhiteFlash(90);
+      this.triggerLandingDust(this.player.x, this.player.y + 12);
 
-        // 2. TAHAP JUMP: Lepas landas melesat ke atas menuju max tertinggi
-        this.currentJumpZ = 0;
-        this.jumpVelocityZ = this.jumpLaunchVz + (this.isPotionActive('high_jump') ? 300 : 0);
-        this.sound.playJump(false);
-        this.player.setJumpVisualStage('jump');
-
-        // Efek Squishy Halus: Angkat vertikal melesat (stretch 5%)
-        this.currentSquashX = 0.96;
-        this.currentSquashY = 1.05;
-        this.player.setSquashStretch(this.currentSquashX, this.currentSquashY);
-
-        // SINKRONISASI JARINGAN MULTIPLAYER KE SERVER
-        NetworkManager.getInstance().sendJump(1, this.player.x, this.player.y);
-
-        // Flash putih sekejap dan hembusan debu lepas landas
-        this.player.triggerJumpWhiteFlash(150);
-        this.triggerLandingDust(this.player.x, this.player.y + 12);
-
-        EventBus.emit('player-jump-started', {
-          x: this.player.x,
-          y: this.player.y,
-          jumpCount: 1,
-          jumpZ: this.currentJumpZ,
-        });
+      EventBus.emit('player-jump-started', {
+        x: this.player.x,
+        y: this.player.y,
+        jumpCount: 1,
+        jumpZ: this.currentJumpZ,
       });
 
       return true;
@@ -691,20 +670,20 @@ export class CharacterController {
       // Karakter tetap di animasi Landing saat menapak tanah
       this.player.setJumpVisualStage('landing');
 
-      // EFEK SQUISHY MENDARAT HALUS (Impact Squash wajar 6-7%)
-      this.currentSquashX = 1.07;
-      this.currentSquashY = 0.93;
+      // EFEK SQUISHY MENDARAT CEPAT & LINCAH (~3%)
+      this.currentSquashX = 1.03;
+      this.currentSquashY = 0.97;
       this.player.setSquashStretch(this.currentSquashX, this.currentSquashY);
 
       if (this.landingSquashTween) {
         this.landingSquashTween.stop();
       }
-      const squashTarget = { sx: 1.07, sy: 0.93 };
+      const squashTarget = { sx: 1.03, sy: 0.97 };
       this.landingSquashTween = this.scene.tweens.add({
         targets: squashTarget,
         sx: 1.0,
         sy: 1.0,
-        duration: 120,
+        duration: 60,
         ease: 'Quad.easeOut',
         onUpdate: () => {
           this.currentSquashX = squashTarget.sx;
@@ -1185,10 +1164,14 @@ export class CharacterController {
    */
   private updateFishing(time: number, delta: number): void {
     if (this.fishingState === 'none') {
-      this.fishingGraphics.clear();
+      if (this.isFishingGraphicsDrawn) {
+        this.fishingGraphics.clear();
+        this.isFishingGraphicsDrawn = false;
+      }
       return;
     }
 
+    this.isFishingGraphicsDrawn = true;
     this.fishingGraphics.clear();
     this.fishingGraphics.setDepth(this.player.y + 120);
 
@@ -1275,7 +1258,7 @@ export class CharacterController {
         NetworkManager.getInstance().sendFishing('bite', this.bobberPos, this.targetBobberPos);
         this.sound.playFishBite();
         this.player.triggerExpression('shock');
-        this.player.showSpeechBubble('❗ IKAN MENYAMBAR! TEKAN [SPASI] / [F] SEKARANG!');
+        this.player.showSpeechBubble('Ikan menyambar! Tarik [F/SPASI]', 2000);
         EventBus.emit('fishing-bite');
       }
     }
@@ -1472,6 +1455,7 @@ export class CharacterController {
    * sampai karakter tiba di lokasi tersebut
    */
   private drawDestinationCrystal(cx: number, cy: number, time: number): void {
+    this.isCrystalGraphicsDrawn = true;
     this.crystalGraphics.clear();
     this.crystalGraphics.setDepth(99999);
 
@@ -1692,8 +1676,11 @@ export class CharacterController {
         this.syncFacingDirection(dx, dy);
       }
     } else {
-      // Tidak ada navigasi aktif: bersihkan grafis kristal
-      this.crystalGraphics.clear();
+      // Tidak ada navigasi aktif: bersihkan grafis kristal jika sebelumnya aktif
+      if (this.isCrystalGraphicsDrawn) {
+        this.crystalGraphics.clear();
+        this.isCrystalGraphicsDrawn = false;
+      }
     }
 
     // Failsafe: Sinkronkan arah hadap ke fisik velocity

@@ -53,37 +53,37 @@ const CHARACTER_EXPRESSIONS: ICharacterExpression[] = [
     type: 'normal',
     name: 'Normal',
     desc: 'Tenang & Siaga',
-    fileMale: '/assets/sprites/characters/Player/Male/Ekspression/NormalMale.png',
-    fileFemale: '/assets/sprites/characters/Player/Female/Ekspression/NormalFemale.png',
+    fileMale: '/assets/sprites/characters/Player/Male/Ekspression/NormalMale.webp',
+    fileFemale: '/assets/sprites/characters/Player/Female/Ekspression/NormalFemale.webp',
     badgeBorder: 'border-amber-500/40 hover:border-amber-400',
   },
   {
     type: 'smile',
     name: 'Senang',
     desc: 'Tersenyum Ramah',
-    fileMale: '/assets/sprites/characters/Player/Male/Ekspression/SenangMale.png',
-    fileFemale: '/assets/sprites/characters/Player/Female/Ekspression/SenangFemale.png',
+    fileMale: '/assets/sprites/characters/Player/Male/Ekspression/SenangMale.webp',
+    fileFemale: '/assets/sprites/characters/Player/Female/Ekspression/SenangFemale.webp',
     badgeBorder: 'border-emerald-500/40 hover:border-emerald-400',
   },
   {
     type: 'shock',
     name: 'Kaget',
     desc: 'Terkejut Heran',
-    fileMale: '/assets/sprites/characters/Player/Male/Ekspression/KagetMale.png',
-    fileFemale: '/assets/sprites/characters/Player/Female/Ekspression/KagetFemale.png',
+    fileMale: '/assets/sprites/characters/Player/Male/Ekspression/KagetMale.webp',
+    fileFemale: '/assets/sprites/characters/Player/Female/Ekspression/KagetFemale.webp',
     badgeBorder: 'border-sky-500/40 hover:border-sky-400',
   },
   {
     type: 'angry',
     name: 'Marah',
     desc: 'Emosi Geram',
-    fileMale: '/assets/sprites/characters/Player/Male/Ekspression/MarahMale.png',
-    fileFemale: '/assets/sprites/characters/Player/Female/Ekspression/MarahFemale.png',
+    fileMale: '/assets/sprites/characters/Player/Male/Ekspression/MarahMale.webp',
+    fileFemale: '/assets/sprites/characters/Player/Female/Ekspression/MarahFemale.webp',
     badgeBorder: 'border-rose-500/40 hover:border-rose-400',
   },
 ];
 
-export const ChatBox: React.FC<ChatBoxProps> = ({
+export const ChatBox: React.FC<ChatBoxProps> = React.memo(({
   messages,
   onSendMessage,
   isOpen,
@@ -332,10 +332,10 @@ export const ChatBox: React.FC<ChatBoxProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed top-[54px] sm:top-[66px] md:top-[72px] left-2 sm:left-4 md:left-5 z-40 w-[calc(100vw-1rem)] sm:w-96 md:w-[410px] max-w-[410px] flex flex-col bg-black border border-neutral-800 rounded-md overflow-hidden transition-all pointer-events-auto font-['Chakra_Petch'] animate-in fade-in slide-in-from-top-1 duration-150 shadow-2xl">
+    <div className="fixed top-[46px] sm:top-[66px] md:top-[72px] left-1.5 sm:left-4 md:left-5 z-50 w-[270px] sm:w-80 md:w-[380px] max-w-[calc(100vw-0.75rem)] flex flex-col bg-black/95 backdrop-blur-md border border-neutral-800 rounded-md overflow-hidden transition-all pointer-events-auto font-['Chakra_Petch'] animate-in fade-in slide-in-from-top-1 duration-150 shadow-2xl">
       
       {/* 1. HEADER CHAT: Rata & Sejajar Presisi (Flat Minimalist) */}
-      <div className="px-3 sm:px-3.5 py-2 sm:py-2.5 border-b border-neutral-800 bg-[#0a0a0a] flex items-center justify-between text-xs font-bold text-amber-400 uppercase tracking-wider">
+      <div className="px-2 sm:px-3.5 py-1.5 sm:py-2.5 border-b border-neutral-800 bg-[#0a0a0a] flex items-center justify-between text-xs font-bold text-amber-400 uppercase tracking-wider">
         <div className="flex items-center gap-1.5 sm:gap-2">
           <div className="w-5 h-5 sm:w-6 sm:h-6 rounded bg-neutral-900 border border-neutral-800 flex items-center justify-center text-amber-400">
             <MessageSquare className="w-3 sm:w-3.5 h-3 sm:h-3.5" />
@@ -495,7 +495,7 @@ export const ChatBox: React.FC<ChatBoxProps> = ({
         <div
           ref={chatListRef}
           onScroll={handleScroll}
-          className="p-2.5 sm:p-3 max-h-[35dvh] min-h-[110px] overflow-y-auto space-y-1.5 text-xs custom-scrollbar bg-black/90 scroll-smooth"
+          className="p-1.5 sm:p-2.5 max-h-[120px] sm:max-h-[200px] md:max-h-[260px] min-h-[70px] sm:min-h-[100px] overflow-y-auto space-y-1 sm:space-y-1.5 text-xs custom-scrollbar bg-black/90 scroll-smooth"
         >
           {/* Banner Indikator Tab Private */}
           {activeTab !== 'global' && (
@@ -658,14 +658,14 @@ export const ChatBox: React.FC<ChatBoxProps> = ({
       </div>
 
       {/* 5. BARIS CEPAT EMOJI: Simetris & Responsif */}
-      <div className="px-3 py-1.5 bg-[#0a0a0a] border-t border-neutral-800 flex items-center gap-1.5 overflow-x-auto no-scrollbar">
-        <span className="text-[10px] font-bold text-amber-500/70 shrink-0 font-mono">CEPAT:</span>
+      <div className="px-2 sm:px-3 py-1 bg-[#0a0a0a] border-t border-neutral-800 flex items-center gap-1 sm:gap-1.5 overflow-x-auto no-scrollbar">
+        <span className="text-[9px] sm:text-[10px] font-bold text-amber-500/70 shrink-0 font-mono">CEPAT:</span>
         {['👋', '😊', '😂', '👑', '⚔️', '❤️', '⚡', '🔥'].map((em, i) => (
           <button
             key={i}
             type="button"
             onClick={() => handleInsertEmoji(em)}
-            className="w-6 h-6 rounded-md hover:bg-neutral-800 flex items-center justify-center text-xs hover:scale-125 transition-transform cursor-pointer"
+            className="w-5 h-5 sm:w-6 sm:h-6 rounded hover:bg-neutral-800 flex items-center justify-center text-[11px] sm:text-xs hover:scale-125 transition-transform cursor-pointer shrink-0"
             title={`Tambahkan ${em} ke input teks`}
           >
             {em}
@@ -673,8 +673,8 @@ export const ChatBox: React.FC<ChatBoxProps> = ({
         ))}
       </div>
 
-      {/* 6. FORM INPUT: Rata, Sejajar, Presisi Tinggi h-9 */}
-      <form onSubmit={handleSubmit} className="p-2.5 border-t border-neutral-800 flex items-center gap-2 bg-[#080808]">
+      {/* 6. FORM INPUT: Rata, Sejajar, Presisi Tinggi */}
+      <form onSubmit={handleSubmit} className="p-1.5 sm:p-2.5 border-t border-neutral-800 flex items-center gap-1.5 sm:gap-2 bg-[#080808]">
         {/* Tombol Ekspresi */}
         <button
           type="button"
@@ -682,14 +682,14 @@ export const ChatBox: React.FC<ChatBoxProps> = ({
             sound.playClick();
             setShowExpressions(!showExpressions);
           }}
-          className={`w-9 h-9 rounded-md border flex items-center justify-center transition-colors cursor-pointer shrink-0 ${
+          className={`w-7 h-7 sm:w-9 sm:h-9 rounded-md border flex items-center justify-center transition-colors cursor-pointer shrink-0 ${
             showExpressions
               ? 'bg-amber-500 text-black border-amber-400'
               : 'bg-neutral-900 text-amber-400 border-neutral-800 hover:bg-neutral-800 hover:border-amber-400'
           }`}
           title="Pilih Ekspresi & Emotikon"
         >
-          <Smile className="w-4 h-4" />
+          <Smile className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
         </button>
 
         {/* Kotak Input Teks */}
@@ -702,23 +702,24 @@ export const ChatBox: React.FC<ChatBoxProps> = ({
           onKeyUp={(e) => e.stopPropagation()}
           placeholder={
             activeTab === 'global'
-              ? "Ketik pesan atau tekan '/'..."
-              : `Bisikkan pesan pribadi ke ${activeTab}...`
+              ? "Ketik pesan..."
+              : `Bisik ke ${activeTab}...`
           }
           maxLength={150}
-          className="flex-1 h-9 px-3 bg-neutral-900 border border-neutral-800 focus:border-amber-400 rounded-md text-xs text-amber-200 placeholder-neutral-500 font-['Chakra_Petch'] outline-none transition-colors"
+          className="flex-1 h-7 sm:h-9 px-2 sm:px-3 bg-neutral-900 border border-neutral-800 focus:border-amber-400 rounded-md text-[11px] sm:text-xs text-amber-200 placeholder-neutral-500 font-['Chakra_Petch'] outline-none transition-colors"
         />
 
         {/* Tombol Kirim */}
         <button
           type="submit"
-          className="h-9 px-3.5 rounded-md bg-amber-500 hover:bg-amber-400 active:scale-95 text-black font-bold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer shrink-0 border border-amber-400"
+          className="h-7 sm:h-9 px-2.5 sm:px-3.5 rounded-md bg-amber-500 hover:bg-amber-400 active:scale-95 text-black font-bold text-[10px] sm:text-xs flex items-center justify-center gap-1 sm:gap-1.5 transition-colors cursor-pointer shrink-0 border border-amber-400"
           title="Kirim Pesan"
         >
-          <span>KIRIM</span>
-          <Send className="w-3.5 h-3.5" />
+          <span className="hidden sm:inline">KIRIM</span>
+          <Send className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
         </button>
       </form>
     </div>
   );
-};
+});
+ChatBox.displayName = 'ChatBox';

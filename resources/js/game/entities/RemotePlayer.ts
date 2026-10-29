@@ -680,6 +680,18 @@ export class RemotePlayer extends Entity {
     return this.avatar;
   }
 
+  /** Memperbarui avatar remote player */
+  public setAvatar(newAvatar: IAvatarCustomization): void {
+    if (!newAvatar) return;
+    this.avatar = newAvatar;
+    this.gender = newAvatar.gender === 'female' ? 'female' : 'male';
+    if (this.isMoving) {
+      this.playWalkAnimation();
+    } else {
+      this.playIdlePose();
+    }
+  }
+
   /** Mengambil gender remote player */
   public getGender(): 'male' | 'female' {
     return this.gender;

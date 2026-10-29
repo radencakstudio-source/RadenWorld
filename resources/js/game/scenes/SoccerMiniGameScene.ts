@@ -337,7 +337,7 @@ export class SoccerMiniGameScene extends Phaser.Scene {
     }
 
     // Beritahu HUD react bahwa kita sedang di mini game
-    EventBus.emit('location-updated', 'STADION MINI: HEAD SOCCER 1 VS 1');
+    EventBus.emit('location-updated', 'STADION MINI: SOCCER 1 VS 1');
     EventBus.emit('minigame-active', true);
   }
 
@@ -357,7 +357,7 @@ export class SoccerMiniGameScene extends Phaser.Scene {
     // Papan Iklan LED
     const ledBoard = this.add.rectangle(width / 2, groundY - 14, width - 40, 24, 0x020617);
     ledBoard.setStrokeStyle(1.5, 0x38bdf8, 0.5);
-    const ledText = this.add.text(width / 2, groundY - 14, '★ RADENWORLD HEAD SOCCER CUP 2026 ★ DOUBLE JUMP & DASH READY ★', {
+    const ledText = this.add.text(width / 2, groundY - 14, '★ RADENWORLD SOCCER CUP 2026 ★ DOUBLE JUMP & DASH READY ★', {
       fontFamily: 'Chakra Petch, sans-serif',
       fontSize: '11px',
       color: '#38bdf8',

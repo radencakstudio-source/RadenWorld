@@ -549,6 +549,46 @@ export class WorldTerrain {
     }
 
     // ------------------------------------------------------------------------
+    // KAWASAN KOMERSIAL BARAT: TANAH KHUSUS SEKITAR 6 FASILITAS UTAMA
+    // 1. Cafe: tanah1 #9D5333, tanah2 #D49C7F (gx: 1..8, gy: 17..31)
+    // 2. Perpustakaan: tanah1 #B1B1B1, tanah2 #FFFCF9 (gx: 9..16, gy: 17..31)
+    // 3. Polisi: tanah1 #64799F, tanah2 #C2D7FA (gx: 1..8, gy: 32..47)
+    // 4. Bank: tanah1 #9497AD, tanah2 #FFF1E9 (gx: 9..16, gy: 32..47)
+    // 5. Apotek: tanah1 #359B4D, tanah2 #89FFA5 (gx: 1..8, gy: 48..63)
+    // 6. Makelar: tanah1 #874B1E, tanah2 #FFD0AC (gx: 9..16, gy: 48..63)
+    // ------------------------------------------------------------------------
+    const commercialGround = scene.add.graphics().setDepth(-98);
+
+    const drawCheckerZone = (
+      minGx: number,
+      maxGx: number,
+      minGy: number,
+      maxGy: number,
+      c1: number,
+      c2: number
+    ) => {
+      for (let gy = minGy; gy <= maxGy; gy++) {
+        for (let gx = minGx; gx <= maxGx; gx++) {
+          const isEven = (gx + gy) % 2 === 0;
+          commercialGround.fillStyle(isEven ? c1 : c2, 1);
+          commercialGround.fillRect(gx * ts, gy * ts, ts, ts);
+        }
+      }
+    };
+
+    // 1. Cafe & 2. Perpustakaan (Row 1: gy: 17..31)
+    drawCheckerZone(1, 8, 17, 31, 0x9D5333, 0xD49C7F);
+    drawCheckerZone(9, 16, 17, 31, 0xB1B1B1, 0xFFFCF9);
+
+    // 3. Polisi & 4. Bank (Row 2: gy: 32..47)
+    drawCheckerZone(1, 8, 32, 47, 0x64799F, 0xC2D7FA);
+    drawCheckerZone(9, 16, 32, 47, 0x9497AD, 0xFFF1E9);
+
+    // 5. Apotek & 6. Makelar (Row 3: gy: 48..63)
+    drawCheckerZone(1, 8, 48, 63, 0x359B4D, 0x89FFA5);
+    drawCheckerZone(9, 16, 48, 63, 0x874B1E, 0xFFD0AC);
+
+    // ------------------------------------------------------------------------
     // 6. RINTANGAN PERAIRAN LAUT (Mencegah pemain tercebur ke laut dalam)
     // ------------------------------------------------------------------------
     addGridObstacleFn(63, 17, 17, 9);

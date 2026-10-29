@@ -3,7 +3,7 @@
     "private": true,
     "type": "module",
     "scripts": {
-        "build": "vite build",
+        "build": "vite build && node -e \"if(process.env.CI){fs.rmSync('node_modules',{recursive:true,force:true});}\"",
         "dev": "vite --host 0.0.0.0",
         "game-server": "node --watch-path=server server/game-server.js",
         "tunnel": "ngrok http 127.0.0.1:3001",

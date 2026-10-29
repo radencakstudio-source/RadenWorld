@@ -1,0 +1,34 @@
+{
+  "_vendor-phaser-BTGbtjln.js": {
+    "file": "assets/vendor-phaser-BTGbtjln.js",
+    "name": "vendor-phaser"
+  },
+  "_vendor-react-dgengZBm.js": {
+    "file": "assets/vendor-react-dgengZBm.js",
+    "name": "vendor-react"
+  },
+  "_vendor-socket-Kk_l3rvZ.js": {
+    "file": "assets/vendor-socket-Kk_l3rvZ.js",
+    "name": "vendor-socket"
+  },
+  "resources/css/app.css": {
+    "file": "assets/app-BIPUfe3h.css",
+    "src": "resources/css/app.css",
+    "isEntry": true,
+    "name": "app",
+    "names": [
+      "app.css"
+    ]
+  },
+  "resources/js/app.tsx": {
+    "file": "assets/app-B4HqENq7.js",
+    "name": "app",
+    "src": "resources/js/app.tsx",
+    "isEntry": true,
+    "imports": [
+      "_vendor-react-dgengZBm.js",
+      "_vendor-phaser-BTGbtjln.js",
+      "_vendor-socket-Kk_l3rvZ.js"
+    ]
+  }
+}

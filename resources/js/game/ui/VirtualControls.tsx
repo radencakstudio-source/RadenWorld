@@ -536,10 +536,30 @@ export const VirtualControls: React.FC<VirtualControlsProps> = React.memo(({
     EventBus.on('fishing-ended', handleBiteEnd);
     EventBus.on('fishing-minigame-start', handleBiteEnd);
 
+    // Global listener untuk menghentikan charge jika jari terangkat di luar tombol di mobile/tablet
+    const handleGlobalRelease = () => {
+      if (isFishChargingRef.current) {
+        isFishChargingRef.current = false;
+        triggerHaptic(30);
+        EventBus.emit('fishing-charge-release');
+        EventBus.emit('fishing-cast-release');
+        setGlobalControlActive(false);
+      }
+    };
+
+    window.addEventListener('pointerup', handleGlobalRelease);
+    window.addEventListener('pointercancel', handleGlobalRelease);
+    window.addEventListener('touchend', handleGlobalRelease);
+    window.addEventListener('touchcancel', handleGlobalRelease);
+
     return () => {
       EventBus.off('fishing-bite', handleBite);
       EventBus.off('fishing-ended', handleBiteEnd);
       EventBus.off('fishing-minigame-start', handleBiteEnd);
+      window.removeEventListener('pointerup', handleGlobalRelease);
+      window.removeEventListener('pointercancel', handleGlobalRelease);
+      window.removeEventListener('touchend', handleGlobalRelease);
+      window.removeEventListener('touchcancel', handleGlobalRelease);
     };
   }, [triggerHaptic]);
 
@@ -550,6 +570,12 @@ export const VirtualControls: React.FC<VirtualControlsProps> = React.memo(({
     }
     e.preventDefault();
     e.stopPropagation();
+
+    // Blur input/button apapun yang aktif
+    if (document.activeElement && (document.activeElement as HTMLElement).blur && document.activeElement !== document.body) {
+      (document.activeElement as HTMLElement).blur();
+    }
+
     setGlobalControlActive(true);
 
     try {
@@ -561,6 +587,7 @@ export const VirtualControls: React.FC<VirtualControlsProps> = React.memo(({
       sound.playClick();
       setIsFishBiting(false);
       EventBus.emit('player-strike');
+      EventBus.emit('player-fish');
       return;
     }
 
@@ -582,6 +609,7 @@ export const VirtualControls: React.FC<VirtualControlsProps> = React.memo(({
     if (isFishChargingRef.current) {
       isFishChargingRef.current = false;
       triggerHaptic(30);
+      EventBus.emit('fishing-charge-release');
       EventBus.emit('fishing-cast-release');
     }
     setGlobalControlActive(false);
@@ -881,17 +909,17 @@ export const VirtualControls: React.FC<VirtualControlsProps> = React.memo(({
             onPointerUp={handleFishPointerUp}
             onPointerCancel={handleFishPointerUp}
             onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); }}
-            className={`w-10.5 h-10.5 sm:w-12 sm:h-12 md:w-13.5 md:h-13.5 rounded-full flex flex-col items-center justify-center cursor-pointer active:scale-95 transition-all select-none ${
+            className={`w-11.5 h-11.5 sm:w-13 sm:h-13 md:w-14 md:h-14 rounded-full flex flex-col items-center justify-center cursor-pointer active:scale-95 transition-all select-none ${
               isFishBiting && !isEditMode
-                ? 'bg-neutral-900 border-2 border-amber-400 text-amber-400 shadow-none'
+                ? 'bg-amber-500/35 border-2 border-amber-400 text-amber-300 ring-4 ring-amber-400/50 animate-pulse shadow-[0_0_24px_rgba(245,158,11,0.7)]'
                 : 'bg-black/80 hover:bg-black/90 active:bg-neutral-800 border-2 border-white/30 text-neutral-200 shadow-xl'
             }`}
             style={{ touchAction: 'none' }}
             title={isFishBiting ? "IKAN MENYAMBAR! KETUK UNTUK TARIK!" : "Tahan untuk Menimbang Lemparan Kail / Strike (F)"}
             aria-label="Tombol Mancing"
           >
-            <Fish className={`w-3.5 h-3.5 sm:w-4.5 sm:h-4.5 stroke-[2] ${isFishBiting && !isEditMode ? 'text-amber-400 stroke-[2.5]' : 'text-neutral-200'}`} />
-            <span className={`text-[6.5px] sm:text-[7.5px] font-mono font-black tracking-wider leading-none mt-0.5 ${isFishBiting && !isEditMode ? 'text-amber-400' : 'text-neutral-400'}`}>
+            <Fish className={`w-4.5 h-4.5 sm:w-5 sm:h-5 stroke-[2.2] transition-colors ${isFishBiting && !isEditMode ? 'text-amber-300 stroke-[2.8] animate-bounce' : 'text-amber-300'}`} />
+            <span className={`text-[6.5px] sm:text-[7.5px] font-mono font-black tracking-wider leading-none mt-0.5 ${isFishBiting && !isEditMode ? 'text-amber-300' : 'text-neutral-300'}`}>
               {isFishBiting && !isEditMode ? 'TARIK!' : 'MANCING'}
             </span>
           </button>

@@ -342,6 +342,10 @@ export class CharacterController {
         this.strikeFish();
       } else if (this.fishingState === 'waiting' || this.fishingState === 'casting') {
         this.stopFishing('Membatalkan memancing...');
+      } else if (this.fishingState === 'charging') {
+        this.releaseCast();
+      } else if (this.fishingState === 'caught') {
+        this.stopFishing();
       } else if (this.fishingState === 'none') {
         this.startChargingCast();
       }
@@ -352,6 +356,12 @@ export class CharacterController {
     };
 
     const onPlayerAction = () => {
+      if (this.fishingState === 'bite') {
+        this.strikeFish();
+      }
+    };
+
+    const onPlayerStrike = () => {
       if (this.fishingState === 'bite') {
         this.strikeFish();
       }
@@ -374,8 +384,10 @@ export class CharacterController {
     EventBus.on('player-jump', onPlayerJump);
     EventBus.on('player-fish', onPlayerFish);
     EventBus.on('player-action', onPlayerAction);
+    EventBus.on('player-strike', onPlayerStrike);
     EventBus.on('fishing-charge-start', onFishChargeStart);
     EventBus.on('fishing-charge-release', onFishChargeRelease);
+    EventBus.on('fishing-cast-release', onFishChargeRelease);
     EventBus.on('fishing-minigame-success', onFishingMinigameSuccess);
     EventBus.on('fishing-minigame-failed', onFishingMinigameFailed);
 
@@ -391,8 +403,10 @@ export class CharacterController {
       EventBus.off('player-jump', onPlayerJump);
       EventBus.off('player-fish', onPlayerFish);
       EventBus.off('player-action', onPlayerAction);
+      EventBus.off('player-strike', onPlayerStrike);
       EventBus.off('fishing-charge-start', onFishChargeStart);
       EventBus.off('fishing-charge-release', onFishChargeRelease);
+      EventBus.off('fishing-cast-release', onFishChargeRelease);
       EventBus.off('fishing-minigame-success', onFishingMinigameSuccess);
       EventBus.off('fishing-minigame-failed', onFishingMinigameFailed);
       EventBus.off('player-consumed-potion', onPotionConsumed);
@@ -956,7 +970,7 @@ export class CharacterController {
   public releaseCast(): boolean {
     if (this.fishingState !== 'charging') return false;
 
-    this.lastCastPower = Phaser.Math.Clamp(this.castPower, 0.1, 1.0);
+    this.lastCastPower = Phaser.Math.Clamp(this.castPower, 0.25, 1.0);
     const dir = this.player.getDirection();
 
     // Hitung jarak lemparan (110px s/d 440px)
@@ -1106,7 +1120,8 @@ export class CharacterController {
 
     this.lastCaughtFish = candidateFish;
 
-    // Buka Minigame Memancing Stardew Valley di layar!
+    // Reset status bite dan buka Minigame Memancing Stardew Valley di layar!
+    EventBus.emit('fishing-minigame-start');
     EventBus.emit('open-fishing-minigame', {
       fish: candidateFish,
       castPower: this.lastCastPower,
@@ -1183,6 +1198,12 @@ export class CharacterController {
 
     // 0. FASE CHARGING (Menahan Tombol untuk Menimbang Jarak Lemparan)
     if (this.fishingState === 'charging') {
+      // Auto-cast safety timeout jika tombol ditahan > 6.5s atau event pointerup terlewat di browser mobile
+      if (elapsed > 6500) {
+        this.releaseCast();
+        return;
+      }
+
       const dt = Math.min(0.05, delta / 1000);
       this.castPower += this.castPowerDir * dt * 1.35;
       if (this.castPower >= 1.0) {

@@ -92,8 +92,10 @@ export const FishingMinigame: React.FC<FishingMinigameProps> = ({
       e.preventDefault();
       e.stopPropagation();
     }
+    if (!isPressingRef.current) {
+      sound.playClick();
+    }
     isPressingRef.current = true;
-    sound.playClick();
   }, [sound]);
 
   const handlePressEnd = useCallback((e?: React.SyntheticEvent) => {
@@ -104,7 +106,7 @@ export const FishingMinigame: React.FC<FishingMinigameProps> = ({
     isPressingRef.current = false;
   }, []);
 
-  // Keyboard Listeners (Space & F)
+  // Keyboard Listeners (Space & F) dan Global Touch/Pointer Release
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.code === 'Space' || e.code === 'KeyF') {
@@ -122,12 +124,25 @@ export const FishingMinigame: React.FC<FishingMinigameProps> = ({
       }
     };
 
+    // Pastikan jika jari terangkat di manapun di layar mobile/tablet, penahanan joran berhenti
+    const handleGlobalRelease = () => {
+      isPressingRef.current = false;
+    };
+
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('keyup', handleKeyUp);
+    window.addEventListener('pointerup', handleGlobalRelease);
+    window.addEventListener('pointercancel', handleGlobalRelease);
+    window.addEventListener('touchend', handleGlobalRelease);
+    window.addEventListener('touchcancel', handleGlobalRelease);
 
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
+      window.removeEventListener('pointerup', handleGlobalRelease);
+      window.removeEventListener('pointercancel', handleGlobalRelease);
+      window.removeEventListener('touchend', handleGlobalRelease);
+      window.removeEventListener('touchcancel', handleGlobalRelease);
     };
   }, [onClose]);
 
@@ -288,10 +303,7 @@ export const FishingMinigame: React.FC<FishingMinigameProps> = ({
           <div
             onPointerDown={handlePressStart}
             onPointerUp={handlePressEnd}
-            onPointerLeave={handlePressEnd}
-            onTouchStart={handlePressStart}
-            onTouchEnd={handlePressEnd}
-            onTouchCancel={handlePressEnd}
+            onPointerCancel={handlePressEnd}
             onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); }}
             className="relative w-12 sm:w-14 rounded-lg bg-gradient-to-b from-[#0284c7]/40 via-[#0369a1]/60 to-[#082f49] border-2 border-sky-600/80 overflow-hidden cursor-pointer shadow-[inset_0_2px_8px_rgba(0,0,0,0.8)] touch-none"
             style={{ height: `${TRACK_HEIGHT}px`, touchAction: 'none' }}
@@ -397,12 +409,10 @@ export const FishingMinigame: React.FC<FishingMinigameProps> = ({
           {/* Tombol Sentuh Besar untuk Pengguna Mobile */}
           <button
             type="button"
+            tabIndex={-1}
             onPointerDown={handlePressStart}
             onPointerUp={handlePressEnd}
-            onPointerLeave={handlePressEnd}
-            onTouchStart={handlePressStart}
-            onTouchEnd={handlePressEnd}
-            onTouchCancel={handlePressEnd}
+            onPointerCancel={handlePressEnd}
             onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); }}
             className={`w-full mt-2 py-2 sm:py-2.5 rounded-xl font-black text-[11px] sm:text-xs tracking-wider uppercase border-2 transition-transform active:scale-95 shadow-md cursor-pointer select-none touch-none ${
               isFishInside

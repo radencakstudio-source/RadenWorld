@@ -22,7 +22,7 @@
 
 import React from 'react';
 import { IAvatarCustomization, Direction, IPlayerData } from '../types';
-import { Server, MessageSquare, Zap, User, Users, Info, Mic, MicOff, Settings, Globe, ArrowRightLeft, Coins, Gem, Plus, Sun, Moon, Sunset, Map, MapPin, Compass, Maximize2, ChevronDown, ChevronUp, X, Navigation, Building2, ZoomIn, ZoomOut, RotateCcw, Grid, Trash2, BookOpen } from 'lucide-react';
+import { Server, MessageSquare, Zap, User, Users, Info, Mic, MicOff, Settings, Globe, ArrowRightLeft, Coins, Gem, Plus, Sun, Moon, Sunset, Map, MapPin, Compass, Maximize2, Minimize2, ChevronDown, ChevronUp, X, Navigation, Building2, ZoomIn, ZoomOut, RotateCcw, Grid, Trash2, BookOpen } from 'lucide-react';
 import { EventBus } from '../core/EventBus';
 import { SoundManager } from '../core/SoundManager';
 import { VoiceManager } from '../core/VoiceManager';
@@ -331,6 +331,40 @@ export const HUD: React.FC<HUDProps> = React.memo(({
     };
   }, []);
 
+  const [isFullscreen, setIsFullscreen] = React.useState(false);
+
+  React.useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!(document.fullscreenElement || (document as any).webkitFullscreenElement));
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+    };
+  }, []);
+
+  const handleToggleFullscreen = () => {
+    sound.playClick();
+    try {
+      if (!document.fullscreenElement && !(document as any).webkitFullscreenElement) {
+        const docEl = document.documentElement as any;
+        if (docEl.requestFullscreen) {
+          docEl.requestFullscreen().catch(() => {});
+        } else if (docEl.webkitRequestFullscreen) {
+          docEl.webkitRequestFullscreen();
+        }
+      } else {
+        if (document.exitFullscreen) {
+          document.exitFullscreen().catch(() => {});
+        } else if ((document as any).webkitExitFullscreen) {
+          (document as any).webkitExitFullscreen();
+        }
+      }
+    } catch (e) {}
+  };
+
   const handleToggleMic = async () => {
     sound.playClick();
     const voice = VoiceManager.getInstance();
@@ -417,6 +451,23 @@ export const HUD: React.FC<HUDProps> = React.memo(({
               {isMicActive ? <Mic className="w-3.5 sm:w-4 h-3.5 sm:h-4 text-white" /> : <MicOff className="w-3.5 sm:w-4 h-3.5 sm:h-4" />}
               {isMicActive && (
                 <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-emerald-400" />
+              )}
+            </button>
+
+            {/* Tombol Maximize / Layar Penuh (Fullscreen) di sebelah Microphone */}
+            <button
+              onClick={handleToggleFullscreen}
+              className={`h-8 w-8 sm:h-9 sm:w-9 md:h-10 md:w-10 rounded-md border flex items-center justify-center transition-colors cursor-pointer shrink-0 ${
+                isFullscreen
+                  ? 'bg-amber-400 text-black border-amber-400 font-bold'
+                  : 'bg-black text-neutral-300 border-neutral-800 hover:border-amber-400 hover:text-amber-400'
+              }`}
+              title={isFullscreen ? 'Keluar Layar Penuh' : 'Layar Penuh (Fullscreen)'}
+            >
+              {isFullscreen ? (
+                <Minimize2 className="w-3.5 sm:w-4 h-3.5 sm:h-4" />
+              ) : (
+                <Maximize2 className="w-3.5 sm:w-4 h-3.5 sm:h-4" />
               )}
             </button>
           </div>

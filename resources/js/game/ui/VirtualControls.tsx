@@ -720,25 +720,6 @@ export const VirtualControls: React.FC<VirtualControlsProps> = React.memo(({
           opacity: isChatOpen && !isEditMode ? 0 : 1,
         }}
       >
-        {/* Tombol Pintas Buka Mode Atur Kontrol */}
-        {!isEditMode && (
-          <button
-            type="button"
-            onPointerDown={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              sound.playClick();
-              triggerHaptic(20);
-              setIsEditMode(true);
-              setSelectedControl('analog');
-            }}
-            className="absolute -top-9 left-1/2 -translate-x-1/2 pointer-events-auto px-2.5 py-1 rounded-full bg-black/85 hover:bg-neutral-900 active:bg-amber-600/70 border border-white/30 hover:border-amber-400 text-neutral-300 hover:text-white text-[10px] sm:text-xs font-mono font-bold flex items-center gap-1.5 shadow-lg backdrop-blur-xs transition-all cursor-pointer active:scale-95 whitespace-nowrap"
-            title="Atur posisi & besar kecil kontrol langsung dengan jari"
-          >
-            <Move className="w-3.5 h-3.5 text-amber-400" />
-            <span>Atur Kontrol</span>
-          </button>
-        )}
 
         {/* Floating Quick Resize Pill di atas Analog saat terpilih */}
         {isEditMode && selectedControl === 'analog' && (
@@ -911,8 +892,8 @@ export const VirtualControls: React.FC<VirtualControlsProps> = React.memo(({
       <div
         className={`fixed ${isEditMode ? 'z-[70]' : 'z-[50]'} pointer-events-none select-none font-['Chakra_Petch']`}
         style={{
-          right: 'max(2.25rem, calc(env(safe-area-inset-right, 0px) + 2rem))',
-          bottom: 'max(8.5rem, calc(env(safe-area-inset-bottom, 0px) + 8rem))',
+          right: 'max(2rem, calc(env(safe-area-inset-right, 0px) + 1.75rem))',
+          bottom: 'max(6.75rem, calc(env(safe-area-inset-bottom, 0px) + 6.25rem))',
           transform: `translate(${layout.jumpOffsetX || 0}px, ${-(layout.jumpOffsetY || 0)}px) scale(${layout.jumpScale})`,
           transformOrigin: 'center center',
           transition: isEditMode ? 'none' : 'opacity 0.15s, transform 0.15s',

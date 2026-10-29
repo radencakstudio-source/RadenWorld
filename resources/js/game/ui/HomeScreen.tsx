@@ -242,7 +242,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         </div>
 
         {/* Dua Karakter Raksasa: FemaleAvatar & MaleAvatar - Responsif untuk Semua Orientasi */}
-        <div className="absolute inset-y-0 right-0 sm:left-[220px] md:left-[340px] flex items-end justify-end sm:justify-center pointer-events-none z-10 pb-1 sm:pb-4 opacity-50 sm:opacity-100 transition-opacity">
+        <div className="absolute inset-y-0 right-0 sm:left-[220px] md:left-[340px] flex items-end justify-end sm:justify-center pointer-events-none z-10 pb-1 sm:pb-4 opacity-100">
           {/* Karakter Cewek: FemaleAvatar (Flipped via scale-x-[-1]) */}
           <div className="relative flex flex-col items-center -mr-2 sm:-mr-4">
             <img

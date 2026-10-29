@@ -49,6 +49,75 @@ class User extends Authenticatable
     }
 
     /**
+     * Buat Auth Token bertanda tangan digital (HMAC-SHA256) anti-pemalsuan
+     */
+    public function generateAuthToken(): string
+    {
+        $payload = base64_encode(json_encode([
+            'id' => $this->id,
+            'email' => $this->email,
+            'role' => $this->role,
+            'ts' => time(),
+        ]));
+        $secret = config('app.key', 'RadenWorldSecureSaltKey123');
+        $signature = hash_hmac('sha256', $payload, $secret);
+        return "{$payload}.{$signature}";
+    }
+
+    /**
+     * Verifikasi token otentikasi apakah sah dan tidak dimanipulasi
+     */
+    public static function verifyAuthToken(?string $token): ?self
+    {
+        if (!$token || strpos($token, '.') === false) {
+            return null;
+        }
+
+        [$payload, $signature] = explode('.', $token, 2);
+        $secret = config('app.key', 'RadenWorldSecureSaltKey123');
+        $expectedSignature = hash_hmac('sha256', $payload, $secret);
+
+        if (!hash_equals($expectedSignature, $signature)) {
+            return null;
+        }
+
+        $data = json_decode(base64_decode($payload), true);
+        if (!$data || empty($data['id'])) {
+            return null;
+        }
+
+        return self::find($data['id']);
+    }
+
+    /**
+     * Resolusi identitas User dari Request secara aman (Bearer Token / X-Auth-Token / Session)
+     */
+    public static function resolveFromRequest(\Illuminate\Http\Request $request): ?self
+    {
+        if (auth()->check()) {
+            return auth()->user();
+        }
+
+        $authHeader = $request->header('Authorization', '');
+        $token = null;
+        if (str_starts_with($authHeader, 'Bearer ')) {
+            $token = trim(substr($authHeader, 7));
+        }
+        if (!$token) {
+            $token = $request->header('X-Auth-Token') ?: $request->input('auth_token') ?: $request->query('auth_token');
+        }
+
+        if ($token) {
+            $user = self::verifyAuthToken($token);
+            if ($user) {
+                return $user;
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * Hitung checksum anti-tamper untuk saldo dompet
      */
     public function calculateWalletHash(): string

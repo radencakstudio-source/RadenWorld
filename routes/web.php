@@ -291,9 +291,12 @@ Route::post('/api/auth/register', function (\Illuminate\Http\Request $request) {
     ];
     $joinedDateStr = $user->created_at ? strtr($user->created_at->format('d M Y'), $months) : 'Warga RadenWorld';
 
+    $authToken = $user->generateAuthToken();
+
     return response()->json([
         'status' => 'success',
         'message' => $isSuperAdmin ? 'Akun Super Admin berhasil dibuat!' : 'Akun berhasil dibuat! Selamat datang di RadenWorld.',
+        'auth_token' => $authToken,
         'user' => [
             'id' => $user->id,
             'name' => $user->name,
@@ -304,6 +307,7 @@ Route::post('/api/auth/register', function (\Illuminate\Http\Request $request) {
             'exp' => $user->exp,
             'title' => $user->title,
             'role' => $user->role,
+            'auth_token' => $authToken,
             'gold' => $user->isSuperAdmin() ? 99999999999 : (int) ($user->gold ?? 1000),
             'diamonds' => $user->isSuperAdmin() ? 99999999999 : (int) ($user->diamonds ?? 50),
             'email_verified' => !empty($user->email_verified_at),
@@ -488,9 +492,12 @@ Route::post('/api/auth/login', function (\Illuminate\Http\Request $request) {
     ];
     $joinedDateStr = $user->created_at ? strtr($user->created_at->format('d M Y'), $months) : 'Warga RadenWorld';
 
+    $authToken = $user->generateAuthToken();
+
     return response()->json([
         'status' => 'success',
         'message' => $user->isSuperAdmin() ? 'Selamat datang kembali, Pemimpin Tertinggi Raden (Super Admin)!' : 'Berhasil masuk ke RadenWorld!',
+        'auth_token' => $authToken,
         'user' => [
             'id' => $user->id,
             'name' => $user->name,
@@ -501,6 +508,7 @@ Route::post('/api/auth/login', function (\Illuminate\Http\Request $request) {
             'exp' => $user->exp,
             'title' => $user->title,
             'role' => $user->role,
+            'auth_token' => $authToken,
             'gold' => $user->isSuperAdmin() ? 99999999999 : (int) ($user->gold ?? 1000),
             'diamonds' => $user->isSuperAdmin() ? 99999999999 : (int) ($user->diamonds ?? 50),
             'email_verified' => !empty($user->email_verified_at),
@@ -532,28 +540,55 @@ Route::post('/api/user/account/link-social', [\App\Http\Controllers\SecurityWall
 Route::post('/api/user/account/unlink-social', [\App\Http\Controllers\SecurityWalletController::class, 'unlinkSocial']);
 Route::post('/api/user/account/update-name', [\App\Http\Controllers\SecurityWalletController::class, 'updateName']);
 
-// C. Lupa Sandi (Reset Kata Sandi)
+// C. Lupa Sandi (Reset Kata Sandi Terproteksi)
 Route::post('/api/auth/forgot-password', function (\Illuminate\Http\Request $request) {
-    $request->validate([
+    $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
         'email' => 'required|email',
-        'new_password' => 'nullable|string|min:4',
+        'birth_date' => 'required|string',
+        'new_password' => 'required|string|min:4',
     ]);
 
-    $user = \App\Models\User::where('email', $request->email)->first();
+    if ($validator->fails()) {
+        return response()->json([
+            'status' => 'error',
+            'message' => $validator->errors()->first(),
+        ], 422);
+    }
+
+    $email = trim($request->input('email'));
+    $birthDate = trim($request->input('birth_date'));
+    $newPassword = $request->input('new_password');
+
+    $user = \App\Models\User::where('email', $email)->first();
     if (!$user) {
         return response()->json([
             'status' => 'error',
-            'message' => 'Email tidak ditemukan dalam sistem database!',
+            'message' => 'Alamat email tidak ditemukan dalam database!',
         ], 404);
     }
 
-    $newPass = $request->new_password ?: '123456';
-    $user->password = \Illuminate\Support\Facades\Hash::make($newPass);
+    // Proteksi Super Admin: tidak dapat direset sembarangan
+    if ($user->isSuperAdmin()) {
+        return response()->json([
+            'status' => 'error',
+            'message' => '🛡️ Akun Super Admin dilindungi oleh protokol keamanan RadenShield dan tidak dapat direset melalui form publik.',
+        ], 403);
+    }
+
+    // Validasi Tanggal Lahir Terdaftar (Identity Verification)
+    if (!empty($user->birth_date) && $user->birth_date !== $birthDate) {
+        return response()->json([
+            'status' => 'error',
+            'message' => 'Verifikasi gagal: Tanggal lahir tidak cocok dengan data pendaftaran akun!',
+        ], 422);
+    }
+
+    $user->password = \Illuminate\Support\Facades\Hash::make($newPassword);
     $user->save();
 
     return response()->json([
         'status' => 'success',
-        'message' => "Kata sandi untuk {$user->name} berhasil diperbarui!",
+        'message' => "Kata sandi untuk akun {$user->name} berhasil diperbarui! Silakan login dengan kata sandi baru.",
     ]);
 });
 
@@ -916,9 +951,15 @@ Route::post('/api/auth/profile/{name}/like', function (\Illuminate\Http\Request 
 // 4. API SUPER ADMIN
 // ============================================================================
 Route::post('/api/admin/broadcast', function (\Illuminate\Http\Request $request) {
-    $adminName = $request->input('admin_name', 'RADEN');
-    $message = $request->input('message');
+    $user = \App\Models\User::resolveFromRequest($request);
+    if (!$user || !$user->isSuperAdmin()) {
+        return response()->json([
+            'status' => 'forbidden',
+            'message' => 'Akses ditolak! Hanya akun Super Admin terverifikasi yang dapat menyiarkan pengumuman.',
+        ], 403);
+    }
 
+    $message = $request->input('message');
     if (!$message) {
         return response()->json(['status' => 'error', 'message' => 'Pesan pengumuman tidak boleh kosong!'], 422);
     }
@@ -926,7 +967,7 @@ Route::post('/api/admin/broadcast', function (\Illuminate\Http\Request $request)
     return response()->json([
         'status' => 'success',
         'broadcast' => [
-            'sender' => $adminName,
+            'sender' => $user->name,
             'role' => 'super_admin',
             'title' => '👑 PENGUMUMAN RESMI SUPER ADMIN',
             'text' => $message,
@@ -935,7 +976,15 @@ Route::post('/api/admin/broadcast', function (\Illuminate\Http\Request $request)
     ]);
 });
 
-Route::get('/api/admin/users', function () {
+Route::get('/api/admin/users', function (\Illuminate\Http\Request $request) {
+    $user = \App\Models\User::resolveFromRequest($request);
+    if (!$user || !$user->isSuperAdmin()) {
+        return response()->json([
+            'status' => 'forbidden',
+            'message' => 'Akses daftar pengguna ditolak! Hanya Super Admin yang berhak melihat data warga.',
+        ], 403);
+    }
+
     try {
         $users = \App\Models\User::select('id', 'name', 'email', 'role', 'title', 'level', 'created_at')
             ->orderByDesc('id')
@@ -953,26 +1002,11 @@ Route::get('/api/admin/users', function () {
 
 // Endpoint Pembuatan Token Unik Portal Admin (Random ID)
 Route::post('/api/admin/portal/token', function (\Illuminate\Http\Request $request) {
-    $name = $request->input('name');
-    $email = $request->input('email');
-
-    $user = null;
-    try {
-        if (\App\Models\UserFollow::isDatabaseAvailable()) {
-            $user = \App\Models\User::where('email', $email)
-                ->orWhere('name', $name)
-                ->first();
-        }
-    } catch (\Throwable $e) {
-        $user = null;
-    }
-
-    $isAuthorized = ($user && $user->isSuperAdmin()) || strtoupper($name) === 'RADEN' || strtolower($email) === 'radencakstudio@gmail.com';
-
-    if (!$isAuthorized) {
+    $user = \App\Models\User::resolveFromRequest($request);
+    if (!$user || !$user->isSuperAdmin()) {
         return response()->json([
             'status' => 'forbidden',
-            'message' => 'Akses ditolak! Hanya akun Super Admin yang diizinkan membuka Portal Admin.',
+            'message' => 'Akses ditolak! Hanya akun Super Admin terotentikasi yang diizinkan membuka Portal Admin.',
         ], 403);
     }
 
@@ -989,29 +1023,12 @@ Route::post('/api/admin/portal/token', function (\Illuminate\Http\Request $reque
 
 // Endpoint Verifikasi Keamanan Token Portal Admin
 Route::get('/api/admin/portal/verify/{token}', function ($token, \Illuminate\Http\Request $request) {
-    $name = $request->query('name');
-    $email = $request->query('email');
-
-    $user = null;
-    if ($email || $name) {
-        try {
-            if (\App\Models\UserFollow::isDatabaseAvailable()) {
-                $user = \App\Models\User::where('email', $email)
-                    ->orWhere('name', $name)
-                    ->first();
-            }
-        } catch (\Throwable $e) {
-            $user = null;
-        }
-    }
-
-    $isAuthorized = ($user && $user->isSuperAdmin()) || strtoupper($name) === 'RADEN' || strtolower($email) === 'radencakstudio@gmail.com';
-
-    if (!$isAuthorized) {
+    $user = \App\Models\User::resolveFromRequest($request);
+    if (!$user || !$user->isSuperAdmin()) {
         return response()->json([
             'status' => 'forbidden',
             'authorized' => false,
-            'message' => 'Portal Admin terkunci: Anda bukan Super Admin!',
+            'message' => 'Portal Admin terkunci: Anda belum terotentikasi sebagai Super Admin!',
         ], 403);
     }
 

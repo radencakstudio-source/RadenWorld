@@ -568,10 +568,12 @@ export class NetworkManager {
     this.emitServerPlayersUpdated();
 
     if (!this.socket || !this.isConnected) return;
+    const authToken = (typeof window !== 'undefined' ? localStorage.getItem('raden_auth_token') : '') || '';
     this.socket.emit('player:join', {
       name,
       avatar,
       room,
+      authToken,
       role: isSuper ? 'super_admin' : (role || 'player'),
       isSuperAdmin: isSuper,
       x: typeof x === 'number' && !isNaN(x) ? x : 4800,

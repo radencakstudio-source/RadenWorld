@@ -5,6 +5,11 @@
 
     RewriteEngine On
 
+    # 1. Proteksi Anti-Exploit PHP CGI Argument Injection (CVE-2024-4577) & Path Traversal
+    RewriteCond %{QUERY_STRING} ^.*(%ad|%AD|-d|-s|auto_prepend_file|allow_url_include).* [NC,OR]
+    RewriteCond %{QUERY_STRING} (\.\./|\.\.\\) [NC]
+    RewriteRule .* - [F,L]
+
     # Handle Authorization Header
     RewriteCond %{HTTP:Authorization} .
     RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
@@ -44,6 +49,13 @@
 </IfModule>
 
 <IfModule mod_headers.c>
+    # Security Headers Modern
+    Header set X-Content-Type-Options "nosniff"
+    Header set X-Frame-Options "SAMEORIGIN"
+    Header set X-XSS-Protection "1; mode=block"
+    Header set Referrer-Policy "strict-origin-when-cross-origin"
+    Header set Permissions-Policy "camera=(), microphone=(), geolocation=(self)"
+
     <FilesMatch "\.(ico|jpe?g|png|gif|webp|svg|ogg|mp3|wav|woff2?|css|js)$">
         Header set Cache-Control "max-age=31536000, public"
     </FilesMatch>

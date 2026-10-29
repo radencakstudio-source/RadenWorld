@@ -99,6 +99,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
   // Forgot Password View State
   const [isForgotView, setIsForgotView] = useState(false);
   const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotBirthDate, setForgotBirthDate] = useState('2003-01-01');
+  const [forgotNewPassword, setForgotNewPassword] = useState('');
+  const [showForgotNewPassword, setShowForgotNewPassword] = useState(false);
   const [forgotSent, setForgotSent] = useState(false);
 
   // Social Modal Sub-view State (Google & Facebook)
@@ -185,6 +188,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
       try {
         localStorage.setItem('raden_player_avatar', JSON.stringify(loadedAvatar));
         localStorage.setItem('raden_player_user', JSON.stringify(user));
+        if (data.auth_token) {
+          localStorage.setItem('raden_auth_token', data.auth_token);
+        }
       } catch (err) {}
 
       const safeRoomId = user?.private_room_id || `safe-${user?.id || 1}`;
@@ -254,6 +260,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
       try {
         localStorage.setItem('raden_player_avatar', JSON.stringify(finalAvatar));
         localStorage.setItem('raden_player_user', JSON.stringify(user));
+        if (data.auth_token) {
+          localStorage.setItem('raden_auth_token', data.auth_token);
+        }
       } catch (err) {}
 
       const safeRoomId = user?.private_room_id || `safe-${user?.id || 1}`;
@@ -266,11 +275,19 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
     }
   };
 
-  // Submit Lupa Password
+  // Submit Lupa Password Terverifikasi Keamanan
   const handleForgotSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!forgotEmail.trim()) {
-      setAuthError('Email wajib diisi!');
+      setAuthError('Email terdaftar wajib diisi!');
+      return;
+    }
+    if (!forgotBirthDate) {
+      setAuthError('Tanggal lahir wajib diisi untuk verifikasi identitas pemilik akun!');
+      return;
+    }
+    if (!forgotNewPassword.trim() || forgotNewPassword.length < 4) {
+      setAuthError('Kata sandi baru minimal 4 karakter!');
       return;
     }
 
@@ -281,12 +298,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
       const res = await fetch('/api/auth/forgot-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-        body: JSON.stringify({ email: forgotEmail.trim() }),
+        body: JSON.stringify({
+          email: forgotEmail.trim(),
+          birth_date: forgotBirthDate,
+          new_password: forgotNewPassword,
+        }),
       });
 
       const data = await res.json();
       if (!res.ok || data.status === 'error') {
-        setAuthError(data.message || 'Email tidak terdaftar!');
+        setAuthError(data.message || 'Verifikasi reset sandi gagal!');
       } else {
         sound.playSuccess();
         setForgotSent(true);
@@ -725,9 +746,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
                 /* Form Lupa Sandi */
                 <form onSubmit={handleForgotSubmit} className="space-y-4 animate-in fade-in duration-150">
                   <div className="p-4 rounded-md bg-[#0e0e0e] border border-neutral-800 text-xs text-neutral-300 space-y-1">
-                    <div className="font-bold text-amber-400 uppercase tracking-wide">Pemulihan Akun</div>
+                    <div className="font-bold text-amber-400 uppercase tracking-wide flex items-center gap-1.5">
+                      <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />
+                      <span>Pemulihan Sandi Terproteksi RadenShield</span>
+                    </div>
                     <p className="text-neutral-400 text-[11px]">
-                      Masukkan alamat email akun Anda. Sistem akan memverifikasi dan mengirimkan tautan reset kata sandi.
+                      Masukkan email dan tanggal lahir terdaftar untuk memverifikasi identitas asli sebelum memperbarui kata sandi.
                     </p>
                   </div>
 
@@ -746,10 +770,59 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
                     />
                   </div>
 
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+                      <Calendar className="w-3.5 h-3.5" />
+                      <span>Tanggal Lahir Terdaftar (Verifikasi Keamanan):</span>
+                    </label>
+                    <input
+                      type="date"
+                      required
+                      value={forgotBirthDate}
+                      onChange={(e) => setForgotBirthDate(e.target.value)}
+                      max={todayDateString}
+                      className="w-full px-3.5 py-2.5 bg-black border border-neutral-800 rounded-md text-xs text-white focus:outline-none focus:border-amber-400 font-mono transition-colors"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+                      <Lock className="w-3.5 h-3.5" />
+                      <span>Kata Sandi Baru:</span>
+                    </label>
+                    <div className="relative flex items-center">
+                      <input
+                        type={showForgotNewPassword ? 'text' : 'password'}
+                        required
+                        value={forgotNewPassword}
+                        onChange={(e) => setForgotNewPassword(e.target.value)}
+                        placeholder="Minimal 4 karakter"
+                        className="w-full pl-3.5 pr-10 py-2.5 bg-black border border-neutral-800 rounded-md text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-amber-400 font-mono transition-colors"
+                      />
+                      <button
+                        type="button"
+                        tabIndex={-1}
+                        onClick={() => {
+                          sound.playClick();
+                          setShowForgotNewPassword((prev) => !prev);
+                        }}
+                        className="absolute right-2.5 p-1 rounded text-neutral-400 hover:text-amber-400 transition-colors cursor-pointer flex items-center justify-center"
+                        title={showForgotNewPassword ? 'Sembunyikan Kata Sandi' : 'Lihat Kata Sandi'}
+                        aria-label="Toggle Password Visibility"
+                      >
+                        {showForgotNewPassword ? (
+                          <EyeOff className="w-4 h-4" />
+                        ) : (
+                          <Eye className="w-4 h-4" />
+                        )}
+                      </button>
+                    </div>
+                  </div>
+
                   {forgotSent && (
                     <div className="p-3.5 rounded-md bg-neutral-900 border border-emerald-500/50 text-emerald-300 text-xs font-semibold flex items-center gap-2">
                       <Check className="w-4 h-4 text-emerald-400" />
-                      <span>Tautan pemulihan telah dikirim ke {forgotEmail}!</span>
+                      <span>Kata sandi berhasil diperbarui! Silakan kembali ke form masuk.</span>
                     </div>
                   )}
 
@@ -770,7 +843,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
                       disabled={isLoading}
                       className="flex-1 py-2.5 rounded-md bg-amber-500 hover:bg-amber-400 text-black text-xs font-bold uppercase tracking-wider border border-amber-400 transition-colors cursor-pointer"
                     >
-                      {isLoading ? 'MENGIRIM...' : 'KIRIM RESET'}
+                      {isLoading ? 'MEMVERIFIKASI...' : 'RESET SANDI SEKARANG'}
                     </button>
                   </div>
                 </form>

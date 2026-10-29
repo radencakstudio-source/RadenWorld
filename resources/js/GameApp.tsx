@@ -438,8 +438,11 @@ export const GameApp: React.FC = () => {
       const u = JSON.parse(localStorage.getItem('raden_player_user') || '{}');
       if (!u.id && !u.email && !playerStats?.name) return;
 
+      const token = localStorage.getItem('raden_auth_token') || '';
       const res = await fetch('/api/user/wallet', {
         headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}`, 'X-Auth-Token': token } : {}),
           'X-User-Id': u.id?.toString() || '',
           'X-User-Email': u.email || '',
           'X-User-Name': u.name || playerStats?.name || '',
@@ -450,6 +453,9 @@ export const GameApp: React.FC = () => {
       const data = await res.json();
       if (data.status === 'success' && data.wallet) {
         const w = data.wallet;
+        if (w.auth_token) {
+          localStorage.setItem('raden_auth_token', w.auth_token);
+        }
         const isAdmin = Boolean(
           u.role === 'admin' ||
           u.role === 'super_admin' ||
@@ -491,16 +497,19 @@ export const GameApp: React.FC = () => {
       const u = JSON.parse(localStorage.getItem('raden_player_user') || '{}');
       if (!u.id && !u.email && !playerStats?.name) return;
 
+      const token = localStorage.getItem('raden_auth_token') || '';
       const res = await fetch('/api/user/wallet/sync', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}`, 'X-Auth-Token': token } : {}),
           'X-User-Id': u.id?.toString() || '',
           'X-User-Email': u.email || '',
           'X-User-Name': u.name || playerStats?.name || '',
         },
         body: JSON.stringify({
           user_id: u.id,
+          auth_token: token,
           delta_gold: deltaGold,
           delta_diamonds: deltaDiamonds,
           action,

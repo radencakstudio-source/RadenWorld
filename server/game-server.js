@@ -24,15 +24,69 @@
 
 import { createServer, request as httpRequest } from 'http';
 import { Server } from 'socket.io';
+import crypto from 'crypto';
 
 const PORT = process.env.PORT || 3001;
 const LARAVEL_PORT = process.env.LARAVEL_PORT || 8000;
+const APP_KEY = process.env.APP_KEY || 'RadenWorldSecureSaltKey123';
+
+/**
+ * Validasi Cryptographic Auth Token (HMAC-SHA256) untuk mencegah pemalsuan identitas Super Admin
+ */
+function verifyAuthToken(token) {
+  if (!token || typeof token !== 'string' || !token.includes('.')) return null;
+  const parts = token.split('.');
+  if (parts.length !== 2) return null;
+  const [payloadB64, signature] = parts;
+  try {
+    const expectedSig = crypto.createHmac('sha256', APP_KEY).update(payloadB64).digest('hex');
+    if (signature.length !== expectedSig.length) return null;
+    if (!crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSig))) return null;
+    const jsonStr = Buffer.from(payloadB64, 'base64').toString('utf8');
+    return JSON.parse(jsonStr);
+  } catch (err) {
+    return null;
+  }
+}
+
+/**
+ * Sanitasi teks anti-XSS untuk chat obrolan, nama pengguna, dan pengumuman
+ */
+function sanitizeText(str) {
+  if (typeof str !== 'string') return '';
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+/**
+ * Pembersihan Prototype Pollution (__proto__, constructor, prototype)
+ */
+function sanitizePayload(obj) {
+  if (!obj || typeof obj !== 'object') return obj;
+  if (Array.isArray(obj)) return obj.map(sanitizePayload);
+  const clean = {};
+  for (const key of Object.keys(obj)) {
+    if (key === '__proto__' || key === 'constructor' || key === 'prototype') continue;
+    clean[key] = sanitizePayload(obj[key]);
+  }
+  return clean;
+}
 
 // HTTP Server gabungan: Melayani WebSocket Socket.io sekaligus meneruskan request web ke Laravel (port 8000)
 // Memungkinkan tunneling online 100% mulus lewat single port ngrok
 const httpServer = createServer((req, res) => {
   if (req.url && req.url.startsWith('/socket.io/')) {
     return;
+  }
+
+  // Proteksi Exploit PHP CGI Argument Injection (CVE-2024-4577) & Path Traversal di proxy
+  if (req.url && (req.url.includes('%ad') || req.url.includes('%AD') || req.url.includes('..') || req.url.includes('auto_prepend_file'))) {
+    res.writeHead(403, { 'Content-Type': 'text/plain' });
+    return res.end('Access Denied: Malicious Request Blocked by RadenShield');
   }
 
   // Fast ping & status endpoints untuk Cron-job.org dan monitoring cloud
@@ -115,14 +169,24 @@ io.on('connection', (socket) => {
   });
 
   // 1. Event pemain bergabung
-  socket.on('player:join', (data) => {
+  socket.on('player:join', (rawData) => {
+    const data = sanitizePayload(rawData) || {};
     const defaultX = (typeof data?.x === 'number' && !isNaN(data.x)) ? data.x : 4800;
     const defaultY = (typeof data?.y === 'number' && !isNaN(data.y)) ? data.y : 4860;
     const defaultDir = data?.direction || 'down';
 
-    const isSuperAdmin = data.isSuperAdmin || data.role === 'super_admin' || data.name === 'RADEN';
+    // Verifikasi identitas Super Admin menggunakan signed token anti-spoofing
+    const verifiedToken = verifyAuthToken(data.authToken || data.auth_token);
+    const isSuperAdmin = Boolean(
+      verifiedToken && (verifiedToken.role === 'super_admin' || verifiedToken.email === 'radencakstudio@gmail.com')
+    );
 
-    let playerName = (data.name || `Player_${socket.id.substring(0, 4)}`).trim();
+    let rawName = (data.name || `Player_${socket.id.substring(0, 4)}`).trim();
+    if (!isSuperAdmin && rawName.toUpperCase() === 'RADEN') {
+      // Cegah pemain non-admin membajak nama Super Admin RADEN
+      rawName = `Player_${socket.id.substring(0, 4)}`;
+    }
+    const playerName = sanitizeText(rawName);
 
     // Hapus sesi ghost lama HANYA jika socket lama sudah terputus/disconnected
     for (const [oldId, oldPlayer] of players.entries()) {
@@ -281,17 +345,19 @@ io.on('connection', (socket) => {
   });
 
   // 3b. Event pembaruan profil pemain (ganti nama / avatar secara real-time)
-  socket.on('player:update', (data) => {
+  socket.on('player:update', (rawData) => {
+    const data = sanitizePayload(rawData);
     const player = players.get(socket.id);
     if (!player || !data) return;
 
     if (typeof data.name === 'string' && data.name.trim()) {
       const oldName = player.name;
-      player.name = data.name.trim();
-      if (player.name.toUpperCase() === 'RADEN') {
-        player.isSuperAdmin = true;
-        player.role = 'super_admin';
+      let newName = data.name.trim();
+      if (newName.toUpperCase() === 'RADEN' && !player.isSuperAdmin) {
+        // Blokir pemain biasa membajak nama Super Admin RADEN
+        newName = player.name;
       }
+      player.name = sanitizeText(newName);
       console.log(`[Player] ${socket.id} memperbarui nama: '${oldName}' -> '${player.name}'`);
     }
 
@@ -310,32 +376,24 @@ io.on('connection', (socket) => {
   });
 
   // 4. Event pesan obrolan (chat)
-  socket.on('chat:message', (data) => {
+  socket.on('chat:message', (rawData) => {
+    const data = sanitizePayload(rawData);
     if (!data || typeof data.text !== 'string' || !data.text.trim()) return;
 
     let player = players.get(socket.id);
     if (!player) {
       player = {
         id: socket.id,
-        name: (data.senderName || `Pemain_${socket.id.substring(0, 4)}`).trim(),
+        name: sanitizeText((data.senderName || `Pemain_${socket.id.substring(0, 4)}`).trim()),
         room: 'world',
-        role: data.senderRole || 'player',
-        isSuperAdmin: Boolean(data.isSuperAdmin || data.senderName?.toUpperCase() === 'RADEN'),
+        role: 'player',
+        isSuperAdmin: false,
       };
       players.set(socket.id, player);
-    } else if (data.senderName && typeof data.senderName === 'string' && data.senderName.trim()) {
-      // Selalu sinkronkan nama pemain di memori server jika client mengirim nama terbaru
-      const trimmedSenderName = data.senderName.trim();
-      if (player.name !== trimmedSenderName) {
-        player.name = trimmedSenderName;
-        if (player.name.toUpperCase() === 'RADEN') {
-          player.isSuperAdmin = true;
-          player.role = 'super_admin';
-        }
-      }
     }
 
     const trimmedText = data.text.trim().substring(0, 200);
+    const safeText = sanitizeText(trimmedText);
 
     // Anti-Chat Spam & Flood Protection
     const now = Date.now();
@@ -357,13 +415,14 @@ io.on('connection', (socket) => {
     // Perintah khusus Super Admin /announce (global ke semua room)
     if (player.isSuperAdmin && trimmedText.startsWith('/announce ')) {
       const announcement = trimmedText.replace('/announce ', '').trim();
+      const safeAnnouncement = sanitizeText(announcement);
       io.emit('chat:broadcast', {
         id: `announcement_${Date.now()}`,
         senderId: socket.id,
         senderName: '👑 [SUPER ADMIN] RADEN',
         senderRole: 'super_admin',
         isSuperAdmin: true,
-        text: `📢 ${announcement}`,
+        text: `📢 ${safeAnnouncement}`,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       });
       return;
@@ -371,13 +430,13 @@ io.on('connection', (socket) => {
 
     // 4b. Deteksi Pesan Pribadi (Private Chat / Bisikan)
     let targetRecipientName = data.recipientName ? data.recipientName.trim() : null;
-    let actualText = trimmedText;
+    let actualText = safeText;
 
     if (!targetRecipientName) {
       const whisperMatch = trimmedText.match(/^(?:@|\/w\s+|\/whisper\s+|\/msg\s+)([a-zA-Z0-9_\s]{2,25}?)\s+(.+)$/i);
       if (whisperMatch) {
         targetRecipientName = whisperMatch[1].trim();
-        actualText = whisperMatch[2].trim();
+        actualText = sanitizeText(whisperMatch[2].trim());
       }
     }
 
@@ -397,9 +456,9 @@ io.on('connection', (socket) => {
         const privatePacket = {
           id: `chat_priv_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
           senderId: socket.id,
-          senderName: player.name || (data.senderName ? data.senderName.trim() : 'Petualang'),
-          senderRole: player.role || data.senderRole || 'player',
-          isSuperAdmin: Boolean(player.isSuperAdmin || data.isSuperAdmin || player.name?.toUpperCase() === 'RADEN'),
+          senderName: player.name,
+          senderRole: player.role,
+          isSuperAdmin: Boolean(player.isSuperAdmin),
           recipientName: targetPlayer.name,
           recipientId: targetPlayer.id,
           isPrivate: true,
@@ -430,10 +489,10 @@ io.on('connection', (socket) => {
     const chatPacket = {
       id: `chat_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
       senderId: socket.id,
-      senderName: player.name || (data.senderName ? data.senderName.trim() : 'Petualang'),
-      senderRole: player.role || data.senderRole || 'player',
-      isSuperAdmin: Boolean(player.isSuperAdmin || data.isSuperAdmin || player.name?.toUpperCase() === 'RADEN'),
-      text: trimmedText,
+      senderName: player.name,
+      senderRole: player.role,
+      isSuperAdmin: Boolean(player.isSuperAdmin),
+      text: safeText,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     };
 

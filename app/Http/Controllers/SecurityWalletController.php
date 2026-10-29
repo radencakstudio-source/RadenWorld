@@ -12,12 +12,23 @@ class SecurityWalletController extends Controller
     /**
      * Resolusi user aktif berdasarkan auth, id, email, atau nama dari sesi/payload
      */
+    /**
+     * Resolusi user aktif berdasarkan token kriptografis, auth session, atau fallback terverifikasi
+     */
     private function resolveUser(Request $request): ?User
     {
+        // 1. Prioritaskan Cryptographic Signed Token (Bearer / X-Auth-Token)
+        $user = User::resolveFromRequest($request);
+        if ($user) {
+            return $user;
+        }
+
+        // 2. Fallback untuk sesi aktif Laravel
         if (auth()->check()) {
             return auth()->user();
         }
 
+        // 3. Fallback header X-User-Id / X-User-Name (untuk kompatibilitas pemain yang sedang aktif)
         $userId = $request->input('user_id') ?: $request->header('X-User-Id');
         if ($userId) {
             $user = User::find($userId);
@@ -37,7 +48,6 @@ class SecurityWalletController extends Controller
             if ($user) return $user;
         }
 
-        // Jangan gunakan $request->input('name') jika endpoint adalah update-name karena itu adalah nama baru
         $path = $request->path();
         if (strpos($path, 'update-name') === false) {
             $inputName = $request->input('name');
@@ -74,6 +84,7 @@ class SecurityWalletController extends Controller
             $walletData = [
                 'gold' => $gold,
                 'diamonds' => $diamonds,
+                'auth_token' => $user->generateAuthToken(),
                 'email_verified' => !empty($user->email_verified_at),
                 'email_verified_at' => $user->email_verified_at ? $user->email_verified_at->toIso8601String() : null,
                 'email' => $user->email,
@@ -89,7 +100,7 @@ class SecurityWalletController extends Controller
                 'wallet' => $walletData,
                 'anti_cheat' => [
                     'status' => 'ACTIVE',
-                    'engine' => 'RadenShield Anti-Cheat Core v2.4',
+                    'engine' => 'RadenShield Anti-Cheat Core v3.0',
                     'server_authoritative' => true,
                     'integrity' => 'SECURED',
                 ],
@@ -109,7 +120,7 @@ class SecurityWalletController extends Controller
     }
 
     /**
-     * Sinkronisasi Saldo Dompet (Gold & Diamonds) dengan Validasi Anti-Cheat
+     * Sinkronisasi Saldo Dompet (Gold & Diamonds) dengan Validasi Anti-Cheat Ketat
      */
     public function syncWallet(Request $request)
     {
@@ -118,7 +129,7 @@ class SecurityWalletController extends Controller
         if (!$user) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'Sesi akun tidak valid.',
+                'message' => 'Sesi akun tidak valid atau tidak memiliki otorisasi token.',
             ], 401);
         }
 
@@ -137,28 +148,106 @@ class SecurityWalletController extends Controller
         $action = trim($request->input('action', 'general_transaction'));
 
         // ====================================================================
-        // ANTI-CHEAT RULES & INTEGRITY CHECKS
+        // ANTI-CHEAT RULES & INTEGRITY CHECKS (RADENSHIELD v3.0)
         // ====================================================================
-        // 1. Batas penambahan koin per transaksi wajar (maksimal 50.000 gold)
-        if ($deltaGold > 50000 && !in_array($action, ['admin_grant', 'topup_reward'])) {
-            Log::warning("AntiCheat Alert: Impossible gold delta ({$deltaGold}) attempted by user {$user->id} ({$user->name})");
+        $throttleId = $user->id ?: ($request->ip() ?: 'guest');
+
+        // 1. Cooldown Rate-Limit: minimal 0.6 detik jeda antar sinkronisasi
+        $cooldownKey = "wallet_cooldown_{$throttleId}";
+        $lastRequestTime = \Illuminate\Support\Facades\Cache::get($cooldownKey);
+        $currentTime = microtime(true);
+        if ($lastRequestTime && ($currentTime - (float) $lastRequestTime) < 0.6) {
+            Log::warning("AntiCheat RateLimit: User {$user->id} ({$user->name}) spammed sync requests ({$action})");
             return response()->json([
                 'status' => 'error',
-                'message' => '🛡️ Transaksi mencurigakan terdeteksi oleh sistem Anti-Cheat. Penambahan saldo ditolak.',
+                'message' => '🛡️ Anti-Cheat: Frekuensi transaksi terlalu cepat. Harap tunggu sejenak.',
                 'gold' => (int) $user->gold,
                 'diamonds' => (int) $user->diamonds,
-            ], 403);
+            ], 429);
+        }
+        \Illuminate\Support\Facades\Cache::put($cooldownKey, $currentTime, 10);
+
+        // 2. Action-Specific Whitelist & Upper Bounds
+        $isFishing = str_starts_with($action, 'catch_fish') || str_starts_with($action, 'fishing');
+        $isTrash = str_starts_with($action, 'trash');
+        $isQuiz = str_starts_with($action, 'quiz') || str_starts_with($action, 'school');
+        $isPurchase = in_array($action, ['market_transaction', 'pharmacy_purchase', 'store_purchase', 'wardrobe_purchase']);
+
+        if ($isFishing) {
+            // Ikan langka / legendaris maksimal 600 gold dan 5 diamonds
+            if ($deltaGold > 600 || $deltaDiamonds > 5 || $deltaGold < 0) {
+                Log::warning("AntiCheat Fishing Alert: Invalid catch delta ({$deltaGold}G, {$deltaDiamonds}D) by user {$user->id}");
+                return response()->json([
+                    'status' => 'error',
+                    'message' => '🛡️ Anti-Cheat: Hadiah tangkapan ikan tidak valid.',
+                    'gold' => (int) $user->gold,
+                    'diamonds' => (int) $user->diamonds,
+                ], 403);
+            }
+        } elseif ($isTrash) {
+            if ($deltaGold > 50 || $deltaDiamonds > 0 || $deltaGold < 0) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => '🛡️ Anti-Cheat: Hadiah membersihkan sampah melebihi batas legal.',
+                    'gold' => (int) $user->gold,
+                    'diamonds' => (int) $user->diamonds,
+                ], 403);
+            }
+        } elseif ($isQuiz) {
+            if ($deltaGold > 200 || $deltaDiamonds > 0 || $deltaGold < 0) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => '🛡️ Anti-Cheat: Hadiah kuis melebihi batas legal.',
+                    'gold' => (int) $user->gold,
+                    'diamonds' => (int) $user->diamonds,
+                ], 403);
+            }
+        } elseif ($isPurchase) {
+            // Belanja di toko TIDAK BOLEH bernilai positif (menambah uang secara gratis)
+            if ($deltaGold > 0 || $deltaDiamonds > 0) {
+                Log::warning("AntiCheat Shop Exploit: User {$user->id} attempted positive delta in store: {$action}");
+                return response()->json([
+                    'status' => 'error',
+                    'message' => '🛡️ Anti-Cheat: Transaksi pembelian toko tidak sah.',
+                    'gold' => (int) $user->gold,
+                    'diamonds' => (int) $user->diamonds,
+                ], 403);
+            }
+        } else {
+            // Transaksi umum lainnya: maks 500 gold, 0 diamonds (kecuali admin/topup)
+            if ($deltaGold > 500 && !in_array($action, ['admin_grant', 'topup_reward', 'bank_transaction'])) {
+                Log::warning("AntiCheat Generic Alert: Impossible gold delta ({$deltaGold}) by {$user->id}");
+                return response()->json([
+                    'status' => 'error',
+                    'message' => '🛡️ Anti-Cheat: Penambahan koin melebihi batas wajar.',
+                    'gold' => (int) $user->gold,
+                    'diamonds' => (int) $user->diamonds,
+                ], 403);
+            }
+            if ($deltaDiamonds > 0 && !in_array($action, ['topup_success', 'admin_grant', 'topup_purchase'])) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => '🛡️ Anti-Cheat: Penambahan berlian hanya diizinkan via Top Up resmi.',
+                    'gold' => (int) $user->gold,
+                    'diamonds' => (int) $user->diamonds,
+                ], 403);
+            }
         }
 
-        // 2. Batas penambahan berlian per transaksi (hanya boleh melalui topup/admin)
-        if ($deltaDiamonds > 5000 && !in_array($action, ['topup_success', 'admin_grant'])) {
-            Log::warning("AntiCheat Alert: Unauthorized diamond gain ({$deltaDiamonds}) attempted by user {$user->id} ({$user->name})");
-            return response()->json([
-                'status' => 'error',
-                'message' => '🛡️ Penambahan berlian tidak sah terdeteksi. Transaksi ditolak.',
-                'gold' => (int) $user->gold,
-                'diamonds' => (int) $user->diamonds,
-            ], 403);
+        // 3. Velocity Limit: Maksimal perolehan koin per menit (maksimal 3,500 gold/menit)
+        if ($deltaGold > 0 && !in_array($action, ['admin_grant', 'topup_reward'])) {
+            $minuteKey = "wallet_velo_{$throttleId}_" . floor(time() / 60);
+            $currentVelocity = (int) \Illuminate\Support\Facades\Cache::get($minuteKey, 0);
+            if ($currentVelocity + $deltaGold > 3500) {
+                Log::warning("AntiCheat Velocity Alert: User {$user->id} gained too much gold in 1 minute ({$currentVelocity} + {$deltaGold})");
+                return response()->json([
+                    'status' => 'error',
+                    'message' => '🛡️ Anti-Cheat: Kecepatan perolehan koin terlalu tinggi. Harap bermain secara wajar.',
+                    'gold' => (int) $user->gold,
+                    'diamonds' => (int) $user->diamonds,
+                ], 429);
+            }
+            \Illuminate\Support\Facades\Cache::put($minuteKey, $currentVelocity + $deltaGold, 90);
         }
 
         return DB::transaction(function () use ($user, $deltaGold, $deltaDiamonds, $action) {
@@ -171,7 +260,7 @@ class SecurityWalletController extends Controller
             $newGold = $currentGold + $deltaGold;
             $newDiamonds = $currentDiamonds + $deltaDiamonds;
 
-            // 3. Cegah saldo menjadi negatif (Underflow Hack)
+            // 4. Cegah saldo menjadi negatif (Underflow Hack)
             if ($newGold < 0) {
                 return response()->json([
                     'status' => 'error',
@@ -190,7 +279,7 @@ class SecurityWalletController extends Controller
                 ], 422);
             }
 
-            // Simpan saldo authoritative baru ke MySQL
+            // Simpan saldo authoritative baru ke MySQL dengan hash integritas
             $lockedUser->gold = $newGold;
             $lockedUser->diamonds = $newDiamonds;
             $lockedUser->wallet_hash = $lockedUser->calculateWalletHash();
@@ -329,26 +418,19 @@ class SecurityWalletController extends Controller
     {
         $user = $this->resolveUser($request);
 
-        // Fallback jika belum terselesaikan oleh resolveUser
-        if (!$user) {
-            $currentName = trim($request->input('current_name') ?: $request->header('X-User-Name', ''));
-            if ($currentName) {
-                $user = User::where('name', $currentName)->first();
-            }
-        }
-
-        if (!$user) {
-            $userEmail = trim($request->input('email') ?: $request->header('X-User-Email', ''));
-            if ($userEmail) {
-                $user = User::where('email', $userEmail)->first();
-            }
-        }
-
         if (!$user) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'Sesi akun tidak ditemukan. Pastikan Anda telah masuk ke dalam permainan.',
+                'message' => 'Sesi akun tidak ditemukan atau token tidak valid. Silakan masuk terlebih dahulu.',
             ], 401);
+        }
+
+        // Nama akun Super Admin dilindungi anti-tamper
+        if ($user->isSuperAdmin()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => '🛡️ Nama karakter Super Admin dilindungi oleh sistem keamanan RadenShield.',
+            ], 403);
         }
 
         $newName = trim($request->input('name', ''));

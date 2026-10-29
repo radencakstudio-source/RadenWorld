@@ -12,7 +12,7 @@
     "name": "vendor-socket"
   },
   "resources/css/app.css": {
-    "file": "assets/app-Cb4K1dlz.css",
+    "file": "assets/app-BF391nNi.css",
     "src": "resources/css/app.css",
     "isEntry": true,
     "name": "app",
@@ -21,7 +21,7 @@
     ]
   },
   "resources/js/app.tsx": {
-    "file": "assets/app-ChHD2KLf.js",
+    "file": "assets/app-C8UUzvsJ.js",
     "name": "app",
     "src": "resources/js/app.tsx",
     "isEntry": true,

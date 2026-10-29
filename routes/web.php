@@ -12,6 +12,11 @@ Route::get('/home/{privateId?}', function ($privateId = null) {
 });
 
 Route::get('/world/popup', function () {
+    $host = request()->getHost();
+    $isLocal = app()->environment('local') || $host === 'localhost' || $host === '127.0.0.1' || str_ends_with($host, '.test');
+    if (!$isLocal) {
+        return view('pixel_popup_maintenance');
+    }
     return view('pixel_popup');
 });
 
@@ -1266,6 +1271,17 @@ Route::get('/api/game/library', function () {
 // API PIXEL BILLBOARD 1920x1080 (/world/popup)
 // ============================================================================
 Route::get('/api/pixel-canvas/claims', function () {
+    $host = request()->getHost();
+    $isLocal = app()->environment('local') || $host === 'localhost' || $host === '127.0.0.1' || str_ends_with($host, '.test');
+    if (!$isLocal) {
+        return response()->json([
+            'status' => 'maintenance',
+            'message' => 'Layanan Pixel Billboard online sedang dalam tahap pemeliharaan (Maintenance).',
+            'claims' => [],
+            'price_per_pixel' => 500,
+        ]);
+    }
+
     $filePath = storage_path('app/pixel_canvas.json');
     if (file_exists($filePath)) {
         $content = json_decode(file_get_contents($filePath), true);
@@ -1286,6 +1302,14 @@ Route::get('/api/pixel-canvas/claims', function () {
 });
 
 Route::post('/api/pixel-canvas/claims', function (\Illuminate\Http\Request $request) {
+    $host = request()->getHost();
+    $isLocal = app()->environment('local') || $host === 'localhost' || $host === '127.0.0.1' || str_ends_with($host, '.test');
+    if (!$isLocal) {
+        return response()->json([
+            'status' => 'maintenance',
+            'message' => 'Layanan Pixel Billboard online sedang dalam tahap pemeliharaan (Maintenance).',
+        ]);
+    }
     $filePath = storage_path('app/pixel_canvas.json');
     $data = ['claims' => [], 'price_per_pixel' => 500];
     if (file_exists($filePath)) {

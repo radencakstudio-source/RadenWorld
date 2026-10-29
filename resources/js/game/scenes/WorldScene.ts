@@ -452,7 +452,16 @@ export class WorldScene extends Phaser.Scene {
       ((pGx >= 21 && pGx <= 32) || (pGx >= 44 && pGx <= 55)) &&
       (pGy >= 39 && pGy <= 51)
     ) {
-      window.open('/world/popup', '_blank');
+      const isLocalHost = typeof window !== 'undefined' && (
+        window.location.hostname === 'localhost' ||
+        window.location.hostname === '127.0.0.1' ||
+        window.location.hostname.endsWith('.test')
+      );
+      if (isLocalHost) {
+        window.open('/world/popup', '_blank');
+      } else {
+        this.player?.showSpeechBubble?.('🛠️ Papan Billboard Online sedang tahap Maintenance (Segera Hadir)!', 2400);
+      }
       return;
     }
 

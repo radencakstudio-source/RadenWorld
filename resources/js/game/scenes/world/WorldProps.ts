@@ -503,7 +503,22 @@ export class WorldProps {
       10,
       true, // Collider 1 barisan horizontal sepanjang sumbu X (obstacleRows = 1 di y: 49)
       () => {
-        window.open('/world/popup', '_blank');
+        const isLocalHost = typeof window !== 'undefined' && (
+          window.location.hostname === 'localhost' ||
+          window.location.hostname === '127.0.0.1' ||
+          window.location.hostname.endsWith('.test')
+        );
+        if (isLocalHost) {
+          window.open('/world/popup', '_blank');
+        } else {
+          EventBus.emit('new-chat-message', {
+            id: `billboard_${Date.now()}`,
+            sender: 'SISTEM',
+            text: '🛠️ Papan Iklan Billboard Online sedang tahap Maintenance (Segera Hadir)!',
+            timestamp: Date.now(),
+            isSystem: true,
+          });
+        }
       },
       1
     );
@@ -517,7 +532,22 @@ export class WorldProps {
       10,
       true, // Collider 1 barisan horizontal sepanjang sumbu X (obstacleRows = 1 di y: 49)
       () => {
-        window.open('/world/popup', '_blank');
+        const isLocalHost = typeof window !== 'undefined' && (
+          window.location.hostname === 'localhost' ||
+          window.location.hostname === '127.0.0.1' ||
+          window.location.hostname.endsWith('.test')
+        );
+        if (isLocalHost) {
+          window.open('/world/popup', '_blank');
+        } else {
+          EventBus.emit('new-chat-message', {
+            id: `billboard_${Date.now()}`,
+            sender: 'SISTEM',
+            text: '🛠️ Papan Iklan Billboard Online sedang tahap Maintenance (Segera Hadir)!',
+            timestamp: Date.now(),
+            isSystem: true,
+          });
+        }
       },
       1
     );

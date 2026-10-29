@@ -185,7 +185,14 @@ export class WorldInteractions {
       Math.floor(py / tileSize) >= 39 &&
       Math.floor(py / tileSize) <= 51
     ) {
-      prompt = 'TEKAN [E] / KLIK UNTUK MEMBUKA PAPAN INFORMASI (world/popup) 📢';
+      const isLocalHost = typeof window !== 'undefined' && (
+        window.location.hostname === 'localhost' ||
+        window.location.hostname === '127.0.0.1' ||
+        window.location.hostname.endsWith('.test')
+      );
+      prompt = isLocalHost
+        ? 'TEKAN [E] / KLIK UNTUK MEMBUKA PAPAN INFORMASI (world/popup) 📢'
+        : 'PAPAN REKLAME ONLINE: SEDANG TAHAP MAINTENANCE (Segera Hadir) 🛠️';
       locationName = 'ALUN-ALUN: PAPAN POPUP 10x10';
     } else {
       for (const npc of npcs) {

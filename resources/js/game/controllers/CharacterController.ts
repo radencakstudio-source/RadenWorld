@@ -275,6 +275,10 @@ export class CharacterController {
       // Listener tombol SPASI (Lompat / Double Jump / Strike Mancing)
       this.keySpace.on('down', () => {
         if (this.isTyping()) return;
+        // Jika ada tombol UI yang sedang terfokus di browser, lepas fokus agar tidak terpicu
+        if (document.activeElement && (document.activeElement as HTMLElement).blur && document.activeElement !== document.body) {
+          (document.activeElement as HTMLElement).blur();
+        }
         if (this.fishingState === 'bite') {
           this.strikeFish();
         } else if (this.fishingState === 'none') {

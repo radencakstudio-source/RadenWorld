@@ -477,6 +477,15 @@ export const VirtualControls: React.FC<VirtualControlsProps> = React.memo(({
     }
     e.preventDefault();
     e.stopPropagation();
+
+    // Pastikan tidak ada tombol HTML yang tertinggal fokus (seperti tombol Maximize/Fullscreen)
+    if (document.activeElement && (document.activeElement as HTMLElement).blur && document.activeElement !== document.body) {
+      (document.activeElement as HTMLElement).blur();
+    }
+    if (e.currentTarget && (e.currentTarget as HTMLElement).blur) {
+      (e.currentTarget as HTMLElement).blur();
+    }
+
     setGlobalControlActive(true);
 
     const now = Date.now();
@@ -770,26 +779,26 @@ export const VirtualControls: React.FC<VirtualControlsProps> = React.memo(({
             onTouchStart={handleJoystickTouchStart}
             onPointerDown={handleJoystickPointerDown}
             onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); }}
-            className="relative w-27 h-27 sm:w-29 sm:h-29 rounded-full bg-black/75 border-2 border-white/25 flex items-center justify-center cursor-pointer select-none touch-none shadow-2xl backdrop-blur-xs active:border-amber-400/80 transition-colors"
+            className="relative w-24 h-24 sm:w-27 sm:h-27 md:w-29 md:h-29 rounded-full bg-black/75 border-2 border-white/25 flex items-center justify-center cursor-pointer select-none touch-none shadow-2xl backdrop-blur-xs active:border-amber-400/80 transition-colors"
             style={{ touchAction: 'none' }}
             role="slider"
             aria-label="Analog Virtual Joystick"
           >
             {/* Garis Salib Sumbu Arah */}
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <div className="w-15 sm:w-17 h-0.5 bg-white/15" />
+              <div className="w-13 sm:w-16 h-0.5 bg-white/15" />
             </div>
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <div className="h-15 sm:h-17 w-0.5 bg-white/15" />
+              <div className="h-13 sm:h-16 w-0.5 bg-white/15" />
             </div>
 
             {/* Lingkaran Batas Dalam Tipis */}
-            <div className="absolute w-15 sm:w-17 h-15 sm:h-17 rounded-full border border-white/15 pointer-events-none" />
+            <div className="absolute w-13 sm:w-16 h-13 sm:h-16 rounded-full border border-white/15 pointer-events-none" />
 
             {/* Knob Analog */}
             <div
               ref={knobRef}
-              className={`w-11.5 h-11.5 sm:w-12.5 sm:h-12.5 rounded-full border-2 border-white/40 bg-neutral-900/95 flex items-center justify-center select-none shadow-xl pointer-events-none will-change-transform ${
+              className={`w-10 h-10 sm:w-11.5 sm:h-11.5 md:w-12.5 md:h-12.5 rounded-full border-2 border-white/40 bg-neutral-900/95 flex items-center justify-center select-none shadow-xl pointer-events-none will-change-transform ${
                 isDragging && !isEditMode ? 'duration-0 border-amber-400 bg-neutral-950 scale-105' : 'duration-150 ease-out'
               }`}
               style={{
@@ -797,7 +806,7 @@ export const VirtualControls: React.FC<VirtualControlsProps> = React.memo(({
               }}
             >
               <div
-                className={`w-3.5 h-3.5 rounded-full border transition-all ${
+                className={`w-3 sm:w-3.5 h-3 sm:h-3.5 rounded-full border transition-all ${
                   isDragging && !isEditMode ? 'border-amber-400 bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.8)]' : 'border-white/30 bg-white/20'
                 }`}
               />
@@ -812,8 +821,8 @@ export const VirtualControls: React.FC<VirtualControlsProps> = React.memo(({
       <div
         className={`fixed ${isEditMode ? 'z-[70]' : 'z-[50]'} pointer-events-none select-none font-['Chakra_Petch']`}
         style={{
-          right: 'max(7.75rem, calc(env(safe-area-inset-right, 0px) + 7.5rem))',
-          bottom: 'max(2.5rem, calc(env(safe-area-inset-bottom, 0px) + 2rem))',
+          right: 'max(6rem, calc(env(safe-area-inset-right, 0px) + 5.5rem))',
+          bottom: 'max(1.5rem, calc(env(safe-area-inset-bottom, 0px) + 1.25rem))',
           transform: `translate(${layout.fishOffsetX || 0}px, ${-(layout.fishOffsetY || 0)}px) scale(${layout.fishScale})`,
           transformOrigin: 'center center',
           transition: isEditMode ? 'none' : 'opacity 0.15s, transform 0.15s',
@@ -828,6 +837,7 @@ export const VirtualControls: React.FC<VirtualControlsProps> = React.memo(({
           >
             <button
               type="button"
+              tabIndex={-1}
               onPointerDown={(e) => { e.stopPropagation(); handleAdjustScale(-0.1); }}
               className="w-6 h-6 rounded-full bg-neutral-800 hover:bg-neutral-700 active:scale-90 flex items-center justify-center text-amber-300 font-black cursor-pointer border border-neutral-700"
               title="Perkecil (-)"
@@ -839,6 +849,7 @@ export const VirtualControls: React.FC<VirtualControlsProps> = React.memo(({
             </span>
             <button
               type="button"
+              tabIndex={-1}
               onPointerDown={(e) => { e.stopPropagation(); handleAdjustScale(0.1); }}
               className="w-6 h-6 rounded-full bg-neutral-800 hover:bg-neutral-700 active:scale-90 flex items-center justify-center text-amber-300 font-black cursor-pointer border border-neutral-700"
               title="Perbesar (+)"
@@ -865,11 +876,12 @@ export const VirtualControls: React.FC<VirtualControlsProps> = React.memo(({
         >
           <button
             type="button"
+            tabIndex={-1}
             onPointerDown={handleFishPointerDown}
             onPointerUp={handleFishPointerUp}
             onPointerCancel={handleFishPointerUp}
             onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); }}
-            className={`w-12.5 h-12.5 sm:w-13.5 sm:h-13.5 rounded-full flex flex-col items-center justify-center cursor-pointer active:scale-95 transition-all select-none ${
+            className={`w-10.5 h-10.5 sm:w-12 sm:h-12 md:w-13.5 md:h-13.5 rounded-full flex flex-col items-center justify-center cursor-pointer active:scale-95 transition-all select-none ${
               isFishBiting && !isEditMode
                 ? 'bg-neutral-900 border-2 border-amber-400 text-amber-400 shadow-none'
                 : 'bg-black/80 hover:bg-black/90 active:bg-neutral-800 border-2 border-white/30 text-neutral-200 shadow-xl'
@@ -878,8 +890,8 @@ export const VirtualControls: React.FC<VirtualControlsProps> = React.memo(({
             title={isFishBiting ? "IKAN MENYAMBAR! KETUK UNTUK TARIK!" : "Tahan untuk Menimbang Lemparan Kail / Strike (F)"}
             aria-label="Tombol Mancing"
           >
-            <Fish className={`w-4 h-4 sm:w-5 sm:h-5 stroke-[2] ${isFishBiting && !isEditMode ? 'text-amber-400 stroke-[2.5]' : 'text-neutral-200'}`} />
-            <span className={`text-[7px] sm:text-[7.5px] font-mono font-black tracking-wider leading-none mt-0.5 ${isFishBiting && !isEditMode ? 'text-amber-400' : 'text-neutral-400'}`}>
+            <Fish className={`w-3.5 h-3.5 sm:w-4.5 sm:h-4.5 stroke-[2] ${isFishBiting && !isEditMode ? 'text-amber-400 stroke-[2.5]' : 'text-neutral-200'}`} />
+            <span className={`text-[6.5px] sm:text-[7.5px] font-mono font-black tracking-wider leading-none mt-0.5 ${isFishBiting && !isEditMode ? 'text-amber-400' : 'text-neutral-400'}`}>
               {isFishBiting && !isEditMode ? 'TARIK!' : 'MANCING'}
             </span>
           </button>
@@ -892,8 +904,8 @@ export const VirtualControls: React.FC<VirtualControlsProps> = React.memo(({
       <div
         className={`fixed ${isEditMode ? 'z-[70]' : 'z-[50]'} pointer-events-none select-none font-['Chakra_Petch']`}
         style={{
-          right: 'max(2rem, calc(env(safe-area-inset-right, 0px) + 1.75rem))',
-          bottom: 'max(6.75rem, calc(env(safe-area-inset-bottom, 0px) + 6.25rem))',
+          right: 'max(2.25rem, calc(env(safe-area-inset-right, 0px) + 2rem))',
+          bottom: 'max(5.25rem, calc(env(safe-area-inset-bottom, 0px) + 4.75rem))',
           transform: `translate(${layout.jumpOffsetX || 0}px, ${-(layout.jumpOffsetY || 0)}px) scale(${layout.jumpScale})`,
           transformOrigin: 'center center',
           transition: isEditMode ? 'none' : 'opacity 0.15s, transform 0.15s',
@@ -908,6 +920,7 @@ export const VirtualControls: React.FC<VirtualControlsProps> = React.memo(({
           >
             <button
               type="button"
+              tabIndex={-1}
               onPointerDown={(e) => { e.stopPropagation(); handleAdjustScale(-0.1); }}
               className="w-6 h-6 rounded-full bg-neutral-800 hover:bg-neutral-700 active:scale-90 flex items-center justify-center text-amber-300 font-black cursor-pointer border border-neutral-700"
               title="Perkecil (-)"
@@ -919,6 +932,7 @@ export const VirtualControls: React.FC<VirtualControlsProps> = React.memo(({
             </span>
             <button
               type="button"
+              tabIndex={-1}
               onPointerDown={(e) => { e.stopPropagation(); handleAdjustScale(0.1); }}
               className="w-6 h-6 rounded-full bg-neutral-800 hover:bg-neutral-700 active:scale-90 flex items-center justify-center text-amber-300 font-black cursor-pointer border border-neutral-700"
               title="Perbesar (+)"
@@ -945,15 +959,16 @@ export const VirtualControls: React.FC<VirtualControlsProps> = React.memo(({
         >
           <button
             type="button"
+            tabIndex={-1}
             onPointerDown={handleJumpPress}
             onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); }}
-            className="w-13 h-13 sm:w-14 sm:h-14 rounded-full bg-black/80 hover:bg-black/90 active:bg-neutral-800 border-2 border-white/30 text-neutral-100 flex flex-col items-center justify-center cursor-pointer shadow-xl active:scale-95 transition-all select-none"
+            className="w-11.5 h-11.5 sm:w-13 sm:h-13 md:w-14 md:h-14 rounded-full bg-black/80 hover:bg-black/90 active:bg-neutral-800 border-2 border-white/30 text-neutral-100 flex flex-col items-center justify-center cursor-pointer shadow-xl active:scale-95 transition-all select-none"
             style={{ touchAction: 'none' }}
             title="Lompat / Double Jump (Spasi)"
             aria-label="Tombol Lompat"
           >
-            <ArrowUp className="w-5 h-5 sm:w-5.5 sm:h-5.5 stroke-[2.5] text-amber-300" />
-            <span className="text-[7px] sm:text-[8px] font-mono font-bold tracking-wider leading-none mt-0.5 text-neutral-300">
+            <ArrowUp className="w-4.5 h-4.5 sm:w-5 sm:h-5 stroke-[2.5] text-amber-300" />
+            <span className="text-[6.5px] sm:text-[7.5px] font-mono font-bold tracking-wider leading-none mt-0.5 text-neutral-300">
               LOMPAT
             </span>
           </button>
@@ -967,7 +982,7 @@ export const VirtualControls: React.FC<VirtualControlsProps> = React.memo(({
         className={`fixed ${isEditMode ? 'z-[70]' : 'z-[50]'} pointer-events-none select-none font-['Chakra_Petch']`}
         style={{
           right: 'max(1.25rem, calc(env(safe-area-inset-right, 0px) + 1rem))',
-          bottom: 'max(2rem, calc(env(safe-area-inset-bottom, 0px) + 1.5rem))',
+          bottom: 'max(1.25rem, calc(env(safe-area-inset-bottom, 0px) + 1rem))',
           transform: `translate(${layout.actionOffsetX}px, ${-layout.actionOffsetY}px) scale(${layout.actionScale})`,
           transformOrigin: 'center center',
           transition: isEditMode ? 'none' : 'opacity 0.15s, transform 0.15s',
@@ -982,6 +997,7 @@ export const VirtualControls: React.FC<VirtualControlsProps> = React.memo(({
           >
             <button
               type="button"
+              tabIndex={-1}
               onPointerDown={(e) => { e.stopPropagation(); handleAdjustScale(-0.1); }}
               className="w-6 h-6 rounded-full bg-neutral-800 hover:bg-neutral-700 active:scale-90 flex items-center justify-center text-amber-300 font-black cursor-pointer border border-neutral-700"
               title="Perkecil (-)"
@@ -993,6 +1009,7 @@ export const VirtualControls: React.FC<VirtualControlsProps> = React.memo(({
             </span>
             <button
               type="button"
+              tabIndex={-1}
               onPointerDown={(e) => { e.stopPropagation(); handleAdjustScale(0.1); }}
               className="w-6 h-6 rounded-full bg-neutral-800 hover:bg-neutral-700 active:scale-90 flex items-center justify-center text-amber-300 font-black cursor-pointer border border-neutral-700"
               title="Perbesar (+)"
@@ -1019,9 +1036,10 @@ export const VirtualControls: React.FC<VirtualControlsProps> = React.memo(({
         >
           <button
             type="button"
+            tabIndex={-1}
             onPointerDown={handleActionButtonPress}
             onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); }}
-            className={`w-20 h-20 sm:w-24 sm:h-24 rounded-full flex flex-col items-center justify-center cursor-pointer transition-all select-none active:scale-95 shadow-2xl ${
+            className={`w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 rounded-full flex flex-col items-center justify-center cursor-pointer transition-all select-none active:scale-95 shadow-2xl ${
               isActionActive && !isEditMode
                 ? 'bg-amber-500/35 border-2 border-amber-400 text-amber-300 ring-4 ring-amber-400/40 animate-pulse shadow-[0_0_24px_rgba(245,158,11,0.5)]'
                 : 'bg-black/80 hover:bg-black/90 active:bg-neutral-800 border-2 border-white/30 text-neutral-200'
@@ -1031,12 +1049,12 @@ export const VirtualControls: React.FC<VirtualControlsProps> = React.memo(({
             aria-label="Tombol Aksi"
           >
             <Zap
-              className={`w-7 h-7 sm:w-8 sm:h-8 stroke-[2.2] transition-colors ${
+              className={`w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 stroke-[2.2] transition-colors ${
                 isActionActive && !isEditMode ? 'text-amber-300 fill-amber-400/40' : 'text-neutral-200'
               }`}
             />
             <span
-              className={`text-[9px] sm:text-[10px] font-mono font-black tracking-widest uppercase mt-0.5 sm:mt-1 transition-colors ${
+              className={`text-[8px] sm:text-[9px] md:text-[10px] font-mono font-black tracking-widest uppercase mt-0.5 sm:mt-1 transition-colors ${
                 isActionActive && !isEditMode ? 'text-amber-300' : 'text-neutral-300'
               }`}
             >

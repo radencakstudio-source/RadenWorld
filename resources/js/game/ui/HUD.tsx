@@ -347,6 +347,9 @@ export const HUD: React.FC<HUDProps> = React.memo(({
 
   const handleToggleFullscreen = () => {
     sound.playClick();
+    if (document.activeElement && (document.activeElement as HTMLElement).blur) {
+      (document.activeElement as HTMLElement).blur();
+    }
     try {
       if (!document.fullscreenElement && !(document as any).webkitFullscreenElement) {
         const docEl = document.documentElement as any;
@@ -385,36 +388,39 @@ export const HUD: React.FC<HUDProps> = React.memo(({
       {/* ==================================================================== */}
       {/* 1. TOP BAR: KIRI (PROFIL & CHAT) | TENGAH (UI JAM) | KANAN (SERVER) */}
       {/* ==================================================================== */}
-      <div className="flex items-start justify-between gap-1.5 sm:gap-2 md:gap-4 w-full">
+      <div className="flex items-start justify-between gap-1 sm:gap-2 md:gap-4 w-full">
         {/* KIRI ATAS: Group Profile, Quick Action & UI Jam Tanpa Background di Bawahnya */}
         <div className="flex flex-col items-start gap-1 sm:gap-1.5 shrink-0">
           <div className="pointer-events-auto flex items-center gap-1 sm:gap-1.5 shrink-0">
             {/* Tombol Profil Karakter */}
             <button
+              type="button"
+              tabIndex={-1}
               onClick={onOpenProfile}
-              className={`h-8 sm:h-9 md:h-10 flex items-center gap-1.5 sm:gap-2.5 px-2 sm:px-3 rounded-md bg-black border ${
+              onPointerDown={(e) => (e.currentTarget as HTMLElement).blur()}
+              className={`h-7 sm:h-9 md:h-10 flex items-center gap-1 sm:gap-2 px-1.5 sm:px-3 rounded-md bg-black border ${
                 isSuperAdmin ? 'border-amber-400' : 'border-neutral-800'
-              } hover:border-amber-400 transition-colors cursor-pointer group text-left`}
+              } hover:border-amber-400 transition-colors cursor-pointer group text-left shrink-0`}
               title={isSuperAdmin ? '👑 Profil Super Admin (RADEN)' : 'Klik untuk membuka Profil Karakter'}
             >
-              <div className={`w-5 h-5 sm:w-6 sm:h-6 rounded flex items-center justify-center shrink-0 ${
+              <div className={`w-4 h-4 sm:w-6 sm:h-6 rounded flex items-center justify-center shrink-0 ${
                 isSuperAdmin ? 'bg-amber-400 text-black' : 'bg-neutral-900 text-amber-400'
               }`}>
-                <User className="w-3 sm:w-3.5 h-3 sm:h-3.5" />
+                <User className="w-2.5 sm:w-3.5 h-2.5 sm:h-3.5" />
               </div>
               <div className="flex flex-col leading-none">
                 <div className="flex items-center gap-1">
-                  <span className="font-bold text-[11px] sm:text-xs text-neutral-100 group-hover:text-amber-400 transition-colors uppercase tracking-wider truncate max-w-[70px] sm:max-w-[120px]">
+                  <span className="font-bold text-[10px] sm:text-xs text-neutral-100 group-hover:text-amber-400 transition-colors uppercase tracking-wider truncate max-w-[65px] sm:max-w-[120px]">
                     {stats.name}
                   </span>
                   {isSuperAdmin && (
-                    <span className="text-[8px] sm:text-[9px] font-black tracking-wider text-black bg-amber-400 px-1 py-0.5 rounded leading-none">
+                    <span className="text-[7px] sm:text-[9px] font-black tracking-wider text-black bg-amber-400 px-1 py-0.5 rounded leading-none">
                       ADMIN
                     </span>
                   )}
                 </div>
                 <div className="flex items-center gap-1 mt-0.5">
-                  <span className="text-[8px] sm:text-[9px] font-bold tracking-widest text-neutral-400">
+                  <span className="text-[7.5px] sm:text-[9px] font-bold tracking-widest text-neutral-400">
                     LV. {isUserAdmin ? '99999999999' : playerLevel}
                   </span>
                 </div>
@@ -423,21 +429,27 @@ export const HUD: React.FC<HUDProps> = React.memo(({
 
             {/* Icon Chat Button */}
             <button
+              type="button"
+              tabIndex={-1}
               onClick={onToggleChat}
-              className={`h-8 w-8 sm:h-9 sm:w-9 md:h-10 md:w-10 rounded-md border flex items-center justify-center transition-colors cursor-pointer shrink-0 ${
+              onPointerDown={(e) => (e.currentTarget as HTMLElement).blur()}
+              className={`h-7 w-7 sm:h-9 sm:w-9 md:h-10 md:w-10 rounded-md border flex items-center justify-center transition-colors cursor-pointer shrink-0 ${
                 isChatOpen
                   ? 'bg-amber-400 text-black border-amber-400 font-bold'
                   : 'bg-black text-neutral-300 border-neutral-800 hover:border-amber-400 hover:text-amber-400'
               }`}
               title={isChatOpen ? 'Tutup Obrolan' : 'Buka Obrolan (atau tekan tombol "/")'}
             >
-              <MessageSquare className="w-3.5 sm:w-4 h-3.5 sm:h-4" />
+              <MessageSquare className="w-3 sm:w-4 h-3 sm:h-4" />
             </button>
 
             {/* Tombol Mikrofon Proximity Voice Chat */}
             <button
+              type="button"
+              tabIndex={-1}
               onClick={handleToggleMic}
-              className={`h-8 w-8 sm:h-9 sm:w-9 md:h-10 md:w-10 rounded-md border flex items-center justify-center relative transition-colors cursor-pointer shrink-0 ${
+              onPointerDown={(e) => (e.currentTarget as HTMLElement).blur()}
+              className={`h-7 w-7 sm:h-9 sm:w-9 md:h-10 md:w-10 rounded-md border flex items-center justify-center relative transition-colors cursor-pointer shrink-0 ${
                 isMicActive
                   ? 'bg-emerald-600 text-white border-emerald-500 font-semibold'
                   : 'bg-black text-neutral-300 border-neutral-800 hover:border-neutral-700 hover:text-white'
@@ -448,7 +460,7 @@ export const HUD: React.FC<HUDProps> = React.memo(({
                   : 'Nyalakan Mikrofon (Proximity Voice Chat Radius ±5 Petak X & Y)'
               }
             >
-              {isMicActive ? <Mic className="w-3.5 sm:w-4 h-3.5 sm:h-4 text-white" /> : <MicOff className="w-3.5 sm:w-4 h-3.5 sm:h-4" />}
+              {isMicActive ? <Mic className="w-3 sm:w-4 h-3 sm:h-4 text-white" /> : <MicOff className="w-3 sm:w-4 h-3 sm:h-4" />}
               {isMicActive && (
                 <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-emerald-400" />
               )}
@@ -456,8 +468,23 @@ export const HUD: React.FC<HUDProps> = React.memo(({
 
             {/* Tombol Maximize / Layar Penuh (Fullscreen) di sebelah Microphone */}
             <button
-              onClick={handleToggleFullscreen}
-              className={`h-8 w-8 sm:h-9 sm:w-9 md:h-10 md:w-10 rounded-md border flex items-center justify-center transition-colors cursor-pointer shrink-0 ${
+              type="button"
+              tabIndex={-1}
+              onClick={(e) => {
+                (e.currentTarget as HTMLElement).blur();
+                handleToggleFullscreen();
+              }}
+              onPointerDown={(e) => {
+                (e.currentTarget as HTMLElement).blur();
+              }}
+              onKeyDown={(e) => {
+                if (e.key === ' ' || e.key === 'Spacebar' || e.key === 'Enter') {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  (e.currentTarget as HTMLElement).blur();
+                }
+              }}
+              className={`h-7 w-7 sm:h-9 sm:w-9 md:h-10 md:w-10 rounded-md border flex items-center justify-center transition-colors cursor-pointer shrink-0 focus:outline-none ${
                 isFullscreen
                   ? 'bg-amber-400 text-black border-amber-400 font-bold'
                   : 'bg-black text-neutral-300 border-neutral-800 hover:border-amber-400 hover:text-amber-400'
@@ -465,25 +492,25 @@ export const HUD: React.FC<HUDProps> = React.memo(({
               title={isFullscreen ? 'Keluar Layar Penuh' : 'Layar Penuh (Fullscreen)'}
             >
               {isFullscreen ? (
-                <Minimize2 className="w-3.5 sm:w-4 h-3.5 sm:h-4" />
+                <Minimize2 className="w-3 sm:w-4 h-3 sm:h-4" />
               ) : (
-                <Maximize2 className="w-3.5 sm:w-4 h-3.5 sm:h-4" />
+                <Maximize2 className="w-3 sm:w-4 h-3 sm:h-4" />
               )}
             </button>
           </div>
         </div>
 
         {/* KANAN ATAS: CONTAINER UANG, SERVER, SETTINGS, & PETA DUNIA */}
-        <div className="pointer-events-none flex items-start gap-1 sm:gap-1.5 flex-wrap justify-end select-none max-w-[calc(100vw-140px)] sm:max-w-none">
+        <div className="pointer-events-none flex items-start gap-1 sm:gap-1.5 flex-wrap justify-end select-none max-w-[calc(100vw-130px)] sm:max-w-none">
           {/* KOIN EMAS */}
           <div
-            className="pointer-events-auto h-8 sm:h-9 md:h-10 flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 rounded-md bg-black border border-neutral-800 text-amber-400 select-none shadow-sm shrink-0"
+            className="pointer-events-auto h-7 sm:h-9 md:h-10 flex items-center gap-1 sm:gap-1.5 px-1.5 sm:px-3 rounded-md bg-black border border-neutral-800 text-amber-400 select-none shadow-sm shrink-0"
             title="Koin Emas"
           >
-            <Coins className="w-3.5 sm:w-4 h-3.5 sm:h-4 text-amber-400 shrink-0" />
+            <Coins className="w-3 sm:w-4 h-3 sm:h-4 text-amber-400 shrink-0" />
             <div className="flex flex-col text-left leading-none">
-              <span className="text-[7.5px] sm:text-[8px] text-neutral-400 uppercase font-semibold">KOIN</span>
-              <span className="text-[10px] sm:text-xs font-black font-mono tracking-wider text-amber-300 mt-0.5">
+              <span className="text-[6.5px] sm:text-[8px] text-neutral-400 uppercase font-semibold">KOIN</span>
+              <span className="text-[9px] sm:text-xs font-black font-mono tracking-wider text-amber-300 mt-0.5">
                 {isUserAdmin || gold >= 99999999999 ? '99999999999' : gold.toLocaleString('id-ID')}
               </span>
             </div>
@@ -495,46 +522,52 @@ export const HUD: React.FC<HUDProps> = React.memo(({
               sound.playClick();
               onOpenTopUp?.();
             }}
-            className="pointer-events-auto h-8 sm:h-9 md:h-10 flex items-center gap-1 sm:gap-1.5 pl-2 sm:pl-2.5 pr-1 sm:pr-1.5 rounded-md bg-black border border-neutral-800 text-cyan-400 select-none shadow-sm group hover:border-cyan-500/50 transition-colors cursor-pointer shrink-0"
+            className="pointer-events-auto h-7 sm:h-9 md:h-10 flex items-center gap-1 sm:gap-1.5 pl-1.5 sm:pl-2.5 pr-1 sm:pr-1.5 rounded-md bg-black border border-neutral-800 text-cyan-400 select-none shadow-sm group hover:border-cyan-500/50 transition-colors cursor-pointer shrink-0"
             title="Berlian (Klik untuk Top Up)"
           >
-            <Gem className="w-3.5 sm:w-4 h-3.5 sm:h-4 text-cyan-400 fill-cyan-400/20 shrink-0" />
+            <Gem className="w-3 sm:w-4 h-3 sm:h-4 text-cyan-400 fill-cyan-400/20 shrink-0" />
             <div className="flex flex-col text-left leading-none">
-              <span className="text-[7.5px] sm:text-[8px] text-neutral-400 uppercase font-semibold">BERLIAN</span>
-              <span className="text-[10px] sm:text-xs font-black font-mono tracking-wider text-cyan-300 mt-0.5">
+              <span className="text-[6.5px] sm:text-[8px] text-neutral-400 uppercase font-semibold">BERLIAN</span>
+              <span className="text-[9px] sm:text-xs font-black font-mono tracking-wider text-cyan-300 mt-0.5">
                 {isUserAdmin || diamonds >= 99999999999 ? '99999999999' : diamonds.toLocaleString('id-ID')}
               </span>
             </div>
             <button
               type="button"
-              onClick={() => {
+              tabIndex={-1}
+              onClick={(e) => {
+                e.stopPropagation();
                 sound.playClick();
                 onOpenTopUp?.();
               }}
-              className="h-6 sm:h-7 px-1.5 sm:px-2 rounded bg-gradient-to-r from-cyan-500 to-cyan-400 hover:from-cyan-400 hover:to-cyan-300 text-black font-black text-[9px] sm:text-[10px] tracking-wider uppercase flex items-center gap-1 ml-1 cursor-pointer transition-all shadow-sm active:scale-95"
+              onPointerDown={(e) => (e.currentTarget as HTMLElement).blur()}
+              className="h-5 sm:h-7 px-1 sm:px-2 rounded bg-gradient-to-r from-cyan-500 to-cyan-400 hover:from-cyan-400 hover:to-cyan-300 text-black font-black text-[8px] sm:text-[10px] tracking-wider uppercase flex items-center gap-0.5 sm:gap-1 ml-0.5 sm:ml-1 cursor-pointer transition-all shadow-sm active:scale-95"
               title="Top Up Berlian"
             >
-              <Plus className="w-2.5 sm:w-3 h-2.5 sm:h-3 stroke-[3]" />
+              <Plus className="w-2 sm:w-3 h-2 sm:h-3 stroke-[3]" />
               <span>TOPUP</span>
             </button>
           </div>
 
           {/* Tombol Status Server Flat & Bersih */}
           <button
+            type="button"
+            tabIndex={-1}
             onClick={() => {
               sound.playClick();
               onOpenServerModal?.();
             }}
-            className="pointer-events-auto h-8 sm:h-9 md:h-10 flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 rounded-md bg-black border border-neutral-800 hover:border-amber-400 text-neutral-200 transition-colors cursor-pointer group shrink-0"
+            onPointerDown={(e) => (e.currentTarget as HTMLElement).blur()}
+            className="pointer-events-auto h-7 sm:h-9 md:h-10 flex items-center gap-1 sm:gap-2 px-1.5 sm:px-3 rounded-md bg-black border border-neutral-800 hover:border-amber-400 text-neutral-200 transition-colors cursor-pointer group shrink-0"
             title="Klik untuk Melihat Daftar Server & Pindah Realm"
           >
             <span className="w-1.5 sm:w-2 h-1.5 sm:h-2 rounded-full bg-emerald-500 shrink-0" />
-            <Globe className="w-3 sm:w-3.5 h-3 sm:h-3.5 text-neutral-400 group-hover:text-amber-400 transition-colors" />
+            <Globe className="w-2.5 sm:w-3.5 h-2.5 sm:h-3.5 text-neutral-400 group-hover:text-amber-400 transition-colors" />
             <div className="flex flex-col text-left leading-none">
-              <span className="text-[8px] sm:text-[9px] text-neutral-400 uppercase tracking-widest font-semibold">
+              <span className="text-[6.5px] sm:text-[9px] text-neutral-400 uppercase tracking-widest font-semibold">
                 SERVER
               </span>
-              <span className="text-[10px] sm:text-xs font-black text-amber-300 uppercase tracking-wider font-mono mt-0.5">
+              <span className="text-[9px] sm:text-xs font-black text-amber-300 uppercase tracking-wider font-mono mt-0.5">
                 {displayServerCode}
               </span>
             </div>
@@ -546,6 +579,8 @@ export const HUD: React.FC<HUDProps> = React.memo(({
 
           {/* Tombol Daftar Pemain Server */}
           <button
+            type="button"
+            tabIndex={-1}
             onClick={() => {
               sound.playClick();
               try {
@@ -553,15 +588,16 @@ export const HUD: React.FC<HUDProps> = React.memo(({
               } catch (e) {}
               setIsServerUsersModalOpen(true);
             }}
-            className="pointer-events-auto h-8 sm:h-9 md:h-10 flex items-center gap-1.5 sm:gap-2 px-2 sm:px-2.5 rounded-md bg-black border border-neutral-800 hover:border-amber-400 text-neutral-200 transition-colors cursor-pointer group shrink-0"
+            onPointerDown={(e) => (e.currentTarget as HTMLElement).blur()}
+            className="pointer-events-auto h-7 sm:h-9 md:h-10 flex items-center gap-1 sm:gap-2 px-1.5 sm:px-2.5 rounded-md bg-black border border-neutral-800 hover:border-amber-400 text-neutral-200 transition-colors cursor-pointer group shrink-0"
             title="Lihat Daftar Pemain di Server"
           >
-            <div className="w-5 h-5 sm:w-6 sm:h-6 rounded bg-neutral-900 border border-neutral-800 flex items-center justify-center text-amber-400 group-hover:text-amber-300 shrink-0">
-              <Users className="w-3 sm:w-3.5 h-3 sm:h-3.5" />
+            <div className="w-4 h-4 sm:w-6 sm:h-6 rounded bg-neutral-900 border border-neutral-800 flex items-center justify-center text-amber-400 group-hover:text-amber-300 shrink-0">
+              <Users className="w-2.5 sm:w-3.5 h-2.5 sm:h-3.5" />
             </div>
             <div className="flex flex-col text-left leading-none">
-              <span className="text-[7.5px] sm:text-[8px] text-neutral-400 uppercase tracking-wider font-semibold">PEMAIN</span>
-              <div className="flex items-center gap-0.5 text-[10px] sm:text-xs font-black font-mono tracking-wider text-white mt-0.5">
+              <span className="text-[6.5px] sm:text-[8px] text-neutral-400 uppercase tracking-wider font-semibold">PEMAIN</span>
+              <div className="flex items-center gap-0.5 text-[9px] sm:text-xs font-black font-mono tracking-wider text-white mt-0.5">
                 <span className="text-amber-300">{serverPlayerCount}</span>
                 <span className="text-neutral-500 font-normal">/</span>
                 <span className="text-neutral-400">50</span>
@@ -572,68 +608,80 @@ export const HUD: React.FC<HUDProps> = React.memo(({
           {/* Tombol Cepat Buka Kurikulum Pelajaran jika berada di Ruang Sekolah SD / SMP / SMA */}
           {(rawLoc.includes('SD') || rawLoc.includes('SMP') || rawLoc.includes('SMA') || rawLoc.includes('Sekolah')) && (
             <button
+              type="button"
+              tabIndex={-1}
               onClick={() => {
                 sound.playClick();
                 const sType = rawLoc.includes('SMP') ? 'smp' : rawLoc.includes('SMA') ? 'sma' : 'sd';
                 EventBus.emit('open-school-subjects', { schoolType: sType });
               }}
-              className="pointer-events-auto h-8 sm:h-9 md:h-10 flex items-center gap-1.5 px-2 sm:px-2.5 rounded-md bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-400 text-amber-300 hover:text-white font-bold text-xs uppercase tracking-wider transition-all shadow-md shrink-0 cursor-pointer"
+              onPointerDown={(e) => (e.currentTarget as HTMLElement).blur()}
+              className="pointer-events-auto h-7 sm:h-9 md:h-10 flex items-center gap-1 px-1.5 sm:px-2.5 rounded-md bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-400 text-amber-300 hover:text-white font-bold text-xs uppercase tracking-wider transition-all shadow-md shrink-0 cursor-pointer"
               title="Buka Teks Quiz Sekolah"
             >
-              <BookOpen className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-              <span className="text-[9px] sm:text-[10px] font-black tracking-wider">TEKS QUIZ</span>
+              <BookOpen className="w-3 sm:w-3.5 h-3 sm:h-3.5 text-amber-400 shrink-0" />
+              <span className="text-[8px] sm:text-[10px] font-black tracking-wider">TEKS QUIZ</span>
             </button>
           )}
 
           {/* Tombol Pengaturan */}
           {onOpenSettings && (
             <button
+              type="button"
+              tabIndex={-1}
               onClick={() => {
                 sound.playClick();
                 onOpenSettings();
               }}
-              className="pointer-events-auto h-8 w-8 sm:h-9 sm:w-9 md:h-10 md:w-10 rounded-md bg-black border border-neutral-800 text-neutral-300 hover:text-amber-400 hover:border-amber-400 flex items-center justify-center transition-colors cursor-pointer shrink-0"
+              onPointerDown={(e) => (e.currentTarget as HTMLElement).blur()}
+              className="pointer-events-auto h-7 w-7 sm:h-9 sm:w-9 md:h-10 md:w-10 rounded-md bg-black border border-neutral-800 text-neutral-300 hover:text-amber-400 hover:border-amber-400 flex items-center justify-center transition-colors cursor-pointer shrink-0"
               title="Pengaturan Game & Konfigurasi IP Server"
             >
-              <Settings className="w-4 h-4" />
+              <Settings className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </button>
           )}
 
-          {/* UI PETA / MINIMAP: 1 BARIS DENGAN PENGATURAN, DI SEBELAH KANAN PENGATURAN */}
+          {/* UI PETA / MINIMAP: RESPONSIF & RINGKAS KHUSUS MOBILE */}
           {!stats.inHouse && (
             <div className="pointer-events-auto flex flex-col items-end shrink-0">
               {/* Header Peta Mini (Sejajar 1 Baris dengan Pengaturan) */}
-              <div className="h-8 flex items-center justify-between w-[110px] sm:w-[132px] px-1.5 sm:px-2 bg-black border-x border-t border-b border-neutral-800 rounded-t-md text-[9px] font-bold text-neutral-300 shadow-sm">
+              <div className="h-6 sm:h-8 flex items-center justify-between w-[84px] sm:w-[110px] md:w-[132px] px-1 sm:px-2 bg-black border-x border-t border-b border-neutral-800 rounded-t-md text-[8px] sm:text-[9px] font-bold text-neutral-300 shadow-sm">
                 <div className="flex items-center gap-1 text-amber-400">
-                  <Map className="w-3 h-3 text-amber-400" />
-                  <span className="font-mono tracking-wider font-bold text-[9px] sm:text-[10px] text-amber-300">PETA</span>
+                  <Map className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-amber-400" />
+                  <span className="font-mono tracking-wider font-bold text-[8px] sm:text-[10px] text-amber-300">PETA</span>
                 </div>
                 <div className="flex items-center gap-0.5">
                   <button
+                    type="button"
+                    tabIndex={-1}
                     onClick={() => {
                       sound.playClick();
                       setIsMinimapOpen(!isMinimapOpen);
                     }}
+                    onPointerDown={(e) => (e.currentTarget as HTMLElement).blur()}
                     className="p-0.5 text-neutral-400 hover:text-amber-300 transition-colors cursor-pointer"
                     title={isMinimapOpen ? "Sembunyikan Peta" : "Tampilkan Peta"}
                   >
-                    {isMinimapOpen ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                    {isMinimapOpen ? <ChevronUp className="w-2.5 h-2.5 sm:w-3 sm:h-3" /> : <ChevronDown className="w-2.5 h-2.5 sm:w-3 sm:h-3" />}
                   </button>
                   <button
+                    type="button"
+                    tabIndex={-1}
                     onClick={() => {
                       sound.playClick();
                       setIsFullMapOpen(true);
                     }}
+                    onPointerDown={(e) => (e.currentTarget as HTMLElement).blur()}
                     className="p-0.5 text-neutral-400 hover:text-amber-300 transition-colors cursor-pointer"
                     title="Perbesar Peta Penuh"
                   >
-                    <Maximize2 className="w-2.5 h-2.5" />
+                    <Maximize2 className="w-2 h-2 sm:w-2.5 sm:h-2.5" />
                   </button>
                 </div>
               </div>
 
               {/* Kotak Bodi Peta: Kanvas Peta (Jika Buka) + Posisi Grid & Jam (Selalu Tampil) */}
-              <div className="w-[110px] sm:w-[132px] flex flex-col bg-black border-x border-b border-neutral-800 rounded-b-md overflow-hidden shadow-2xl">
+              <div className="w-[84px] sm:w-[110px] md:w-[132px] flex flex-col bg-black border-x border-b border-neutral-800 rounded-b-md overflow-hidden shadow-2xl">
                 {/* Kanvas Peta Mini (Hanya muncul jika tidak di-minimize) */}
                 {isMinimapOpen && (
                   <div
@@ -641,7 +689,7 @@ export const HUD: React.FC<HUDProps> = React.memo(({
                       sound.playClick();
                       setIsFullMapOpen(true);
                     }}
-                    className="w-[110px] h-[110px] sm:w-[132px] sm:h-[132px] bg-[#001026] p-0.5 relative overflow-hidden cursor-pointer group hover:opacity-95 transition-opacity border-b border-neutral-800"
+                    className="w-[84px] h-[70px] sm:w-[110px] sm:h-[105px] md:w-[132px] md:h-[128px] bg-[#001026] p-0.5 relative overflow-hidden cursor-pointer group hover:opacity-95 transition-opacity border-b border-neutral-800"
                     title="Klik untuk membuka Peta Penuh & Panduan Wilayah"
                   >
                     {/* Peta Mini WorldMapSvg Presisi & Kaya Visual Mirip Dunia Asli */}
@@ -655,16 +703,16 @@ export const HUD: React.FC<HUDProps> = React.memo(({
                     />
 
                     {/* Petunjuk Kompas Mata Angin (U, T, S, B) */}
-                    <div className="absolute top-0.5 left-1/2 -translate-x-1/2 text-[7.5px] font-black font-mono text-amber-300/90 pointer-events-none drop-shadow">
+                    <div className="absolute top-0.5 left-1/2 -translate-x-1/2 text-[7px] font-black font-mono text-amber-300/90 pointer-events-none drop-shadow">
                       U
                     </div>
-                    <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2 text-[7.5px] font-black font-mono text-neutral-400 pointer-events-none drop-shadow">
+                    <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2 text-[7px] font-black font-mono text-neutral-400 pointer-events-none drop-shadow">
                       S
                     </div>
-                    <div className="absolute left-0.5 top-1/2 -translate-y-1/2 text-[7.5px] font-black font-mono text-neutral-400 pointer-events-none drop-shadow">
+                    <div className="absolute left-0.5 top-1/2 -translate-y-1/2 text-[7px] font-black font-mono text-neutral-400 pointer-events-none drop-shadow">
                       B
                     </div>
-                    <div className="absolute right-0.5 top-1/2 -translate-y-1/2 text-[7.5px] font-black font-mono text-neutral-400 pointer-events-none drop-shadow">
+                    <div className="absolute right-0.5 top-1/2 -translate-y-1/2 text-[7px] font-black font-mono text-neutral-400 pointer-events-none drop-shadow">
                       T
                     </div>
 
@@ -673,26 +721,29 @@ export const HUD: React.FC<HUDProps> = React.memo(({
                   </div>
                 )}
 
-                {/* BAGIAN DI DALAM KOTAK PETA DI BAWAH PETA: POSISI GRID & JAM (Selalu Tampil saat di-minimize) */}
-                <div className="w-full px-2 py-1.5 bg-neutral-950/95 flex flex-col gap-1 select-none">
+                {/* BAGIAN DI DALAM KOTAK PETA DI BAWAH PETA: POSISI GRID & JAM (Ringkas Khusus Mobile) */}
+                <div className="w-full px-1 py-1 sm:px-2 sm:py-1.5 bg-neutral-950/95 flex flex-col gap-0.5 sm:gap-1 select-none">
                   {/* 1. Posisi Grid */}
-                  <div className="w-full flex items-center justify-between text-[9px] font-mono font-bold bg-black px-1.5 py-0.5 rounded border border-neutral-800">
-                    <span className="text-neutral-400 text-[8px] uppercase tracking-wider font-semibold">GRID</span>
-                    <span className="text-amber-300 font-bold text-[9px]">{gridX}, {gridY}</span>
+                  <div className="w-full flex items-center justify-between text-[7.5px] sm:text-[9px] font-mono font-bold bg-black px-1 py-0.5 rounded border border-neutral-800">
+                    <span className="text-neutral-400 text-[6.5px] sm:text-[8px] uppercase tracking-wider font-semibold">GRID</span>
+                    <span className="text-amber-300 font-bold text-[7.5px] sm:text-[9px]">{gridX}, {gridY}</span>
                   </div>
 
                   {/* Waypoint Tanda Kustom Jika Ada */}
                   {customMarker && (
-                    <div className="w-full flex items-center justify-between text-[8px] font-mono bg-red-950/80 border border-red-800/80 px-1.5 py-0.5 rounded text-red-200">
-                      <span className="flex items-center gap-1 font-bold truncate">
-                        <MapPin className="w-2.5 h-2.5 text-red-400 shrink-0 animate-pulse" />
+                    <div className="w-full flex items-center justify-between text-[7px] sm:text-[8px] font-mono bg-red-950/80 border border-red-800/80 px-1 py-0.5 rounded text-red-200">
+                      <span className="flex items-center gap-0.5 font-bold truncate">
+                        <MapPin className="w-2 h-2 text-red-400 shrink-0 animate-pulse" />
                         {customMarker.x}, {customMarker.y}
                       </span>
                       <button
+                        type="button"
+                        tabIndex={-1}
                         onClick={(e) => {
                           e.stopPropagation();
                           handleClearMarker();
                         }}
+                        onPointerDown={(e) => (e.currentTarget as HTMLElement).blur()}
                         className="text-neutral-400 hover:text-white px-0.5 font-bold hover:bg-red-800/50 rounded cursor-pointer leading-none ml-1"
                         title="Hapus Tanda Waypoint"
                       >
@@ -703,20 +754,20 @@ export const HUD: React.FC<HUDProps> = React.memo(({
 
                   {/* 2. Jam Digital Realtime di Dalam Kotak Peta di Bawah Grid */}
                   <div
-                    className="w-full flex items-center justify-between gap-1 pt-0.5 text-left"
+                    className="w-full flex items-center justify-between gap-0.5 sm:gap-1 pt-0.5 text-left text-[7.5px] sm:text-[9px]"
                     title={`Waktu RadenWorld: ${timePeriod} (${dateString}) - ${timeString} WIB`}
                   >
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-0.5">
                       <div className={`flex items-center justify-center ${periodColor}`}>
-                        <PeriodIcon className="w-3 h-3" />
+                        <PeriodIcon className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
                       </div>
-                      <div className="flex items-baseline gap-0.5 font-mono font-black text-[10px] tracking-wider text-white">
+                      <div className="flex items-baseline gap-0.5 font-mono font-black text-[8px] sm:text-[10px] tracking-wider text-white">
                         <span>{timeString}</span>
-                        <span className="text-[7.5px] text-amber-400 font-bold">WIB</span>
+                        <span className="text-[6.5px] sm:text-[7.5px] text-amber-400 font-bold">WIB</span>
                       </div>
                     </div>
 
-                    <span className={`text-[7px] font-black tracking-wider uppercase px-1 py-0.5 rounded ${periodBg} ${periodColor}`}>
+                    <span className={`text-[6.5px] sm:text-[7px] font-black tracking-wider uppercase px-0.5 sm:px-1 py-0.5 rounded ${periodBg} ${periodColor}`}>
                       {timePeriod}
                     </span>
                   </div>
@@ -724,7 +775,7 @@ export const HUD: React.FC<HUDProps> = React.memo(({
               </div>
 
               {/* Teks Nama Wilayah / Lokasi di Bawah Minimap */}
-              <div className="w-[132px] text-right pointer-events-none text-[8.5px] font-black text-amber-300 uppercase tracking-wider truncate pt-1 drop-shadow-[0_1px_2px_rgba(0,0,0,1)]">
+              <div className="w-[84px] sm:w-[110px] md:w-[132px] text-right pointer-events-none text-[7.5px] sm:text-[8.5px] font-black text-amber-300 uppercase tracking-wider truncate pt-0.5 sm:pt-1 drop-shadow-[0_1px_2px_rgba(0,0,0,1)]">
                 <span>{displayLocation}</span>
               </div>
             </div>

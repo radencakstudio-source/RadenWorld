@@ -30,6 +30,8 @@ import {
   User,
   Mail,
   Lock,
+  Eye,
+  EyeOff,
   AlertCircle,
   LogIn,
   UserPlus,
@@ -68,6 +70,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
   // Login Form State
   const [loginIdentifier, setLoginIdentifier] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
 
   // Register Form State (Termasuk Tanggal Lahir)
   const [registerUsername, setRegisterUsername] = useState('');
@@ -75,6 +78,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
   const [registerBirthDate, setRegisterBirthDate] = useState('2003-01-01');
   const [registerPassword, setRegisterPassword] = useState('');
   const [registerConfirmPassword, setRegisterConfirmPassword] = useState('');
+  const [showRegisterPassword, setShowRegisterPassword] = useState(false);
+  const [showRegisterConfirmPassword, setShowRegisterConfirmPassword] = useState(false);
 
   // Register Wizard Step: 1 = Form Akun & Tanggal Lahir, 2 = Pilih Gender Avatar (Male / Female)
   const [registerStep, setRegisterStep] = useState<1 | 2>(1);
@@ -677,14 +682,33 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
                         Lupa Kata Sandi?
                       </button>
                     </div>
-                    <input
-                      type="password"
-                      required
-                      value={loginPassword}
-                      onChange={(e) => setLoginPassword(e.target.value)}
-                      placeholder="••••••••"
-                      className="w-full px-3.5 py-2.5 bg-black border border-neutral-800 rounded-md text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-amber-400 font-mono transition-colors"
-                    />
+                    <div className="relative flex items-center">
+                      <input
+                        type={showLoginPassword ? 'text' : 'password'}
+                        required
+                        value={loginPassword}
+                        onChange={(e) => setLoginPassword(e.target.value)}
+                        placeholder="••••••••"
+                        className="w-full pl-3.5 pr-10 py-2.5 bg-black border border-neutral-800 rounded-md text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-amber-400 font-mono transition-colors"
+                      />
+                      <button
+                        type="button"
+                        tabIndex={-1}
+                        onClick={() => {
+                          sound.playClick();
+                          setShowLoginPassword((prev) => !prev);
+                        }}
+                        className="absolute right-2.5 p-1 rounded text-neutral-400 hover:text-amber-400 transition-colors cursor-pointer flex items-center justify-center"
+                        title={showLoginPassword ? 'Sembunyikan Kata Sandi' : 'Lihat Kata Sandi'}
+                        aria-label="Toggle Password Visibility"
+                      >
+                        {showLoginPassword ? (
+                          <EyeOff className="w-4 h-4" />
+                        ) : (
+                          <Eye className="w-4 h-4" />
+                        )}
+                      </button>
+                    </div>
                   </div>
 
                   {/* Tombol Submit Masuk */}
@@ -884,14 +908,33 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
                         <Lock className="w-3.5 h-3.5" />
                         <span>Kata Sandi:</span>
                       </label>
-                      <input
-                        type="password"
-                        required
-                        value={registerPassword}
-                        onChange={(e) => setRegisterPassword(e.target.value)}
-                        placeholder="••••••••"
-                        className="w-full px-3.5 py-2.5 bg-black border border-neutral-800 rounded-md text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-amber-400 font-mono transition-colors"
-                      />
+                      <div className="relative flex items-center">
+                        <input
+                          type={showRegisterPassword ? 'text' : 'password'}
+                          required
+                          value={registerPassword}
+                          onChange={(e) => setRegisterPassword(e.target.value)}
+                          placeholder="••••••••"
+                          className="w-full pl-3.5 pr-10 py-2.5 bg-black border border-neutral-800 rounded-md text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-amber-400 font-mono transition-colors"
+                        />
+                        <button
+                          type="button"
+                          tabIndex={-1}
+                          onClick={() => {
+                            sound.playClick();
+                            setShowRegisterPassword((prev) => !prev);
+                          }}
+                          className="absolute right-2.5 p-1 rounded text-neutral-400 hover:text-amber-400 transition-colors cursor-pointer flex items-center justify-center"
+                          title={showRegisterPassword ? 'Sembunyikan Kata Sandi' : 'Lihat Kata Sandi'}
+                          aria-label="Toggle Password Visibility"
+                        >
+                          {showRegisterPassword ? (
+                            <EyeOff className="w-4 h-4" />
+                          ) : (
+                            <Eye className="w-4 h-4" />
+                          )}
+                        </button>
+                      </div>
                     </div>
 
                     <div className="space-y-1.5">
@@ -899,14 +942,33 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
                         <Lock className="w-3.5 h-3.5" />
                         <span>Konfirmasi Sandi:</span>
                       </label>
-                      <input
-                        type="password"
-                        required
-                        value={registerConfirmPassword}
-                        onChange={(e) => setRegisterConfirmPassword(e.target.value)}
-                        placeholder="••••••••"
-                        className="w-full px-3.5 py-2.5 bg-black border border-neutral-800 rounded-md text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-amber-400 font-mono transition-colors"
-                      />
+                      <div className="relative flex items-center">
+                        <input
+                          type={showRegisterConfirmPassword ? 'text' : 'password'}
+                          required
+                          value={registerConfirmPassword}
+                          onChange={(e) => setRegisterConfirmPassword(e.target.value)}
+                          placeholder="••••••••"
+                          className="w-full pl-3.5 pr-10 py-2.5 bg-black border border-neutral-800 rounded-md text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-amber-400 font-mono transition-colors"
+                        />
+                        <button
+                          type="button"
+                          tabIndex={-1}
+                          onClick={() => {
+                            sound.playClick();
+                            setShowRegisterConfirmPassword((prev) => !prev);
+                          }}
+                          className="absolute right-2.5 p-1 rounded text-neutral-400 hover:text-amber-400 transition-colors cursor-pointer flex items-center justify-center"
+                          title={showRegisterConfirmPassword ? 'Sembunyikan Kata Sandi' : 'Lihat Kata Sandi'}
+                          aria-label="Toggle Confirm Password Visibility"
+                        >
+                          {showRegisterConfirmPassword ? (
+                            <EyeOff className="w-4 h-4" />
+                          ) : (
+                            <Eye className="w-4 h-4" />
+                          )}
+                        </button>
+                      </div>
                     </div>
                   </div>
 

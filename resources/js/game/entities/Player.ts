@@ -711,10 +711,14 @@ export class Player extends Entity {
           this.sprite.anims.setProgress(currentProgress);
         }
       }
+
+      const isSprinting = this.controller?.isPlayerRunning?.() || false;
+      this.sprite.anims.timeScale = isSprinting ? 1.45 : 1.0;
     } else {
       if (this.sprite.anims.isPlaying) {
         this.sprite.anims.stop();
       }
+      this.sprite.anims.timeScale = 1.0;
       this.currentAnimKey = '';
 
       let idleKey = `player-${this.gender}-idle-front`;

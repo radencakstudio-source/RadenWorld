@@ -53,57 +53,206 @@ export interface IFishData {
   goldReward: number;
   diamondReward?: number;
   description: string;
+  waterType?: 'Air Tawar' | 'Air Laut' | 'Air Payau';
 }
 
 export const FISH_LOOT_TABLE: IFishData[] = [
-  {
-    id: 'mujair',
-    name: 'Ikan Mujair Danau',
-    rarity: 'Common',
-    weightKg: 0.35,
-    goldReward: 20,
-    description: 'Ikan air tawar yang lincah dan lezat untuk digoreng.',
-  },
+  // ========================================================================
+  // 1. IKAN COMMON (AIR TAWAR, LAUT & PAYAU NUSANTARA)
+  // ========================================================================
   {
     id: 'lele',
     name: 'Ikan Lele Sangkuriang',
     rarity: 'Common',
-    weightKg: 0.75,
+    weightKg: 0.8,
+    goldReward: 35,
+    description: 'Ikan air tawar berkumis tangguh khas perairan nusantara dengan tarikan bertenaga.',
+    waterType: 'Air Tawar',
+  },
+  {
+    id: 'mujair',
+    name: 'Ikan Mujair Danau Blitar',
+    rarity: 'Common',
+    weightKg: 0.45,
     goldReward: 30,
-    description: 'Ikan berkumis khas Nusantara dengan tarikan kuat!',
+    description: 'Ikan air tawar lincah yang pertama kali dibudidayakan Mbah Moedjair di Blitar, Jawa Timur.',
+    waterType: 'Air Tawar',
   },
   {
     id: 'nila',
-    name: 'Ikan Nila Merah Segar',
-    rarity: 'Uncommon',
+    name: 'Ikan Nila Merah Gesit',
+    rarity: 'Common',
     weightKg: 0.95,
     goldReward: 45,
-    description: 'Sisik merah merona dengan daging tebal berprotein tinggi.',
+    description: 'Ikan air tawar bersisik merah merona dengan daging tebal berprotein tinggi favorit kolam Indonesia.',
+    waterType: 'Air Tawar',
   },
+  {
+    id: 'mas',
+    name: 'Ikan Mas Sinyonya',
+    rarity: 'Common',
+    weightKg: 1.2,
+    goldReward: 50,
+    description: 'Ikan air tawar bersisik kuning keemasan lincah favorit pemancing kolam Sunda dan Jawa.',
+    waterType: 'Air Tawar',
+  },
+  {
+    id: 'kembung',
+    name: 'Ikan Kembung Banjar',
+    rarity: 'Common',
+    weightKg: 0.35,
+    goldReward: 40,
+    description: 'Ikan laut ekonomis padat omega-3 yang melimpah ruah di perairan selat nusantara.',
+    waterType: 'Air Laut',
+  },
+  {
+    id: 'tongkol',
+    name: 'Ikan Tongkol Komo',
+    rarity: 'Common',
+    weightKg: 1.1,
+    goldReward: 60,
+    description: 'Ikan perenang cepat samudera nusantara dengan daging merah padat favorit tongkol balado.',
+    waterType: 'Air Laut',
+  },
+  {
+    id: 'bandeng',
+    name: 'Ikan Bandeng Juwana',
+    rarity: 'Common',
+    weightKg: 0.75,
+    goldReward: 50,
+    description: 'Ikan perairan payau/pesisir gesit bertulang halus primadona tambak pantai utara Jawa.',
+    waterType: 'Air Payau',
+  },
+
+  // ========================================================================
+  // 2. IKAN UNCOMMON (AIR TAWAR, LAUT & KARANG NUSANTARA)
+  // ========================================================================
   {
     id: 'gurame',
-    name: 'Ikan Gurame Pasir Emas',
+    name: 'Ikan Gurame Soang',
+    rarity: 'Uncommon',
+    weightKg: 1.8,
+    goldReward: 90,
+    description: 'Gurame air tawar montok bernilai tinggi favorit jamuan kuliner bakar khas Sunda.',
+    waterType: 'Air Tawar',
+  },
+  {
+    id: 'gabus',
+    name: 'Ikan Gabus Haruan',
+    rarity: 'Uncommon',
+    weightKg: 1.5,
+    goldReward: 100,
+    description: 'Predator air tawar rawa nusantara berkepala ular kaya protein albumin penyembuh luka.',
+    waterType: 'Air Tawar',
+  },
+  {
+    id: 'bawal_bintang',
+    name: 'Ikan Bawal Bintang Riau',
     rarity: 'Uncommon',
     weightKg: 1.6,
-    goldReward: 65,
-    description: 'Gurame montok favorit jamuan kuliner nusantara.',
+    goldReward: 115,
+    description: 'Ikan laut bertubuh pipih lebar perenang lincah di perairan karang kepulauan Riau.',
+    waterType: 'Air Laut',
   },
+  {
+    id: 'cakalang',
+    name: 'Ikan Cakalang Manado',
+    rarity: 'Uncommon',
+    weightKg: 2.5,
+    goldReward: 135,
+    description: 'Ikan pelagis samudera Sulawesi yang gagah, bahan baku cakalang fufu asap khas Minahasa.',
+    waterType: 'Air Laut',
+  },
+  {
+    id: 'baronang',
+    name: 'Ikan Baronang Angin',
+    rarity: 'Uncommon',
+    weightKg: 0.9,
+    goldReward: 95,
+    description: 'Ikan karang pemakan lumut dengan tarikan sentakan khas pemancing dermaga karang pesisir.',
+    waterType: 'Air Laut',
+  },
+
+  // ========================================================================
+  // 3. IKAN RARE (SUNGAI DALAM & LAUT DALAM NUSANTARA)
+  // ========================================================================
   {
     id: 'patin',
-    name: 'Ikan Patin Muara Jumbo',
+    name: 'Ikan Patin Sungai Musi',
     rarity: 'Rare',
-    weightKg: 3.8,
-    goldReward: 160,
-    description: 'Ikan berukuran besar dengan perlawanan sengit saat ditarik!',
+    weightKg: 4.2,
+    goldReward: 250,
+    description: 'Ikan berkumis jumbo penghuni lubuk sungai Musi Sumatera Selatan dengan tarikan dahsyat!',
+    waterType: 'Air Tawar',
   },
   {
-    id: 'arwana',
-    name: 'Ikan Arwana Emas Raden',
+    id: 'baung',
+    name: 'Ikan Baung Sungai Kampar',
+    rarity: 'Rare',
+    weightKg: 3.5,
+    goldReward: 230,
+    description: 'Ikan air tawar liar bertubuh licin favorit kuliner gulai asam pedas khas Riau.',
+    waterType: 'Air Tawar',
+  },
+  {
+    id: 'belida',
+    name: 'Ikan Belida Batanghari',
+    rarity: 'Rare',
+    weightKg: 4.8,
+    goldReward: 320,
+    description: 'Ikan purba berbadan pipih ikonik Sumatera & Kalimantan bahan pempek asli Palembang.',
+    waterType: 'Air Tawar',
+  },
+  {
+    id: 'kakap_merah',
+    name: 'Ikan Kakap Merah Laut Jawa',
+    rarity: 'Rare',
+    weightKg: 3.8,
+    goldReward: 270,
+    description: 'Ikan laut dalam bersisik merah cerah primadona boga bahari dan restoran pesisir Indonesia.',
+    waterType: 'Air Laut',
+  },
+  {
+    id: 'tenggiri',
+    name: 'Ikan Tenggiri Batang Laut',
+    rarity: 'Rare',
+    weightKg: 4.5,
+    goldReward: 290,
+    description: 'Predator laut bertaring tajam perenang kilat bahan utama otak-otak dan siomay nusantara.',
+    waterType: 'Air Laut',
+  },
+  {
+    id: 'kerapu_cantang',
+    name: 'Ikan Kerapu Cantang Bali',
+    rarity: 'Rare',
+    weightKg: 5.2,
+    goldReward: 360,
+    description: 'Ikan karang eksotis bernilai ekspor tinggi dengan loreng tutul khas terumbu karang tropis Indonesia.',
+    waterType: 'Air Laut',
+  },
+
+  // ========================================================================
+  // 4. IKAN LEGENDARY (PUSAKA SUNGAI & MONSTER SAMUDERA NUSANTARA)
+  // ========================================================================
+  {
+    id: 'arwana_super_red',
+    name: 'Ikan Arwana Super Red Kapuas',
     rarity: 'Legendary',
-    weightKg: 5.5,
-    goldReward: 600,
+    weightKg: 6.5,
+    goldReward: 800,
     diamondReward: 5,
-    description: 'Ikan pusaka legendaris lambang kemakmuran dan keberuntungan!',
+    description: 'Ikan naga merah endemik sungai Kapuas Kalimantan Barat, pusaka legendaris lambang kemakmuran nusantara!',
+    waterType: 'Air Tawar',
+  },
+  {
+    id: 'tuna_sirip_kuning',
+    name: 'Ikan Tuna Sirip Kuning Maluku',
+    rarity: 'Legendary',
+    weightKg: 18.5,
+    goldReward: 1000,
+    diamondReward: 8,
+    description: 'Monster samudera Banda bertubuh torpedo raksasa dengan tenaga tarikan luar biasa dahsyat!',
+    waterType: 'Air Laut',
   },
 ];
 
@@ -115,6 +264,8 @@ export class CharacterController {
   // Status Pergerakan
   private speed: number = 380;
   private isMovementDisabled: boolean = false;
+  private isRunning: boolean = false;
+  private lastRunDustTime: number = 0;
   private joystickVector: { x: number; y: number } | null = null;
   private targetDestination: { x: number; y: number } | null = null;
   private onArrivalCallback: (() => void) | null = null;
@@ -234,6 +385,7 @@ export class CharacterController {
   private keySpace!: Phaser.Input.Keyboard.Key;
   private keyF!: Phaser.Input.Keyboard.Key;
   private keyE!: Phaser.Input.Keyboard.Key;
+  private keyShift!: Phaser.Input.Keyboard.Key;
 
   constructor(player: Player, scene: Phaser.Scene) {
     this.player = player;
@@ -271,6 +423,17 @@ export class CharacterController {
       this.keySpace = this.scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE, false);
       this.keyF = this.scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.F, false);
       this.keyE = this.scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.E, false);
+      this.keyShift = this.scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SHIFT, false);
+
+      // Listener tombol SHIFT (Lari Cepat / Sprint)
+      this.keyShift.on('down', () => {
+        if (this.isTyping()) return;
+        this.isRunning = true;
+      });
+      this.keyShift.on('up', () => {
+        if (this.isTyping()) return;
+        this.isRunning = false;
+      });
 
       // Listener tombol SPASI (Lompat / Double Jump / Strike Mancing)
       this.keySpace.on('down', () => {
@@ -391,6 +554,20 @@ export class CharacterController {
     EventBus.on('fishing-minigame-success', onFishingMinigameSuccess);
     EventBus.on('fishing-minigame-failed', onFishingMinigameFailed);
 
+    const onPlayerRunStart = () => {
+      this.isRunning = true;
+    };
+    const onPlayerRunEnd = () => {
+      this.isRunning = false;
+    };
+    const onPlayerRunToggle = (forced?: boolean) => {
+      this.isRunning = typeof forced === 'boolean' ? forced : !this.isRunning;
+    };
+
+    EventBus.on('player-run-start', onPlayerRunStart);
+    EventBus.on('player-run-end', onPlayerRunEnd);
+    EventBus.on('player-run-toggle', onPlayerRunToggle);
+
     const onPotionConsumed = (data: { potionType: string; potionName: string; durationSec: number }) => {
       this.applyPotionBuff(data.potionType, data.durationSec);
       this.player.showSpeechBubble(`✨ Efek ${data.potionName} Aktif! (${data.durationSec}s)`);
@@ -409,6 +586,9 @@ export class CharacterController {
       EventBus.off('fishing-cast-release', onFishChargeRelease);
       EventBus.off('fishing-minigame-success', onFishingMinigameSuccess);
       EventBus.off('fishing-minigame-failed', onFishingMinigameFailed);
+      EventBus.off('player-run-start', onPlayerRunStart);
+      EventBus.off('player-run-end', onPlayerRunEnd);
+      EventBus.off('player-run-toggle', onPlayerRunToggle);
       EventBus.off('player-consumed-potion', onPotionConsumed);
       this.landingGraphics?.destroy();
       this.landingDustGraphics?.destroy();
@@ -1070,43 +1250,49 @@ export class CharacterController {
     const roll = Math.random() * 100;
     let candidateFish: IFishData;
 
+    const legendaryPool = FISH_LOOT_TABLE.filter((f) => f.rarity === 'Legendary');
+    const rarePool = FISH_LOOT_TABLE.filter((f) => f.rarity === 'Rare');
+    const uncommonPool = FISH_LOOT_TABLE.filter((f) => f.rarity === 'Uncommon');
+    const commonPool = FISH_LOOT_TABLE.filter((f) => f.rarity === 'Common');
+
+    const pickRandom = (pool: IFishData[]) => pool[Math.floor(Math.random() * pool.length)];
+
     if (p > 0.75) {
-      // 1. LEMPARAN JAUH (Power > 75%): Peluang tinggi Ikan Arwana Emas Raden & Patin Jumbo!
+      // 1. LEMPARAN JAUH (Power > 75%): Peluang tinggi Ikan Pusaka / Monster Laut Nusantara!
       if (roll < 22) {
-        candidateFish = { ...FISH_LOOT_TABLE[5] }; // Arwana Emas (Legendary)
-      } else if (roll < 58) {
-        candidateFish = { ...FISH_LOOT_TABLE[4] }; // Patin Jumbo (Rare)
-      } else if (roll < 85) {
-        candidateFish = { ...FISH_LOOT_TABLE[3] }; // Gurame Pasir (Uncommon)
+        candidateFish = { ...pickRandom(legendaryPool) };
+      } else if (roll < 60) {
+        candidateFish = { ...pickRandom(rarePool) };
+      } else if (roll < 88) {
+        candidateFish = { ...pickRandom(uncommonPool) };
       } else {
-        candidateFish = { ...FISH_LOOT_TABLE[2] }; // Nila Merah (Uncommon)
+        candidateFish = { ...pickRandom(commonPool) };
       }
-      // Ikan acak jauh lebih berat dan besar (1.4x s/d 2.4x)
-      const weightMult = 1.4 + Math.random() * 1.0;
+      // Ikan lemparan jauh jauh lebih berat dan besar (1.3x s/d 2.2x)
+      const weightMult = 1.3 + Math.random() * 0.9;
       candidateFish.weightKg = parseFloat((candidateFish.weightKg * weightMult).toFixed(2));
-      candidateFish.goldReward = Math.round(candidateFish.goldReward * (1.3 + Math.random() * 0.7));
+      candidateFish.goldReward = Math.round(candidateFish.goldReward * (1.2 + Math.random() * 0.6));
       candidateFish.name = `[JUMBO] ${candidateFish.name}`;
     } else if (p < 0.40) {
-      // 2. LEMPARAN DEKAT (Power < 40%): Ikan lebih ringan dan kecil, dominan Common
-      if (roll < 50) {
-        candidateFish = { ...FISH_LOOT_TABLE[0] }; // Mujair Danau (Common)
-      } else if (roll < 85) {
-        candidateFish = { ...FISH_LOOT_TABLE[1] }; // Lele Sangkuriang (Common)
+      // 2. LEMPARAN DEKAT (Power < 40%): Dominan Common (Lele, Mujair, Nila, Mas, Kembung, Tongkol, Bandeng)
+      if (roll < 75) {
+        candidateFish = { ...pickRandom(commonPool) };
+      } else if (roll < 95) {
+        candidateFish = { ...pickRandom(uncommonPool) };
       } else {
-        candidateFish = { ...FISH_LOOT_TABLE[2] }; // Nila Merah (Uncommon)
+        candidateFish = { ...pickRandom(rarePool) };
       }
-      // Ikan acak lebih kecil dan ringan (0.55x s/d 0.85x)
-      const weightMult = 0.55 + Math.random() * 0.3;
+      // Ikan lemparan dekat berukuran lokal
+      const weightMult = 0.65 + Math.random() * 0.35;
       candidateFish.weightKg = parseFloat((candidateFish.weightKg * weightMult).toFixed(2));
-      candidateFish.goldReward = Math.max(15, Math.round(candidateFish.goldReward * 0.8));
-      candidateFish.name = `[KECIL] ${candidateFish.name}`;
+      candidateFish.goldReward = Math.max(20, Math.round(candidateFish.goldReward * 0.85));
+      candidateFish.name = `[LOKAL] ${candidateFish.name}`;
     } else {
       // 3. LEMPARAN SEDANG (40% - 75%): Seimbang
-      if (roll < 5) candidateFish = { ...FISH_LOOT_TABLE[5] };
-      else if (roll < 20) candidateFish = { ...FISH_LOOT_TABLE[4] };
-      else if (roll < 50) candidateFish = { ...FISH_LOOT_TABLE[3] };
-      else if (roll < 78) candidateFish = { ...FISH_LOOT_TABLE[2] };
-      else candidateFish = { ...FISH_LOOT_TABLE[1] };
+      if (roll < 8) candidateFish = { ...pickRandom(legendaryPool) };
+      else if (roll < 32) candidateFish = { ...pickRandom(rarePool) };
+      else if (roll < 70) candidateFish = { ...pickRandom(uncommonPool) };
+      else candidateFish = { ...pickRandom(commonPool) };
 
       const weightMult = 0.9 + Math.random() * 0.35;
       candidateFish.weightKg = parseFloat((candidateFish.weightKg * weightMult).toFixed(2));
@@ -1590,8 +1776,15 @@ export class CharacterController {
 
     const hasManualInput = left || right || up || down;
 
-    const speedMultiplier = this.isPotionActive('speed') ? 1.6 : 1.0;
-    const currentSpeed = this.speed * speedMultiplier;
+    const shiftIsDown = Boolean(
+      this.keyShift?.isDown ||
+      cursors?.shift?.isDown
+    );
+    const isPlayerRunning = this.isRunning || shiftIsDown;
+
+    const potionMultiplier = this.isPotionActive('speed') ? 1.4 : 1.0;
+    const runMultiplier = isPlayerRunning ? 1.6 : 1.0;
+    const currentSpeed = this.speed * potionMultiplier * runMultiplier;
 
     if (this.joystickVector && (Math.abs(this.joystickVector.x) > 0.05 || Math.abs(this.joystickVector.y) > 0.05)) {
       // 1. Input Analog Virtual Joystick Sentuh
@@ -1705,6 +1898,12 @@ export class CharacterController {
     // Failsafe: Sinkronkan arah hadap ke fisik velocity
     if (vx !== 0 || vy !== 0) {
       this.syncFacingDirection(vx, vy);
+
+      // Spawn hembusan debu langkah kaki saat berlari di atas tanah
+      if (isPlayerRunning && !this.isJumping && time - this.lastRunDustTime > 200) {
+        this.lastRunDustTime = time;
+        this.triggerLandingDust(this.player.x, this.player.y + 12);
+      }
     }
 
     // Update efek transparansi ramuan invisible
@@ -1742,5 +1941,13 @@ export class CharacterController {
 
   public getLastCaughtFish(): IFishData | null {
     return this.lastCaughtFish;
+  }
+
+  public isPlayerRunning(): boolean {
+    const shiftIsDown = Boolean(
+      this.keyShift?.isDown ||
+      this.player?.getCursors?.()?.shift?.isDown
+    );
+    return this.isRunning || shiftIsDown;
   }
 }

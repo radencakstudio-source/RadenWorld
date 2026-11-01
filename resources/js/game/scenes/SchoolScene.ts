@@ -163,9 +163,10 @@ export class SchoolScene extends Phaser.Scene {
     if (data?.returnX && data?.returnY) {
       this.returnPos = { x: data.returnX, y: data.returnY };
     } else {
-      if (this.schoolType === 'sd') this.returnPos = { x: 50 * 120 + 60, y: 64 * 120 + 60 };
-      else if (this.schoolType === 'smp') this.returnPos = { x: 58 * 120 + 60, y: 64 * 120 + 60 };
-      else this.returnPos = { x: 66 * 120 + 60, y: 64 * 120 + 60 };
+      // Posisi tepat di depan pintu masing-masing gedung sekolah di WorldScene (y = 1260)
+      if (this.schoolType === 'sd') this.returnPos = { x: 3300, y: 1260 };
+      else if (this.schoolType === 'smp') this.returnPos = { x: 4020, y: 1260 };
+      else this.returnPos = { x: 4740, y: 1260 };
     }
 
     // Muat konfigurasi dimensi sekolah kustom dari Studio Arsitek Tahta Raden
@@ -188,33 +189,17 @@ export class SchoolScene extends Phaser.Scene {
       this.npcs = [
         {
           id: 'npc_guru_sd',
-          name: 'Bu Guru Endang',
-          role: 'Wali Kelas SD Teladan',
+          name: 'Bu Dewi',
+          role: 'Guru SD',
           avatarUrl: '/assets/sprites/NPC/1x2%20NPC%20GuruSD.webp',
           avatarType: 'sage',
           x: 760,
           y: 380,
-          greeting: 'Selamat pagi! Belajar yang rajin dan jangan lupa cuci tangan ya!',
+          greeting: 'Selamat pagi anak pintar! Belajarlah dengan rajin dan ceria bersama Bu Dewi.',
           dialogues: [
             'Selamat pagi anak pintar! Selamat datang di Sekolah Dasar (SD) RadenWorld!',
-            'Di sini adik-adik belajar berhitung, membaca, budi pekerti, dan bermain dengan gembira bersama teman.',
+            'Ibu Dewi siap mendampingi adik-adik belajar membaca, berhitung, sains, dan budi pekerti yang luhur.',
             'Ingat pesan Ibu: rajin pangkal pandai, hemat pangkal kaya! Selalu hormati orang tua dan bapak ibu guru ya.'
-          ],
-          spriteKey: 'npc-guru-sd',
-        },
-        {
-          id: 'npc_siswa_sd',
-          name: 'Budi Kecil',
-          role: 'Murid Berprestasi SD (Merah Putih)',
-          avatarUrl: '/assets/sprites/NPC/1x2%20NPC%20GuruSD.webp',
-          avatarType: 'sage',
-          x: 660,
-          y: 660,
-          greeting: 'Halo Kak! Kakak mau ikut membaca buku di Pojok Baca?',
-          dialogues: [
-            'Halo Kakak! Aku lagi mengerjakan PR Matematika dan IPA bareng teman-teman di meja belajar.',
-            'Nanti pas istirahat jam 10 aku mau jajan mie ayam dan es jeruk di luar gerbang sekolah!',
-            'Kakak hebat sekali bisa menjelajah seluruh dunia RadenWorld!'
           ],
           spriteKey: 'npc-guru-sd',
         },
@@ -223,33 +208,17 @@ export class SchoolScene extends Phaser.Scene {
       this.npcs = [
         {
           id: 'npc_guru_smp',
-          name: 'Pak Guru Haryanto',
-          role: 'Guru IPA & Pembina OSIS SMP',
+          name: 'Bu Ainur',
+          role: 'Guru SMP',
           avatarUrl: '/assets/sprites/NPC/1x2%20NPC%20GuruSMP.webp',
           avatarType: 'sage',
           x: 760,
           y: 380,
-          greeting: 'Selamat datang di SMP! Persiapkan dirimu untuk eksplorasi sains & organisasi!',
+          greeting: 'Selamat datang di SMP RadenWorld! Siap mengeksplorasi sains dan logika bersama Bu Ainur?',
           dialogues: [
-            'Salam sejahtera! Selamat datang di Gedung Sekolah Menengah Pertama (SMP) RadenWorld.',
+            'Salam sejahtera! Selamat datang di Gedung Sekolah Menengah Pertama (SMP) RadenWorld bersama Bu Ainur.',
             'Masa SMP adalah masa pembentukan karakter dan eksplorasi minat bakat dalam sains, teknologi, dan seni.',
-            'Gunakan waktu mudamu sebaik mungkin untuk berorganisasi dan mengasah keterampilan berpikir kritis!'
-          ],
-          spriteKey: 'npc-guru-smp',
-        },
-        {
-          id: 'npc_siswa_smp',
-          name: 'Siti Rahma',
-          role: 'Juara Olimpiade Sains SMP (Biru Putih)',
-          avatarUrl: '/assets/sprites/NPC/1x2%20NPC%20GuruSMP.webp',
-          avatarType: 'sage',
-          x: 660,
-          y: 660,
-          greeting: 'Hai! Kami baru saja menyelesaikan praktikum mikroskop di ruang kelas.',
-          dialogues: [
-            'Hai teman! Selamat datang di kelas SMP RadenWorld.',
-            'Papan tulis hari ini berisi materi persamaan linier dan rumus gaya gravitasi Newton.',
-            'Kalau ada soal fisika yang sulit, ayo kita diskusikan bersama di meja belajar!'
+            'Gunakan waktu mudamu sebaik mungkin untuk mengasah rasa ingin tahu dan keterampilan berpikir kritis!'
           ],
           spriteKey: 'npc-guru-smp',
         },
@@ -257,34 +226,18 @@ export class SchoolScene extends Phaser.Scene {
     } else {
       this.npcs = [
         {
-          id: 'npc_kepsek_sma',
-          name: 'Ibu Dra. Ratna Dewi',
-          role: 'Kepala Sekolah SMA Kebangsaan',
+          id: 'npc_guru_sma',
+          name: 'Pak Raden',
+          role: 'Guru SMA',
           avatarUrl: '/assets/sprites/NPC/1x2%20NPC%20GuruSMA.webp',
           avatarType: 'sage',
           x: 760,
           y: 380,
-          greeting: 'Selamat datang para calon pemimpin masa depan di SMA RadenWorld.',
+          greeting: 'Selamat datang para calon pemimpin masa depan di SMA RadenWorld bersama Pak Raden.',
           dialogues: [
             'Selamat datang di Sekolah Menengah Atas (SMA) RadenWorld, gerbang menuju perguruan tinggi dan kepemimpinan global.',
-            'Di bangku SMA ini, integritas, kedisiplinan, dan visi masa depan adalah pilar utama yang terus kita tempa.',
+            'Di bangku SMA ini, integritas, kedisiplinan, dan visi masa depan adalah pilar utama yang terus Bapak tempa.',
             'Raihlah cita-citamu setinggi langit. Semesta akan membukakan jalan bagi mereka yang berikhtiar sungguh-sungguh.'
-          ],
-          spriteKey: 'npc-guru-sma',
-        },
-        {
-          id: 'npc_siswa_sma',
-          name: 'Dimas Alamsyah',
-          role: 'Ketua OSIS SMA (Abu-Abu Putih)',
-          avatarUrl: '/assets/sprites/NPC/1x2%20NPC%20GuruSMA.webp',
-          avatarType: 'sage',
-          x: 660,
-          y: 660,
-          greeting: 'Halo bro! Kami lagi diskusi kelompok persiapan tryout ujian kelulusan.',
-          dialogues: [
-            'Halo kawan! Waktu di SMA berlalu begitu cepat. Sekarang kami sudah di tahun terakhir persiapan seleksi perguruan tinggi.',
-            'Selain belajar intensif, kami juga aktif di kegiatan ekstrakurikuler kepemimpinan dan pengabdian masyarakat.',
-            'Tetap semangat dan pantang menyerah menggapai kampus impian ya kawan!'
           ],
           spriteKey: 'npc-guru-sma',
         },
@@ -1925,6 +1878,7 @@ export class SchoolScene extends Phaser.Scene {
     // Hapus posisi tersimpan di kelas agar jika masuk lagi lewat pintu di masa depan, muncul di pintu
     try {
       localStorage.removeItem(`raden_pos_school_${this.schoolType}`);
+      localStorage.setItem('raden_pos_world', JSON.stringify({ x: this.returnPos.x, y: this.returnPos.y }));
     } catch (e) {}
 
     // Kembalikan room WebSocket ke 'world'

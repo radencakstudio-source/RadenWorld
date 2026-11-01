@@ -138,7 +138,11 @@ const httpServer = createServer((req, res) => {
 
 const io = new Server(httpServer, {
   cors: {
-    origin: '*',
+    origin: (origin, callback) => {
+      // Dynamic origin reflection: mengizinkan semua origin (localhost, 127.0.0.1, LAN IP, tunnel) 
+      // secara sah dan kompatibel dengan W3C credentialed requests
+      callback(null, true);
+    },
     methods: ['GET', 'POST'],
     credentials: true,
   },

@@ -155,47 +155,182 @@ export const MarketRealtorModal: React.FC<MarketRealtorModalProps> = ({
     },
   ];
 
-  // Katalog Biji & Bibit Tanaman
+  // Katalog Biji & Bibit Tanaman yang Cocok Ditanam di Indonesia (Iklim Tropis Nusantara)
   const seedsCatalog: ISeedMarketItem[] = [
+    // --- 1. Pangan Pokok & Palawija Tropis ---
     {
-      id: 'seed_padi_rojolele',
-      name: 'Kantong Bibit Padi Rojolele',
+      id: 'seed_padi_pandanwangi',
+      name: 'Bibit Padi Pandanwangi Cianjur',
       icon: '🌾',
       price: 80,
       quantity: 10,
-      description: 'Benih padi wangi pulen unggulan. Menghasilkan gabah berkualitas tinggi di petak sawah timur.',
+      description: 'Varietas padi aromatik unggulan Jawa Barat. Menghasilkan beras harum pandan dan pulen berkualitas tinggi.',
     },
     {
-      id: 'seed_jagung_manis',
-      name: 'Benih Jagung Manis Madu',
+      id: 'seed_jagung_manis_madura',
+      name: 'Benih Jagung Manis Madura',
       icon: '🌽',
-      price: 100,
+      price: 95,
       quantity: 10,
-      description: 'Bibit jagung kuning manis berkulit tipis. Menghasilkan tongkol jagung besar berharga tinggi.',
+      description: 'Bibit jagung kuning manis berkulit tipis kegemaran petani Madura & Jawa Timur. Cepat panen bertongkol padat.',
     },
     {
-      id: 'seed_tomat_cherry',
-      name: 'Benih Tomat Merah Cherry',
+      id: 'seed_singkong_mukibat',
+      name: 'Bibit Singkong Mukibat Manis',
+      icon: '🥔',
+      price: 70,
+      quantity: 8,
+      description: 'Ubi kayu unggulan nusantara berumbi tebal dan empuk. Tumbuh subur di segala jenis tanah tropis Indonesia.',
+    },
+    {
+      id: 'seed_ubi_cilembu',
+      name: 'Bibit Ubi Madu Cilembu',
+      icon: '🍠',
+      price: 85,
+      quantity: 8,
+      description: 'Ubi jalar manis legit berkaramel khas lereng Sumedang. Primadona olahan panggang nusantara.',
+    },
+    {
+      id: 'seed_kedelai_malika',
+      name: 'Benih Kedelai Hitam Malika',
+      icon: '🌱',
+      price: 75,
+      quantity: 10,
+      description: 'Kedelai lokal unggul nusantara bahan baku tempe gurih dan kecap manis tradisional.',
+    },
+    {
+      id: 'seed_kacang_tanah_tuban',
+      name: 'Benih Kacang Tanah Tuban',
+      icon: '🥜',
+      price: 70,
+      quantity: 10,
+      description: 'Kacang tanah garing berisi padat favorit camilan sangrai pesisir Tuban.',
+    },
+
+    // --- 2. Sayuran Tropis Pekarangan Nusantara ---
+    {
+      id: 'seed_cabai_rawit_domba',
+      name: 'Benih Cabai Rawit Merah Domba',
+      icon: '🌶️',
+      price: 110,
+      quantity: 10,
+      description: 'Cabai rawit oranye-merah pedas menyengat primadona aneka sambal ulek nusantara.',
+    },
+    {
+      id: 'seed_cabai_keriting_medan',
+      name: 'Benih Cabai Merah Keriting',
+      icon: '🌶️',
+      price: 115,
+      quantity: 10,
+      description: 'Cabai merah bergelombang renyah andalan bumbu balado, rendang, dan masakan Padang.',
+    },
+    {
+      id: 'seed_kangkung_lombok',
+      name: 'Benih Kangkung Air Lombok',
+      icon: '🥬',
+      price: 50,
+      quantity: 15,
+      description: 'Sayuran daun renyah berbatang lunak andalan plecing kangkung khas NTB. Panen sangat cepat!',
+    },
+    {
+      id: 'seed_bayam_raja',
+      name: 'Benih Bayam Hijau Raja',
+      icon: '🥗',
+      price: 50,
+      quantity: 15,
+      description: 'Sayuran hijau kaya zat besi untuk sayur bening segar khas Sunda dan Jawa.',
+    },
+    {
+      id: 'seed_terong_antaboga',
+      name: 'Benih Terong Ungu Antaboga',
+      icon: '🍆',
+      price: 80,
+      quantity: 10,
+      description: 'Terong berkulit ungu mengkilap dengan daging empuk manis untuk sambal terong balado.',
+    },
+    {
+      id: 'seed_kacang_panjang',
+      name: 'Benih Kacang Panjang Hijau',
+      icon: '🌿',
+      price: 65,
+      quantity: 10,
+      description: 'Tanaman rambat tropis berpolong panjang renyah untuk lalapan, pecel, dan tumisan santan.',
+    },
+    {
+      id: 'seed_tomat_lumajang',
+      name: 'Benih Tomat Sayur Lumajang',
       icon: '🍅',
-      price: 120,
-      quantity: 10,
-      description: 'Bibit tomat sayur segar kaya vitamin. Cepat berbuah lebat di pekarangan rumah.',
-    },
-    {
-      id: 'seed_semangka_merah',
-      name: 'Biji Semangka Tanpa Biji',
-      icon: '🍉',
-      price: 150,
-      quantity: 5,
-      description: 'Benih semangka buah manis berair banyak. Sangat disukai warga kota di musim panas.',
-    },
-    {
-      id: 'seed_wortel_kebun',
-      name: 'Benih Wortel Renyah Kebun',
-      icon: '🥕',
       price: 90,
       quantity: 10,
-      description: 'Bibit umbi wortel oranye renyah yang kaya beta-karoten untuk nutrisi tubuh.',
+      description: 'Tomat segar berair kaya vitamin C untuk pelengkap sambal terasi dan hidangan segar.',
+    },
+
+    // --- 3. Bumbu Rempah & Rimpang Nusantara ---
+    {
+      id: 'seed_bawang_merah_brebes',
+      name: 'Benih Bawang Merah Bima Brebes',
+      icon: '🧅',
+      price: 125,
+      quantity: 10,
+      description: 'Umbi lapis wangi khas Brebes Jawa Tengah. Bumbu utama nomor satu segala masakan nusantara.',
+    },
+    {
+      id: 'seed_jahe_merah_super',
+      name: 'Bibit Rimpang Jahe Merah Super',
+      icon: '🫚',
+      price: 135,
+      quantity: 6,
+      description: 'Rempah rimpang pedas berkhasiat hangat untuk wedang jahe, ronde, dan jamu tradisional nusantara.',
+    },
+    {
+      id: 'seed_kunyit_asam',
+      name: 'Bibit Rimpang Kunyit Asam',
+      icon: '🫚',
+      price: 115,
+      quantity: 6,
+      description: 'Pewarna alami kuning emas dan rempah jamu kunyit asam berkhasiat tinggi menjaga daya tahan tubuh.',
+    },
+
+    // --- 4. Buah Tropis & Komoditas Perkebunan Nusantara ---
+    {
+      id: 'seed_semangka_inul',
+      name: 'Biji Semangka Merah Inul',
+      icon: '🍉',
+      price: 140,
+      quantity: 6,
+      description: 'Buah semangka lonjong berkulit hijau gelap berair manis segar penyejuk dahaga di terik khatulistiwa.',
+    },
+    {
+      id: 'seed_melon_golden',
+      name: 'Benih Melon Madu Golden Alor',
+      icon: '🍈',
+      price: 150,
+      quantity: 6,
+      description: 'Melon berkulit kuning cerah berdaging manis wangi khas agrowisata kepulauan nusantara.',
+    },
+    {
+      id: 'seed_pisang_raja',
+      name: 'Anakan Bibit Pisang Raja Bulu',
+      icon: '🍌',
+      price: 175,
+      quantity: 4,
+      description: 'Pisang legendaris keraton beraroma harum manis untuk jajanan pasar dan hidangan kehormatan.',
+    },
+    {
+      id: 'seed_kopi_gayo',
+      name: 'Benih Kopi Arabika Gayo Aceh',
+      icon: '☕',
+      price: 210,
+      quantity: 5,
+      description: 'Biji kopi pegunungan dataran tinggi Gayo beraroma rempah harum mendunia kebanggaan Nusantara.',
+    },
+    {
+      id: 'seed_kelapa_pandan',
+      name: 'Bibit Kelapa Pandan Wangi',
+      icon: '🥥',
+      price: 190,
+      quantity: 3,
+      description: 'Kelapa tropis berair manis dengan aroma pandan alami penyegar pesisir pantai nusantara.',
     },
   ];
 
@@ -217,7 +352,25 @@ export const MarketRealtorModal: React.FC<MarketRealtorModalProps> = ({
         item.name.toLowerCase().includes('tomat') ||
         item.name.toLowerCase().includes('apel') ||
         item.name.toLowerCase().includes('semangka') ||
-        item.name.toLowerCase().includes('wortel')
+        item.name.toLowerCase().includes('wortel') ||
+        item.name.toLowerCase().includes('cabai') ||
+        item.name.toLowerCase().includes('kangkung') ||
+        item.name.toLowerCase().includes('bayam') ||
+        item.name.toLowerCase().includes('singkong') ||
+        item.name.toLowerCase().includes('ubi') ||
+        item.name.toLowerCase().includes('terong') ||
+        item.name.toLowerCase().includes('kacang') ||
+        item.name.toLowerCase().includes('bawang') ||
+        item.name.toLowerCase().includes('jahe') ||
+        item.name.toLowerCase().includes('kunyit') ||
+        item.name.toLowerCase().includes('melon') ||
+        item.name.toLowerCase().includes('pisang') ||
+        item.name.toLowerCase().includes('kopi') ||
+        item.name.toLowerCase().includes('kelapa') ||
+        item.name.toLowerCase().includes('kedelai') ||
+        item.name.toLowerCase().includes('benih') ||
+        item.name.toLowerCase().includes('bibit') ||
+        item.name.toLowerCase().includes('biji')
       );
     }
     if (sellFilter === 'fish') {

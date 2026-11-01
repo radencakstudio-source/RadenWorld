@@ -35,6 +35,9 @@ export interface IVirtualControlsLayout {
   fishScale: number;      // default 1.0 (range: 0.6 - 1.8)
   fishOffsetX?: number;   // default 0
   fishOffsetY?: number;   // default 0
+  runScale: number;       // default 1.0 (range: 0.6 - 1.8)
+  runOffsetX?: number;    // default 0
+  runOffsetY?: number;    // default 0
 }
 
 export const DEFAULT_CONTROLS_LAYOUT: IVirtualControlsLayout = {
@@ -50,6 +53,9 @@ export const DEFAULT_CONTROLS_LAYOUT: IVirtualControlsLayout = {
   fishScale: 1.0,
   fishOffsetX: 0,
   fishOffsetY: 0,
+  runScale: 1.0,
+  runOffsetX: 0,
+  runOffsetY: 0,
 };
 
 interface VirtualControlsProps {
@@ -90,7 +96,8 @@ export const VirtualControls: React.FC<VirtualControlsProps> = React.memo(({
 
   // Mode Kustomisasi Tata Letak Langsung di Layar (In-Place HUD Editor)
   const [isEditMode, setIsEditMode] = useState<boolean>(false);
-  const [selectedControl, setSelectedControl] = useState<'analog' | 'action' | 'jump' | 'fish'>('analog');
+  const [selectedControl, setSelectedControl] = useState<'analog' | 'action' | 'jump' | 'fish' | 'run'>('analog');
+  const [isRunningActive, setIsRunningActive] = useState<boolean>(false);
 
   // Layout kustomisasi kontrol dari localStorage
   const [layout, setLayout] = useState<IVirtualControlsLayout>(() => {
@@ -270,7 +277,7 @@ export const VirtualControls: React.FC<VirtualControlsProps> = React.memo(({
   // ==========================================================================
   const handleControlPointerDown = (
     e: React.PointerEvent,
-    control: 'analog' | 'action' | 'jump' | 'fish'
+    control: 'analog' | 'action' | 'jump' | 'fish' | 'run'
   ) => {
     if (!isEditMode) return;
     e.preventDefault();
@@ -292,6 +299,7 @@ export const VirtualControls: React.FC<VirtualControlsProps> = React.memo(({
       control === 'analog' ? layout.analogOffsetX :
       control === 'action' ? layout.actionOffsetX :
       control === 'jump' ? (layout.jumpOffsetX || 0) :
+      control === 'run' ? (layout.runOffsetX || 0) :
       (layout.fishOffsetX || 0)
     ) || 0;
 
@@ -299,6 +307,7 @@ export const VirtualControls: React.FC<VirtualControlsProps> = React.memo(({
       control === 'analog' ? layout.analogOffsetY :
       control === 'action' ? layout.actionOffsetY :
       control === 'jump' ? (layout.jumpOffsetY || 0) :
+      control === 'run' ? (layout.runOffsetY || 0) :
       (layout.fishOffsetY || 0)
     ) || 0;
 
@@ -321,6 +330,9 @@ export const VirtualControls: React.FC<VirtualControlsProps> = React.memo(({
         } else if (control === 'fish') {
           next.fishOffsetX = Math.round(initX + dx);
           next.fishOffsetY = Math.round(initY - dy);
+        } else if (control === 'run') {
+          next.runOffsetX = Math.round(initX + dx);
+          next.runOffsetY = Math.round(initY - dy);
         }
         return next;
       });
@@ -364,6 +376,7 @@ export const VirtualControls: React.FC<VirtualControlsProps> = React.memo(({
     if (selectedControl === 'action') return layout.actionScale;
     if (selectedControl === 'jump') return layout.jumpScale;
     if (selectedControl === 'fish') return layout.fishScale;
+    if (selectedControl === 'run') return layout.runScale || 1.0;
     return 1.0;
   };
 
@@ -380,6 +393,8 @@ export const VirtualControls: React.FC<VirtualControlsProps> = React.memo(({
         next.jumpScale = Math.max(0.6, Math.min(1.8, +((next.jumpScale || 1.0) + delta).toFixed(2)));
       } else if (selectedControl === 'fish') {
         next.fishScale = Math.max(0.6, Math.min(1.8, +((next.fishScale || 1.0) + delta).toFixed(2)));
+      } else if (selectedControl === 'run') {
+        next.runScale = Math.max(0.6, Math.min(1.8, +((next.runScale || 1.0) + delta).toFixed(2)));
       }
       return next;
     });
@@ -394,6 +409,7 @@ export const VirtualControls: React.FC<VirtualControlsProps> = React.memo(({
       else if (selectedControl === 'action') next.actionScale = preset;
       else if (selectedControl === 'jump') next.jumpScale = preset;
       else if (selectedControl === 'fish') next.fishScale = preset;
+      else if (selectedControl === 'run') next.runScale = preset;
       return next;
     });
   };
@@ -519,6 +535,38 @@ export const VirtualControls: React.FC<VirtualControlsProps> = React.memo(({
   }, [sound, onActionPress, triggerHaptic, isEditMode, layout]);
 
   const [isFishBiting, setIsFishBiting] = useState(false);
+
+  useEffect(() => {
+    const handleRunToggle = (val?: boolean) => {
+      setIsRunningActive((prev) => (typeof val === 'boolean' ? val : !prev));
+    };
+    const handleRunStart = () => setIsRunningActive(true);
+    const handleRunEnd = () => setIsRunningActive(false);
+
+    EventBus.on('player-run-toggle', handleRunToggle);
+    EventBus.on('player-run-start', handleRunStart);
+    EventBus.on('player-run-end', handleRunEnd);
+
+    return () => {
+      EventBus.off('player-run-toggle', handleRunToggle);
+      EventBus.off('player-run-start', handleRunStart);
+      EventBus.off('player-run-end', handleRunEnd);
+    };
+  }, []);
+
+  const handleRunTogglePress = useCallback((e: React.SyntheticEvent) => {
+    if (isEditMode) return;
+    e.preventDefault();
+    e.stopPropagation();
+    setGlobalControlActive(true);
+    triggerHaptic(20);
+    sound.playClick();
+    setIsRunningActive((prev) => {
+      const next = !prev;
+      EventBus.emit('player-run-toggle', next);
+      return next;
+    });
+  }, [isEditMode, triggerHaptic, sound]);
 
   useEffect(() => {
     const handleBite = () => {
@@ -669,6 +717,7 @@ export const VirtualControls: React.FC<VirtualControlsProps> = React.memo(({
                   {selectedControl === 'action' && '⚡ Tombol Aksi'}
                   {selectedControl === 'jump' && '⬆️ Tombol Lompat'}
                   {selectedControl === 'fish' && '🐟 Tombol Mancing'}
+                  {selectedControl === 'run' && '⚡ Tombol Lari (Sprint)'}
                 </span>
                 <span className="text-[11px] text-neutral-400 font-mono">
                   Ukuran: <strong className="text-amber-400 text-xs">{getCurrentScale().toFixed(1)}x</strong>
@@ -677,7 +726,7 @@ export const VirtualControls: React.FC<VirtualControlsProps> = React.memo(({
 
               {/* Tab Pemilih Tombol */}
               <div className="flex items-center gap-1 bg-neutral-900 p-1 rounded-xl border border-neutral-800 text-[11px] font-bold">
-                {(['analog', 'action', 'jump', 'fish'] as const).map((ctrl) => (
+                {(['analog', 'action', 'jump', 'run', 'fish'] as const).map((ctrl) => (
                   <button
                     key={ctrl}
                     type="button"
@@ -692,7 +741,7 @@ export const VirtualControls: React.FC<VirtualControlsProps> = React.memo(({
                         : 'text-neutral-400 hover:text-white'
                     }`}
                   >
-                    {ctrl === 'analog' ? '🕹️ Analog' : ctrl === 'action' ? '⚡ Aksi' : ctrl === 'jump' ? '⬆️ Lompat' : '🐟 Mancing'}
+                    {ctrl === 'analog' ? '🕹️ Analog' : ctrl === 'action' ? '⚡ Aksi' : ctrl === 'jump' ? '⬆️ Lompat' : ctrl === 'run' ? '⚡ Lari' : '🐟 Mancing'}
                   </button>
                 ))}
               </div>
@@ -921,6 +970,87 @@ export const VirtualControls: React.FC<VirtualControlsProps> = React.memo(({
             <Fish className={`w-4.5 h-4.5 sm:w-5 sm:h-5 stroke-[2.2] transition-colors ${isFishBiting && !isEditMode ? 'text-amber-300 stroke-[2.8] animate-bounce' : 'text-amber-300'}`} />
             <span className={`text-[6.5px] sm:text-[7.5px] font-mono font-black tracking-wider leading-none mt-0.5 ${isFishBiting && !isEditMode ? 'text-amber-300' : 'text-neutral-300'}`}>
               {isFishBiting && !isEditMode ? 'TARIK!' : 'MANCING'}
+            </span>
+          </button>
+        </div>
+      </div>
+
+      {/* ================================================================ */}
+      {/* 2.5 TOMBOL LARI / SPRINT (INDEPENDENT POSITION & RESIZE)         */}
+      {/* ================================================================ */}
+      <div
+        className={`fixed ${isEditMode ? 'z-[70]' : 'z-[50]'} pointer-events-none select-none font-['Chakra_Petch']`}
+        style={{
+          right: 'max(6rem, calc(env(safe-area-inset-right, 0px) + 5.5rem))',
+          bottom: 'max(5.25rem, calc(env(safe-area-inset-bottom, 0px) + 4.75rem))',
+          transform: `translate(${layout.runOffsetX || 0}px, ${-(layout.runOffsetY || 0)}px) scale(${layout.runScale || 1.0})`,
+          transformOrigin: 'center center',
+          transition: isEditMode ? 'none' : 'opacity 0.15s, transform 0.15s',
+          opacity: isChatOpen && !isEditMode ? 0 : 1,
+        }}
+      >
+        {/* Floating Quick Resize Pill di atas Tombol Lari saat terpilih */}
+        {isEditMode && selectedControl === 'run' && (
+          <div
+            onPointerDown={(e) => e.stopPropagation()}
+            className="absolute -top-11 left-1/2 -translate-x-1/2 flex items-center gap-1.5 bg-neutral-950/95 border-2 border-amber-400 rounded-full px-2.5 py-1 shadow-[0_0_20px_rgba(245,158,11,0.8)] z-50 pointer-events-auto backdrop-blur-md animate-in fade-in zoom-in-90"
+          >
+            <button
+              type="button"
+              tabIndex={-1}
+              onPointerDown={(e) => { e.stopPropagation(); handleAdjustScale(-0.1); }}
+              className="w-6 h-6 rounded-full bg-neutral-800 hover:bg-neutral-700 active:scale-90 flex items-center justify-center text-amber-300 font-black cursor-pointer border border-neutral-700"
+              title="Perkecil (-)"
+            >
+              <Minus className="w-3.5 h-3.5 stroke-[3]" />
+            </button>
+            <span className="font-mono text-xs font-black text-amber-300 px-1 select-none">
+              {(layout.runScale || 1.0).toFixed(1)}x
+            </span>
+            <button
+              type="button"
+              tabIndex={-1}
+              onPointerDown={(e) => { e.stopPropagation(); handleAdjustScale(0.1); }}
+              className="w-6 h-6 rounded-full bg-neutral-800 hover:bg-neutral-700 active:scale-90 flex items-center justify-center text-amber-300 font-black cursor-pointer border border-neutral-700"
+              title="Perbesar (+)"
+            >
+              <Plus className="w-3.5 h-3.5 stroke-[3]" />
+            </button>
+          </div>
+        )}
+
+        <div
+          onPointerDown={(e) => {
+            if (isEditMode) handleControlPointerDown(e, 'run');
+          }}
+          className={`pointer-events-auto select-none touch-none ${
+            isEditMode
+              ? `cursor-move rounded-full p-1 ${
+                  selectedControl === 'run'
+                    ? 'ring-4 ring-amber-400 border-2 border-amber-300 shadow-[0_0_25px_rgba(245,158,11,0.8)] animate-pulse'
+                    : 'border-2 border-dashed border-white/50 hover:border-amber-400'
+                }`
+              : ''
+          }`}
+          style={{ touchAction: 'none' }}
+        >
+          <button
+            type="button"
+            tabIndex={-1}
+            onPointerDown={handleRunTogglePress}
+            onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); }}
+            className={`w-11.5 h-11.5 sm:w-13 sm:h-13 md:w-14 md:h-14 rounded-full flex flex-col items-center justify-center cursor-pointer active:scale-95 transition-all select-none ${
+              isRunningActive && !isEditMode
+                ? 'bg-amber-500/40 border-2 border-amber-400 text-amber-300 ring-4 ring-amber-400/50 shadow-[0_0_24px_rgba(245,158,11,0.7)] scale-105'
+                : 'bg-black/80 hover:bg-black/90 active:bg-neutral-800 border-2 border-white/30 text-neutral-200 shadow-xl'
+            }`}
+            style={{ touchAction: 'none' }}
+            title="Lari Cepat / Sprint (Shift)"
+            aria-label="Tombol Lari"
+          >
+            <Zap className={`w-4.5 h-4.5 sm:w-5 sm:h-5 stroke-[2.5] transition-colors ${isRunningActive && !isEditMode ? 'text-amber-300 fill-amber-400 animate-pulse' : 'text-amber-300'}`} />
+            <span className={`text-[6.5px] sm:text-[7.5px] font-mono font-black tracking-wider leading-none mt-0.5 ${isRunningActive && !isEditMode ? 'text-amber-300' : 'text-neutral-300'}`}>
+              {isRunningActive && !isEditMode ? 'SPRINT!' : 'LARI'}
             </span>
           </button>
         </div>

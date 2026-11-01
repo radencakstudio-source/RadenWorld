@@ -119,6 +119,9 @@ export class WorldScene extends Phaser.Scene {
   }
 
   public create(): void {
+    // 0. Aktifkan cooldown pintu 3 detik agar pemain yang baru keluar tidak terhisap kembali
+    this.doorCooldownUntil = this.time ? this.time.now + 3000 : 3000;
+
     // 1. Batas fisika dunia diperlebar mencakup buffer (2400px) agar koridor jalan bisa dilewati ke luar
     const buf = 2400;
     this.physics.world.setBounds(-buf, -buf, this.worldWidth + buf * 2, this.worldHeight + buf * 2);
@@ -686,13 +689,13 @@ export class WorldScene extends Phaser.Scene {
     let spawnX = 2460;
     let spawnY = 2460;
 
-    if (this.customSpawnPos) {
+    if (this.customSpawnPos && typeof this.customSpawnPos.x === 'number' && typeof this.customSpawnPos.y === 'number') {
       spawnX = this.customSpawnPos.x;
       spawnY = this.customSpawnPos.y;
     } else if (nearHouse) {
-      // Keluar dari Rumah Pribadi -> Spawn tepat di depan pintu rumah pemain (gx: 11.5, gy: 7.5)
+      // Keluar dari Rumah Pribadi -> Spawn tepat di depan jalan pintu rumah pemain (gx: 11.5, gy: 8)
       spawnX = this.doors.playerHouseDoor.x;
-      spawnY = this.doors.playerHouseDoor.y + 60;
+      spawnY = this.doors.playerHouseDoor.y + 120;
     } else {
       try {
         const saved = localStorage.getItem('raden_pos_world');
@@ -707,6 +710,10 @@ export class WorldScene extends Phaser.Scene {
         }
       } catch (e) { }
     }
+
+    try {
+      localStorage.setItem('raden_pos_world', JSON.stringify({ x: Math.round(spawnX), y: Math.round(spawnY) }));
+    } catch (e) {}
 
     this.player = new Player(
       this,

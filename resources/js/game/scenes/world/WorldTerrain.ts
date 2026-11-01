@@ -443,46 +443,39 @@ export class WorldTerrain {
 
     // ========================================================================
     // ALUN-ALUN PUSAT KOTA (gx: 22..57, gy: 22..58)
-    // Hamparan Trotoar Alun-Alun (1X1 Trotoar Alunalun) menggantikan rumput hijau
+    // Hamparan Lantai Trotoar Alun-Alun Paving (100% Solid & Tampil Presisi)
     // ========================================================================
-    const alunTexKey = scene.textures.exists('alunalun-checker-tile')
-      ? 'alunalun-checker-tile'
-      : (scene.textures.exists('tile-trotoar-alunalun')
-        ? 'tile-trotoar-alunalun'
-        : (scene.textures.exists('plaza-checker-tile') ? 'plaza-checker-tile' : 'trotoar-2'));
+    const alunTex = scene.textures.exists('tile-trotoar-alunalun')
+      ? 'tile-trotoar-alunalun'
+      : (scene.textures.exists('trotoar-2') ? 'trotoar-2' : 'plaza-checker-tile');
 
-    scene.add.tileSprite(
-      22 * ts,
-      22 * ts,
-      36 * ts,
-      37 * ts,
-      alunTexKey
-    ).setOrigin(0, 0).setDepth(-96);
+    for (let gy = 22; gy <= 58; gy++) {
+      for (let gx = 22; gx <= 57; gx++) {
+        scene.add.image(gx * ts, gy * ts, alunTex).setOrigin(0, 0).setDepth(-96);
+      }
+    }
 
     // ========================================================================
     // HAMPARAN TROTOAR 2 UTARA (gx: 23..42, gy: 0..16)
     // Mengubah tanah rumput hijau menjadi trotoar 2
     // ========================================================================
-    const trotoar2TexKey = scene.textures.exists('trotoar2-checker-tile')
-      ? 'trotoar2-checker-tile'
-      : (scene.textures.exists('trotoar-2') ? 'trotoar-2' : 'plaza-checker-tile');
+    const trotoar2Tex = scene.textures.exists('trotoar-2')
+      ? 'trotoar-2'
+      : (scene.textures.exists('tile-trotoar-alunalun') ? 'tile-trotoar-alunalun' : 'plaza-checker-tile');
 
-    scene.add.tileSprite(
-      23 * ts,
-      0,
-      20 * ts,
-      17 * ts,
-      trotoar2TexKey
-    ).setOrigin(0, 0).setDepth(-96);
+    // 1. Hamparan Trotoar 2 Utara Barat (gx: 23..42, gy: 0..16)
+    for (let gy = 0; gy <= 16; gy++) {
+      for (let gx = 23; gx <= 42; gx++) {
+        scene.add.image(gx * ts, gy * ts, trotoar2Tex).setOrigin(0, 0).setDepth(-96);
+      }
+    }
 
-    // Hamparan Trotoar 2 Timur Utara (gx: 43..56, gy: 1..16)
-    scene.add.tileSprite(
-      43 * ts,
-      1 * ts,
-      14 * ts,
-      16 * ts,
-      trotoar2TexKey
-    ).setOrigin(0, 0).setDepth(-96);
+    // 2. Hamparan Trotoar 2 Timur Utara (gx: 43..56, gy: 1..16)
+    for (let gy = 1; gy <= 16; gy++) {
+      for (let gx = 43; gx <= 56; gx++) {
+        scene.add.image(gx * ts, gy * ts, trotoar2Tex).setOrigin(0, 0).setDepth(-96);
+      }
+    }
 
     // ========================================================================
     // KAWASAN LAHAN PERTANIAN / TANAH GALIAN (gx: 57..80, gy: 1..9)

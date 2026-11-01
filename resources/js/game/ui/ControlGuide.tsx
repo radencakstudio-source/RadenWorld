@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Keyboard, MousePointer, MessageSquare, Box, Code2, ArrowUp, Fish, Backpack } from 'lucide-react';
+import { X, Keyboard, MousePointer, MessageSquare, Box, Code2, ArrowUp, Fish, Backpack, Zap } from 'lucide-react';
 
 interface ControlGuideProps {
   isOpen: boolean;
@@ -42,6 +42,22 @@ export const ControlGuide: React.FC<ControlGuideProps> = ({ isOpen, onClose, con
                   <>Gunakan <strong>Analog Joystick Sentuh 360°</strong> di kiri bawah atau tap lantai langsung untuk berjalan ke titik tujuan.</>
                 ) : (
                   <>Gunakan tombol <kbd className="px-1.5 py-0.5 bg-neutral-800 rounded text-neutral-200 font-mono">W</kbd> <kbd className="px-1.5 py-0.5 bg-neutral-800 rounded text-neutral-200 font-mono">A</kbd> <kbd className="px-1.5 py-0.5 bg-neutral-800 rounded text-neutral-200 font-mono">S</kbd> <kbd className="px-1.5 py-0.5 bg-neutral-800 rounded text-neutral-200 font-mono">D</kbd> atau tombol <kbd className="px-1.5 py-0.5 bg-neutral-800 rounded text-neutral-200 font-mono">Panah</kbd> untuk berjalan.</>
+                )}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-start gap-3 bg-[#0e0e0e] p-3 rounded-xl border border-neutral-800">
+            <div className="p-2 rounded-lg bg-neutral-900 text-amber-400 shrink-0">
+              <Zap className="w-4 h-4" />
+            </div>
+            <div>
+              <div className="font-bold text-white mb-0.5">Lari Cepat (Sprint)</div>
+              <p className="text-neutral-400 leading-relaxed">
+                {isMobile ? (
+                  <>Sentuh tombol <strong>[LARI]</strong> (ikon kilat) di kanan bawah untuk mengaktifkan sprint cepat (1.6x kecepatan jalan normal).</>
+                ) : (
+                  <>Tahan tombol <kbd className="px-1.5 py-0.5 bg-neutral-800 rounded text-neutral-200 font-mono">Shift</kbd> sambil menekan tombol arah untuk berlari kencang!</>
                 )}
               </p>
             </div>

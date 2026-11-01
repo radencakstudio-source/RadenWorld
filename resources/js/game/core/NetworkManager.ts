@@ -149,6 +149,11 @@ export class NetworkManager {
         return 'http://127.0.0.1:3001';
       }
 
+      // Deteksi otomatis jika game diakses via Wasmer Edge (radenworld.wasmer.app)
+      if (window.location.hostname.includes('radenworld.wasmer.app')) {
+        return 'https://radenworld-server.wasmer.app';
+      }
+
       const isHttps = window.location.protocol === 'https:';
       const isTunnel = window.location.hostname.includes('ngrok') ||
                        window.location.hostname.includes('trycloudflare') ||
@@ -185,16 +190,20 @@ export class NetworkManager {
    * @param url Alamat server Socket.io (opsional, default dinamis mengikuti IP/Host browser)
    */
   public connect(url?: string): void {
-    if (this.socket && this.socket.connected) return;
+    const targetUrl = url || NetworkManager.getEffectiveServerUrl();
 
-    if (!url) {
-      this.serverUrl = NetworkManager.getEffectiveServerUrl();
-    } else {
-      this.serverUrl = url;
+    // Jika socket sudah ada dan sedang aktif/terhubung ke URL yang sama, jangan buat koneksi ganda
+    if (this.socket) {
+      if ((this.socket.connected || (this.socket as any).active) && this.serverUrl === targetUrl) {
+        return;
+      }
+      this.disconnect();
     }
 
+    this.serverUrl = targetUrl;
+
     this.socket = io(this.serverUrl, {
-      transports: ['websocket', 'polling'],
+      transports: ['polling', 'websocket'],
       extraHeaders: {
         'ngrok-skip-browser-warning': '1',
       },
@@ -262,8 +271,7 @@ export class NetworkManager {
         if (isCurrentLocal) {
           console.log('[NetworkManager] Mengalihkan koneksi ke server game lokal 127.0.0.1:3001...');
           try { localStorage.removeItem('raden_server_host'); } catch (e) {}
-          this.socket?.disconnect();
-          this.serverUrl = 'http://127.0.0.1:3001';
+          this.disconnect();
           this.connect('http://127.0.0.1:3001');
         }
       }

@@ -988,8 +988,13 @@ export class LibraryScene extends Phaser.Scene {
     SoundManager.getInstance().playClick();
     this.player?.showSpeechBubble('Keluar ke kota...', 1000);
 
+    const exitLibPos = { x: this.returnX, y: this.returnY + 60 };
+    try {
+      localStorage.setItem('raden_pos_world', JSON.stringify(exitLibPos));
+    } catch (e) {}
+
     // Berpindah kembali ke room 'world' di server game
-    this.networkManager.switchRoom('world', this.returnX, this.returnY + 60);
+    this.networkManager.switchRoom('world', exitLibPos.x, exitLibPos.y);
 
     this.time.delayedCall(300, () => {
       window.history.pushState(null, '', '/world');
@@ -998,7 +1003,7 @@ export class LibraryScene extends Phaser.Scene {
       this.scene.start('WorldScene', {
         name: this.player?.getEntityName() || this.playerName,
         avatar: this.player?.getAvatar() || this.currentAvatar,
-        spawnPos: { x: this.returnX, y: this.returnY + 60 },
+        spawnPos: exitLibPos,
       });
     });
   }

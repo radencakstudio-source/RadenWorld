@@ -29,8 +29,24 @@
  * ============================================================================
  */
 
-import React, { useState } from 'react';
-import { Sparkles, Eye, Info, RotateCcw, ZoomIn } from 'lucide-react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import {
+  Sparkles,
+  Eye,
+  Info,
+  RotateCcw,
+  Play,
+  Pause,
+  SkipBack,
+  SkipForward,
+  Tv,
+  Bot,
+  Film,
+  Zap,
+  CheckCircle2,
+  Bookmark,
+} from 'lucide-react';
+import { SoundManager } from '../core/SoundManager';
 
 export type VisualDiagramType =
   | 'photosynthesis'
@@ -82,6 +98,650 @@ export function detectDiagramType(subject: {
   return 'mindmap_general';
 }
 
+export interface ITopicStoryScene {
+  chapter: string;
+  title: string;
+  narration: string;
+  badge: string;
+  icon: string;
+  highlightText: string;
+}
+
+export function getTopicStoryScenes(type: VisualDiagramType): ITopicStoryScene[] {
+  switch (type) {
+    case 'photosynthesis':
+      return [
+        {
+          chapter: 'Babak 1',
+          title: 'Matahari & Foton Cahaya',
+          narration: '☀️ Pagi hari tiba! Sinar mentari memancarkan energi foton cahaya ke bumi. Butiran klorofil pada daun hijau bersiap menangkap energi surya ini.',
+          badge: 'Energi Cahaya',
+          icon: '☀️',
+          highlightText: 'Penyerapan energi foton mentari',
+        },
+        {
+          chapter: 'Babak 2',
+          title: 'Akar Menyerap Air (H₂O)',
+          narration: '💧 Di dalam tanah, akar tanaman yang kuat menyerap molekul air (H₂O) dan mineral, lalu mengalirkannya naik melalui pembuluh xilem ke daun.',
+          badge: 'Aliran Nutrisi',
+          icon: '🌱',
+          highlightText: 'Suplai air tanah via pembuluh xilem',
+        },
+        {
+          chapter: 'Babak 3',
+          title: 'Menghirup Karbon Dioksida (CO₂)',
+          narration: '💨 Daun membuka pori-pori stomatanya untuk menghirup gas Karbon Dioksida (CO₂) dari udara. Di dalam kloroplas, reaksi kimia 6CO₂ + 6H₂O dimulai!',
+          badge: 'Reaksi Kloroplas',
+          icon: '🍃',
+          highlightText: 'Sintesis klorofil & gas CO₂',
+        },
+        {
+          chapter: 'Babak 4',
+          title: 'Hasil: Oksigen Segar & Glukosa',
+          narration: '✨ Selesai! Tumbuhan melepaskan Oksigen (O₂) segar untuk pernapasan seluruh makhluk hidup, serta menyimpan Glukosa (C₆H₁₂O₆) manis sebagai cadangan makanan.',
+          badge: 'Manfaat Alam',
+          icon: '🌟',
+          highlightText: 'Oksigen segar + Glukosa manis',
+        },
+      ];
+    case 'water_cycle':
+      return [
+        {
+          chapter: 'Babak 1',
+          title: 'Evaporasi Samudra Raya',
+          narration: '🌊 Panas terik matahari menghangatkan permukaan samudra, danau, dan sungai. Air berubah wujud menjadi uap tak kasat mata yang terbang naik ke angkasa.',
+          badge: 'Penguapan Panas',
+          icon: '☀️',
+          highlightText: 'Fase uap air naik ke atmosfer',
+        },
+        {
+          chapter: 'Babak 2',
+          title: 'Kondensasi Membentuk Awan',
+          narration: '☁️ Di langit tinggi yang dingin, uap air mengalami kondensasi, memadat menjadi jutaan tetesan embun halus dan berkumpul membentuk gumpalan awan tebal.',
+          badge: 'Awan Kondensasi',
+          icon: '☁️',
+          highlightText: 'Kondensasi embun jadi awan tebal',
+        },
+        {
+          chapter: 'Babak 3',
+          title: 'Presipitasi Hujan Menyiram Bumi',
+          narration: '🌧️ Saat butiran air dalam awan menjadi terlalu berat untuk ditopang angin, gravitasi menariknya jatuh ke bumi sebagai hujan segar menyegarkan tanaman!',
+          badge: 'Hujan Segar',
+          icon: '🌧️',
+          highlightText: 'Presipitasi air hujan ke tanah',
+        },
+        {
+          chapter: 'Babak 4',
+          title: 'Limpasan Sungai Kembali ke Laut',
+          narration: '🏞️ Air hujan mengalir melewati lereng gunung, menyuburkan lahan sawah, mengisi aliran sungai, dan bermuara kembali ke samudra dalam siklus abadi!',
+          badge: 'Siklus Abadi',
+          icon: '🔄',
+          highlightText: 'Aliran sungai bermuara ke samudra',
+        },
+      ];
+    case 'solar_system':
+      return [
+        {
+          chapter: 'Babak 1',
+          title: 'Matahari Raja Tata Surya',
+          narration: '☀️ Di pusat tata surya, Matahari berpijar dengan fusi hidrogen raksasa, mengendalikan gravitasi seluruh orbit planet dan memancarkan cahaya kehidupan.',
+          badge: 'Pusat Gravitasi',
+          icon: '☀️',
+          highlightText: 'Fusi hidrogen & gravitasi utama',
+        },
+        {
+          chapter: 'Babak 2',
+          title: 'Planet Batuan Terdekat',
+          narration: '🪐 Empat planet terdekat (Merkurius, Venus, Bumi, dan Mars) memiliki permukaan padat berbatu. Di Bumi, atmosfer dan air mendukung peradaban manusia!',
+          badge: 'Planet Batuan',
+          icon: '🌍',
+          highlightText: 'Bumi, Merkurius, Venus, Mars',
+        },
+        {
+          chapter: 'Babak 3',
+          title: 'Raksasa Gas Jupiter & Saturnus',
+          narration: '🌀 Melewati sabuk asteroid, kita menjumpai Jupiter dengan Bintik Merah Raksasa dan Saturnus dengan cincin es esoteris paling memukau di antariksa!',
+          badge: 'Raksasa Gas',
+          icon: '🪐',
+          highlightText: 'Jupiter raksasa & Cincin Saturnus',
+        },
+        {
+          chapter: 'Babak 4',
+          title: 'Planet Es Terluar Uranus & Neptunus',
+          narration: '❄️ Di tepi dingin tata surya, Uranus dan Neptunus berotasi membiru dengan atmosfer metana es, melengkapi keluarga 8 planet ciptaan alam semesta.',
+          badge: 'Tepi Tata Surya',
+          icon: '✨',
+          highlightText: 'Uranus & Neptunus di batas luar',
+        },
+      ];
+    case 'cell_structure':
+      return [
+        {
+          chapter: 'Babak 1',
+          title: 'Membran Sel Gerbang Pelindung',
+          narration: '🛡️ Membran sel bertindak sebagai gerbang pintar fosfolipid berkepala ganda, memilih nutrisi penting yang boleh masuk dan membuang zat sisa sel.',
+          badge: 'Pelindung Sel',
+          icon: '🛡️',
+          highlightText: 'Lapisan membran selektif permeabel',
+        },
+        {
+          chapter: 'Babak 2',
+          title: 'Nukleus: Ruang Kendali DNA',
+          narration: '🧬 Nukleus adalah otak sel tempat kode genetik DNA tersimpan rapi, memimpin sintesis protein dan mengatur pertumbuhan sel secara presisi.',
+          badge: 'Pusat Komando',
+          icon: '🧬',
+          highlightText: 'Inti genetik pengatur kehidupan',
+        },
+        {
+          chapter: 'Babak 3',
+          title: 'Mitokondria Pabrik Energi ATP',
+          narration: '⚡ Dijuluki Powerhouse of the Cell, mitokondria membakar glukosa dan oksigen untuk menghasilkan molekul ATP, bahan bakar utama energi gerak kita!',
+          badge: 'Pembangkit Listrik',
+          icon: '⚡',
+          highlightText: 'Respirasi seluler pembakar ATP',
+        },
+        {
+          chapter: 'Babak 4',
+          title: 'Sinergi Organel Mikroskopis',
+          narration: '🔬 Ribosom, Retikulum Endoplasma, dan Badan Golgi bekerja harmonis tanpa henti menjaga miliaran sel tubuh kita tetap sehat dan berenergi!',
+          badge: 'Metabolisme Tubuh',
+          icon: '🔬',
+          highlightText: 'Kerja sama harmonis organel sel',
+        },
+      ];
+    case 'dna_helix':
+      return [
+        {
+          chapter: 'Babak 1',
+          title: 'Heliks Ganda Tangga Terpilin',
+          narration: '🧬 Molekul Deoxyribonucleic Acid berbentuk tangga terpilin (Double Helix), menyimpan blueprint lengkap sifat fisik, kecerdasan, dan keunikanmu.',
+          badge: 'Double Helix',
+          icon: '🧬',
+          highlightText: 'Pilin ganda kode biologis manusia',
+        },
+        {
+          chapter: 'Babak 2',
+          title: 'Pasangan Basa Adenin & Timin (A-T)',
+          narration: '🔗 Basa nitrogen Adenin (A) selalu berpasangan dengan Timin (T) dihubungkan oleh 2 ikatan hidrogen yang stabil namun fleksibel saat replikasi.',
+          badge: 'Pasangan A-T',
+          icon: '🧩',
+          highlightText: 'Dua ikatan hidrogen komplementer',
+        },
+        {
+          chapter: 'Babak 3',
+          title: 'Pasangan Guanin & Sitosin (G-C)',
+          narration: '💪 Guanin (G) berpasangan erat dengan Sitosin (C) melalui 3 ikatan hidrogen kokoh, memberikan integritas struktural pada rantai kromosom.',
+          badge: 'Pasangan G-C',
+          icon: '⛓️',
+          highlightText: 'Tiga ikatan hidrogen ekstra kuat',
+        },
+        {
+          chapter: 'Babak 4',
+          title: 'Pewarisan Karakter Antargenerasi',
+          narration: '👨‍👩‍👧 DNA diwariskan dari orang tua ke anak, membuktikan keagungan biologi dan keberlanjutan garis keturunan seluruh generasi di bumi!',
+          badge: 'Garis Keturunan',
+          icon: '🌟',
+          highlightText: 'Pewarisan sifat genetik abadi',
+        },
+      ];
+    case 'pythagoras':
+      return [
+        {
+          chapter: 'Babak 1',
+          title: 'Segitiga Siku-Siku Istimewa',
+          narration: '📐 Di Yunani kuno, filsuf Pythagoras meneliti segitiga bersudut tegak 90 derajat yang tersusun atas dua sisi siku-siku alas (a) dan tinggi (b).',
+          badge: 'Sudut Siku 90°',
+          icon: '📐',
+          highlightText: 'Dua sisi penyiku a dan b',
+        },
+        {
+          chapter: 'Babak 2',
+          title: 'Hipotenusa Sisi Miring (c)',
+          narration: '📏 Sisi miring (c) yang menghadap tepat di depan sudut siku-siku selalu merupakan sisi paling panjang di antara ketiga sisi segitiga.',
+          badge: 'Sisi Terpanjang',
+          icon: '📏',
+          highlightText: 'Sisi miring hipotenusa terpanjang',
+        },
+        {
+          chapter: 'Babak 3',
+          title: 'Keseimbangan Luas Persegi',
+          narration: '🟥 Bayangkan bujur sangkar dibangun di setiap sisi: Luas bujur sangkar a² ditambah luas b² sama persis dengan luas bujur sangkar sisi miring c² (a² + b² = c²)!',
+          badge: 'Dalil Matematika',
+          icon: '🔢',
+          highlightText: 'Formula ajaib: a² + b² = c²',
+        },
+        {
+          chapter: 'Babak 4',
+          title: 'Fondasi Arsitektur & Teknologi',
+          narration: '🏛️ Dari pembangunan Piramida megah hingga perhitungan koordinat GPS satelit modern, teorema Pythagoras adalah rumus dasar ruang dan jarak!',
+          badge: 'Aplikasi Nyata',
+          icon: '🏛️',
+          highlightText: 'Pondasi GPS, peta & arsitektur',
+        },
+      ];
+    case 'cartesian_linear':
+      return [
+        {
+          chapter: 'Babak 1',
+          title: 'Sumbu X & Y Koordinat Ruang',
+          narration: '📊 Rene Descartes menemukan cara menghubungkan aljabar dan geometri dengan membagi bidang ruang menjadi Sumbu X mendatar dan Sumbu Y tegak.',
+          badge: 'Bidang Kartesius',
+          icon: '📊',
+          highlightText: 'Titik temu pusat koordinat (0,0)',
+        },
+        {
+          chapter: 'Babak 2',
+          title: 'Gradien Kemiringan Garis (m)',
+          narration: '📈 Gradien m adalah rasio perubahan vertikal terhadap horizontal (Δy / Δx). Nilai m menentukan seberapa curam atau landai sebuah garis lurus.',
+          badge: 'Gradien Garis',
+          icon: '📈',
+          highlightText: 'Derajat kecuraman kemiringan m',
+        },
+        {
+          chapter: 'Babak 3',
+          title: 'Persamaan Linear (y = mx + c)',
+          narration: '✏️ Nilai c adalah titik potong sumbu Y. Dengan rumus y = mx + c, kita dapat memprediksi nilai koordinat y untuk titik x mana pun secara akurat!',
+          badge: 'Rumus Linear',
+          icon: '✏️',
+          highlightText: 'Garis lurus matematis konsisten',
+        },
+        {
+          chapter: 'Babak 4',
+          title: 'Pemodelan Sains & Keuangan',
+          narration: '💼 Para ilmuwan dan analis ekonomi menggunakan garis linear untuk membaca tren kenaikan harga, laju kecepatan kendaraan, dan statistik data!',
+          badge: 'Prediksi Data',
+          icon: '💡',
+          highlightText: 'Membaca tren pertumbuhan masa depan',
+        },
+      ];
+    case 'trigonometry_wave':
+      return [
+        {
+          chapter: 'Babak 1',
+          title: 'Lingkaran Satuan Trigonometri',
+          narration: '⭕ Bayangkan sebuah roda berputar dengan jari-jari 1 unit. Setiap sudut putaran (θ) menentukan posisi koordinat sudut segitiga di dalamnya.',
+          badge: 'Lingkaran Satuan',
+          icon: '⭕',
+          highlightText: 'Jari-jari lingkaran R = 1 unit',
+        },
+        {
+          chapter: 'Babak 2',
+          title: 'Nilai Sinus & Kosinus Berayun',
+          narration: '🔄 Proyeksi tinggi titik menghasilkan nilai Sinus, sedangkan proyeksi mendatar menghasilkan Kosinus. Nilainya berayun harmonis antara -1 hingga +1.',
+          badge: 'Osilasi Sudut',
+          icon: '🔄',
+          highlightText: 'Nilai harmonis antara -1 dan +1',
+        },
+        {
+          chapter: 'Babak 3',
+          title: 'Lahirnya Gelombang Sinusoidal',
+          narration: '🌊 Jika titik berputar ditarik sepanjang sumbu waktu, terbentuklah pola kurva gelombang sinusoidal berirama yang sangat indah dan halus!',
+          badge: 'Gelombang Sinus',
+          icon: '🌊',
+          highlightText: 'Kurva sinusoidal lembut berkelanjutan',
+        },
+        {
+          chapter: 'Babak 4',
+          title: 'Sains Sinyal WiFi & Musik',
+          narration: '📡 Gelombang sinus adalah bahasa alam semesta! Dari sinyal radio smartphone, getaran senar gitar akustik, hingga pancaran gelombang cahaya!',
+          badge: 'Teknologi Gelombang',
+          icon: '📡',
+          highlightText: 'Dasar sinyal WiFi, radio & audio',
+        },
+      ];
+    case 'bohr_atom':
+      return [
+        {
+          chapter: 'Babak 1',
+          title: 'Inti Atom Proton & Neutron',
+          narration: '⚛️ Di pusat atom yang sangat kecil terdapat nukleus padat bermuatan positif, tersusun atas partikel Proton dan partikel netral Neutron.',
+          badge: 'Inti Atom',
+          icon: '⚛️',
+          highlightText: 'Inti padat bermuatan positif',
+        },
+        {
+          chapter: 'Babak 2',
+          title: 'Kulit Orbit Elektron (K, L, M)',
+          narration: '💫 Fisikawan Niels Bohr menemukan bahwa elektron berputar mengelilingi inti pada lintasan energi stasioner tertentu yang teratur rapi.',
+          badge: 'Tingkat Energi',
+          icon: '💫',
+          highlightText: 'Kulit elektron stasioner teratur',
+        },
+        {
+          chapter: 'Babak 3',
+          title: 'Lompatan Kuantum Elektron',
+          narration: '⚡ Saat elektron menyerap energi, ia melompat ke kulit luar. Saat kembali ke kulit dalam, ia memancarkan seberkas cahaya foton berenergi!',
+          badge: 'Lompatan Kuantum',
+          icon: '⚡',
+          highlightText: 'Pancaran berkas foton cahaya',
+        },
+        {
+          chapter: 'Babak 4',
+          title: 'Warna-Warni Lampu Neon & Laser',
+          narration: '🎆 Pancaran foton kuantum inilah yang melahirkan sinar laser presisi kedokteran, lampu LED hemat energi, dan kilauan kembang api!',
+          badge: 'Cahaya Kuantum',
+          icon: '🎆',
+          highlightText: 'Prinsip laser & LED modern',
+        },
+      ];
+    case 'ph_scale':
+      return [
+        {
+          chapter: 'Babak 1',
+          title: 'Dunia Larutan Asam (pH 0-6)',
+          narration: '🍋 Larutan asam kaya akan ion hidrogen (H+). Contohnya air perasan jeruk lemon (pH 2), cuka apel, dan asam lambung pengolah makanan.',
+          badge: 'Sifat Asam',
+          icon: '🍋',
+          highlightText: 'Kaya ion H+ berasa masam',
+        },
+        {
+          chapter: 'Babak 2',
+          title: 'Titik Netral Seimbang (pH 7)',
+          narration: '💧 Tepat di angka pH 7, konsentrasi ion H+ dan OH- berada dalam keseimbangan sempurna. Air mineral murni bebas rasa adalah contoh alaminya.',
+          badge: 'Titik Netral',
+          icon: '💧',
+          highlightText: 'Air murni seimbang pH 7.0',
+        },
+        {
+          chapter: 'Babak 3',
+          title: 'Dunia Larutan Basa (pH 8-14)',
+          narration: '🧼 Larutan basa kaya akan ion hidroksida (OH-), terasa licin di kulit dan berasa pahit. Contohnya sabun mandi, deterjen cuci, dan obat maag.',
+          badge: 'Sifat Basa',
+          icon: '🧼',
+          highlightText: 'Kaya ion OH- seperti sabun & antasida',
+        },
+        {
+          chapter: 'Babak 4',
+          title: 'Menjaga Keseimbangan Tubuh',
+          narration: '🩸 Tubuh manusia sangat cerdas! Darah kita dijaga ketat pada pH 7.35–7.45 agar enzim dan organ tubuh dapat berfungsi dengan sempurna!',
+          badge: 'Homeostasis Tubuh',
+          icon: '🩺',
+          highlightText: 'Menjaga pH darah tetap sehat',
+        },
+      ];
+    case 'newton_dynamics':
+      return [
+        {
+          chapter: 'Babak 1',
+          title: 'Gaya Dorong & Tarik (F)',
+          narration: '🍎 Isaac Newton merumuskan gaya sebagai interaksi dorongan atau tarikan yang dapat mengubah laju kecepatan, arah, atau bentuk benda.',
+          badge: 'Hukum Gaya',
+          icon: '🍎',
+          highlightText: 'Interaksi dorongan & tarikan benda',
+        },
+        {
+          chapter: 'Babak 2',
+          title: 'Massa & Kelembaman Inersia (m)',
+          narration: '📦 Setiap benda memiliki massa yang enggan berubah keadaan (inersia). Semakin berat massa benda, semakin besar gaya yang dibutuhkan untuk menggerakkannya.',
+          badge: 'Massa Inersia',
+          icon: '📦',
+          highlightText: 'Kelembaman mempertahankan posisi',
+        },
+        {
+          chapter: 'Babak 3',
+          title: 'Hukum II Newton (F = m·a)',
+          narration: '🏎️ Percepatan (a) sebanding lurus dengan resultan gaya dan berbanding terbalik dengan massa. Mobil balap bertenaga mesin besar akan melesat kencang!',
+          badge: 'Rumus Newton',
+          icon: '🏎️',
+          highlightText: 'Resultan gaya: F = m dikali a',
+        },
+        {
+          chapter: 'Babak 4',
+          title: 'Peluncuran Roket ke Antariksa',
+          narration: '🚀 Menggabungkan aksi-reaksi Hukum III Newton, semburan gas roket ke bawah menghasilkan dorongan terbang ke angkasa menembus gravitasi bumi!',
+          badge: 'Teknologi Roket',
+          icon: '🚀',
+          highlightText: 'Melesat menembus orbit bumi',
+        },
+      ];
+    case 'pancasila_shield':
+      return [
+        {
+          chapter: 'Babak 1',
+          title: 'Sila 1: Bintang Cahaya Ketuhanan',
+          narration: '⭐ Bintang emas di perisai melambangkan cahaya kerohanian dari Tuhan Yang Maha Esa yang menerangi sanubari seluruh bangsa beriman.',
+          badge: 'Sila Pertama',
+          icon: '⭐',
+          highlightText: 'Ketuhanan Yang Maha Esa',
+        },
+        {
+          chapter: 'Babak 2',
+          title: 'Sila 2: Rantai Emas Kemanusiaan',
+          narration: '🔗 Mata rantai bulat dan persegi saling mengait, melambangkan pria dan wanita bersatu padu menjunjung tinggi martabat kemanusiaan yang adil dan beradab.',
+          badge: 'Sila Kedua',
+          icon: '🔗',
+          highlightText: 'Kemanusiaan yang Adil & Beradab',
+        },
+        {
+          chapter: 'Babak 3',
+          title: 'Sila 3 & 4: Beringin & Banteng',
+          narration: '🌳 Pohon beringin melambangkan persatuan teguh tempat berteduh, sedangkan kepala banteng melambangkan musyawarah mufakat penuh kekeluargaan.',
+          badge: 'Sila 3 & 4',
+          icon: '🌳',
+          highlightText: 'Persatuan & Musyawarah Mufakat',
+        },
+        {
+          chapter: 'Babak 4',
+          title: 'Sila 5: Padi & Kapas Keadilan',
+          narration: '🌾 Padi dan kapas melambangkan kecukupan pangan dan sandang bagi seluruh rakyat Indonesia tanpa kesenjangan demi kemakmuran bersama.',
+          badge: 'Sila Kelima',
+          icon: '🌾',
+          highlightText: 'Keadilan Sosial Bagi Seluruh Rakyat',
+        },
+      ];
+    case 'spok_sentence':
+      return [
+        {
+          chapter: 'Babak 1',
+          title: 'Subjek (S): Sang Pelaku Aksi',
+          narration: '👤 Subjek adalah orang, hewan, atau benda yang melakukan tindakan dalam kalimat. Contohnya: "Raden", "Guru Kami", atau "Kucing Belang".',
+          badge: 'Subjek Pelaku',
+          icon: '👤',
+          highlightText: 'Pelaku aksi dalam kalimat',
+        },
+        {
+          chapter: 'Babak 2',
+          title: 'Predikat (P): Kata Kerja Aksi',
+          narration: '🏃 Predikat adalah kata kerja yang menjelaskan aktivitas atau tindakan yang dilakukan oleh sang subjek. Contohnya: "membaca", "menulis", "merancang".',
+          badge: 'Predikat Tindakan',
+          icon: '🏃',
+          highlightText: 'Tindakan atau kegiatan yang dilakukan',
+        },
+        {
+          chapter: 'Babak 3',
+          title: 'Objek (O): Sasaran Tindakan',
+          narration: '🎯 Objek adalah hal atau benda yang dikenai tindakan langsung oleh predikat. Contohnya: "buku ensiklopedia sains", "surat kabar".',
+          badge: 'Objek Penerima',
+          icon: '🎯',
+          highlightText: 'Sasaran langsung dari kata kerja',
+        },
+        {
+          chapter: 'Babak 4',
+          title: 'Keterangan (K): Waktu & Tempat',
+          narration: '📍 Keterangan melengkapi kalimat dengan konteks tempat atau waktu. Contoh: "di Perpustakaan Kota kemarin pagi". Kalimat SPOK kini utuh dan sempurna!',
+          badge: 'Kalimat Efektif',
+          icon: '📍',
+          highlightText: 'Keterangan waktu dan tempat lengkap',
+        },
+      ];
+    case 'history_timeline':
+      return [
+        {
+          chapter: 'Babak 1',
+          title: 'Zaman Kerajaan Maritim Sriwijaya',
+          narration: '⛵ Pada abad ke-7, Kerajaan Sriwijaya berjaya sebagai pusat perdagangan maritim dunia dan pusat pembelajaran agama terkemuka di Asia.',
+          badge: 'Maritim Klasik',
+          icon: '⛵',
+          highlightText: 'Pusat perdagangan rempah dunia',
+        },
+        {
+          chapter: 'Babak 2',
+          title: 'Era Keemasan Majapahit & Nusantara',
+          narration: '👑 Abad ke-14 menjadi saksi Sumpah Palapa Mahapatih Gajah Mada di bawah Raja Hayam Wuruk, menyatukan kepulauan Nusantara dalam persaudaraan.',
+          badge: 'Sumpah Palapa',
+          icon: '👑',
+          highlightText: 'Persatuan kepulauan Nusantara',
+        },
+        {
+          chapter: 'Babak 3',
+          title: 'Kebangkitan Nasional 1908 & 1928',
+          narration: '🇮🇩 Lahirnya Budi Utomo dan ikrar Sumpah Pemuda 28 Oktober 1928 menyatukan pemuda dari seluruh suku bangsa dalam satu tumpah darah Indonesia!',
+          badge: 'Sumpah Pemuda',
+          icon: '🔥',
+          highlightText: 'Satu nusa, satu bangsa, satu bahasa',
+        },
+        {
+          chapter: 'Babak 4',
+          title: 'Proklamasi Kemerdekaan 17 Agustus 1945',
+          narration: '🎉 Bung Karno dan Bung Hatta memproklamasikan kemerdekaan Indonesia di Pegangsaan Timur 56! Bangsa kita berdaulat penuh menjadi negara merdeka!',
+          badge: 'Indonesia Merdeka',
+          icon: '🎉',
+          highlightText: 'Proklamasi kemerdekaan Republik Indonesia',
+        },
+      ];
+    case 'blood_circulation':
+      return [
+        {
+          chapter: 'Babak 1',
+          title: 'Jantung: 4 Ruang Berdenyut',
+          narration: '❤️ Jantung memiliki 4 ruang ajaib (serambi kanan & kiri, bilik kanan & kiri) yang berdenyut memompa darah kaya nutrisi setiap detik kehidupanmu.',
+          badge: 'Pompa Jantung',
+          icon: '❤️',
+          highlightText: 'Empat ruang denyut jantung manusia',
+        },
+        {
+          chapter: 'Babak 2',
+          title: 'Sirkulasi Darah Kecil ke Paru-Paru',
+          narration: '🫁 Bilik kanan memompa darah yang mengandung CO₂ menuju paru-paru. Di alveolus paru, CO₂ dilepaskan dan oksigen segar diikat oleh hemoglobin!',
+          badge: 'Peredaran Kecil',
+          icon: '🫁',
+          highlightText: 'Pertukaran gas CO₂ dan O₂ di paru',
+        },
+        {
+          chapter: 'Babak 3',
+          title: 'Sirkulasi Darah Besar ke Seluruh Tubuh',
+          narration: '🩸 Darah merah kaya O₂ masuk ke bilik kiri, lalu dipompa melalui pembuluh aorta ke otak, otot tangan, kaki, dan seluruh sel tubuh manusia!',
+          badge: 'Peredaran Besar',
+          icon: '🩸',
+          highlightText: 'Distribusi darah O₂ via arteri aorta',
+        },
+        {
+          chapter: 'Babak 4',
+          title: 'Energi & Stamina Berkelanjutan',
+          narration: '🏃 Darah membawa sari-sari makanan hasil pencernaan untuk dibakar menjadi tenaga gerak, menjaga tubuhmu selalu fit dan penuh vitalitas!',
+          badge: 'Vitalitas Tubuh',
+          icon: '🏃',
+          highlightText: 'Energi & kesehatan prima seluruh raga',
+        },
+      ];
+    case 'flowchart_logic':
+      return [
+        {
+          chapter: 'Babak 1',
+          title: 'Terminator Awal (Mulai / Start)',
+          narration: '🟢 Setiap algoritma komputer berawal dari simbol oval Terminator. Ini menandakan program diinisialisasi dan siap menerima masukan data.',
+          badge: 'Titik Awal',
+          icon: '🟢',
+          highlightText: 'Inisialisasi sistem & persiapan data',
+        },
+        {
+          chapter: 'Babak 2',
+          title: 'Input Data & Pemrosesan Balok',
+          narration: '💻 Simbol jajar genjang menerima data dari pengguna, lalu simbol persegi panjang memproses formula perhitungan logika secara berurutan.',
+          badge: 'Proses Komputasi',
+          icon: '💻',
+          highlightText: 'Input data & eksekusi formula logis',
+        },
+        {
+          chapter: 'Babak 3',
+          title: 'Percabangan Keputusan (If-Else)',
+          narration: '💎 Simbol belah ketupat adalah otak keputusan! Contoh: "Apakah skor >= 75? Jika YA lanjut lulus, jika TIDAK ulangi latihan kembali".',
+          badge: 'Logika Keputusan',
+          icon: '💎',
+          highlightText: 'Percabangan kondisi logika pintar',
+        },
+        {
+          chapter: 'Babak 4',
+          title: 'Terminator Akhir (Selesai / End)',
+          narration: '🏁 Algoritma mencapai garis akhir setelah membuahkan hasil output akurat, menyelesaikan masalah komputasi secara efektif dan efisien!',
+          badge: 'Solusi Sukses',
+          icon: '🏁',
+          highlightText: 'Solusi program komputer tuntas',
+        },
+      ];
+    case 'math_arithmetic':
+      return [
+        {
+          chapter: 'Babak 1',
+          title: 'Konsep Bilangan Utuh (1 Bagian)',
+          narration: '🍕 Bayangkan satu loyang pizza lezat yang baru matang. Bentuk bulat utuh ini mewakili angka satu (1) utuh dalam matematika.',
+          badge: 'Bilangan Bulat',
+          icon: '🍕',
+          highlightText: 'Satu kesatuan utuh bernilai 1',
+        },
+        {
+          chapter: 'Babak 2',
+          title: 'Membagi Sama Rata Jadi Pecahan',
+          narration: '🔪 Jika pizza dipotong menjadi 4 bagian sama besar, setiap potongan bernilai 1/4 (satu per empat). Pembilang di atas, penyebut di bawah!',
+          badge: 'Pecahan Biasa',
+          icon: '🔪',
+          highlightText: 'Satu potong dari 4 bagian (1/4)',
+        },
+        {
+          chapter: 'Babak 3',
+          title: 'Menjumlahkan Pecahan Senilai',
+          narration: '➕ Dua potong pizza bernilai 1/4 + 1/4 = 2/4. Jika disederhanakan dengan membagi 2, nilainya sama persis dengan setengah pizza (1/2)!',
+          badge: 'Penyederhanaan',
+          icon: '➕',
+          highlightText: '2/4 senilai dengan setengah (1/2)',
+        },
+        {
+          chapter: 'Babak 4',
+          title: 'Keadilan Berbagi Sehari-Hari',
+          narration: '🤝 Konsep pecahan melatih kita untuk berbagi makanan, uang saku, dan rezeki secara adil dan jujur kepada sesama teman dan keluarga!',
+          badge: 'Keadilan Nyata',
+          icon: '🤝',
+          highlightText: 'Berhitung & berbagi secara adil',
+        },
+      ];
+    default:
+      return [
+        {
+          chapter: 'Babak 1',
+          title: 'Pengamatan & Fenomena Nyata',
+          narration: `🔍 Mempelajari ${type.replace(/_/g, ' ')} berawal dari rasa ingin tahu mengamati fenomena alam dan lingkungan di sekitar kita.`,
+          badge: 'Pengamatan Awal',
+          icon: '🔍',
+          highlightText: 'Observasi fenomena nyata di sekitar',
+        },
+        {
+          chapter: 'Babak 2',
+          title: 'Mekanisme & Alur Proses',
+          narration: '⚙️ Komponen-komponen utama saling berinteraksi membentuk alur kerja yang teratur, logis, dan dapat dibuktikan secara ilmiah.',
+          badge: 'Alur Sistematis',
+          icon: '⚙️',
+          highlightText: 'Sistem kerja ilmiah yang logis',
+        },
+        {
+          chapter: 'Babak 3',
+          title: 'Prinsip Kunci & Formula Baku',
+          narration: '🧪 Para ilmuwan merumuskan prinsip dan formula baku untuk menjelaskan hukum alam yang mendasari fenomena menakjubkan ini.',
+          badge: 'Formula Baku',
+          icon: '🧪',
+          highlightText: 'Prinsip ilmu pengetahuan teruji',
+        },
+        {
+          chapter: 'Babak 4',
+          title: 'Wawasan Bernilai Bagi Masa Depan',
+          narration: '💡 Menguasai ilmu ini membekali kita untuk menciptakan inovasi teknologi baru, menjaga kelestarian bumi, dan memajukan peradaban!',
+          badge: 'Inovasi Masa Depan',
+          icon: '💡',
+          highlightText: 'Wawasan berharga untuk berinovasi',
+        },
+      ];
+  }
+}
+
 interface LibraryTopicVisualizerProps {
   type: VisualDiagramType;
   title: string;
@@ -95,99 +755,268 @@ export const LibraryTopicVisualizer: React.FC<LibraryTopicVisualizerProps> = ({
   badge,
   accentColor = '#38bdf8',
 }) => {
+  const sound = SoundManager.getInstance();
+
   const [activeStep, setActiveStep] = useState<number>(0);
-  const [isHovered, setIsHovered] = useState<boolean>(false);
+  const [isPlaying, setIsPlaying] = useState<boolean>(true);
+  const [playbackSpeed, setPlaybackSpeed] = useState<number>(1); // 1x or 1.5x
+  const [progressPercent, setProgressPercent] = useState<number>(0);
+
+  const scenes = useMemo(() => getTopicStoryScenes(type), [type]);
+  const currentScene = scenes[activeStep] || scenes[0];
+
+  // Reset step & auto-play saat tipe topik berganti
+  useEffect(() => {
+    setActiveStep(0);
+    setProgressPercent(0);
+    setIsPlaying(true);
+  }, [type]);
+
+  // Autoplay loop timer (5 detik per adegan pada speed 1x)
+  useEffect(() => {
+    if (!isPlaying) return;
+
+    const stepDuration = 5000 / playbackSpeed;
+    const intervalTime = 100;
+    const stepIncrement = (intervalTime / stepDuration) * 100;
+
+    const timer = setInterval(() => {
+      setProgressPercent((prev) => {
+        if (prev >= 100) {
+          setActiveStep((cur) => {
+            const next = (cur + 1) % scenes.length;
+            sound.playHover();
+            return next;
+          });
+          return 0;
+        }
+        return prev + stepIncrement;
+      });
+    }, intervalTime);
+
+    return () => clearInterval(timer);
+  }, [isPlaying, playbackSpeed, scenes.length, sound]);
+
+  // Tombol navigasi manual
+  const handlePrev = () => {
+    sound.playClick();
+    setProgressPercent(0);
+    setActiveStep((prev) => (prev > 0 ? prev - 1 : scenes.length - 1));
+  };
+
+  const handleNext = () => {
+    sound.playClick();
+    setProgressPercent(0);
+    setActiveStep((prev) => (prev < scenes.length - 1 ? prev + 1 : 0));
+  };
+
+  const handleSelectStep = (idx: number) => {
+    sound.playClick();
+    setProgressPercent(0);
+    setActiveStep(idx);
+  };
+
+  const handleTogglePlay = () => {
+    sound.playClick();
+    setIsPlaying((prev) => !prev);
+  };
+
+  const handleToggleSpeed = () => {
+    sound.playClick();
+    setPlaybackSpeed((prev) => (prev === 1 ? 1.5 : 1));
+  };
 
   return (
-    <div
-      className="relative w-full rounded-2xl bg-neutral-950/80 border border-neutral-800/80 shadow-2xl p-4 overflow-hidden flex flex-col items-center justify-center transition-all duration-300"
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-    >
-      {/* Top Banner Tag */}
-      <div className="w-full flex items-center justify-between mb-3 text-xs">
-        <div className="flex items-center gap-2">
-          <span className="px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 font-bold tracking-wide flex items-center gap-1.5 shadow-sm">
-            <Sparkles className="w-3.5 h-3.5 text-amber-400 animate-spin" style={{ animationDuration: '6s' }} />
-            MODEL VISUAL EDUKASI
+    <div className="relative w-full rounded-3xl bg-gradient-to-b from-neutral-900 via-neutral-950 to-neutral-950 border-2 border-neutral-800 shadow-[0_0_40px_rgba(0,0,0,0.8)] overflow-hidden flex flex-col font-['Chakra_Petch']">
+      
+      {/* ============================================================== */}
+      {/* 1. TOP VIDEO PLAYER HEADER (Gaya Layar Pemutar Video Edukasi)   */}
+      {/* ============================================================== */}
+      <div className="px-3.5 sm:px-5 py-2.5 bg-neutral-950/90 border-b border-neutral-800 flex items-center justify-between gap-2 shrink-0">
+        <div className="flex items-center gap-2.5">
+          {/* Badge Live / Rec Video */}
+          <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-rose-500/15 border border-rose-500/40 text-rose-400 font-black text-[11px] tracking-wider uppercase shadow-sm">
+            <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping" />
+            <Film className="w-3.5 h-3.5 text-rose-400" />
+            <span>VIDEO BERGAMBAR</span>
           </span>
-          {badge && (
-            <span className="px-2 py-0.5 rounded-full bg-neutral-800 text-neutral-300 border border-neutral-700">
-              {badge}
+
+          <span className="text-xs font-bold text-amber-300 hidden sm:inline-block">
+            {title}
+          </span>
+        </div>
+
+        <div className="flex items-center gap-2">
+          {/* Speed Toggle */}
+          <button
+            type="button"
+            onClick={handleToggleSpeed}
+            className="px-2 py-0.5 rounded-lg bg-neutral-900 hover:bg-neutral-800 text-sky-400 border border-neutral-700 font-mono text-[11px] font-bold transition-all cursor-pointer"
+            title="Kecepatan Video"
+          >
+            {playbackSpeed}x SPEED
+          </button>
+
+          {/* Babak Aktif Badge */}
+          <span className="px-2.5 py-0.5 rounded-lg bg-neutral-800 text-neutral-300 font-mono font-bold text-xs border border-neutral-700">
+            {currentScene.chapter} / 4
+          </span>
+        </div>
+      </div>
+
+      {/* ============================================================== */}
+      {/* 2. AREA LAYAR UTAMA: SVG ILUSTRASI ANIMASI (16:9 Sinematik)    */}
+      {/* ============================================================== */}
+      <div className="relative w-full aspect-[16/9] max-h-[300px] flex items-center justify-center bg-gradient-to-b from-neutral-950 via-neutral-900 to-neutral-950 border-b border-neutral-800/80 overflow-hidden shadow-inner group">
+        
+        {/* Render SVG Diagram Topik */}
+        <div className="w-full h-full p-2 transition-transform duration-300">
+          {renderDiagramSvg(type, activeStep, setActiveStep)}
+        </div>
+
+        {/* Floating Chapter Pill di Pojok Layar Animasi */}
+        <div className="absolute top-3 left-3 flex items-center gap-2 pointer-events-none">
+          <span className="px-2.5 py-1 rounded-xl bg-black/75 backdrop-blur-md border border-white/20 text-white font-bold text-xs flex items-center gap-1.5 shadow-lg">
+            <span>{currentScene.icon}</span>
+            <span>{currentScene.title}</span>
+          </span>
+        </div>
+
+        {/* Floating Highlight Cue di Pojok Kanan Atas */}
+        <div className="absolute top-3 right-3 hidden sm:flex items-center gap-1.5 pointer-events-none">
+          <span className="px-2.5 py-1 rounded-xl bg-amber-500/20 backdrop-blur-md border border-amber-400/40 text-amber-300 font-mono font-bold text-[11px] shadow-lg flex items-center gap-1">
+            <Sparkles className="w-3 h-3 text-amber-400" />
+            <span>{currentScene.highlightText}</span>
+          </span>
+        </div>
+
+        {/* Overlay Tombol Play Besar jika Sedang Dijeda */}
+        {!isPlaying && (
+          <button
+            type="button"
+            onClick={handleTogglePlay}
+            className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-[1px] cursor-pointer transition-opacity"
+            title="Putar Video Bergambar"
+          >
+            <div className="w-14 h-14 rounded-full bg-amber-400 text-neutral-950 flex items-center justify-center shadow-[0_0_30px_rgba(245,158,11,0.8)] transform hover:scale-110 active:scale-95 transition-transform">
+              <Play className="w-7 h-7 fill-neutral-950 ml-1" />
+            </div>
+          </button>
+        )}
+      </div>
+
+      {/* Progress Ticker Bar (Indikator waktu slide berganti) */}
+      <div className="w-full h-1 bg-neutral-900 overflow-hidden">
+        <div
+          className="h-full bg-gradient-to-r from-amber-400 via-orange-500 to-amber-300 transition-all duration-100 shadow-[0_0_8px_rgba(245,158,11,0.6)]"
+          style={{ width: `${isPlaying ? progressPercent : 100}%` }}
+        />
+      </div>
+
+      {/* ============================================================== */}
+      {/* 3. KOTAK SUBTITLE & NARASI BERGAMBAR (Prof. Raden Robot Pemandu)*/}
+      {/* ============================================================== */}
+      <div className="p-3 sm:p-4 bg-gradient-to-r from-neutral-950 via-neutral-900/90 to-neutral-950 border-b border-neutral-800 flex items-start gap-3">
+        {/* Avatar Robot Pemandu Edukasi */}
+        <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-gradient-to-br from-sky-400 to-blue-600 border-2 border-sky-300 text-white flex items-center justify-center shadow-lg shrink-0 mt-0.5 animate-pulse">
+          <Bot className="w-5 h-5 sm:w-6 sm:h-6" />
+        </div>
+
+        {/* Kotak Subtitle Teks Cerita Narasi */}
+        <div className="flex-1 space-y-1">
+          <div className="flex items-center gap-2">
+            <span className="font-extrabold text-xs text-sky-400 uppercase tracking-wider">
+              Prof. Raden Bot • Narator Bergambar:
             </span>
-          )}
-        </div>
-        <div className="flex items-center gap-2 text-neutral-400">
-          <Eye className="w-3.5 h-3.5 text-sky-400" />
-          <span>Interaktif & Animasi</span>
+            <span className="px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 text-[10px] font-bold border border-amber-500/30">
+              {currentScene.badge}
+            </span>
+          </div>
+          <p className="text-xs sm:text-sm text-neutral-100 font-sans leading-relaxed tracking-wide font-medium">
+            {currentScene.narration}
+          </p>
         </div>
       </div>
 
-      {/* SVG Canvas Container */}
-      <div className="relative w-full aspect-[16/9] max-h-[290px] flex items-center justify-center rounded-xl bg-gradient-to-b from-neutral-900/90 to-neutral-950/95 border border-neutral-800/60 overflow-hidden shadow-inner">
-        {renderDiagramSvg(type, activeStep, setActiveStep)}
-      </div>
+      {/* ============================================================== */}
+      {/* 4. PLAYER CONTROL TIMELINE BAR (Putar, Mundur, Maju, 4 Babak)   */}
+      {/* ============================================================== */}
+      <div className="px-3 sm:px-4 py-2.5 bg-neutral-950 flex flex-wrap items-center justify-between gap-2">
+        {/* Tombol Play / Pause / Prev / Next */}
+        <div className="flex items-center gap-1.5">
+          <button
+            type="button"
+            onClick={handlePrev}
+            className="p-1.5 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-neutral-300 hover:text-white border border-neutral-800 cursor-pointer active:scale-95 transition-all"
+            title="Adegan Sebelumnya"
+          >
+            <SkipBack className="w-4 h-4" />
+          </button>
 
-      {/* Visual Caption Footer */}
-      <div className="w-full mt-3 flex items-center justify-between text-[11px] text-neutral-400 px-1">
-        <div className="flex items-center gap-1.5 text-neutral-300">
-          <Info className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-          <span>{getDiagramDescription(type)}</span>
+          <button
+            type="button"
+            onClick={handleTogglePlay}
+            className={`px-3 py-1.5 rounded-xl text-xs font-black flex items-center gap-1.5 cursor-pointer active:scale-95 transition-all shadow-sm ${
+              isPlaying
+                ? 'bg-neutral-800 hover:bg-neutral-700 text-amber-300 border border-neutral-700'
+                : 'bg-amber-400 hover:bg-amber-300 text-neutral-950 border border-amber-300 shadow-[0_0_12px_rgba(245,158,11,0.5)]'
+            }`}
+            title={isPlaying ? 'Jeda Video' : 'Putar Otomatis'}
+          >
+            {isPlaying ? (
+              <>
+                <Pause className="w-3.5 h-3.5 fill-amber-300" />
+                <span>Jeda</span>
+              </>
+            ) : (
+              <>
+                <Play className="w-3.5 h-3.5 fill-neutral-950 ml-0.5" />
+                <span>Putar Cerita</span>
+              </>
+            )}
+          </button>
+
+          <button
+            type="button"
+            onClick={handleNext}
+            className="p-1.5 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-neutral-300 hover:text-white border border-neutral-800 cursor-pointer active:scale-95 transition-all"
+            title="Adegan Berikutnya"
+          >
+            <SkipForward className="w-4 h-4" />
+          </button>
         </div>
-        <span className="text-[10px] text-neutral-500 hidden sm:inline">RadenWorld Digital Visualizer</span>
+
+        {/* 4 Titik Babak Cerita Video (Clickable Scrubber) */}
+        <div className="flex items-center gap-1.5">
+          {scenes.map((sc, sIdx) => {
+            const isCur = activeStep === sIdx;
+            return (
+              <button
+                key={sIdx}
+                type="button"
+                onClick={() => handleSelectStep(sIdx)}
+                className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1 border ${
+                  isCur
+                    ? 'bg-gradient-to-r from-amber-400 to-orange-400 text-neutral-950 border-amber-300 font-black shadow-md scale-105'
+                    : 'bg-neutral-900 hover:bg-neutral-800 text-neutral-400 hover:text-white border-neutral-800'
+                }`}
+              >
+                <span>{sc.icon}</span>
+                <span className="hidden sm:inline">{sc.chapter}</span>
+              </button>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
 };
 
-// ============================================================================
-// HELPER DESKRIPSI DIAGRAM
-// ============================================================================
-function getDiagramDescription(type: VisualDiagramType): string {
-  switch (type) {
-    case 'photosynthesis':
-      return 'Matahari + H₂O dari akar + CO₂ dari udara menghasilkan Glukosa & Oksigen murni.';
-    case 'water_cycle':
-      return 'Air laut menguap (evaporasi), membentuk awan (kondensasi), lalu turun hujan (presipitasi).';
-    case 'solar_system':
-      return 'Matahari di pusat gravitasi dikelilingi orbit elips planet-planet tata surya.';
-    case 'cell_structure':
-      return 'Organel sel: Nukleus (inti genetik), Mitokondria (pembangkit energi ATP), & Membran pelindung.';
-    case 'dna_helix':
-      return 'Heliks ganda DNA: Pasangan komplementer Adenin-Timin (A-T) dan Guanin-Sitosin (G-C).';
-    case 'pythagoras':
-      return 'Luas bujur sangkar hipotenusa sama dengan jumlah luas bujur sangkar kedua sisi tegak (a² + b² = c²).';
-    case 'cartesian_linear':
-      return 'Garis lurus y = mx + c pada koordinat Kartesius dengan gradien kemiringan m.';
-    case 'trigonometry_wave':
-      return 'Proyeksi rotasi sudut pada lingkaran satuan membentuk gelombang sinusoidal kontinu.';
-    case 'bohr_atom':
-      return 'Elektron mengorbit inti atom pada tingkat energi stasioner kulit K, L, M.';
-    case 'ph_scale':
-      return 'Skala pH 0 (asam pekat) hingga 14 (basa kuat), netral pada air murni (pH 7).';
-    case 'newton_dynamics':
-      return 'Hukum II Newton (F = m·a): Percepatan sebanding resultan gaya dan berbanding terbalik dengan massa.';
-    case 'pancasila_shield':
-      return '5 Simbol Moral Bangsa: Bintang, Rantai Emas, Pohon Beringin, Kepala Banteng, Padi & Kapas.';
-    case 'spok_sentence':
-      return 'Struktur kalimat efektif bahasa Indonesia: Subjek (S) + Predikat (P) + Objek (O) + Keterangan (K).';
-    case 'history_timeline':
-      return 'Garis waktu kejayaan Nusantara: Kerajaan Kutai -> Sriwijaya -> Majapahit -> Kemerdekaan 1945.';
-    case 'blood_circulation':
-      return 'Sirkulasi ganda: Darah kaya O₂ dari paru ke bilik kiri, dipompa ke seluruh tubuh.';
-    case 'flowchart_logic':
-      return 'Bagan alir algoritma: Start -> Input Data -> Percabangan Kondisi (If-Else) -> Selesai.';
-    case 'math_arithmetic':
-      return 'Konsep pecahan lingkaran & balok berhitung matematika interaktif.';
-    default:
-      return 'Peta konsep cerdas: Hubungan antar gagasan inti, formula, dan fakta sains.';
-  }
-}
 
 // ============================================================================
 // SVG RENDERER PER JENIS MATERI
 // ============================================================================
-function renderDiagramSvg(
+export function renderDiagramSvg(
   type: VisualDiagramType,
   step: number,
   setStep: (s: number) => void

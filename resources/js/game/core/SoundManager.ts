@@ -291,6 +291,159 @@ export class SoundManager {
     } catch (e) {}
   }
 
+  /** Efek suara jawaban benar pada kuis arcade (Happy Correct Chime) */
+  public playCorrect(): void {
+    if (this.isMuted) return;
+    const ctx = this.initCtx();
+    if (!ctx) return;
+
+    try {
+      const now = ctx.currentTime;
+      const notes = [659.25, 783.99, 1046.5]; // E5 -> G5 -> C6
+      notes.forEach((freq, idx) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, now + idx * 0.06);
+
+        const vol = this.masterVolume * this.sfxVolume * 0.15;
+        gain.gain.setValueAtTime(vol, now + idx * 0.06);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.06 + 0.22);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now + idx * 0.06);
+        osc.stop(now + idx * 0.06 + 0.22);
+      });
+    } catch (e) {}
+  }
+
+  /** Efek suara jawaban salah / buzzer pada kuis arcade (Arcade Buzzer Thud) */
+  public playWrong(): void {
+    if (this.isMuted) return;
+    const ctx = this.initCtx();
+    if (!ctx) return;
+
+    try {
+      const now = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(160, now);
+      osc.frequency.linearRampToValueAtTime(110, now + 0.22);
+
+      const vol = this.masterVolume * this.sfxVolume * 0.18;
+      gain.gain.setValueAtTime(vol, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.22);
+    } catch (e) {}
+  }
+
+  /** Efek suara combo bertingkat / streak kuis (Arcade Rising Sparkle) */
+  public playCombo(comboLevel: number = 2): void {
+    if (this.isMuted) return;
+    const ctx = this.initCtx();
+    if (!ctx) return;
+
+    try {
+      const now = ctx.currentTime;
+      const baseFreq = 523.25 + Math.min(comboLevel, 6) * 90;
+      const chord = [baseFreq, baseFreq * 1.25, baseFreq * 1.5];
+      chord.forEach((freq, idx) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, now + idx * 0.05);
+
+        const vol = this.masterVolume * this.sfxVolume * 0.12;
+        gain.gain.setValueAtTime(vol, now + idx * 0.05);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.05 + 0.25);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now + idx * 0.05);
+        osc.stop(now + idx * 0.05 + 0.25);
+      });
+    } catch (e) {}
+  }
+
+  /** Efek suara detak waktu hitung mundur (Clock Tick) */
+  public playTimerTick(): void {
+    if (this.isMuted) return;
+    const ctx = this.initCtx();
+    if (!ctx) return;
+
+    try {
+      const now = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(1200, now);
+      osc.frequency.exponentialRampToValueAtTime(400, now + 0.03);
+
+      const vol = this.masterVolume * this.sfxVolume * 0.06;
+      gain.gain.setValueAtTime(vol, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.03);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.03);
+    } catch (e) {}
+  }
+
+  /** Efek suara kartu dibagikan / ditarik (Card Deal / Slide) */
+  public playCardDeal(): void {
+    if (this.isMuted) return;
+    const ctx = this.initCtx();
+    if (!ctx) return;
+    try {
+      const now = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(800, now);
+      osc.frequency.exponentialRampToValueAtTime(240, now + 0.08);
+
+      const vol = this.masterVolume * this.sfxVolume * 0.12;
+      gain.gain.setValueAtTime(vol, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.08);
+    } catch (e) {}
+  }
+
+  /** Efek suara membalik kartu / memainkan kartu (Card Flip / Snap) */
+  public playCardFlip(): void {
+    if (this.isMuted) return;
+    const ctx = this.initCtx();
+    if (!ctx) return;
+    try {
+      const now = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(450, now);
+      osc.frequency.exponentialRampToValueAtTime(1100, now + 0.06);
+
+      const vol = this.masterVolume * this.sfxVolume * 0.16;
+      gain.gain.setValueAtTime(vol, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.06);
+    } catch (e) {}
+  }
+
   /** Efek suara karakter melompat ke udara (Mario Style Retro Spring Boing) */
   public playJump(isDoubleJump: boolean = false): void {
     if (this.isMuted) return;

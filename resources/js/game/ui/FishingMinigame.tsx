@@ -403,7 +403,7 @@ export const FishingMinigame: React.FC<FishingMinigameProps> = ({
                   : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/50'
               }`}
             >
-              {fishData.rarity} • ±{fishData.weightKg} kg
+              {fishData.rarity} • {fishData.waterType ? `${fishData.waterType} • ` : ''}±{fishData.weightKg} kg
             </span>
           </div>
 

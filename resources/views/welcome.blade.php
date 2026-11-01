@@ -18,11 +18,6 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700;800&family=Press+Start+2P&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Fredoka:wght@400;500;600;700&family=Quicksand:wght@500;600;700&display=swap" rel="stylesheet">
 
-    @if(request()->is('/'))
-    <!-- Preload Critical LCP Assets (Lobby Avatars - only on Lobby '/') -->
-    <link rel="preload" as="image" href="/assets/sprites/characters/Player/Female/FemaleAvatar_Lobby.webp" fetchpriority="high">
-    <link rel="preload" as="image" href="/assets/sprites/characters/Player/Male/MaleAvatar_Lobby.webp" fetchpriority="high">
-    @endif
 
     <!-- Google Identity Services & Facebook SDK -->
     <script src="https://accounts.google.com/gsi/client" async defer></script>

@@ -796,13 +796,18 @@ export class HouseScene extends Phaser.Scene {
         window.history.pushState(null, '', '/world');
       }
       EventBus.emit('url-changed', '/world');
-      NetworkManager.getInstance().switchRoom('world', 1380, 900);
+      const exitHousePos = { x: 1380, y: 960 };
+      try {
+        localStorage.setItem('raden_pos_world', JSON.stringify(exitHousePos));
+      } catch (e) {}
+
+      NetworkManager.getInstance().switchRoom('world', exitHousePos.x, exitHousePos.y);
       this.cameras?.main?.stopFollow();
       this.scene.start('WorldScene', {
         name: this.playerName,
         avatar: this.currentAvatar,
         spawnNearHouse: true,
-        spawnPos: { x: 1380, y: 900 },
+        spawnPos: exitHousePos,
         privateRoomId: this.privateRoomId,
       });
     });

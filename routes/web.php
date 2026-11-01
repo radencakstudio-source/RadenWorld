@@ -35,10 +35,6 @@ Route::get('/library', function () {
     return view('welcome');
 });
 
-// Route Khusus Mini Game Dialihkan ke World
-Route::get('/minigame/{sport?}', function ($sport = null) {
-    return redirect('/world');
-});
 
 // Route Portal Admin Dialihkan ke World
 Route::get('/admin/{adminToken?}', function ($adminToken = null) {
@@ -1393,19 +1389,7 @@ Route::post('/api/pixel-canvas/reset', function () {
     ]);
 });
 
-// ============================================================================
-// API MINI GAME OLAHRAGA (HEAD SOCCER & HEAD BASKETBALL)
-// ============================================================================
-Route::post('/api/sports/match-result', [\App\Http\Controllers\SportsMiniGameController::class, 'recordMatchResult']);
-Route::get('/api/sports/leaderboard', [\App\Http\Controllers\SportsMiniGameController::class, 'getLeaderboard']);
-Route::get('/api/sports/stats/{playerName}', [\App\Http\Controllers\SportsMiniGameController::class, 'getPlayerStats']);
-Route::post('/api/sports/session', [\App\Http\Controllers\SportsMiniGameController::class, 'saveSession']);
-Route::get('/api/sports/session', [\App\Http\Controllers\SportsMiniGameController::class, 'getSession']);
-Route::delete('/api/sports/session', [\App\Http\Controllers\SportsMiniGameController::class, 'clearSession']);
-Route::post('/api/sports/matchmaking/queue', [\App\Http\Controllers\SportsMiniGameController::class, 'queueMatchmaking']);
-Route::get('/api/sports/matchmaking/status', [\App\Http\Controllers\SportsMiniGameController::class, 'getMatchmakingStatus']);
-Route::post('/api/sports/matchmaking/cancel', [\App\Http\Controllers\SportsMiniGameController::class, 'cancelMatchmaking']);
-Route::post('/api/sports/matchmaking/find-rival', [\App\Http\Controllers\SportsMiniGameController::class, 'findRivalAthlete']);
+
 
 
 

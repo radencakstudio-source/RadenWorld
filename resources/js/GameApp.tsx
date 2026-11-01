@@ -47,14 +47,33 @@ import { PharmacyModal } from './game/ui/PharmacyModal';
 import { MarketRealtorModal } from './game/ui/MarketRealtorModal';
 
 export const GameApp: React.FC = () => {
-  // Check initial URL pathname
-  const initialPath = typeof window !== 'undefined' ? window.location.pathname : '/';
-  const isDirectInGame = initialPath.startsWith('/home') || initialPath.startsWith('/world');
+  // Cek apakah pemain memiliki akun yang sah tersimpan
+  const hasValidAccount = (() => {
+    try {
+      if (typeof window === 'undefined') return false;
+      const saved = localStorage.getItem('raden_player_user');
+      if (!saved) return false;
+      const u = JSON.parse(saved);
+      return Boolean(u && u.name && u.name.trim().toLowerCase() !== 'petualang');
+    } catch (e) {
+      return false;
+    }
+  })();
 
-  // Screen state: 'home' (Lobby /) | 'playing' (Safe House, Open World, Portal Admin, atau Mini Game)
+  const rawPath = typeof window !== 'undefined' ? window.location.pathname : '/';
+  // Jika mencoba langsung mengakses /world atau /home tanpa akun, wajib dialihkan ke / (Beranda Lobby)
+  const isDirectWorldWithoutAccount = (rawPath.startsWith('/world') || rawPath.startsWith('/home')) && !hasValidAccount;
+  if (isDirectWorldWithoutAccount && typeof window !== 'undefined') {
+    window.history.replaceState(null, '', '/');
+  }
+
+  const initialPath = isDirectWorldWithoutAccount ? '/' : rawPath;
+  const isDirectInGame = (initialPath.startsWith('/home') || initialPath.startsWith('/world')) && hasValidAccount;
+
+  // Screen state: 'home' (Lobby /) | 'playing' (Safe House, Open World, Portal Admin)
   const [gameState, setGameState] = useState<'home' | 'playing'>(isDirectInGame ? 'playing' : 'home');
   const [currentPath, setCurrentPath] = useState<string>(initialPath);
-  // LoadingScreen hanya aktif saat masuk langsung ke dalam game (In-Game), Lobby beranda tampil instan
+  // LoadingScreen hanya aktif saat masuk langsung ke dalam game dengan akun yang terdaftar
   const [isLoadingScreen, setIsLoadingScreen] = useState<boolean>(isDirectInGame);
 
   // Game Settings State
@@ -1489,9 +1508,11 @@ export const GameApp: React.FC = () => {
     try {
       localStorage.removeItem('raden_player_user');
       localStorage.removeItem('raden_player_avatar');
+      localStorage.removeItem('raden_auth_token');
     } catch (e) {}
 
     NetworkManager.getInstance().disconnect();
+    EventBus.emit('player-logged-out');
     setIsProfileOpen(false);
     setGameState('home');
     if (window.location.pathname !== '/') {

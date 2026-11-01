@@ -311,11 +311,7 @@ export class CharacterController {
    * Seluruh efek ramuan dinonaktifkan di area ini sesuai aturan permainan.
    */
   public isInSportsMinigameArea(): boolean {
-    if (this.scene.scene.key !== 'WorldScene') return false;
-    const gx = Math.floor(this.player.x / 120);
-    const gy = Math.floor(this.player.y / 120);
-    // Area lapangan olahraga tengah alun-alun (sepakbola, basket, volly: gx 23..56, gy 52..58)
-    return gx >= 23 && gx <= 56 && gy >= 52 && gy <= 58;
+    return false;
   }
 
   /**

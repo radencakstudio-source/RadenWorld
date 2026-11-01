@@ -939,21 +939,74 @@ export class WorldScene extends Phaser.Scene {
     };
     EventBus.on('server-switched', onServerSwitched);
 
-    const onJoinGame = (userData: { name: string; avatar: IAvatarCustomization }) => {
+    const onJoinGame = (userData: { name: string; avatar: IAvatarCustomization; role?: string; isSuperAdmin?: boolean }) => {
       if (!this.sys || !this.sys.displayList) return;
       const status = this.sys.settings?.status;
       if (status === Phaser.Scenes.SHUTDOWN || status === Phaser.Scenes.DESTROYED) return;
-      if (userData?.name) this.pendingPlayerName = userData.name;
+
+      const newName = userData?.name || this.pendingPlayerName || 'Petualang';
+      this.pendingPlayerName = newName;
+
+      // 1. Bersihkan seluruh remote players lama agar tidak ada ghost player dari sesi sebelumnya
+      this.remotePlayers.forEach((rp) => {
+        if (rp && rp.active) rp.destroy();
+      });
+      this.remotePlayers.clear();
+
+      // 2. Perbarui atau spawn karakter lokal
       if (this.player && this.player.active && this.player.scene === this) {
         this.player.setAvatar(userData.avatar);
-        if (userData?.name) {
-          this.player.setEntityName(userData.name);
-        }
+        this.player.setEntityName(newName);
       } else {
-        this.spawnLocalPlayer(userData.name, userData.avatar);
+        this.spawnLocalPlayer(newName, userData.avatar);
       }
+
+      // 3. Pastikan WebSocket tersambung dan kirim event player:join secara real-time!
+      this.networkManager.connect();
+      const isSuper = Boolean(
+        userData.isSuperAdmin ||
+        userData.role === 'super_admin' ||
+        userData.role === 'admin' ||
+        newName.toUpperCase() === 'RADEN'
+      );
+      const spawnX = this.player ? this.player.x : 2460;
+      const spawnY = this.player ? this.player.y : 2460;
+      let savedGold = isSuper ? 999999 : 2500;
+      let savedDiamonds = isSuper ? 99999 : 50;
+      try {
+        const g = localStorage.getItem('raden_player_gold');
+        if (g) savedGold = parseInt(g, 10);
+        const d = localStorage.getItem('raden_player_diamonds');
+        if (d) savedDiamonds = parseInt(d, 10);
+      } catch (e) {}
+
+      this.networkManager.joinGame(
+        newName,
+        userData.avatar,
+        isSuper ? 'super_admin' : (userData.role || 'player'),
+        isSuper,
+        spawnX,
+        spawnY,
+        'down',
+        savedGold,
+        savedDiamonds,
+        'world'
+      );
+      this.networkManager.sendMovement(spawnX, spawnY, 'down', false);
     };
     EventBus.on('join-game', onJoinGame);
+
+    const onPlayerLoggedOut = () => {
+      this.remotePlayers.forEach((rp) => {
+        if (rp && rp.active) rp.destroy();
+      });
+      this.remotePlayers.clear();
+      if (this.player) {
+        try { this.player.destroy(); } catch (e) {}
+        this.player = null as any;
+      }
+    };
+    EventBus.on('player-logged-out', onPlayerLoggedOut);
 
     const onSendChat = (text: string) => {
       if (this.player && this.player.active && this.player.scene) {
@@ -1039,6 +1092,7 @@ export class WorldScene extends Phaser.Scene {
     this.events.once('shutdown', () => {
       EventBus.off('server-switched', onServerSwitched);
       EventBus.off('join-game', onJoinGame);
+      EventBus.off('player-logged-out', onPlayerLoggedOut);
       EventBus.off('send-chat', onSendChat);
       EventBus.off('trigger-expression', onTriggerExpression);
       EventBus.off('trigger-interaction', onTriggerInteraction);

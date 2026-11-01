@@ -2200,6 +2200,7 @@ export const GameApp: React.FC = () => {
           currentServerCode={serverCode}
           onSelectServer={(server: IGameServerOption) => {
             setServerCode(server.code);
+            NetworkManager.getInstance().switchServer(server.code);
             EventBus.emit('new-chat-message', {
               id: `sys_srv_${Date.now()}`,
               sender: 'SISTEM',

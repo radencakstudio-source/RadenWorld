@@ -519,18 +519,108 @@ export class NetworkManager {
     return this.socket?.id;
   }
 
+  /** Kode server aktif saat ini (Asia 1, Asia 2, Asia 3, Asia 4) */
+  private currentServerCode: string = (() => {
+    try {
+      return localStorage.getItem('raden_server_code') || 'Asia 1';
+    } catch (e) {
+      return 'Asia 1';
+    }
+  })();
+
+  public getServerCode(): string {
+    return this.currentServerCode;
+  }
+
+  public setServerCode(code: string): void {
+    this.currentServerCode = code || 'Asia 1';
+    try {
+      localStorage.setItem('raden_server_code', this.currentServerCode);
+    } catch (e) {}
+  }
+
+  /** Mengubah nama server menjadi slug room, contoh: 'Asia 1' -> 'asia-1' */
+  public getServerSlug(code?: string): string {
+    const c = code || this.currentServerCode || 'Asia 1';
+    return c.toLowerCase().replace(/\s+/g, '-');
+  }
+
+  /**
+   * Mengonversi nama area/room dasar menjadi room terisolasi per-server.
+   * Contoh: 'world' di server 'Asia 1' -> 'world_asia-1'
+   * Contoh: 'world' di server 'Asia 2' -> 'world_asia-2'
+   * Rumah pribadi ('house-xxx') dan portal admin ('admin-xxx') tetap bersifat privat global.
+   */
+  public getScopedRoom(baseRoom: string, code?: string): string {
+    if (!baseRoom) baseRoom = 'world';
+    if (
+      baseRoom.startsWith('house-') ||
+      baseRoom.startsWith('safe-') ||
+      baseRoom.startsWith('private-') ||
+      baseRoom.startsWith('admin-')
+    ) {
+      return baseRoom;
+    }
+    const slug = this.getServerSlug(code);
+    const cleanedBase = baseRoom.replace(/_asia-\d+/gi, '');
+    return `${cleanedBase}_${slug}`;
+  }
+
   /**
    * Berpindah antar-room/area (World, Gedung SD, SMP, SMA, Rumah, Admin Portal)
    */
   public switchRoom(room: string, x?: number, y?: number, direction?: Direction): void {
+    const targetRoom = this.getScopedRoom(room);
     if (this.lastJoinData) {
-      this.lastJoinData.room = room;
+      this.lastJoinData.room = targetRoom;
       if (typeof x === 'number') this.lastJoinData.x = x;
       if (typeof y === 'number') this.lastJoinData.y = y;
       if (direction) this.lastJoinData.direction = direction;
     }
     if (!this.socket || !this.isConnected) return;
-    this.socket.emit('player:switch_room', { room, x, y, direction });
+    this.socket.emit('player:switch_room', { room: targetRoom, x, y, direction });
+  }
+
+  /**
+   * Mengeksekusi perpindahan server channel secara real-time (contoh: Asia 1 -> Asia 2)
+   */
+  public switchServer(newServerCode: string): void {
+    this.setServerCode(newServerCode);
+    const currentBase = this.lastJoinData?.room ? this.lastJoinData.room.replace(/_asia-\d+/gi, '') : 'world';
+    const targetRoom = this.getScopedRoom(currentBase, newServerCode);
+
+    if (this.lastJoinData) {
+      this.lastJoinData.room = targetRoom;
+    }
+
+    // Bersihkan daftar pemain remote dari server sebelumnya
+    this.serverPlayers.clear();
+    const myId = this.getSocketId() || 'local-me';
+    if (this.lastJoinData) {
+      this.serverPlayers.set(myId, {
+        id: myId,
+        name: this.lastJoinData.name,
+        avatar: this.lastJoinData.avatar,
+        x: this.lastJoinData.x || 4800,
+        y: this.lastJoinData.y || 4860,
+        direction: this.lastJoinData.direction || 'down',
+        isMoving: false,
+        hp: 100,
+        maxHp: 100,
+        level: 1,
+        role: this.lastJoinData.role,
+        isSuperAdmin: this.lastJoinData.isSuperAdmin,
+      });
+    }
+    this.emitServerPlayersUpdated();
+
+    if (!this.socket || !this.isConnected) return;
+    this.socket.emit('player:switch_room', {
+      room: targetRoom,
+      x: this.lastJoinData?.x,
+      y: this.lastJoinData?.y,
+      direction: this.lastJoinData?.direction || 'down',
+    });
   }
 
   /**
@@ -553,7 +643,8 @@ export class NetworkManager {
     diamonds?: number,
     room: string = 'world'
   ): void {
-    this.lastJoinData = { name, avatar, role, isSuperAdmin, x, y, direction, gold, diamonds, room };
+    const targetRoom = this.getScopedRoom(room);
+    this.lastJoinData = { name, avatar, role, isSuperAdmin, x, y, direction, gold, diamonds, room: targetRoom };
     const isSuper = isSuperAdmin || role === 'super_admin' || name.toUpperCase() === 'RADEN';
 
     const myId = this.getSocketId() || 'local-me';
@@ -580,7 +671,7 @@ export class NetworkManager {
     this.socket.emit('player:join', {
       name,
       avatar,
-      room,
+      room: targetRoom,
       authToken,
       role: isSuper ? 'super_admin' : (role || 'player'),
       isSuperAdmin: isSuper,

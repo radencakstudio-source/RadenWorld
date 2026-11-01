@@ -204,11 +204,14 @@ export const ServerModal: React.FC<ServerModalProps> = ({
       }
     } catch (e) {}
 
-    // 1. Beritahu seluruh scene Phaser untuk menghapus entitas remote player sebelumnya
-    EventBus.emit('server-switched', server);
+    // 1. Eksekusi perpindahan server channel di NetworkManager secara real-time
+    networkMgr.switchServer(server.code);
+    if (server.id === 'custom') {
+      networkMgr.setCustomHost(targetHost);
+    }
 
-    // 2. Hubungkan ulang WebSocket ke host server yang baru
-    networkMgr.setCustomHost(server.id === 'custom' ? targetHost : '');
+    // 2. Beritahu seluruh scene Phaser untuk menghapus entitas remote player sebelumnya dan meminta pemain baru
+    EventBus.emit('server-switched', server);
 
     // 3. Efek suara sukses dan banner konfirmasi
     sound.playSuccess();

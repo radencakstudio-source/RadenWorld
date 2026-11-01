@@ -936,6 +936,7 @@ export class WorldScene extends Phaser.Scene {
         if (rp && rp.active) rp.destroy();
       });
       this.remotePlayers.clear();
+      this.networkManager.requestRoomPlayers();
     };
     EventBus.on('server-switched', onServerSwitched);
 

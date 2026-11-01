@@ -12,12 +12,9 @@ import Phaser from 'phaser';
 import { BootScene } from '../scenes/BootScene';
 import { HouseScene } from '../scenes/HouseScene';
 import { WorldScene } from '../scenes/WorldScene';
-import { AdminPortalScene } from '../scenes/AdminPortalScene';
 import { SchoolScene } from '../scenes/SchoolScene';
 import { CafeScene } from '../scenes/CafeScene';
 import { LibraryScene } from '../scenes/LibraryScene';
-import { SoccerMiniGameScene } from '../scenes/SoccerMiniGameScene';
-import { BasketballMiniGameScene } from '../scenes/BasketballMiniGameScene';
 
 export function createGameConfig(parentContainerId: string = 'game-container'): Phaser.Types.Core.GameConfig {
   return {
@@ -52,7 +49,7 @@ export function createGameConfig(parentContainerId: string = 'game-container'): 
       powerPreference: 'high-performance',
       batchSize: 4096,
     },
-    scene: [BootScene, HouseScene, WorldScene, AdminPortalScene, SchoolScene, CafeScene, LibraryScene, SoccerMiniGameScene, BasketballMiniGameScene],
+    scene: [BootScene, HouseScene, WorldScene, SchoolScene, CafeScene, LibraryScene],
     pixelArt: false,
     roundPixels: true,
     antialias: true,

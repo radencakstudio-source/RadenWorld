@@ -22,7 +22,6 @@ import { SettingsModal, GameSettings } from './game/ui/SettingsModal';
 import { WardrobeModal } from './game/ui/WardrobeModal';
 import { ProfileModal } from './game/ui/ProfileModal';
 import { ServerModal, IGameServerOption } from './game/ui/ServerModal';
-import { TopUpModal } from './game/ui/TopUpModal';
 import { FriendRequestNotification, IFriendRequest } from './game/ui/FriendRequestNotification';
 import { DialogueBox } from './game/ui/DialogueBox';
 import { LoadingScreen } from './game/ui/LoadingScreen';
@@ -46,13 +45,11 @@ import { PoliceReportModal } from './game/ui/PoliceReportModal';
 import { BankModal } from './game/ui/BankModal';
 import { PharmacyModal } from './game/ui/PharmacyModal';
 import { MarketRealtorModal } from './game/ui/MarketRealtorModal';
-import { SportsMiniGameModal } from './game/ui/SportsMiniGameModal';
 
 export const GameApp: React.FC = () => {
-  // Check initial URL pathname & active minigame session
+  // Check initial URL pathname
   const initialPath = typeof window !== 'undefined' ? window.location.pathname : '/';
-  const isMiniGameInitial = initialPath.startsWith('/minigame');
-  const isDirectInGame = initialPath.startsWith('/home') || initialPath.startsWith('/world') || initialPath.startsWith('/admin') || isMiniGameInitial;
+  const isDirectInGame = initialPath.startsWith('/home') || initialPath.startsWith('/world');
 
   // Screen state: 'home' (Lobby /) | 'playing' (Safe House, Open World, Portal Admin, atau Mini Game)
   const [gameState, setGameState] = useState<'home' | 'playing'>(isDirectInGame ? 'playing' : 'home');
@@ -298,7 +295,6 @@ export const GameApp: React.FC = () => {
     } catch (e) {}
     return 50;
   });
-  const [isTopUpOpen, setIsTopUpOpen] = useState(false);
 
   // Inspected Player (saat menekan/klik pemain lain di open world)
   const [inspectedPlayer, setInspectedPlayer] = useState<{
@@ -378,13 +374,7 @@ export const GameApp: React.FC = () => {
   const [isBankModalOpen, setIsBankModalOpen] = useState(false);
   const [isPharmacyModalOpen, setIsPharmacyModalOpen] = useState(false);
   const [isRealtorModalOpen, setIsRealtorModalOpen] = useState(false);
-  // Modal Mini Game Olahraga (Sepak Bola & Bola Basket)
-  const [sportsModal, setSportsModal] = useState<{
-    isOpen: boolean;
-    sport: 'soccer' | 'basketball' | null;
-  }>({ isOpen: false, sport: null });
-  // Mode Mini Game (Sembunyikan UI World, HUD, Chat & Virtual Controls saat bermain sepak bola / basket)
-  const [isMiniGameMode, setIsMiniGameMode] = useState<boolean>(isMiniGameInitial);
+  const [isMiniGameMode, setIsMiniGameMode] = useState<boolean>(false);
   // Minigame Memancing Interaktif Bergaya Stardew Valley
   const [fishingMinigameData, setFishingMinigameData] = useState<IFishData | null>(null);
   const [isFishingMinigameOpen, setIsFishingMinigameOpen] = useState(false);
@@ -674,26 +664,6 @@ export const GameApp: React.FC = () => {
         } else if (p.startsWith('/home')) {
           const seg = p.replace('/home/', '').trim();
           EventBus.emit('switch-scene', { scene: 'HouseScene', privateRoomId: seg });
-        } else if (p.startsWith('/admin')) {
-          let isSuper = false;
-          try {
-            const u = JSON.parse(localStorage.getItem('raden_player_user') || '{}');
-            isSuper = u.role === 'super_admin' || u.is_super_admin || u.email === 'radencakstudio@gmail.com' || u.name?.toUpperCase() === 'RADEN' || playerStats.isSuperAdmin;
-          } catch (e) {}
-
-          if (!isSuper && !playerStats.isSuperAdmin && playerStats.name?.toUpperCase() !== 'RADEN') {
-            alert('Akses Ditolak: Hanya Super Admin yang diizinkan mengakses Portal Admin!');
-            window.history.replaceState(null, '', '/');
-            setGameState('home');
-          } else {
-            const seg = p.replace('/admin/', '').trim() || 'raden-master-key';
-            EventBus.emit('switch-scene', {
-              scene: 'AdminPortalScene',
-              adminToken: seg,
-              name: playerStats.name,
-              avatar: playerStats.avatar || wardrobeAvatar,
-            });
-          }
         }
       }
     };
@@ -870,17 +840,11 @@ export const GameApp: React.FC = () => {
       setIsRealtorModalOpen(true);
       EventBus.emit('dialogue-active', true);
     };
-    const handleOpenSports = (sport: 'soccer' | 'basketball') => {
-      sound.playOpenModal();
-      setSportsModal({ isOpen: true, sport });
-      EventBus.emit('dialogue-active', true);
-    };
 
     EventBus.on('open-police-modal', handleOpenPolice);
     EventBus.on('open-bank-modal', handleOpenBank);
     EventBus.on('open-pharmacy-modal', handleOpenPharmacy);
     EventBus.on('open-realtor-modal', handleOpenRealtor);
-    EventBus.on('open-sports-modal', handleOpenSports);
 
     // Tangani event pembukaan modal Ensiklopedia & Visual Edukasi Perpustakaan Kota
     const handleOpenLibrary = (data?: { schoolType?: 'sd' | 'smp' | 'sma'; grade?: number }) => {
@@ -908,12 +872,7 @@ export const GameApp: React.FC = () => {
     };
     EventBus.on('gain-exp', handleGainExp);
 
-    const handleSwitchSceneEvent = (data: { scene: string }) => {
-      if (data?.scene) {
-        const isSports = data.scene === 'SoccerMiniGameScene' || data.scene === 'BasketballMiniGameScene';
-        setIsMiniGameMode(isSports);
-      }
-    };
+    const handleSwitchSceneEvent = (data: { scene: string }) => {};
     const handleMiniGameActive = (active: boolean) => {
       setIsMiniGameMode(Boolean(active));
     };
@@ -1064,37 +1023,31 @@ export const GameApp: React.FC = () => {
       }
 
       setPlayerStats({
-        x: isAdminPath ? 640 : (initialPath.startsWith('/world') ? 4800 : 840),
-        y: isAdminPath ? 560 : (initialPath.startsWith('/world') ? 4800 : 620),
-        gridX: isAdminPath ? 10 : (initialPath.startsWith('/world') ? 40 : 7),
-        gridY: isAdminPath ? 8 : (initialPath.startsWith('/world') ? 40 : 5),
+        x: initialPath.startsWith('/world') ? 4800 : 840,
+        y: initialPath.startsWith('/world') ? 4800 : 620,
+        gridX: initialPath.startsWith('/world') ? 40 : 7,
+        gridY: initialPath.startsWith('/world') ? 40 : 5,
         level: level,
         name: playerName,
         avatar: playerAvatar,
         role: role,
         isSuperAdmin: isSuperAdmin,
         title: title,
-        roomName: isAdminPath
-          ? `PORTAL SUPER ADMIN: PUSAT KENDALI (ID: ${adminToken})`
-          : (initialPath.startsWith('/world')
-            ? 'SANCTUARY CENTRAL PLAZA'
-            : `RUMAH PRIBADI: RUANG UTAMA (SAFE: ${safeId})`),
-        inHouse: !initialPath.startsWith('/world') && !isAdminPath,
+        roomName: initialPath.startsWith('/world')
+          ? 'SANCTUARY CENTRAL PLAZA'
+          : `RUMAH PRIBADI: RUANG UTAMA (SAFE: ${safeId})`,
+        inHouse: !initialPath.startsWith('/world'),
         privateRoomId: safeId,
       });
 
       const timer = setTimeout(() => {
-        if (isAdminPath) {
-          EventBus.emit('switch-scene', { scene: 'AdminPortalScene', adminToken });
-        } else {
-          EventBus.emit('join-game', {
-            name: playerName,
-            avatar: playerAvatar,
-            privateRoomId: safeId,
-            role,
-            isSuperAdmin,
-          });
-        }
+        EventBus.emit('join-game', {
+          name: playerName,
+          avatar: playerAvatar,
+          privateRoomId: safeId,
+          role,
+          isSuperAdmin,
+        });
       }, 600);
 
       return () => {
@@ -1138,7 +1091,6 @@ export const GameApp: React.FC = () => {
       EventBus.off('open-bank-modal', handleOpenBank);
       EventBus.off('open-pharmacy-modal', handleOpenPharmacy);
       EventBus.off('open-realtor-modal', handleOpenRealtor);
-      EventBus.off('open-sports-modal', handleOpenSports);
       EventBus.off('open-library-modal', handleOpenLibrary);
       EventBus.off('gain-exp', handleGainExp);
       EventBus.off('switch-scene', handleSwitchSceneEvent);
@@ -1370,27 +1322,7 @@ export const GameApp: React.FC = () => {
     handleFollowToggle(friendName);
   };
 
-  // Top Up Berlian Handler
-  const handleSuccessTopUp = (addedDiamonds: number) => {
-    syncWalletWithServer(0, addedDiamonds, 'topup_purchase');
-    setPlayerDiamonds((prev) => {
-      const next = prev + addedDiamonds;
-      try {
-        localStorage.setItem('raden_player_diamonds', next.toString());
-        const u = JSON.parse(localStorage.getItem('raden_player_user') || '{}');
-        u.diamonds = next;
-        localStorage.setItem('raden_player_user', JSON.stringify(u));
-      } catch (e) {}
-      return next;
-    });
-    EventBus.emit('new-chat-message', {
-      id: `topup_succ_${Date.now()}`,
-      sender: 'SISTEM',
-      text: `💎 Top Up Berhasil! +${addedDiamonds} Berlian telah masuk ke saldo terproteksi server!`,
-      timestamp: Date.now(),
-      isSystem: true,
-    });
-  };
+
 
   const handleLoadingComplete = useCallback(() => {
     setIsLoadingScreen(false);
@@ -1527,61 +1459,7 @@ export const GameApp: React.FC = () => {
     EventBus.emit('trigger-interaction');
   }, []);
 
-  // Teleportasi ke Portal Admin (Khusus Super Admin)
-  const handleTeleportToAdminPortal = async () => {
-    sound.playSuccess();
-    let randomToken = `raden-${Math.random().toString(36).substring(2, 8)}-${Date.now().toString(36)}`;
 
-    try {
-      const res = await fetch('/api/admin/portal/token', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: playerStats.name,
-          email: 'radencakstudio@gmail.com',
-        }),
-      });
-      const data = await res.json();
-      if (data.status === 'success' && data.token) {
-        randomToken = data.token;
-      }
-    } catch (e) {}
-
-    const adminPath = `/admin/${randomToken}`;
-    if (window.location.pathname !== adminPath) {
-      window.history.pushState(null, '', adminPath);
-    }
-    setCurrentPath(adminPath);
-    setIsProfileOpen(false);
-
-    try {
-      const u = JSON.parse(localStorage.getItem('raden_player_user') || '{}');
-      u.role = 'super_admin';
-      u.is_super_admin = true;
-      localStorage.setItem('raden_player_user', JSON.stringify(u));
-    } catch (e) {}
-
-    setPlayerStats((prev) => ({
-      ...prev,
-      x: 640,
-      y: 560,
-      gridX: 10,
-      gridY: 8,
-      level: 99,
-      role: 'super_admin',
-      isSuperAdmin: true,
-      title: '👑 SUPER ADMIN',
-      roomName: `PORTAL SUPER ADMIN: PUSAT KENDALI (ID: ${randomToken})`,
-      inHouse: false,
-    }));
-
-    EventBus.emit('switch-scene', {
-      scene: 'AdminPortalScene',
-      adminToken: randomToken,
-      name: playerStats.name,
-      avatar: playerStats.avatar || wardrobeAvatar,
-    });
-  };
 
   // Virtual Controls Handlers (Khusus Mode Mobile)
   const handleVirtualDirectionPress = useCallback((dir: 'up' | 'down' | 'left' | 'right') => {
@@ -1721,7 +1599,6 @@ export const GameApp: React.FC = () => {
             controlMode={settings.controlMode}
             gold={playerGold}
             diamonds={playerDiamonds}
-            onOpenTopUp={() => setIsTopUpOpen(true)}
             friendsList={friendsList}
             onInspectPlayer={(p) => {
               EventBus.emit('inspect-player-profile', p);
@@ -1881,8 +1758,6 @@ export const GameApp: React.FC = () => {
                   EventBus.emit('open-private-chat', targetName);
                 }}
                 onLogout={inspectedPlayer ? undefined : handleLogout}
-                onTeleportToAdminPortal={inspectedPlayer ? undefined : handleTeleportToAdminPortal}
-                onOpenTopUp={inspectedPlayer ? undefined : () => setIsTopUpOpen(true)}
                 email={
                   inspectedPlayer
                     ? undefined
@@ -2181,16 +2056,6 @@ export const GameApp: React.FC = () => {
             </>
           )}
 
-          {/* Modal Top Up Berlian */}
-          {isTopUpOpen && (
-            <TopUpModal
-              isOpen={isTopUpOpen}
-              onClose={() => setIsTopUpOpen(false)}
-              currentDiamonds={playerDiamonds}
-              onSuccessTopUp={handleSuccessTopUp}
-            />
-          )}
-
           {/* Pop-up Notifikasi Permintaan Pertemanan di Kanan Layar (Timer 1 Menit) */}
           <FriendRequestNotification
             request={incomingFriendRequest}
@@ -2302,77 +2167,7 @@ export const GameApp: React.FC = () => {
             />
           )}
 
-          {/* Modal Mini Game Olahraga (Sepak Bola & Bola Basket) */}
-          {sportsModal.isOpen && (
-            <SportsMiniGameModal
-              isOpen={sportsModal.isOpen}
-              sport={sportsModal.sport}
-              playerName={playerStats.name || 'Petualang'}
-              onClose={() => {
-                setSportsModal({ isOpen: false, sport: null });
-                EventBus.emit('dialogue-active', false);
-              }}
-              onSelectMode={(sport, mode, opponent) => {
-                setSportsModal({ isOpen: false, sport: null });
-                EventBus.emit('dialogue-active', false);
-                setIsMiniGameMode(true);
 
-                const targetScene = sport === 'soccer' ? 'SoccerMiniGameScene' : 'BasketballMiniGameScene';
-                const returnPos = sport === 'soccer'
-                  ? { x: 3480, y: 6040 }
-                  : { x: 6060, y: 6040 };
-
-                try {
-                  localStorage.setItem(
-                    'raden_active_minigame',
-                    JSON.stringify({
-                      sport,
-                      mode,
-                      name: playerStats.name,
-                      avatar: playerStats.avatar || wardrobeAvatar,
-                      returnPos,
-                      opponentName: opponent?.name,
-                      opponentServer: opponent?.server,
-                      opponentPvpStreak: opponent?.pvp_streak,
-                      opponentPvpSticks: opponent?.pvp_sticks,
-                      timestamp: Date.now(),
-                    })
-                  );
-                  if (window.history && window.history.replaceState) {
-                    window.history.replaceState({}, '', `/minigame/${sport}?mode=${mode}`);
-                  }
-                } catch (e) {}
-
-                fetch('/api/sports/session', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json', 'X-User-Name': playerStats.name },
-                  body: JSON.stringify({
-                    sport,
-                    mode,
-                    player_name: playerStats.name,
-                    avatar: playerStats.avatar || wardrobeAvatar,
-                    return_x: returnPos.x,
-                    return_y: returnPos.y,
-                    opponent_name: opponent?.name,
-                    opponent_server: opponent?.server,
-                  }),
-                }).catch(() => {});
-
-                EventBus.emit('switch-scene', {
-                  scene: targetScene,
-                  mode: mode,
-                  name: playerStats.name,
-                  avatar: playerStats.avatar || wardrobeAvatar,
-                  returnX: returnPos.x,
-                  returnY: returnPos.y,
-                  opponentName: opponent?.name,
-                  opponentServer: opponent?.server,
-                  opponentPvpStreak: opponent?.pvp_streak,
-                  opponentPvpSticks: opponent?.pvp_sticks,
-                });
-              }}
-            />
-          )}
         </>
       )}
 

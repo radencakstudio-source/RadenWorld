@@ -890,12 +890,6 @@ export class CharacterController {
       return true;
     }
 
-    // 6. Kolam Air Mancur Patung Lamongan di Pusat Central Plaza (Jari-jari 200px dari koordinat 4800, 4800)
-    const fountainDist = Math.hypot(worldX - 4800, worldY - 4800);
-    if (fountainDist <= 220) {
-      return true;
-    }
-
     return false;
   }
 

@@ -443,114 +443,105 @@ export class WorldProps {
     // 2. Lapangan Bola Basket (10x5 Petak Grid): gx: 46..55, gy: 51..55
     // Memberikan koridor jalan tengah 12 petak (gx: 34..45) yang asri & luas
     // ========================================================================
-    // a. Lapangan Sepak Bola (10x5)
+    // a. Lapangan Sepak Bola (10x5) - Bisa diinjak bebas tanpa rintangan collider
     addGridPropFn(
       'court-bola',
       24,
       53,
       10,
       5,
-      false,
-      () => {
-        try {
-          SoundManager.getInstance().playClick();
-        } catch (e) {}
-        EventBus.emit('open-sports-modal', 'soccer');
-      }
+      false
     );
 
-    // Rintangan fisik pembatas & pagar lapangan sepak bola (dengan pintu masuk di tengah gx: 28.2..29.8)
-    WorldProps.addGridObstacle(scene, tileSize, obstacles, 23.6, 53.0, 0.6, 4.8); // Sisi Kiri
-    WorldProps.addGridObstacle(scene, tileSize, obstacles, 33.7, 53.0, 0.6, 4.8); // Sisi Kanan
-    WorldProps.addGridObstacle(scene, tileSize, obstacles, 24.0, 57.7, 9.8, 0.5); // Sisi Bawah
-    WorldProps.addGridObstacle(scene, tileSize, obstacles, 24.0, 52.6, 4.2, 0.5); // Sisi Atas (Kiri Gerbang)
-    WorldProps.addGridObstacle(scene, tileSize, obstacles, 29.8, 52.6, 4.0, 0.5); // Sisi Atas (Kanan Gerbang)
-
-    // b. Lapangan Bola Basket (10x5)
+    // b. Lapangan Bola Basket (10x5) - Bisa diinjak bebas tanpa rintangan collider
     addGridPropFn(
       'court-basket',
       46,
       53,
       10,
       5,
-      false,
-      () => {
-        try {
-          SoundManager.getInstance().playClick();
-        } catch (e) {}
-        EventBus.emit('open-sports-modal', 'basketball');
-      }
+      false
     );
 
-    // Rintangan fisik pembatas & pagar lapangan basket (dengan pintu masuk di tengah gx: 50.2..51.8)
-    WorldProps.addGridObstacle(scene, tileSize, obstacles, 45.6, 53.0, 0.6, 4.8); // Sisi Kiri
-    WorldProps.addGridObstacle(scene, tileSize, obstacles, 55.7, 53.0, 0.6, 4.8); // Sisi Kanan
-    WorldProps.addGridObstacle(scene, tileSize, obstacles, 46.0, 57.7, 9.8, 0.5); // Sisi Bawah
-    WorldProps.addGridObstacle(scene, tileSize, obstacles, 46.0, 52.6, 4.2, 0.5); // Sisi Atas (Kiri Gerbang)
-    WorldProps.addGridObstacle(scene, tileSize, obstacles, 51.8, 52.6, 4.0, 0.5); // Sisi Atas (Kanan Gerbang)
+    // ========================================================================
+    // DERETAN POHON TINGGI 1x3 DI Y = 31 (Sisi Kiri x: 22..32 & Sisi Kanan x: 44..57)
+    // ========================================================================
+    // 1. Sisi Kiri (y = 31, dari x = 22 sampai x = 32)
+    for (let gx = 22; gx <= 32; gx++) {
+      addGridPropFn('prop-pohon-tall', gx, 31, 1, 3, true, undefined, 1);
+    }
+
+    // 2. Sisi Kanan (y = 31, dari x = 44 sampai x = 57)
+    for (let gx = 44; gx <= 57; gx++) {
+      addGridPropFn('prop-pohon-tall', gx, 31, 1, 3, true, undefined, 1);
+    }
 
     // ========================================================================
     // c. 2 PAPAN POPUP REKLAME BILLBOARD 10x10 DI Y = 49/50 (gx: 22 dan gx: 45)
     // Sesuai asset 10X10 Popup.png (BootScene key: 'popup-billboard')
     // Collider di barisan x 1 baris saja tepat di baris dasar y = 49 (tebal 1 petak)
     // ========================================================================
+    // Deretan Pohon 1x3 di Belakang Popup Kiri (y = 46, dari x = 22 sampai x = 32)
+    for (let gx = 22; gx <= 32; gx++) {
+      const tree = addGridPropFn('prop-pohon-tall', gx, 46, 1, 3, true, undefined, 1);
+      if (tree) {
+        tree.setDepth((46 + 3) * tileSize - 5); // Di belakang pagar batu dan popup billboard
+      }
+    }
+
+    // Pagar Batu di Belakang Popup Kiri (y = 47, dari x = 22 sampai x = 32)
+    for (let gx = 22; gx <= 32; gx++) {
+      const fence = addGridPropFn('prop-pagar-batu', gx, 47, 1, 2, true, undefined, 1);
+      if (fence) {
+        fence.setDepth((47 + 2) * tileSize - 2); // Di belakang popup billboard
+      }
+    }
+
     // 1. Papan Popup Kiri (gx: 22, gy: 40..50, collider 1 baris di y: 49, ukuran 10x10)
-    addGridPropFn(
+    const popupLeft = addGridPropFn(
       'popup-billboard',
       22,
       40,
       10,
       10,
       true, // Collider 1 barisan horizontal sepanjang sumbu X (obstacleRows = 1 di y: 49)
-      () => {
-        const isLocalHost = typeof window !== 'undefined' && (
-          window.location.hostname === 'localhost' ||
-          window.location.hostname === '127.0.0.1' ||
-          window.location.hostname.endsWith('.test')
-        );
-        if (isLocalHost) {
-          window.open('/world/popup', '_blank');
-        } else {
-          EventBus.emit('new-chat-message', {
-            id: `billboard_${Date.now()}`,
-            sender: 'SISTEM',
-            text: '🛠️ Papan Iklan Billboard Online sedang tahap Maintenance (Segera Hadir)!',
-            timestamp: Date.now(),
-            isSystem: true,
-          });
-        }
-      },
+      undefined,
       1
     );
+    if (popupLeft) {
+      popupLeft.setDepth((40 + 10) * tileSize + 1); // Memastikan popup berada di depan pagar batu
+    }
+
+    // Deretan Pohon 1x3 di Belakang/Samping Popup Kanan (y = 46, dari x = 44 sampai x = 57)
+    for (let gx = 44; gx <= 57; gx++) {
+      const tree = addGridPropFn('prop-pohon-tall', gx, 46, 1, 3, true, undefined, 1);
+      if (tree) {
+        tree.setDepth((46 + 3) * tileSize - 5); // Di belakang pagar batu dan popup billboard
+      }
+    }
+
+    // Pagar Batu di Belakang/Samping Popup Kanan (y = 47, dari x = 44 sampai x = 57)
+    for (let gx = 44; gx <= 57; gx++) {
+      const fence = addGridPropFn('prop-pagar-batu', gx, 47, 1, 2, true, undefined, 1);
+      if (fence) {
+        fence.setDepth((47 + 2) * tileSize - 2); // Di belakang popup billboard
+      }
+    }
 
     // 2. Papan Popup Kanan (gx: 45, gy: 40..50, collider 1 baris di y: 49, ukuran 10x10)
-    addGridPropFn(
+    const popupRight = addGridPropFn(
       'popup-billboard',
       45,
       40,
       10,
       10,
       true, // Collider 1 barisan horizontal sepanjang sumbu X (obstacleRows = 1 di y: 49)
-      () => {
-        const isLocalHost = typeof window !== 'undefined' && (
-          window.location.hostname === 'localhost' ||
-          window.location.hostname === '127.0.0.1' ||
-          window.location.hostname.endsWith('.test')
-        );
-        if (isLocalHost) {
-          window.open('/world/popup', '_blank');
-        } else {
-          EventBus.emit('new-chat-message', {
-            id: `billboard_${Date.now()}`,
-            sender: 'SISTEM',
-            text: '🛠️ Papan Iklan Billboard Online sedang tahap Maintenance (Segera Hadir)!',
-            timestamp: Date.now(),
-            isSystem: true,
-          });
-        }
-      },
+      undefined,
       1
     );
+    if (popupRight) {
+      popupRight.setDepth((40 + 10) * tileSize + 1); // Memastikan popup berada di depan pagar batu
+    }
 
     // ========================================================================
     // KAWASAN KOMERSIAL & LAYANAN PUBLIK BARAT (6 Gedung 5x5 Petak Grid)

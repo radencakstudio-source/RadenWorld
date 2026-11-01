@@ -1528,20 +1528,15 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
               </div>
             </div>
 
-            {/* STATISTIK GRID: UMUR & GENDER & KEUANGAN SAYA */}
-            <div className="grid grid-cols-2 gap-2">
+            {/* STATISTIK GRID: UMUR & GENDER & KOIN SAYA */}
+            <div className="grid grid-cols-3 gap-2">
               {/* 1. Umur */}
               <div className="p-2.5 rounded-md border border-neutral-800 bg-[#101010] flex items-center gap-2.5">
                 <Calendar className="w-4 h-4 text-amber-400/80 shrink-0" />
                 <div className="min-w-0">
                   <div className="text-[10px] text-neutral-400 uppercase font-bold tracking-wider">UMUR</div>
                   <div className="text-xs font-bold text-neutral-100 flex items-center gap-1.5 flex-wrap">
-                    <span>{effectiveAge} Tahun</span>
-                    {resolvedBirthDate && (
-                      <span className="text-[10px] text-neutral-400 font-mono font-normal">
-                        ({resolvedBirthDate})
-                      </span>
-                    )}
+                    <span>{effectiveAge} Thn</span>
                   </div>
                 </div>
               </div>
@@ -1564,35 +1559,6 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                     {isSuperAdmin || effectiveGold >= 99999999999 ? '99999999999' : effectiveGold.toLocaleString('id-ID')} G
                   </div>
                 </div>
-              </div>
-
-              {/* 4. Berlian */}
-              <div
-                onClick={() => {
-                  if (onOpenTopUp) {
-                    sound.playClick();
-                    onOpenTopUp();
-                  }
-                }}
-                className={`p-2.5 rounded-md border border-neutral-800 bg-[#101010] flex items-center justify-between gap-2.5 transition-colors ${
-                  onOpenTopUp ? 'cursor-pointer hover:border-cyan-500/50 group' : ''
-                }`}
-                title={onOpenTopUp ? 'Klik untuk Top Up Berlian' : 'Jumlah Berlian'}
-              >
-                <div className="flex items-center gap-2.5">
-                  <Gem className="w-4 h-4 text-cyan-400 fill-cyan-400/20 shrink-0" />
-                  <div>
-                    <div className="text-[10px] text-neutral-400 uppercase font-bold tracking-wider">BERLIAN</div>
-                    <div className="text-xs font-bold text-cyan-300">
-                      {isSuperAdmin || effectiveDiamonds >= 99999999999 ? '99999999999' : effectiveDiamonds.toLocaleString('id-ID')} ✦
-                    </div>
-                  </div>
-                </div>
-                {onOpenTopUp && (
-                  <span className="text-[9px] font-black bg-cyan-400 hover:bg-cyan-300 text-black px-1.5 py-0.5 rounded uppercase tracking-wider">
-                    TOPUP
-                  </span>
-                )}
               </div>
             </div>
 
@@ -1737,22 +1703,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                 </span>
               </div>
             </div>
-
-            {/* Tombol Teleport Portal Admin (Hanya Super Admin di profil sendiri) */}
-            {isSuperAdmin && !!onTeleportToAdminPortal && (
-              <button
-                type="button"
-                onClick={() => {
-                  sound.playSuccess();
-                  if (onTeleportToAdminPortal) onTeleportToAdminPortal();
-                }}
-                className="w-full py-2.5 rounded-md bg-amber-500 hover:bg-amber-400 text-black text-xs font-black uppercase tracking-wider cursor-pointer transition-colors flex items-center justify-center gap-2 shadow-md"
-              >
-                <Zap className="w-4 h-4 fill-current" />
-                <span>MASUK KE PORTAL ADMIN</span>
-              </button>
-            )}
-                </>
+          </>
               ) : (
                 /* ================================================================ */
                 /* KATEGORI: KEAMANAN & AKUN (AUTHORITATIVE RADENSHIELD & SOCIALS)  */

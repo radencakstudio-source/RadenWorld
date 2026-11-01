@@ -516,38 +516,6 @@ export const HUD: React.FC<HUDProps> = React.memo(({
             </div>
           </div>
 
-          {/* BERLIAN */}
-          <div
-            onClick={() => {
-              sound.playClick();
-              onOpenTopUp?.();
-            }}
-            className="pointer-events-auto h-7 sm:h-9 md:h-10 flex items-center gap-1 sm:gap-1.5 pl-1.5 sm:pl-2.5 pr-1 sm:pr-1.5 rounded-md bg-black border border-neutral-800 text-cyan-400 select-none shadow-sm group hover:border-cyan-500/50 transition-colors cursor-pointer shrink-0"
-            title="Berlian (Klik untuk Top Up)"
-          >
-            <Gem className="w-3 sm:w-4 h-3 sm:h-4 text-cyan-400 fill-cyan-400/20 shrink-0" />
-            <div className="flex flex-col text-left leading-none">
-              <span className="text-[6.5px] sm:text-[8px] text-neutral-400 uppercase font-semibold">BERLIAN</span>
-              <span className="text-[9px] sm:text-xs font-black font-mono tracking-wider text-cyan-300 mt-0.5">
-                {isUserAdmin || diamonds >= 99999999999 ? '99999999999' : diamonds.toLocaleString('id-ID')}
-              </span>
-            </div>
-            <button
-              type="button"
-              tabIndex={-1}
-              onClick={(e) => {
-                e.stopPropagation();
-                sound.playClick();
-                onOpenTopUp?.();
-              }}
-              onPointerDown={(e) => (e.currentTarget as HTMLElement).blur()}
-              className="h-5 sm:h-7 px-1 sm:px-2 rounded bg-gradient-to-r from-cyan-500 to-cyan-400 hover:from-cyan-400 hover:to-cyan-300 text-black font-black text-[8px] sm:text-[10px] tracking-wider uppercase flex items-center gap-0.5 sm:gap-1 ml-0.5 sm:ml-1 cursor-pointer transition-all shadow-sm active:scale-95"
-              title="Top Up Berlian"
-            >
-              <Plus className="w-2 sm:w-3 h-2 sm:h-3 stroke-[3]" />
-              <span>TOPUP</span>
-            </button>
-          </div>
 
           {/* Tombol Status Server Flat & Bersih */}
           <button

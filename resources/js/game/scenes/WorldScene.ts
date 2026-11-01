@@ -100,7 +100,12 @@ export class WorldScene extends Phaser.Scene {
   }): void {
     this.isTransitioning = false;
     this.doorCooldownUntil = this.time ? this.time.now + 2500 : 0;
-    this.player = null as any;
+    if (this.player) {
+      try {
+        this.player.destroy();
+      } catch (e) {}
+      this.player = null as any;
+    }
 
     if (data?.name) this.pendingPlayerName = data.name;
     if (data?.avatar) this.pendingAvatar = data.avatar;
@@ -445,39 +450,9 @@ export class WorldScene extends Phaser.Scene {
       return;
     }
 
-    // 8. Interaksi dengan 2 Papan Popup Reklame 10x10 (world/popup) di y: 49/50 (gx: 22 & gx: 45)
-    const pGx = Math.floor(px / this.tileSize);
-    const pGy = Math.floor(py / this.tileSize);
-    if (
-      ((pGx >= 21 && pGx <= 32) || (pGx >= 44 && pGx <= 55)) &&
-      (pGy >= 39 && pGy <= 51)
-    ) {
-      const isLocalHost = typeof window !== 'undefined' && (
-        window.location.hostname === 'localhost' ||
-        window.location.hostname === '127.0.0.1' ||
-        window.location.hostname.endsWith('.test')
-      );
-      if (isLocalHost) {
-        window.open('/world/popup', '_blank');
-      } else {
-        this.player?.showSpeechBubble?.('🛠️ Papan Billboard Online sedang tahap Maintenance (Segera Hadir)!', 2400);
-      }
-      return;
-    }
 
-    // 11. Interaksi Lapangan Sepak Bola (Mini Game)
-    const gx = Math.floor(px / this.tileSize);
-    const gy = Math.floor(py / this.tileSize);
-    if (gx >= 23 && gx <= 34 && gy >= 52 && gy <= 58) {
-      EventBus.emit('open-sports-modal', 'soccer');
-      return;
-    }
 
-    // 12. Interaksi Lapangan Bola Basket (Mini Game)
-    if (gx >= 45 && gx <= 56 && gy >= 52 && gy <= 58) {
-      EventBus.emit('open-sports-modal', 'basketball');
-      return;
-    }
+
 
     // 9. Interaksi dengan NPC terdekat
     for (const npc of this.npcs) {
@@ -692,6 +667,21 @@ export class WorldScene extends Phaser.Scene {
       this.cameras.main.centerOn(this.player.x, this.player.y);
       return;
     }
+
+    // Bersihkan karakter lokal lama yang mungkin masih tertinggal di scene display list
+    if (this.player) {
+      try {
+        this.player.destroy();
+      } catch (e) {}
+      this.player = null as any;
+    }
+    try {
+      this.children.each((child: any) => {
+        if (child && (child instanceof Player || child.entityId === 'local_player')) {
+          child.destroy();
+        }
+      });
+    } catch (e) {}
 
     let spawnX = 2460;
     let spawnY = 2460;
@@ -1069,7 +1059,8 @@ export class WorldScene extends Phaser.Scene {
       this.remotePlayers.clear();
 
       data.players.forEach(p => {
-        if (p.id === myId || p.id === data.selfId) return;
+        if (p.id === myId || p.id === data.selfId || p.id === 'local_player') return;
+        if (myName && p.name && p.name.trim().toLowerCase() === myName) return;
         this.addRemotePlayer(p);
       });
       EventBus.emit('player-count-updated', this.remotePlayers.size + 1);
@@ -1078,8 +1069,10 @@ export class WorldScene extends Phaser.Scene {
     this.networkManager.onPlayerJoined((playerData: IPlayerData) => {
       if (!this.sys || !this.sys.displayList || !this.scene.isActive()) return;
       const myId = this.networkManager.getSocketId();
+      const myName = (this.player?.getEntityName() || this.pendingPlayerName || '').trim().toLowerCase();
 
-      if (playerData.id === myId) return;
+      if (playerData.id === myId || playerData.id === 'local_player') return;
+      if (myName && playerData.name && playerData.name.trim().toLowerCase() === myName) return;
 
       this.addRemotePlayer(playerData);
       EventBus.emit('player-count-updated', this.remotePlayers.size + 1);
@@ -1165,7 +1158,11 @@ export class WorldScene extends Phaser.Scene {
     if (!this.sys || !this.sys.displayList || !this.scene.isActive()) return;
     const myId = this.networkManager.getSocketId();
 
-    if (p.id === myId) return;
+    if (p.id === myId || p.id === 'local_player') return;
+
+    // Jangan pernah spawn remote player jika namanya sama dengan nama pemain lokal (mencegah duplikat / ghost)
+    const myName = (this.player?.getEntityName() || this.pendingPlayerName || '').trim().toLowerCase();
+    if (myName && p.name && p.name.trim().toLowerCase() === myName) return;
 
     if (this.remotePlayers.has(p.id)) {
       const existing = this.remotePlayers.get(p.id);

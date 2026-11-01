@@ -188,19 +188,18 @@ io.on('connection', (socket) => {
     }
     const playerName = sanitizeText(rawName);
 
-    // Hapus sesi ghost lama HANYA jika socket lama sudah terputus/disconnected
+    // Bersihkan sesi lama dengan nama yang sama untuk mencegah duplikat/ghost saat refresh atau reconnect
     for (const [oldId, oldPlayer] of players.entries()) {
       if (oldId !== socket.id && oldPlayer.name.toLowerCase() === playerName.toLowerCase()) {
+        console.log(`[Server] Menutup sesi lama '${oldPlayer.name}' (ID: ${oldId}) karena login baru`);
         const oldSocket = io.sockets.sockets.get(oldId);
-        if (!oldSocket || !oldSocket.connected) {
-          console.log(`[Server] Membersihkan sesi zombie/terputus '${oldPlayer.name}' (ID: ${oldId})`);
-          players.delete(oldId);
-          io.emit('player:left', { id: oldId, name: oldPlayer.name });
-        } else {
-          // Socket lama masih aktif (user sedang tes di 2 jendela/HP dengan nama sama)
-          // Beri pembeda nomor sesi agar kedua pemain bisa saling melihat dan bermain bersama
-          console.log(`[Server] Multi-device/tab terdeteksi untuk '${playerName}', mengizinkan koneksi paralel.`);
+        if (oldSocket) {
+          try {
+            oldSocket.disconnect(true);
+          } catch (e) {}
         }
+        players.delete(oldId);
+        io.emit('player:left', { id: oldId, name: oldPlayer.name });
       }
     }
 

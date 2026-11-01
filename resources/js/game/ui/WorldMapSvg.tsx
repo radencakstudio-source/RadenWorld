@@ -300,6 +300,54 @@ export const WorldMapSvg: React.FC<WorldMapSvgProps> = ({
       </g>
 
       {/* ==================================================================== */}
+      {/* DERETAN POHON 1x3 DI Y = 31 (Sisi Kiri x: 22..32 & Sisi Kanan x: 44..57) */}
+      {/* ==================================================================== */}
+      <g id="map_trees_y31">
+        {[
+          ...Array.from({ length: 11 }, (_, i) => 22 + i),
+          ...Array.from({ length: 14 }, (_, i) => 44 + i),
+        ].map((gx) => (
+          <g key={`tree_31_${gx}`}>
+            <rect x={gx} y="31" width="1" height="3" rx="0.45" fill="#166534" stroke="#14532d" strokeWidth="0.08" />
+            <circle cx={gx + 0.5} cy="32.1" r="0.65" fill="#22c55e" stroke="#15803d" strokeWidth="0.08" />
+            <circle cx={gx + 0.5} cy="32.1" r="0.32" fill="#4ade80" opacity="0.6" />
+          </g>
+        ))}
+      </g>
+
+      {/* ==================================================================== */}
+      {/* DERETAN POHON 1x3 DI Y = 46 (Sisi Kiri x: 22..32 & Sisi Kanan x: 44..57) */}
+      {/* ==================================================================== */}
+      <g id="map_trees_y46">
+        {[
+          ...Array.from({ length: 11 }, (_, i) => 22 + i),
+          ...Array.from({ length: 14 }, (_, i) => 44 + i),
+        ].map((gx) => (
+          <g key={`tree_46_${gx}`}>
+            <rect x={gx} y="46" width="1" height="3" rx="0.45" fill="#166534" stroke="#14532d" strokeWidth="0.08" />
+            <circle cx={gx + 0.5} cy="47.1" r="0.65" fill="#22c55e" stroke="#15803d" strokeWidth="0.08" />
+            <circle cx={gx + 0.5} cy="47.1" r="0.32" fill="#4ade80" opacity="0.6" />
+          </g>
+        ))}
+      </g>
+
+      {/* ==================================================================== */}
+      {/* DERETAN PAGAR BATU 1x2 DI Y = 47 (Sisi Kiri x: 22..32 & Sisi Kanan x: 44..57) */}
+      {/* ==================================================================== */}
+      <g id="map_stone_fences_y47">
+        {[
+          ...Array.from({ length: 11 }, (_, i) => 22 + i),
+          ...Array.from({ length: 14 }, (_, i) => 44 + i),
+        ].map((gx) => (
+          <g key={`fence_47_${gx}`}>
+            <rect x={gx} y="47" width="1" height="2" rx="0.15" fill="#475569" stroke="#1e293b" strokeWidth="0.08" />
+            <rect x={gx + 0.15} y="47.2" width="0.7" height="1.6" rx="0.1" fill="#94a3b8" opacity="0.7" />
+            <line x1={gx} y1="48" x2={gx + 1} y2="48" stroke="#1e293b" strokeWidth="0.05" opacity="0.6" />
+          </g>
+        ))}
+      </g>
+
+      {/* ==================================================================== */}
       {/* 2 PAPAN POPUP REKLAME BILLBOARD 10x10 DI Y = 49/50 (gx: 22 & gx: 45) */}
       {/* Sesuai asset 10X10 Popup.png (Dasar tiang berdiri di y: 50, collider di y: 49) */}
       {/* ==================================================================== */}

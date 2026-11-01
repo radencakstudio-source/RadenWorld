@@ -39,20 +39,17 @@ export const GameCanvas: React.FC = React.memo(() => {
             }
           });
 
-          // Perbarui data user dan posisi pemain jika ada
+          // Perbarui data user dan posisi pemain jika ada tanpa mereset init() atau menduplikasi player
           try {
-            if (typeof (targetScene as any).init === 'function') {
-              (targetScene as any).init(data);
-            }
             if ((targetScene as any).player && (targetScene as any).player.active) {
-              if (data.name) (targetScene as any).player.setEntityName(data.name);
-              if (data.avatar) (targetScene as any).player.setAvatar(data.avatar);
-              if (data.spawnPos) {
+              if (data?.name) (targetScene as any).player.setEntityName(data.name);
+              if (data?.avatar) (targetScene as any).player.setAvatar(data.avatar);
+              if (data?.spawnPos) {
                 (targetScene as any).player.setPosition(data.spawnPos.x, data.spawnPos.y);
                 (targetScene as any).cameras?.main?.centerOn(data.spawnPos.x, data.spawnPos.y);
               }
             } else if (typeof (targetScene as any).spawnLocalPlayer === 'function') {
-              (targetScene as any).spawnLocalPlayer(data.name || 'Petualang', data.avatar, !!data.spawnNearHouse);
+              (targetScene as any).spawnLocalPlayer(data?.name || 'Petualang', data?.avatar, !!data?.spawnNearHouse);
             }
             EventBus.emit('scene-ready', targetSceneKey);
           } catch (e) {

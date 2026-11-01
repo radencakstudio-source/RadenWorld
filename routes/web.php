@@ -12,12 +12,7 @@ Route::get('/home/{privateId?}', function ($privateId = null) {
 });
 
 Route::get('/world/popup', function () {
-    $host = request()->getHost();
-    $isLocal = app()->environment('local') || $host === 'localhost' || $host === '127.0.0.1' || str_ends_with($host, '.test');
-    if (!$isLocal) {
-        return view('pixel_popup_maintenance');
-    }
-    return view('pixel_popup');
+    return redirect('/world');
 });
 
 Route::get('/world/{school?}', function ($school = null) {
@@ -40,14 +35,14 @@ Route::get('/library', function () {
     return view('welcome');
 });
 
-// Route Khusus Mini Game Olahraga (Head Soccer & Head Basketball)
+// Route Khusus Mini Game Dialihkan ke World
 Route::get('/minigame/{sport?}', function ($sport = null) {
-    return view('welcome');
+    return redirect('/world');
 });
 
-// Route Khusus Portal Super Admin (Dengan random token ID berkeamanan tinggi)
+// Route Portal Admin Dialihkan ke World
 Route::get('/admin/{adminToken?}', function ($adminToken = null) {
-    return view('welcome');
+    return redirect('/world');
 });
 
 // Dedicated fast ping endpoint for latency measurement

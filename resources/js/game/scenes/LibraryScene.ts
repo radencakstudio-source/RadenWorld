@@ -88,7 +88,12 @@ export class LibraryScene extends Phaser.Scene {
     returnY?: number;
   }): void {
     this.isTransitioning = false;
-    this.player = null as any;
+    if (this.player) {
+      try {
+        this.player.destroy();
+      } catch (e) {}
+      this.player = null as any;
+    }
     this.remotePlayers.clear();
 
     if (data?.name) this.playerName = data.name;
@@ -793,6 +798,12 @@ export class LibraryScene extends Phaser.Scene {
    * Spawn Pemain di Karpet Tengah Dekat Pintu Menghadap ke Meja Pustakawan
    */
   private spawnPlayerInLibrary(): void {
+    if (this.player) {
+      try {
+        this.player.destroy();
+      } catch (e) {}
+      this.player = null as any;
+    }
     const spawnX = this.roomWidth / 2; // 960 (Tengah)
     const spawnY = this.roomHeight - 160;
 

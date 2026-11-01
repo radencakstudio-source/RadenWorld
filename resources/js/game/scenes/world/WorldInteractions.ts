@@ -179,21 +179,6 @@ export class WorldInteractions {
     } else if (distRealtor < 130) {
       prompt = 'TEKAN [E] / KLIK UNTUK KONSULTASI MAKELAR PROPERTI 🏠';
       locationName = 'KAWASAN PROPERTI: KANTOR MAKELAR';
-    } else if (
-      ((Math.floor(px / tileSize) >= 21 && Math.floor(px / tileSize) <= 32) ||
-       (Math.floor(px / tileSize) >= 44 && Math.floor(px / tileSize) <= 55)) &&
-      Math.floor(py / tileSize) >= 39 &&
-      Math.floor(py / tileSize) <= 51
-    ) {
-      const isLocalHost = typeof window !== 'undefined' && (
-        window.location.hostname === 'localhost' ||
-        window.location.hostname === '127.0.0.1' ||
-        window.location.hostname.endsWith('.test')
-      );
-      prompt = isLocalHost
-        ? 'TEKAN [E] / KLIK UNTUK MEMBUKA PAPAN INFORMASI (world/popup) 📢'
-        : 'PAPAN REKLAME ONLINE: SEDANG TAHAP MAINTENANCE (Segera Hadir) 🛠️';
-      locationName = 'ALUN-ALUN: PAPAN POPUP 10x10';
     } else {
       for (const npc of npcs) {
         const dist = Phaser.Math.Distance.Between(px, py, npc.x, npc.y);
@@ -206,19 +191,12 @@ export class WorldInteractions {
       if (!prompt) {
         const gx = Math.floor(px / tileSize);
         const gy = Math.floor(py / tileSize);
-        if (gx >= 23 && gx <= 34 && gy >= 52 && gy <= 58) {
-          prompt = 'TEKAN [E] / SENTUH UNTUK MAIN MINI GAME SEPAKBOLA ⚽';
-        } else if (gx >= 45 && gx <= 56 && gy >= 52 && gy <= 58) {
-          prompt = 'TEKAN [E] / SENTUH UNTUK MAIN MINI GAME BASKETBALL 🏀';
-        } else {
-          const isPierOrWaterfront = (
-            (gx >= 61 && gx <= 74 && gy >= 23 && gy <= 56) ||
-            (gy >= 68 && gy <= 78)
-          );
-          const isNearFountain = Math.hypot(px - 4800, py - 4800) <= 260;
-          if (isPierOrWaterfront || isNearFountain) {
-            prompt = 'TEKAN [F] / SENTUH MANCING UNTUK MEMANCING';
-          }
+        const isPierOrWaterfront = (
+          (gx >= 61 && gx <= 74 && gy >= 23 && gy <= 56) ||
+          (gy >= 68 && gy <= 78)
+        );
+        if (isPierOrWaterfront) {
+          prompt = 'TEKAN [F] / SENTUH MANCING UNTUK MEMANCING';
         }
       }
     }

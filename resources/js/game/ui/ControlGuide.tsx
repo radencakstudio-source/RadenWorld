@@ -71,9 +71,9 @@ export const ControlGuide: React.FC<ControlGuideProps> = ({ isOpen, onClose, con
               <div className="font-bold text-white mb-0.5">Memancing (Hanya di Perairan)</div>
               <p className="text-neutral-400 leading-relaxed">
                 {isMobile ? (
-                  <>Hadapkan karakter ke arah perairan (Dermaga, Tepi Laut, Pantai Selatan, atau Air Mancur Plaza), lalu sentuh tombol <strong>[MANCING]</strong>. Sentuh lagi saat tanda seru <strong className="text-amber-400">(!)</strong> muncul untuk strike.</>
+                  <>Hadapkan karakter ke arah perairan (Dermaga, Tepi Laut, atau Pantai Selatan), lalu sentuh tombol <strong>[MANCING]</strong>. Sentuh lagi saat tanda seru <strong className="text-amber-400">(!)</strong> muncul untuk strike.</>
                 ) : (
-                  <>Hadapkan karakter ke arah air lalu tekan tombol <kbd className="px-1.5 py-0.5 bg-neutral-800 rounded text-neutral-200 font-mono">F</kbd>. Hanya bisa memancing di perairan sah (Dermaga, Tepi Laut Timur, Ombak Pantai Selatan, atau Air Mancur Plaza). Dilarang memancing di daratan kering atau dalam gedung.</>
+                  <>Hadapkan karakter ke arah air lalu tekan tombol <kbd className="px-1.5 py-0.5 bg-neutral-800 rounded text-neutral-200 font-mono">F</kbd>. Hanya bisa memancing di perairan sah (Dermaga, Tepi Laut Timur, atau Ombak Pantai Selatan). Dilarang memancing di daratan kering atau dalam gedung.</>
                 )}
               </p>
             </div>

@@ -37,19 +37,25 @@ export class SoundManager {
         if (savedMute) this.isMuted = savedMute === 'true';
       } catch (e) {}
 
-      // Tangkap interaksi pertama pengguna untuk mengaktifkan AudioContext (kebijakan Autoplay Chrome/Android/iOS)
+      // Tangkap interaksi pengguna untuk mengaktifkan & resume AudioContext (kebijakan Autoplay Chrome/Android/iOS)
       const unlockAudio = () => {
         this.userInteracted = true;
-        if (this.ctx && this.ctx.state === 'suspended') {
-          this.ctx.resume().catch(() => {});
+        if (typeof window !== 'undefined') {
+          const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+          if (!this.ctx && AudioCtx) {
+            try {
+              this.ctx = new AudioCtx();
+            } catch (e) {}
+          }
+          if (this.ctx && this.ctx.state === 'suspended') {
+            this.ctx.resume().catch(() => {});
+          }
         }
-        window.removeEventListener('pointerdown', unlockAudio);
-        window.removeEventListener('touchstart', unlockAudio);
-        window.removeEventListener('keydown', unlockAudio);
       };
-      window.addEventListener('pointerdown', unlockAudio, { once: true, passive: true });
-      window.addEventListener('touchstart', unlockAudio, { once: true, passive: true });
-      window.addEventListener('keydown', unlockAudio, { once: true, passive: true });
+      window.addEventListener('pointerdown', unlockAudio, { passive: true });
+      window.addEventListener('touchstart', unlockAudio, { passive: true });
+      window.addEventListener('keydown', unlockAudio, { passive: true });
+      window.addEventListener('click', unlockAudio, { passive: true });
     }
   }
 
@@ -61,18 +67,27 @@ export class SoundManager {
   }
 
   private initCtx(): AudioContext | null {
-    if (!this.ctx && typeof window !== 'undefined') {
-      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
-      if (AudioCtx) {
-        try {
-          this.ctx = new AudioCtx();
-        } catch (e) {}
+    if (typeof window === 'undefined') return null;
+    const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+    if (!AudioCtx) return null;
+
+    if (!this.ctx) {
+      if (!this.userInteracted) return null;
+      try {
+        this.ctx = new AudioCtx();
+      } catch (e) {
+        return null;
       }
     }
-    if (this.ctx && this.ctx.state === 'suspended' && this.userInteracted) {
-      this.ctx.resume().catch(() => {});
+
+    if (this.ctx.state === 'suspended') {
+      if (this.userInteracted) {
+        this.ctx.resume().catch(() => {});
+      }
+      return null;
     }
-    return this.ctx;
+
+    return this.ctx.state === 'running' ? this.ctx : null;
   }
 
   private initBgm(): void {

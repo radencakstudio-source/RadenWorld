@@ -397,6 +397,14 @@ export class NetworkManager {
     this.socket.off('player:fishing');
     this.socket.off('player:followed_by');
     this.socket.off('player:unfollowed_by');
+    this.socket.off('server:stats');
+
+    this.socket.on('server:stats', (stats: Record<string, number>) => {
+      if (stats && typeof stats === 'object') {
+        this.serverStats = { ...this.serverStats, ...stats };
+        EventBus.emit('server-stats-updated', this.serverStats);
+      }
+    });
 
     this.socket.on('player:jumped', (data: { id: string; jumpCount: number; x: number; y: number }) => {
       this.listeners.playerJumped.forEach((cb) => cb(data));
@@ -621,6 +629,26 @@ export class NetworkManager {
       y: this.lastJoinData?.y,
       direction: this.lastJoinData?.direction || 'down',
     });
+    this.requestRoomPlayers();
+    this.requestServerStats();
+  }
+
+  /** Statistik jumlah pemain real-time per server channel */
+  private serverStats: Record<string, number> = {
+    'Asia 1': 0,
+    'Asia 2': 0,
+    'Asia 3': 0,
+    'Asia 4': 0,
+    total: 0,
+  };
+
+  public getServerStats(): Record<string, number> {
+    return this.serverStats;
+  }
+
+  public requestServerStats(): void {
+    if (!this.socket || !this.isConnected) return;
+    this.socket.emit('server:request_stats');
   }
 
   /**

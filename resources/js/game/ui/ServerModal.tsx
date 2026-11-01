@@ -79,6 +79,22 @@ export const ServerModal: React.FC<ServerModalProps> = ({
   const [copiedLink, setCopiedLink] = useState(false);
   const [isPinging, setIsPinging] = useState(false);
 
+  // Statistik jumlah pemain real-time per server channel
+  const [serverStats, setServerStats] = useState<Record<string, number>>(() => {
+    return networkMgr.getServerStats();
+  });
+
+  useEffect(() => {
+    const handleStats = (stats: Record<string, number>) => {
+      setServerStats(stats);
+    };
+    EventBus.on('server-stats-updated', handleStats);
+    networkMgr.requestServerStats();
+    return () => {
+      EventBus.off('server-stats-updated', handleStats);
+    };
+  }, []);
+
   // Deteksi hostname browser saat ini (misal: 192.168.1.5 atau localhost)
   const currentBrowserHost = typeof window !== 'undefined' ? (window.location.hostname || 'localhost') : 'localhost';
 
@@ -90,6 +106,8 @@ export const ServerModal: React.FC<ServerModalProps> = ({
     'Asia 4': 65,
   });
 
+  const activeCodeClean = cleanServerCode(currentServerCode);
+
   const serverList: IGameServerOption[] = [
     {
       id: 'asia-1',
@@ -100,7 +118,7 @@ export const ServerModal: React.FC<ServerModalProps> = ({
       host: currentBrowserHost,
       port: 3001,
       ping: serverPings['Asia 1'] || 14,
-      onlineCount: 38,
+      onlineCount: Math.max(activeCodeClean === 'Asia 1' ? 1 : 0, serverStats['Asia 1'] ?? 0),
       maxPlayers: 60,
       isRecommended: true,
     },
@@ -113,7 +131,7 @@ export const ServerModal: React.FC<ServerModalProps> = ({
       host: currentBrowserHost,
       port: 3001,
       ping: serverPings['Asia 2'] || 24,
-      onlineCount: 19,
+      onlineCount: Math.max(activeCodeClean === 'Asia 2' ? 1 : 0, serverStats['Asia 2'] ?? 0),
       maxPlayers: 60,
     },
     {
@@ -125,7 +143,7 @@ export const ServerModal: React.FC<ServerModalProps> = ({
       host: currentBrowserHost,
       port: 3001,
       ping: serverPings['Asia 3'] || 8,
-      onlineCount: 45,
+      onlineCount: Math.max(activeCodeClean === 'Asia 3' ? 1 : 0, serverStats['Asia 3'] ?? 0),
       maxPlayers: 60,
       isRecommended: true,
     },
@@ -138,7 +156,7 @@ export const ServerModal: React.FC<ServerModalProps> = ({
       host: currentBrowserHost,
       port: 3001,
       ping: serverPings['Asia 4'] || 65,
-      onlineCount: 14,
+      onlineCount: Math.max(activeCodeClean === 'Asia 4' ? 1 : 0, serverStats['Asia 4'] ?? 0),
       maxPlayers: 60,
     },
   ];
@@ -147,6 +165,7 @@ export const ServerModal: React.FC<ServerModalProps> = ({
     if (isOpen) {
       setSelectedCode(cleanServerCode(currentServerCode));
       setSuccessMessage(null);
+      networkMgr.requestServerStats();
       try {
         setCustomHostInput(localStorage.getItem('raden_server_host') || '');
       } catch (e) {}
@@ -257,6 +276,19 @@ export const ServerModal: React.FC<ServerModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/80 font-['Chakra_Petch'] select-none animate-in fade-in duration-200">
       <div className="relative w-full max-w-2xl bg-black border border-neutral-800 rounded-xl flex flex-col overflow-hidden max-h-[94dvh]">
+
+        {/* Loading Overlay Saat Berpindah Server */}
+        {isSwitching && (
+          <div className="absolute inset-0 bg-black/90 backdrop-blur-sm z-50 flex flex-col items-center justify-center p-6 text-center animate-in fade-in">
+            <RefreshCw className="w-10 h-10 text-amber-400 animate-spin mb-3" />
+            <h3 className="text-base font-bold text-white uppercase tracking-wider">
+              Menghubungkan ke Server {selectedCode}...
+            </h3>
+            <p className="text-xs text-neutral-400 mt-1 max-w-xs">
+              Memindahkan kanal room, memperbarui daftar petualang, dan menyinkronkan koneksi real-time.
+            </p>
+          </div>
+        )}
 
         {/* ==================================================================== */}
         {/* HEADER MODAL: Flat Pure Black                                        */}

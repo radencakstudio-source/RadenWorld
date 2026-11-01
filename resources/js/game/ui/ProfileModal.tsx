@@ -252,6 +252,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
   const [currentDisplayName, setCurrentDisplayName] = useState(name);
   const [newNameInput, setNewNameInput] = useState(name);
   const [isSavingName, setIsSavingName] = useState(false);
+  const [nameError, setNameError] = useState<string>('');
 
   useEffect(() => {
     setCurrentDisplayName(name);
@@ -447,7 +448,11 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
     e.preventDefault();
     const trimmed = newNameInput.trim();
     if (!trimmed || trimmed.length < 3) {
-      setAccountFeedback('Nama karakter harus terdiri dari minimal 3 karakter.');
+      setNameError('Nama karakter harus terdiri dari minimal 3 karakter.');
+      return;
+    }
+    if (trimmed.length > 25) {
+      setNameError('Nama karakter maksimal 25 karakter.');
       return;
     }
     if (trimmed === currentDisplayName) {
@@ -457,20 +462,25 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
 
     sound.playClick();
     setIsSavingName(true);
+    setNameError('');
     setAccountFeedback('');
 
     try {
       const u = JSON.parse(localStorage.getItem('raden_player_user') || '{}');
+      const authToken = (typeof window !== 'undefined' ? localStorage.getItem('raden_auth_token') : '') || '';
       const res = await fetch('/api/user/account/update-name', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`,
+          'X-Auth-Token': authToken,
           'X-User-Id': u.id?.toString() || '',
           'X-User-Email': u.email || accountEmail || '',
           'X-User-Name': currentDisplayName || u.name || name || '',
         },
         body: JSON.stringify({
           user_id: u.id || undefined,
+          auth_token: authToken,
           current_name: currentDisplayName || u.name || name || '',
           email: u.email || accountEmail || undefined,
           name: trimmed,
@@ -482,10 +492,16 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
         sound.playSuccess();
         setCurrentDisplayName(trimmed);
         setIsEditingName(false);
+        setNameError('');
         if (data.user) {
           u.id = data.user.id || u.id;
           u.name = data.user.name || trimmed;
           u.email = data.user.email || u.email;
+          if (data.user.role) u.role = data.user.role;
+          if (typeof data.user.is_super_admin === 'boolean') u.is_super_admin = data.user.is_super_admin;
+          if (data.user.auth_token) {
+            localStorage.setItem('raden_auth_token', data.user.auth_token);
+          }
         } else {
           u.name = trimmed;
         }
@@ -493,11 +509,20 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
         setAccountFeedback(data.message || `✓ Nama karakter berhasil diubah menjadi ${trimmed}!`);
         if (onUpdateName) onUpdateName(trimmed);
         EventBus.emit('player-name-changed', trimmed);
+        EventBus.emit('update-player-name', trimmed);
+        try {
+          NetworkManager.getInstance().sendPlayerUpdate({ name: trimmed });
+        } catch (e) {}
       } else {
-        setAccountFeedback(data.message || 'Gagal mengubah nama karakter.');
+        const errMsg = data.message || 'Gagal mengubah nama karakter.';
+        setNameError(errMsg);
+        setAccountFeedback(errMsg);
+        sound.playError();
       }
     } catch (err) {
+      setNameError('Gagal terhubung ke database server.');
       setAccountFeedback('Gagal terhubung ke database server.');
+      sound.playError();
     } finally {
       setIsSavingName(false);
     }
@@ -1456,53 +1481,26 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
 
               <div className="flex flex-col flex-1 min-w-0">
                 <div className="flex items-center justify-between gap-1">
-                  {!isEditingName ? (
-                    <div className="flex items-center gap-1.5 min-w-0">
-                      <span className="text-base font-bold text-amber-400 uppercase tracking-wide truncate">
-                        {currentDisplayName || name}
-                      </span>
-                      {!isInspecting && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            sound.playClick();
-                            setNewNameInput(currentDisplayName || name);
-                            setIsEditingName(true);
-                          }}
-                          className="p-1 rounded hover:bg-neutral-800 text-neutral-400 hover:text-amber-400 transition-colors cursor-pointer shrink-0"
-                          title="Ganti Nama Karakter (Nickname)"
-                        >
-                          <Edit3 className="w-3.5 h-3.5" />
-                        </button>
-                      )}
-                    </div>
-                  ) : (
-                    <form onSubmit={handleSaveName} className="flex items-center gap-1.5 min-w-0 flex-1">
-                      <input
-                        type="text"
-                        value={newNameInput}
-                        onChange={(e) => setNewNameInput(e.target.value)}
-                        maxLength={25}
-                        autoFocus
-                        placeholder="Nama baru..."
-                        className="px-2 py-0.5 bg-black border border-amber-500 rounded text-amber-300 text-xs sm:text-sm font-bold focus:outline-none w-full max-w-[140px] sm:max-w-[180px]"
-                      />
-                      <button
-                        type="submit"
-                        disabled={isSavingName}
-                        className="px-2 py-0.5 bg-amber-500 hover:bg-amber-400 text-black rounded text-[11px] font-bold disabled:opacity-50 cursor-pointer shrink-0"
-                      >
-                        {isSavingName ? '...' : 'Simpan'}
-                      </button>
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <span className="text-base font-bold text-amber-400 uppercase tracking-wide truncate">
+                      {currentDisplayName || name}
+                    </span>
+                    {!isInspecting && (
                       <button
                         type="button"
-                        onClick={() => setIsEditingName(false)}
-                        className="px-1.5 py-0.5 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 rounded text-[11px] font-bold cursor-pointer shrink-0"
+                        onClick={() => {
+                          sound.playClick();
+                          setNewNameInput(currentDisplayName || name);
+                          setNameError('');
+                          setIsEditingName(true);
+                        }}
+                        className="p-1 rounded hover:bg-neutral-800 text-neutral-400 hover:text-amber-400 transition-colors cursor-pointer shrink-0"
+                        title="Ganti Nama Karakter (Nickname)"
                       >
-                        Batal
+                        <Edit3 className="w-3.5 h-3.5" />
                       </button>
-                    </form>
-                  )}
+                    )}
+                  </div>
                   <span className="text-[10px] font-black bg-amber-500 text-black px-1.5 py-0.5 rounded shrink-0">
                     LV. {effectiveLevel}
                   </span>
@@ -2036,6 +2034,12 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
 
             {/* Input Form */}
             <form onSubmit={handleSaveName} className="space-y-4">
+              {nameError && (
+                <div className="p-2.5 rounded-lg bg-red-950/80 border border-red-500/50 flex items-center gap-2 text-xs text-red-300">
+                  <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
+                  <span>{nameError}</span>
+                </div>
+              )}
               <div>
                 <label className="block text-xs font-bold text-neutral-300 uppercase tracking-wide mb-1.5">
                   Nama Karakter Baru

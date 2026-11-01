@@ -153,6 +153,34 @@ const io = new Server(httpServer, {
 /** Database memori (In-Memory Map) penyimpan seluruh pemain yang aktif */
 const players = new Map();
 
+/** Menghitung jumlah pemain aktif secara real-time di tiap realm server */
+function getRealServerStats() {
+  const stats = {
+    'Asia 1': 0,
+    'Asia 2': 0,
+    'Asia 3': 0,
+    'Asia 4': 0,
+    total: players.size,
+  };
+  for (const p of players.values()) {
+    const room = (p.room || '').toLowerCase();
+    if (room.includes('asia-2')) {
+      stats['Asia 2']++;
+    } else if (room.includes('asia-3')) {
+      stats['Asia 3']++;
+    } else if (room.includes('asia-4')) {
+      stats['Asia 4']++;
+    } else {
+      stats['Asia 1']++;
+    }
+  }
+  return stats;
+}
+
+function broadcastServerStats() {
+  io.emit('server:stats', getRealServerStats());
+}
+
 /** Daftar monster penjelajah open world (dihapus sesuai permintaan pengguna, diganti NPC di sisi klien) */
 const monsters = [];
 
@@ -162,6 +190,14 @@ const WORLD_HEIGHT = 9600;
 
 io.on('connection', (socket) => {
   console.log(`[Socket] Koneksi baru terhubung: ${socket.id}`);
+
+  // Kirim statistik server langsung ke client saat baru tersambung
+  socket.emit('server:stats', getRealServerStats());
+
+  // Permintaan eksplisit statistik realm server
+  socket.on('server:request_stats', () => {
+    socket.emit('server:stats', getRealServerStats());
+  });
 
   // Event ping-pong real-time untuk WebSocket latency test
   socket.on('app:ping', (timestamp, callback) => {
@@ -253,6 +289,7 @@ io.on('connection', (socket) => {
     socket.to(initialRoom).emit('player:joined', player);
 
     console.log(`[Player] ${player.name} (${player.avatar.gender}) [ROLE: ${player.role}] [ROOM: ${initialRoom}] pos=(${player.x}, ${player.y}) bergabung. Online: ${players.size}`);
+    broadcastServerStats();
   });
 
   // 2. Event perpindahan room antar-area (World, Gedung SD, SMP, SMA, Rumah Pribadi, Admin Portal)
@@ -282,6 +319,7 @@ io.on('connection', (socket) => {
 
       // Siarkan ke pemain di room tujuan bahwa pemain baru telah masuk
       socket.to(newRoom).emit('player:joined', player);
+      broadcastServerStats();
     }
 
     // SELALU kirim daftar pemain yang sudah ada di room tujuan kepada pemain yang baru masuk / re-enter
@@ -546,6 +584,7 @@ io.on('connection', (socket) => {
       console.log(`[Player] ${player.name} terputus dari room [${currentRoom}]. Sisa online: ${players.size - 1}`);
       players.delete(socket.id);
       socket.to(currentRoom).emit('player:left', { id: socket.id, name: player.name });
+      broadcastServerStats();
     }
   });
 

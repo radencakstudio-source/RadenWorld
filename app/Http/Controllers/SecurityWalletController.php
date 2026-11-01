@@ -425,20 +425,21 @@ class SecurityWalletController extends Controller
             ], 401);
         }
 
-        // Nama akun Super Admin dilindungi anti-tamper
-        if ($user->isSuperAdmin()) {
-            return response()->json([
-                'status' => 'error',
-                'message' => '🛡️ Nama karakter Super Admin dilindungi oleh sistem keamanan RadenShield.',
-            ], 403);
-        }
-
         $newName = trim($request->input('name', ''));
         if (empty($newName) || strlen($newName) < 3 || strlen($newName) > 25) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Nama karakter harus terdiri dari 3 sampai 25 karakter.',
             ], 422);
+        }
+
+        // Proteksi nama Super Admin dari pemalsuan/impersonasi oleh pemain non-admin
+        $isAttemptingAdminName = (stripos($newName, 'raden') !== false || stripos($newName, 'admin') !== false);
+        if ($isAttemptingAdminName && !$user->isSuperAdmin()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => '🛡️ Nama karakter tersebut dilindungi khusus untuk Super Admin RadenWorld.',
+            ], 403);
         }
 
         // Cek apakah nama sudah digunakan pemain lain
@@ -454,27 +455,6 @@ class SecurityWalletController extends Controller
         $user->name = $newName;
         $user->save();
 
-        // Migrasikan riwayat statistik olahraga mini game jika ada
-        try {
-            $sportsStatsPath = storage_path('app/sports_stats.json');
-            if (file_exists($sportsStatsPath)) {
-                $allStats = json_decode(file_get_contents($sportsStatsPath), true);
-                if (is_array($allStats)) {
-                    $oldKey = strtolower($oldName);
-                    $newKey = strtolower($newName);
-                    if (isset($allStats[$oldKey])) {
-                        $pStats = $allStats[$oldKey];
-                        $pStats['name'] = $newName;
-                        $allStats[$newKey] = $pStats;
-                        if ($oldKey !== $newKey) {
-                            unset($allStats[$oldKey]);
-                        }
-                        @file_put_contents($sportsStatsPath, json_encode($allStats, JSON_PRETTY_PRINT));
-                    }
-                }
-            }
-        } catch (\Throwable $e) {}
-
         return response()->json([
             'status' => 'success',
             'message' => "✓ Nama karakter berhasil diubah menjadi {$newName}!",
@@ -484,10 +464,13 @@ class SecurityWalletController extends Controller
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
+                'role' => $user->role,
+                'is_super_admin' => $user->isSuperAdmin(),
                 'gold' => $user->gold ?? 0,
                 'diamonds' => $user->diamonds ?? 0,
                 'level' => $user->level ?? 1,
                 'exp' => $user->exp ?? 0,
+                'auth_token' => $user->generateAuthToken(),
             ],
         ]);
     }

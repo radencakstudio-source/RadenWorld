@@ -58,6 +58,7 @@ import {
 } from 'lucide-react';
 import { SoundManager } from '../core/SoundManager';
 import { EventBus } from '../core/EventBus';
+import { NetworkManager } from '../core/NetworkManager';
 import { SocialAccountChooserModal, ISocialAccount } from './SocialAccountChooserModal';
 
 export interface ProfileModalProps {

@@ -20,6 +20,7 @@ import { IPlayerData, IAvatarCustomization } from '../types';
 import { AvatarPreview } from './AvatarPreview';
 import { SoundManager } from '../core/SoundManager';
 import { EventBus } from '../core/EventBus';
+import { NetworkManager } from '../core/NetworkManager';
 
 export interface ServerUsersModalProps {
   isOpen: boolean;
@@ -56,11 +57,12 @@ export const ServerUsersModal: React.FC<ServerUsersModalProps> = ({
   // Susun daftar gabungan: diri sendiri selalu di paling atas, diikuti pemain lain
   const allPlayers = useMemo(() => {
     const list: (IPlayerData & { isMe?: boolean })[] = [];
-    const myNameLower = (currentUserName || '').trim().toLowerCase();
+    const myNameClean = (currentUserName || '').replace(/\[admin\]/i, '').replace(/👑/g, '').trim().toLowerCase();
+    const currentSocketId = NetworkManager.getInstance().getSocketId();
 
-    // 1. Diri sendiri
+    // 1. Diri sendiri selalu di paling atas
     list.push({
-      id: 'me',
+      id: currentSocketId || 'me',
       name: currentUserName || 'Petualang',
       avatar: currentUserAvatar || {
         gender: 'male',
@@ -81,9 +83,20 @@ export const ServerUsersModal: React.FC<ServerUsersModalProps> = ({
       isMe: true,
     });
 
-    // 2. Pemain lain di server (hindari duplikasi nama diri sendiri)
+    // 2. Pemain lain di server (hindari duplikasi diri sendiri baik berdasarkan ID maupun Nama)
     players.forEach((p) => {
-      if (p.name && p.name.trim().toLowerCase() === myNameLower) return;
+      if (!p) return;
+      if (p.isMe) return;
+      if (currentSocketId && p.id === currentSocketId) return;
+      if (p.id === 'local-me' || p.id === 'me') return;
+
+      const pNameClean = (p.name || '').replace(/\[admin\]/i, '').replace(/👑/g, '').trim().toLowerCase();
+      if (myNameClean && pNameClean === myNameClean) return;
+
+      // Cegah entri duplikat ID atau nama yang sama
+      if (list.some((existing) => existing.id && existing.id === p.id)) return;
+      if (list.some((existing) => (existing.name || '').trim().toLowerCase() === (p.name || '').trim().toLowerCase())) return;
+
       list.push(p);
     });
 

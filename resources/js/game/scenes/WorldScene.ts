@@ -1057,7 +1057,7 @@ export class WorldScene extends Phaser.Scene {
 
     this.networkManager.onWorldInit((data: IWorldInitData) => {
       if (!this.sys || !this.sys.displayList || !this.scene.isActive()) return;
-      const myName = (this.player?.getEntityName() || this.pendingPlayerName || '').trim().toLowerCase();
+      const myNameClean = (this.player?.getEntityName() || this.pendingPlayerName || '').replace(/\[admin\]/i, '').replace(/👑/g, '').trim().toLowerCase();
       const myId = this.networkManager.getSocketId();
 
       this.remotePlayers.forEach((rp) => {
@@ -1067,7 +1067,8 @@ export class WorldScene extends Phaser.Scene {
 
       data.players.forEach(p => {
         if (p.id === myId || p.id === data.selfId || p.id === 'local_player') return;
-        if (myName && p.name && p.name.trim().toLowerCase() === myName) return;
+        const pNameClean = (p.name || '').replace(/\[admin\]/i, '').replace(/👑/g, '').trim().toLowerCase();
+        if (myNameClean && pNameClean === myNameClean) return;
         this.addRemotePlayer(p);
       });
       EventBus.emit('player-count-updated', this.remotePlayers.size + 1);
@@ -1076,10 +1077,11 @@ export class WorldScene extends Phaser.Scene {
     this.networkManager.onPlayerJoined((playerData: IPlayerData) => {
       if (!this.sys || !this.sys.displayList || !this.scene.isActive()) return;
       const myId = this.networkManager.getSocketId();
-      const myName = (this.player?.getEntityName() || this.pendingPlayerName || '').trim().toLowerCase();
+      const myNameClean = (this.player?.getEntityName() || this.pendingPlayerName || '').replace(/\[admin\]/i, '').replace(/👑/g, '').trim().toLowerCase();
 
       if (playerData.id === myId || playerData.id === 'local_player') return;
-      if (myName && playerData.name && playerData.name.trim().toLowerCase() === myName) return;
+      const pNameClean = (playerData.name || '').replace(/\[admin\]/i, '').replace(/👑/g, '').trim().toLowerCase();
+      if (myNameClean && pNameClean === myNameClean) return;
 
       this.addRemotePlayer(playerData);
       EventBus.emit('player-count-updated', this.remotePlayers.size + 1);

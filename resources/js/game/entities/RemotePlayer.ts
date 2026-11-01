@@ -680,6 +680,13 @@ export class RemotePlayer extends Entity {
     return this.avatar;
   }
 
+  /** Memperbarui nama remote player dan plat nama di atas kepala */
+  public override setName(newName: string): this {
+    super.setName(newName);
+    this.setEntityName(newName);
+    return this;
+  }
+
   /** Memperbarui avatar remote player */
   public setAvatar(newAvatar: IAvatarCustomization): void {
     if (!newAvatar) return;

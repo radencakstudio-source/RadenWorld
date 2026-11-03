@@ -15,7 +15,8 @@ import React, { useState, useEffect } from 'react';
 import { InventoryManager, IInventoryItem } from '../core/InventoryManager';
 import { SoundManager } from '../core/SoundManager';
 import { EventBus } from '../core/EventBus';
-import { Backpack } from 'lucide-react';
+import { PotionManager, IActivePotionBuff } from '../core/PotionManager';
+import { Backpack, X } from 'lucide-react';
 
 interface HotbarProps {
   onOpenBackpack: () => void;
@@ -34,6 +35,39 @@ export const Hotbar: React.FC<HotbarProps> = React.memo(({ onOpenBackpack, isBac
   const [isDialogueOpen, setIsDialogueOpen] = useState<boolean>(false);
   const [draggedSlot, setDraggedSlot] = useState<number | null>(null);
   const [dragOverSlot, setDragOverSlot] = useState<number | null>(null);
+
+  // Status Buff Ramuan Aktif (Apotek Farma)
+  const [activeBuffs, setActiveBuffs] = useState<IActivePotionBuff[]>(() =>
+    PotionManager.getInstance().getActiveBuffs()
+  );
+
+  useEffect(() => {
+    const potionMgr = PotionManager.getInstance();
+    const handleBuffsUpdate = (buffs: IActivePotionBuff[]) => {
+      setActiveBuffs(buffs);
+    };
+
+    // Ticker lokal setiap detik untuk memperbarui sisa durasi countdown secara mulus
+    const ticker = setInterval(() => {
+      const current = potionMgr.getActiveBuffs();
+      setActiveBuffs(current);
+    }, 1000);
+
+    EventBus.on('potion-buffs-updated', handleBuffsUpdate);
+
+    return () => {
+      clearInterval(ticker);
+      EventBus.off('potion-buffs-updated', handleBuffsUpdate);
+    };
+  }, []);
+
+  const formatTime = (sec: number) => {
+    if (sec <= 0) return '0s';
+    const m = Math.floor(sec / 60);
+    const s = sec % 60;
+    if (m > 0) return `${m}m ${s}s`;
+    return `${s}s`;
+  };
 
   useEffect(() => {
     const handleMapToggle = (open: boolean) => setIsFullMapOpen(open);
@@ -142,12 +176,70 @@ export const Hotbar: React.FC<HotbarProps> = React.memo(({ onOpenBackpack, isBac
 
   return (
     <aside
-      aria-label="Mini Inventaris"
-      className="fixed left-1/2 -translate-x-1/2 z-40 select-none pointer-events-auto flex flex-col items-center gap-1"
+      aria-label="Mini Inventaris & Status Ramuan"
+      className="fixed left-1/2 -translate-x-1/2 z-40 select-none pointer-events-auto flex flex-col items-center gap-1 sm:gap-1.5"
       style={{
         bottom: 'max(0.5rem, env(safe-area-inset-bottom, 0.5rem))',
       }}
     >
+      {/* 1. Barisan Kotak-Kotak Efek Ramuan Apotek Farma (Active Potion Buffs) */}
+      {activeBuffs.length > 0 && (
+        <div className="flex items-center justify-center gap-1.5 flex-wrap max-w-[95vw] pointer-events-auto">
+          {activeBuffs.map((buff) => {
+            const now = Date.now();
+            const remaining = Math.max(0, Math.ceil((buff.expiresAt - now) / 1000));
+            const total = buff.durationSec || 60;
+            const percent = Math.min(100, Math.max(0, (remaining / total) * 100));
+
+            return (
+              <div
+                key={buff.potionType}
+                className="flex items-center gap-1.5 px-2 py-1 bg-[#FFF8EA] border-2 border-[#5C3A21] rounded-lg shadow-[inset_0_-2px_0_rgba(92,58,33,0.18)]"
+                style={{ borderRadius: '8px' }}
+                title={`${buff.potionName} • Sisa: ${formatTime(remaining)}`}
+              >
+                {/* Icon Emoji Ramuan */}
+                <span className="text-sm sm:text-base leading-none select-none">
+                  {buff.icon}
+                </span>
+
+                {/* Nama & Countdown */}
+                <div className="flex flex-col min-w-0">
+                  <span className="text-[8.5px] sm:text-[9.5px] font-bold text-black truncate max-w-[75px] sm:max-w-[100px] leading-tight">
+                    {buff.potionName}
+                  </span>
+                  <div className="flex items-center gap-1 mt-0.5">
+                    <span className="clay-badge-secondary px-1 py-0 text-[7.5px] sm:text-[8px] font-bold text-black leading-tight">
+                      {formatTime(remaining)}
+                    </span>
+                    <div className="w-6 sm:w-8 h-1 bg-[#5C3A21]/20 rounded-full overflow-hidden border border-[#5C3A21]/30">
+                      <div
+                        className="h-full bg-[#FFAE6D] rounded-full transition-all duration-300"
+                        style={{ width: `${percent}%` }}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Tombol Hapus Buff */}
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    sound.playClick();
+                    PotionManager.getInstance().removeBuff(buff.potionType);
+                  }}
+                  className="w-4 h-4 rounded flex items-center justify-center text-black active:translate-y-[1px] ml-0.5"
+                  title={`Hentikan efek ${buff.potionName}`}
+                >
+                  <X className="w-2.5 h-2.5 stroke-[2.5]" />
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
       {/* Label Item Aktif Ringkas */}
       {activeItem && (
         <div className="clay-badge-neutral px-2.5 py-0.5 text-[9px] sm:text-[10px] font-bold text-black max-w-[200px] truncate pointer-events-none">

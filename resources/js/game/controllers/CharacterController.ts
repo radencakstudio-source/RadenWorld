@@ -40,6 +40,7 @@ import { EventBus } from '../core/EventBus';
 import { SoundManager } from '../core/SoundManager';
 import { NetworkManager } from '../core/NetworkManager';
 import { InventoryManager } from '../core/InventoryManager';
+import { PotionManager } from '../core/PotionManager';
 import { WorldFarming } from '../scenes/world/WorldFarming';
 
 export type CharacterActionState = 'grounded' | 'jumping' | 'fishing';
@@ -313,9 +314,7 @@ export class CharacterController {
   private inAirTimer: Phaser.Time.TimerEvent | null = null;
   private landingTimer: Phaser.Time.TimerEvent | null = null;
 
-  // Pelacakan Efek Ramuan Apotek Farma (Durasi Real-time)
-  private activePotionBuffs: Map<string, number> = new Map();
-
+  // Pelacakan Efek Ramuan Apotek Farma (Terkoneksi ke PotionManager Singleton)
   /**
    * Cek apakah pemain berada di zona lapangan minigame (Sepakbola, Basket, Volly).
    * Seluruh efek ramuan dinonaktifkan di area ini sesuai aturan permainan.
@@ -329,20 +328,14 @@ export class CharacterController {
    */
   public isPotionActive(type: string): boolean {
     if (this.isInSportsMinigameArea()) return false;
-    const exp = this.activePotionBuffs.get(type);
-    if (!exp) return false;
-    if (Date.now() >= exp) {
-      this.activePotionBuffs.delete(type);
-      return false;
-    }
-    return true;
+    return PotionManager.getInstance().isBuffActive(type);
   }
 
   /**
    * Mengaktifkan efek ramuan dengan durasi detik
    */
   public applyPotionBuff(type: string, durationSec: number): void {
-    this.activePotionBuffs.set(type, Date.now() + durationSec * 1000);
+    PotionManager.getInstance().applyBuff(type, undefined, undefined, durationSec);
   }
 
   // Pelacakan terhalang rintangan saat navigasi otomatis (Anti-stuck pada dinding/objek)
@@ -839,7 +832,7 @@ export class CharacterController {
       }
 
       // 1. TAHAP JUMP LANGSUNG DI UDARA (Dorongan vertikal kedua)
-      this.jumpVelocityZ = this.doubleJumpLaunchVz; // 560 px/s
+      this.jumpVelocityZ = this.doubleJumpLaunchVz + (this.isPotionActive('high_jump') ? 260 : 0); // 560 px/s (+260 dengan ramuan)
       this.sound.playJump(true);
       this.player.setJumpVisualStage('jump');
 
@@ -2163,8 +2156,9 @@ export class CharacterController {
     if (vx !== 0 || vy !== 0) {
       this.syncFacingDirection(vx, vy);
 
-      // Spawn bola-bola debu bulat imut saat berlari di atas tanah (Sprint)
-      if (isPlayerRunning && !this.isJumping && time - this.lastRunDustTime > 120) {
+      // Spawn bola-bola debu bulat imut saat berlari kencang atau efek ramuan speed aktif
+      const isFastMovement = isPlayerRunning || this.isPotionActive('speed');
+      if (isFastMovement && !this.isJumping && time - this.lastRunDustTime > 120) {
         this.lastRunDustTime = time;
         this.triggerRunDustBall(time, vx, vy);
       }

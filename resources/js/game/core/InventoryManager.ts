@@ -455,6 +455,7 @@ export class InventoryManager {
       EventBus.emit('player-consumed-potion', {
         potionType,
         potionName: item.name,
+        icon: item.icon,
         durationSec,
       });
 

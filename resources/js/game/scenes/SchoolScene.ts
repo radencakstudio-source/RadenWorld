@@ -1212,12 +1212,13 @@ export class SchoolScene extends Phaser.Scene {
     teacherDesk.setDepth(380);
     teacherDesk.setInteractive({ useHandCursor: true });
     teacherDesk.on('pointerdown', () => {
-      if (this.schoolType === 'sd') {
-        EventBus.emit('open-sd-subjects', { deskType: 'guru' });
-        this.player?.showSpeechBubble('Membuka kurikulum mata pelajaran SD di Meja Guru! 📚🎓');
-      } else {
-        this.player?.showSpeechBubble('Mengecek jadwal pelajaran & buku tugas siswa 📝');
-      }
+      EventBus.emit('open-school-subjects', {
+        schoolType: this.schoolType,
+        grade: this.grade,
+        deskType: 'guru',
+        initialTab: 'quiz',
+      });
+      this.player?.showSpeechBubble('Membuka Ujian Kuis & Leaderboard di Meja Guru! 📚🎓');
     });
 
     // Rintangan meja guru agar tidak tertembus
@@ -1265,12 +1266,13 @@ export class SchoolScene extends Phaser.Scene {
         desk.setDepth(row.deskY);
         desk.setInteractive({ useHandCursor: true });
         desk.on('pointerdown', () => {
-          if (this.schoolType === 'sd') {
-            EventBus.emit('open-sd-subjects', { deskType: 'siswa' });
-            this.player?.showSpeechBubble('Membuka buku mata pelajaran di Meja Siswa! 📝📖');
-          } else {
-            this.player?.showSpeechBubble('Duduk rapi di meja belajar untuk membaca buku 📖');
-          }
+          EventBus.emit('open-school-subjects', {
+            schoolType: this.schoolType,
+            grade: this.grade,
+            deskType: 'siswa',
+            initialTab: 'quiz',
+          });
+          this.player?.showSpeechBubble('Membuka Ujian Kuis di Meja Siswa! 📝📖');
         });
 
         // Hanya meja yang memiliki rintangan fisik (kursi bisa dilewati/diduduki)
@@ -1287,6 +1289,16 @@ export class SchoolScene extends Phaser.Scene {
     const mading = this.add.image(50, 660, 'school-mading');
     mading.setDisplaySize(180, 110);
     mading.setDepth(660);
+    mading.setInteractive({ useHandCursor: true });
+    mading.on('pointerdown', () => {
+      EventBus.emit('open-school-subjects', {
+        schoolType: this.schoolType,
+        grade: this.grade,
+        deskType: 'siswa',
+        initialTab: 'class_leaderboard',
+      });
+      this.player?.showSpeechBubble('Membuka Papan Peringkat Juara Kelas & Sekolah! 🏆📌');
+    });
 
     const winL2 = this.add.image(45, 900, 'school-window');
     winL2.setDisplaySize(80, 180);
@@ -1849,9 +1861,15 @@ export class SchoolScene extends Phaser.Scene {
       return;
     }
 
-    // 5. Mading Kelas
+    // 5. Mading Kelas -> Buka Leaderboard Kelas & Sekolah
     if (Phaser.Math.Distance.Between(px, py, this.madingZone.x, this.madingZone.y) < 130) {
-      this.player.showSpeechBubble('Mengecek jadwal piket kebersihan kelas & karya puisi 📌');
+      EventBus.emit('open-school-subjects', {
+        schoolType: this.schoolType,
+        grade: this.grade,
+        deskType: 'siswa',
+        initialTab: 'class_leaderboard',
+      });
+      this.player.showSpeechBubble('Membuka Leaderboard Juara Kelas & Sekolah! 🏆📌');
       return;
     }
 

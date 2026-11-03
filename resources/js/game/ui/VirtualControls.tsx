@@ -3,41 +3,37 @@
  * FILE: resources/js/game/ui/VirtualControls.tsx
  * ============================================================================
  * FUNGSI UTAMA:
- * Kontrol Virtual Analog (Touch Joystick 360°) dan Tombol Interaksi [AKSI, LOMPAT, MANCING]
- * khusus Perangkat Layar Sentuh Mobile (HP/Tablet).
- * 
- * FITUR KUSTOMISASI LANGSUNG DI LAYAR (IN-PLACE HUD CUSTOMIZER):
- * 1. GESER DENGAN JARI (TOUCH & DRAG ANYWHERE):
- *    - Pemain dapat langsung menyeret joystick analog & setiap tombol aksi ke mana saja di layar.
- * 2. SELECT & RESIZE (BESAR / KECIL LANGSUNG):
- *    - Ketuk tombol mana saja untuk memilihnya, lalu perbesar (+) atau perkecil (-)
- *      menggunakan palet pengatur ukuran langsung di atas tombol atau di bilah alat bawah!
- * 3. ANTI-LEAK & PERFORMA 60-120 FPS:
- *    - Touch event terisolasi saat bermain biasa, hardware-accelerated transform 3D.
+ * Kontrol Virtual Analog (Touch Joystick 360°) dan Tombol Interaksi
+ * [AKSI, LOMPAT, LARI, MANCING] bergaya Cozycore Clay-Pixel:
+ * - Tanpa glow, tanpa hover, outline 2px #5C3A21, palet #FFF8EA / #FFAE6D / #A8E6CF.
+ * - Jarak antar tombol dijamin proporsional (tidak saling dempet/bertumpuk)
+ *   baik pada Mobile Portrait maupun Mobile Landscape.
+ * - Mendukung In-Place HUD Customizer (geser & ubah ukuran langsung dengan jari).
  * ============================================================================
  */
 
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { Zap, ArrowUp, Fish, Move, Check, RotateCcw, Plus, Minus, Sliders } from 'lucide-react';
+import { Zap, ArrowUp, Fish, Check, RotateCcw, Plus, Minus, Sliders } from 'lucide-react';
 import { EventBus } from '../core/EventBus';
 import { SoundManager } from '../core/SoundManager';
+import { InventoryManager } from '../core/InventoryManager';
 
 export interface IVirtualControlsLayout {
-  analogScale: number;    // default 1.0 (range: 0.6 - 1.8)
-  analogOffsetX: number;  // default 0
-  analogOffsetY: number;  // default 0
-  actionScale: number;    // default 1.0 (range: 0.6 - 1.8)
-  actionOffsetX: number;  // default 0
-  actionOffsetY: number;  // default 0
-  jumpScale: number;      // default 1.0 (range: 0.6 - 1.8)
-  jumpOffsetX?: number;   // default 0
-  jumpOffsetY?: number;   // default 0
-  fishScale: number;      // default 1.0 (range: 0.6 - 1.8)
-  fishOffsetX?: number;   // default 0
-  fishOffsetY?: number;   // default 0
-  runScale: number;       // default 1.0 (range: 0.6 - 1.8)
-  runOffsetX?: number;    // default 0
-  runOffsetY?: number;    // default 0
+  analogScale: number;
+  analogOffsetX: number;
+  analogOffsetY: number;
+  actionScale: number;
+  actionOffsetX: number;
+  actionOffsetY: number;
+  jumpScale: number;
+  jumpOffsetX?: number;
+  jumpOffsetY?: number;
+  fishScale: number;
+  fishOffsetX?: number;
+  fishOffsetY?: number;
+  runScale: number;
+  runOffsetX?: number;
+  runOffsetY?: number;
 }
 
 export const DEFAULT_CONTROLS_LAYOUT: IVirtualControlsLayout = {
@@ -87,19 +83,46 @@ const setGlobalControlActive = (active: boolean) => {
 
 export const VirtualControls: React.FC<VirtualControlsProps> = React.memo(({
   onActionPress,
-  onDirectionPress,
-  onDirectionRelease,
   isActionActive = false,
   isChatOpen = false,
 }) => {
   const [isDragging, setIsDragging] = useState(false);
-
-  // Mode Kustomisasi Tata Letak Langsung di Layar (In-Place HUD Editor)
   const [isEditMode, setIsEditMode] = useState<boolean>(false);
   const [selectedControl, setSelectedControl] = useState<'analog' | 'action' | 'jump' | 'fish' | 'run'>('analog');
   const [isRunningActive, setIsRunningActive] = useState<boolean>(false);
+  const [isOverlayBlocking, setIsOverlayBlocking] = useState<boolean>(false);
 
-  // Layout kustomisasi kontrol dari localStorage
+  const [activeToolInfo, setActiveToolInfo] = useState<{
+    type: 'seed' | 'rod' | 'hoe' | 'watering' | 'other';
+    label: string;
+    iconText?: string;
+  }>(() => {
+    const item = InventoryManager.getInstance().getActiveItem();
+    if (InventoryManager.isSeedItem(item)) return { type: 'seed', label: 'TANAM', iconText: item?.icon || '🌱' };
+    if (InventoryManager.isHoeItem(item)) return { type: 'hoe', label: 'CANGKUL', iconText: '⛏️' };
+    if (InventoryManager.isWateringCanItem(item)) return { type: 'watering', label: 'SIRAM', iconText: '💧' };
+    return { type: 'rod', label: 'MANCING' };
+  });
+
+  useEffect(() => {
+    const handleInv = () => {
+      const item = InventoryManager.getInstance().getActiveItem();
+      if (InventoryManager.isSeedItem(item)) {
+        setActiveToolInfo({ type: 'seed', label: 'TANAM', iconText: item?.icon || '🌱' });
+      } else if (InventoryManager.isHoeItem(item)) {
+        setActiveToolInfo({ type: 'hoe', label: 'CANGKUL', iconText: '⛏️' });
+      } else if (InventoryManager.isWateringCanItem(item)) {
+        setActiveToolInfo({ type: 'watering', label: 'SIRAM', iconText: '💧' });
+      } else {
+        setActiveToolInfo({ type: 'rod', label: 'MANCING' });
+      }
+    };
+    EventBus.on('inventory-updated', handleInv);
+    return () => {
+      EventBus.off('inventory-updated', handleInv);
+    };
+  }, []);
+
   const [layout, setLayout] = useState<IVirtualControlsLayout>(() => {
     try {
       const saved = localStorage.getItem('raden_virtual_controls_layout');
@@ -118,11 +141,8 @@ export const VirtualControls: React.FC<VirtualControlsProps> = React.memo(({
   const isFishChargingRef = useRef<boolean>(false);
 
   const sound = SoundManager.getInstance();
+  const maxRadius = 36;
 
-  // Radius maksimum pergerakan knob analog
-  const maxRadius = 40;
-
-  // Haptic feedback getaran halus pada HP
   const triggerHaptic = useCallback((ms: number = 15) => {
     try {
       if (typeof window !== 'undefined' && 'vibrate' in navigator) {
@@ -131,7 +151,29 @@ export const VirtualControls: React.FC<VirtualControlsProps> = React.memo(({
     } catch (e) {}
   }, []);
 
-  // Sinkronisasi update layout kontrol secara real-time dari SettingsModal & EventBus
+  // Sembunyikan kontrol saat dialog NPC atau peta penuh dibuka agar tidak bertumpuk
+  useEffect(() => {
+    let dlg = false;
+    let map = false;
+    const sync = () => setIsOverlayBlocking(dlg || map);
+    const onOpenDlg = () => { dlg = true; sync(); };
+    const onCloseDlg = () => { dlg = false; sync(); };
+    const onDlgActive = (active: boolean) => { dlg = Boolean(active); sync(); };
+    const onMapToggle = (open: boolean) => { map = Boolean(open); sync(); };
+
+    EventBus.on('open-dialogue', onOpenDlg);
+    EventBus.on('close-dialogue', onCloseDlg);
+    EventBus.on('dialogue-active', onDlgActive);
+    EventBus.on('full-map-toggled', onMapToggle);
+
+    return () => {
+      EventBus.off('open-dialogue', onOpenDlg);
+      EventBus.off('close-dialogue', onCloseDlg);
+      EventBus.off('dialogue-active', onDlgActive);
+      EventBus.off('full-map-toggled', onMapToggle);
+    };
+  }, []);
+
   useEffect(() => {
     const handleLayoutUpdate = (newLayout: Partial<IVirtualControlsLayout>) => {
       if (!newLayout) return;
@@ -158,9 +200,6 @@ export const VirtualControls: React.FC<VirtualControlsProps> = React.memo(({
     };
   }, []);
 
-  /**
-   * Mengkalkulasi sudut & vektor arah joystick dari koordinat sentuhan layar
-   */
   const updateJoystickFromCoords = useCallback(
     (clientX: number, clientY: number) => {
       if (isEditMode) return;
@@ -177,7 +216,6 @@ export const VirtualControls: React.FC<VirtualControlsProps> = React.memo(({
       const dy = clientY - center.y;
       const distance = Math.hypot(dx, dy);
 
-      // Batasi posisi knob dalam radius maksimum
       const clampedDist = Math.min(distance, maxRadius);
       const angle = Math.atan2(dy, dx);
       const knobX = Math.cos(angle) * clampedDist;
@@ -187,11 +225,9 @@ export const VirtualControls: React.FC<VirtualControlsProps> = React.memo(({
         knobRef.current.style.transform = `translate3d(${knobX}px, ${knobY}px, 0)`;
       }
 
-      // Deadzone 5px
       if (clampedDist > 5) {
         const normX = knobX / maxRadius;
         const normY = knobY / maxRadius;
-
         EventBus.emit('joystick-move', { x: normX, y: normY });
       } else {
         EventBus.emit('joystick-end');
@@ -213,9 +249,6 @@ export const VirtualControls: React.FC<VirtualControlsProps> = React.memo(({
     EventBus.emit('joystick-end');
   }, [isEditMode]);
 
-  // ==========================================================================
-  // GLOBAL WINDOW EVENT LISTENERS UNTUK GAMEPLAY BIASA
-  // ==========================================================================
   useEffect(() => {
     const handleWindowTouchMove = (e: TouchEvent) => {
       if (isEditMode || activeTouchIdRef.current === null) return;
@@ -272,9 +305,6 @@ export const VirtualControls: React.FC<VirtualControlsProps> = React.memo(({
     };
   }, [updateJoystickFromCoords, resetJoystick, isEditMode]);
 
-  // ==========================================================================
-  // IN-PLACE DRAGGING & RESIZING HANDLERS (LANGSUNG DENGAN JARI / MOUSE)
-  // ==========================================================================
   const handleControlPointerDown = (
     e: React.PointerEvent,
     control: 'analog' | 'action' | 'jump' | 'fish' | 'run'
@@ -295,21 +325,27 @@ export const VirtualControls: React.FC<VirtualControlsProps> = React.memo(({
       targetEl.setPointerCapture(e.pointerId);
     } catch (err) {}
 
-    const initX = (
-      control === 'analog' ? layout.analogOffsetX :
-      control === 'action' ? layout.actionOffsetX :
-      control === 'jump' ? (layout.jumpOffsetX || 0) :
-      control === 'run' ? (layout.runOffsetX || 0) :
-      (layout.fishOffsetX || 0)
-    ) || 0;
+    const initX =
+      (control === 'analog'
+        ? layout.analogOffsetX
+        : control === 'action'
+        ? layout.actionOffsetX
+        : control === 'jump'
+        ? layout.jumpOffsetX || 0
+        : control === 'run'
+        ? layout.runOffsetX || 0
+        : layout.fishOffsetX || 0) || 0;
 
-    const initY = (
-      control === 'analog' ? layout.analogOffsetY :
-      control === 'action' ? layout.actionOffsetY :
-      control === 'jump' ? (layout.jumpOffsetY || 0) :
-      control === 'run' ? (layout.runOffsetY || 0) :
-      (layout.fishOffsetY || 0)
-    ) || 0;
+    const initY =
+      (control === 'analog'
+        ? layout.analogOffsetY
+        : control === 'action'
+        ? layout.actionOffsetY
+        : control === 'jump'
+        ? layout.jumpOffsetY || 0
+        : control === 'run'
+        ? layout.runOffsetY || 0
+        : layout.fishOffsetY || 0) || 0;
 
     let rafId: number | null = null;
     let latestDx = 0;
@@ -440,9 +476,6 @@ export const VirtualControls: React.FC<VirtualControlsProps> = React.memo(({
     EventBus.emit('virtual-controls-layout-updated', DEFAULT_CONTROLS_LAYOUT);
   };
 
-  // ==========================================================================
-  // JOYSTICK TOUCH HANDLERS (Multi-Touch Native dengan Anti-Leak)
-  // ==========================================================================
   const handleJoystickTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
     if (isEditMode) return;
     e.preventDefault();
@@ -483,9 +516,6 @@ export const VirtualControls: React.FC<VirtualControlsProps> = React.memo(({
     updateJoystickFromCoords(e.clientX, e.clientY);
   };
 
-  // ==========================================================================
-  // TOMBOL AKSI, LOMPAT, & MANCING HANDLERS
-  // ==========================================================================
   const handleJumpPress = useCallback((e: React.PointerEvent<HTMLButtonElement>) => {
     if (isEditMode) {
       handleControlPointerDown(e, 'jump');
@@ -494,7 +524,6 @@ export const VirtualControls: React.FC<VirtualControlsProps> = React.memo(({
     e.preventDefault();
     e.stopPropagation();
 
-    // Pastikan tidak ada tombol HTML yang tertinggal fokus (seperti tombol Maximize/Fullscreen)
     if (document.activeElement && (document.activeElement as HTMLElement).blur && document.activeElement !== document.body) {
       (document.activeElement as HTMLElement).blur();
     }
@@ -576,15 +605,15 @@ export const VirtualControls: React.FC<VirtualControlsProps> = React.memo(({
     const handleBiteEnd = () => {
       setIsFishBiting(false);
     };
+    const handleStateChanged = (state: string) => {
+      if (state !== 'bite') setIsFishBiting(false);
+    };
 
     EventBus.on('fishing-bite', handleBite);
-    EventBus.on('fishing-state-changed', (state: string) => {
-      if (state !== 'bite') setIsFishBiting(false);
-    });
+    EventBus.on('fishing-state-changed', handleStateChanged);
     EventBus.on('fishing-ended', handleBiteEnd);
     EventBus.on('fishing-minigame-start', handleBiteEnd);
 
-    // Global listener untuk menghentikan charge jika jari terangkat di luar tombol di mobile/tablet
     const handleGlobalRelease = () => {
       if (isFishChargingRef.current) {
         isFishChargingRef.current = false;
@@ -602,6 +631,7 @@ export const VirtualControls: React.FC<VirtualControlsProps> = React.memo(({
 
     return () => {
       EventBus.off('fishing-bite', handleBite);
+      EventBus.off('fishing-state-changed', handleStateChanged);
       EventBus.off('fishing-ended', handleBiteEnd);
       EventBus.off('fishing-minigame-start', handleBiteEnd);
       window.removeEventListener('pointerup', handleGlobalRelease);
@@ -619,7 +649,6 @@ export const VirtualControls: React.FC<VirtualControlsProps> = React.memo(({
     e.preventDefault();
     e.stopPropagation();
 
-    // Blur input/button apapun yang aktif
     if (document.activeElement && (document.activeElement as HTMLElement).blur && document.activeElement !== document.body) {
       (document.activeElement as HTMLElement).blur();
     }
@@ -663,69 +692,113 @@ export const VirtualControls: React.FC<VirtualControlsProps> = React.memo(({
     setGlobalControlActive(false);
   }, [triggerHaptic, isEditMode]);
 
+  const isHiddenByOverlay = (isChatOpen || isOverlayBlocking) && !isEditMode;
+
+  const renderResizePill = (scaleVal: number) => (
+    <div
+      onPointerDown={(e) => e.stopPropagation()}
+      className="clay-panel absolute -top-10 left-1/2 -translate-x-1/2 flex items-center gap-1 px-2 py-1 z-50 pointer-events-auto"
+    >
+      <button
+        type="button"
+        tabIndex={-1}
+        onPointerDown={(e) => {
+          e.stopPropagation();
+          handleAdjustScale(-0.1);
+        }}
+        className="clay-btn-neutral w-5 h-5 flex items-center justify-center text-black"
+        style={{ borderRadius: '6px' }}
+        title="Perkecil (-)"
+      >
+        <Minus className="w-3 h-3 stroke-[3]" />
+      </button>
+      <span className="text-[10px] font-bold text-black px-1 select-none">
+        {scaleVal.toFixed(1)}x
+      </span>
+      <button
+        type="button"
+        tabIndex={-1}
+        onPointerDown={(e) => {
+          e.stopPropagation();
+          handleAdjustScale(0.1);
+        }}
+        className="clay-btn-neutral w-5 h-5 flex items-center justify-center text-black"
+        style={{ borderRadius: '6px' }}
+        title="Perbesar (+)"
+      >
+        <Plus className="w-3 h-3 stroke-[3]" />
+      </button>
+    </div>
+  );
+
   return (
     <>
       {/* ================================================================ */}
-      {/* OVERLAY MODE ATUR KONTROL DENGAN PANDUAN SENTUHAN                */}
+      {/* OVERLAY MODE ATUR KONTROL LANGSUNG                               */}
       {/* ================================================================ */}
       {isEditMode && (
-        <div 
-          className="fixed inset-0 z-[60] bg-black/45 backdrop-blur-[2px] pointer-events-none select-none flex flex-col justify-between"
-          style={{ touchAction: 'none' }}
+        <div
+          className="fixed inset-0 z-[60] bg-[#5C3A21]/35 pointer-events-none select-none flex flex-col justify-between text-black"
+          style={{
+            touchAction: 'none',
+            paddingTop: 'max(0.5rem, env(safe-area-inset-top, 0.5rem))',
+            paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom, 0.5rem))',
+            paddingLeft: '0.5rem',
+            paddingRight: '0.5rem',
+          }}
         >
           {/* TOP FLOATING BANNER */}
-          <div className="pt-3 px-3 flex justify-center pointer-events-none w-full">
-            <div className="pointer-events-auto bg-neutral-950/95 border-2 border-amber-400 rounded-2xl px-4 py-2.5 shadow-[0_0_35px_rgba(0,0,0,0.9)] flex items-center gap-2 sm:gap-4 text-white backdrop-blur-md animate-in fade-in slide-in-from-top-3 max-w-[95vw]">
+          <div className="flex justify-center pointer-events-none w-full">
+            <div className="pointer-events-auto clay-panel px-3 py-2 flex flex-wrap items-center justify-between gap-2 max-w-[96dvw]">
               <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping" />
-                <span className="font-black text-xs sm:text-sm uppercase tracking-wider text-amber-400">
+                <span className="w-2.5 h-2.5 rounded-sm bg-[#FFAE6D] border border-[#5C3A21]" />
+                <span className="font-bold text-xs uppercase text-black">
                   Atur Kontrol Langsung
                 </span>
               </div>
-              <span className="text-[11px] text-neutral-300 hidden md:inline">
-                • Geser kontrol dengan jari ke posisi yang nyaman • Ketuk tombol untuk ubah ukuran
+              <span className="text-[10px] font-bold text-black hidden lg:inline">
+                • Geser tombol dengan jari • Ketuk untuk ubah ukuran
               </span>
-              <div className="flex items-center gap-2 ml-auto">
+              <div className="flex items-center gap-1.5 ml-auto">
                 <button
                   type="button"
                   onPointerDown={handleResetLayout}
-                  className="px-2.5 py-1 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-neutral-200 text-xs font-bold border border-neutral-700 cursor-pointer flex items-center gap-1 active:scale-95 transition-all"
-                  title="Kembalikan posisi & ukuran ke semula"
+                  className="clay-btn-neutral px-2.5 py-1 text-black text-[11px] font-bold flex items-center gap-1"
+                  title="Reset Posisi & Ukuran"
                 >
-                  <RotateCcw className="w-3.5 h-3.5 text-neutral-400" />
+                  <RotateCcw className="w-3.5 h-3.5 stroke-[2.5]" />
                   <span>Reset</span>
                 </button>
                 <button
                   type="button"
                   onPointerDown={handleSaveAndExit}
-                  className="px-3.5 py-1 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-neutral-950 text-xs font-black shadow-md cursor-pointer flex items-center gap-1.5 active:scale-95 transition-all"
+                  className="clay-btn-secondary px-3 py-1 text-black text-[11px] font-bold flex items-center gap-1"
                 >
-                  <Check className="w-4 h-4 stroke-[3]" />
+                  <Check className="w-3.5 h-3.5 stroke-[3]" />
                   <span>Selesai</span>
                 </button>
               </div>
             </div>
           </div>
 
-          {/* BOTTOM FLOATING PALETTE (TOOL UKURAN BESAR / KECIL) */}
-          <div className="pb-3 px-3 flex justify-center pointer-events-none w-full">
-            <div className="pointer-events-auto bg-neutral-950/95 border-2 border-amber-400 rounded-2xl p-3 shadow-2xl flex flex-col items-center gap-2 text-white backdrop-blur-md animate-in fade-in zoom-in-95 max-w-[95vw]">
-              <div className="flex items-center justify-between w-full gap-3 text-xs">
-                <span className="font-black text-amber-300 uppercase tracking-wider flex items-center gap-1.5">
-                  <Sliders className="w-3.5 h-3.5 text-amber-400" />
+          {/* BOTTOM FLOATING PALETTE */}
+          <div className="flex justify-center pointer-events-none w-full">
+            <div className="pointer-events-auto clay-panel p-2.5 flex flex-col items-center gap-2 max-w-[96dvw]">
+              <div className="flex items-center justify-between w-full gap-3 text-[11px] font-bold text-black">
+                <span className="uppercase flex items-center gap-1.5">
+                  <Sliders className="w-3.5 h-3.5 stroke-[2.5]" />
                   {selectedControl === 'analog' && '🕹️ Analog Joystick'}
                   {selectedControl === 'action' && '⚡ Tombol Aksi'}
                   {selectedControl === 'jump' && '⬆️ Tombol Lompat'}
                   {selectedControl === 'fish' && '🐟 Tombol Mancing'}
-                  {selectedControl === 'run' && '⚡ Tombol Lari (Sprint)'}
+                  {selectedControl === 'run' && '⚡ Tombol Lari'}
                 </span>
-                <span className="text-[11px] text-neutral-400 font-mono">
-                  Ukuran: <strong className="text-amber-400 text-xs">{getCurrentScale().toFixed(1)}x</strong>
+                <span className="clay-badge-primary px-2 py-0.5 text-[10px]">
+                  {getCurrentScale().toFixed(1)}x
                 </span>
               </div>
 
-              {/* Tab Pemilih Tombol */}
-              <div className="flex items-center gap-1 bg-neutral-900 p-1 rounded-xl border border-neutral-800 text-[11px] font-bold">
+              <div className="flex flex-wrap items-center justify-center gap-1 text-[10px] font-bold">
                 {(['analog', 'action', 'jump', 'run', 'fish'] as const).map((ctrl) => (
                   <button
                     key={ctrl}
@@ -735,53 +808,56 @@ export const VirtualControls: React.FC<VirtualControlsProps> = React.memo(({
                       triggerHaptic(10);
                       setSelectedControl(ctrl);
                     }}
-                    className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
-                      selectedControl === ctrl
-                        ? 'bg-amber-400 text-neutral-950 font-black shadow-xs'
-                        : 'text-neutral-400 hover:text-white'
+                    className={`px-2 py-1 text-black ${
+                      selectedControl === ctrl ? 'clay-btn-primary' : 'clay-btn-neutral'
                     }`}
+                    style={{ borderRadius: '7px' }}
                   >
-                    {ctrl === 'analog' ? '🕹️ Analog' : ctrl === 'action' ? '⚡ Aksi' : ctrl === 'jump' ? '⬆️ Lompat' : ctrl === 'run' ? '⚡ Lari' : '🐟 Mancing'}
+                    {ctrl === 'analog'
+                      ? 'Analog'
+                      : ctrl === 'action'
+                      ? 'Aksi'
+                      : ctrl === 'jump'
+                      ? 'Lompat'
+                      : ctrl === 'run'
+                      ? 'Lari'
+                      : 'Mancing'}
                   </button>
                 ))}
               </div>
 
-              {/* Kontrol Skala Besar / Kecil */}
-              <div className="flex items-center gap-2 pt-0.5">
+              <div className="flex flex-wrap items-center justify-center gap-1.5">
                 <button
                   type="button"
                   onPointerDown={() => handleAdjustScale(-0.1)}
-                  className="px-3 py-1.5 rounded-xl bg-neutral-800 hover:bg-neutral-700 active:scale-95 border border-neutral-700 text-amber-300 font-black text-xs flex items-center gap-1 cursor-pointer transition-all"
-                  title="Perkecil Ukuran Tombol Terpilih"
+                  className="clay-btn-neutral px-2.5 py-1 text-black font-bold text-[10px] flex items-center gap-1"
+                  style={{ borderRadius: '7px' }}
                 >
-                  <Minus className="w-3.5 h-3.5 stroke-[3]" />
+                  <Minus className="w-3 h-3 stroke-[3]" />
                   <span>Kecil</span>
                 </button>
 
-                <div className="flex gap-1">
-                  {[0.8, 1.0, 1.2, 1.5].map((preset) => (
-                    <button
-                      key={preset}
-                      type="button"
-                      onPointerDown={() => handleSetScalePreset(preset)}
-                      className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                        Math.abs(getCurrentScale() - preset) < 0.05
-                          ? 'bg-amber-400 text-neutral-950 font-black'
-                          : 'bg-neutral-800 text-neutral-300 hover:bg-neutral-700'
-                      }`}
-                    >
-                      {preset}x
-                    </button>
-                  ))}
-                </div>
+                {[0.8, 1.0, 1.2, 1.5].map((preset) => (
+                  <button
+                    key={preset}
+                    type="button"
+                    onPointerDown={() => handleSetScalePreset(preset)}
+                    className={`px-2 py-1 text-[10px] font-bold text-black ${
+                      Math.abs(getCurrentScale() - preset) < 0.05 ? 'clay-btn-secondary' : 'clay-btn-neutral'
+                    }`}
+                    style={{ borderRadius: '7px' }}
+                  >
+                    {preset}x
+                  </button>
+                ))}
 
                 <button
                   type="button"
                   onPointerDown={() => handleAdjustScale(0.1)}
-                  className="px-3 py-1.5 rounded-xl bg-neutral-800 hover:bg-neutral-700 active:scale-95 border border-neutral-700 text-amber-300 font-black text-xs flex items-center gap-1 cursor-pointer transition-all"
-                  title="Perbesar Ukuran Tombol Terpilih"
+                  className="clay-btn-neutral px-2.5 py-1 text-black font-bold text-[10px] flex items-center gap-1"
+                  style={{ borderRadius: '7px' }}
                 >
-                  <Plus className="w-3.5 h-3.5 stroke-[3]" />
+                  <Plus className="w-3 h-3 stroke-[3]" />
                   <span>Besar</span>
                 </button>
               </div>
@@ -794,58 +870,28 @@ export const VirtualControls: React.FC<VirtualControlsProps> = React.memo(({
       {/* 1. KIRI BAWAH: ANALOG JOYSTICK VIRTUAL 360 DERAJAT               */}
       {/* ================================================================ */}
       <div
-        className={`fixed ${isEditMode ? 'z-[70]' : 'z-[50]'} pointer-events-none select-none font-['Chakra_Petch']`}
+        className={`fixed ${isEditMode ? 'z-[70]' : 'z-[50]'} pointer-events-none select-none`}
         style={{
-          left: 'max(1.25rem, calc(env(safe-area-inset-left, 0px) + 1rem))',
-          bottom: 'max(2.25rem, calc(env(safe-area-inset-bottom, 0px) + 1.75rem))',
-          transform: isChatOpen && !isEditMode
-            ? 'translateY(16px) scale(0.9)'
+          left: 'max(0.875rem, calc(env(safe-area-inset-left, 0px) + 0.75rem))',
+          bottom: 'max(1.25rem, calc(env(safe-area-inset-bottom, 0px) + 1rem))',
+          transform: isHiddenByOverlay
+            ? 'translateY(12px) scale(0.92)'
             : `translate(${layout.analogOffsetX}px, ${-layout.analogOffsetY}px) scale(${layout.analogScale})`,
           transformOrigin: 'center center',
-          transition: isEditMode ? 'none' : 'opacity 0.15s, transform 0.15s',
-          opacity: isChatOpen && !isEditMode ? 0 : 1,
+          transition: isEditMode ? 'none' : 'opacity 0.12s, transform 0.12s',
+          opacity: isHiddenByOverlay ? 0 : 1,
         }}
       >
+        {isEditMode && selectedControl === 'analog' && renderResizePill(layout.analogScale)}
 
-        {/* Floating Quick Resize Pill di atas Analog saat terpilih */}
-        {isEditMode && selectedControl === 'analog' && (
-          <div
-            onPointerDown={(e) => e.stopPropagation()}
-            className="absolute -top-11 left-1/2 -translate-x-1/2 flex items-center gap-1.5 bg-neutral-950/95 border-2 border-amber-400 rounded-full px-2.5 py-1 shadow-[0_0_20px_rgba(245,158,11,0.8)] z-50 pointer-events-auto backdrop-blur-md animate-in fade-in zoom-in-90"
-          >
-            <button
-              type="button"
-              onPointerDown={(e) => { e.stopPropagation(); handleAdjustScale(-0.1); }}
-              className="w-6 h-6 rounded-full bg-neutral-800 hover:bg-neutral-700 active:scale-90 flex items-center justify-center text-amber-300 font-black cursor-pointer border border-neutral-700"
-              title="Perkecil (-)"
-            >
-              <Minus className="w-3.5 h-3.5 stroke-[3]" />
-            </button>
-            <span className="font-mono text-xs font-black text-amber-300 px-1 select-none">
-              {layout.analogScale.toFixed(1)}x
-            </span>
-            <button
-              type="button"
-              onPointerDown={(e) => { e.stopPropagation(); handleAdjustScale(0.1); }}
-              className="w-6 h-6 rounded-full bg-neutral-800 hover:bg-neutral-700 active:scale-90 flex items-center justify-center text-amber-300 font-black cursor-pointer border border-neutral-700"
-              title="Perbesar (+)"
-            >
-              <Plus className="w-3.5 h-3.5 stroke-[3]" />
-            </button>
-          </div>
-        )}
-
-        {/* Joystick Base Wrapper */}
         <div
           onPointerDown={(e) => {
             if (isEditMode) handleControlPointerDown(e, 'analog');
           }}
-          className={`pointer-events-auto select-none touch-none ${
+          className={`${isHiddenByOverlay ? 'pointer-events-none' : 'pointer-events-auto'} select-none touch-none ${
             isEditMode
-              ? `cursor-move rounded-full p-1 ${
-                  selectedControl === 'analog'
-                    ? 'ring-4 ring-amber-400 border-2 border-amber-300 shadow-[0_0_25px_rgba(245,158,11,0.8)] animate-pulse'
-                    : 'border-2 border-dashed border-white/50 hover:border-amber-400'
+              ? `cursor-move rounded-full p-1 border-2 ${
+                  selectedControl === 'analog' ? 'border-[#5C3A21] bg-[#A8E6CF]/60' : 'border-dashed border-[#5C3A21]'
                 }`
               : ''
           }`}
@@ -855,97 +901,72 @@ export const VirtualControls: React.FC<VirtualControlsProps> = React.memo(({
             ref={joystickBaseRef}
             onTouchStart={handleJoystickTouchStart}
             onPointerDown={handleJoystickPointerDown}
-            onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); }}
-            className="relative w-24 h-24 sm:w-27 sm:h-27 md:w-29 md:h-29 rounded-full bg-black/75 border-2 border-white/25 flex items-center justify-center cursor-pointer select-none touch-none shadow-2xl backdrop-blur-xs active:border-amber-400/80 transition-colors"
-            style={{ touchAction: 'none' }}
+            onContextMenu={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
+            className="relative w-23 h-23 sm:w-25 sm:h-25 landscape:max-md:w-21 landscape:max-md:h-21 rounded-full bg-[#FFF8EA]/92 border-2 border-[#5C3A21] flex items-center justify-center cursor-pointer select-none touch-none"
+            style={{
+              touchAction: 'none',
+              boxShadow: 'inset 0 2px 0 #FFFFFF, inset 0 -3px 0 #EADBC0, 0 3px 0 #5C3A21',
+            }}
             role="slider"
             aria-label="Analog Virtual Joystick"
           >
             {/* Garis Salib Sumbu Arah */}
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <div className="w-13 sm:w-16 h-0.5 bg-white/15" />
+              <div className="w-12 h-0.5 bg-[#5C3A21]/20" />
             </div>
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <div className="h-13 sm:h-16 w-0.5 bg-white/15" />
+              <div className="h-12 w-0.5 bg-[#5C3A21]/20" />
             </div>
 
-            {/* Lingkaran Batas Dalam Tipis */}
-            <div className="absolute w-13 sm:w-16 h-13 sm:h-16 rounded-full border border-white/15 pointer-events-none" />
+            <div className="absolute w-12 h-12 rounded-full border border-[#5C3A21]/25 pointer-events-none" />
 
-            {/* Knob Analog */}
+            {/* Knob Analog Clay-Pixel */}
             <div
               ref={knobRef}
-              className={`w-10 h-10 sm:w-11.5 sm:h-11.5 md:w-12.5 md:h-12.5 rounded-full border-2 border-white/40 bg-neutral-900/95 flex items-center justify-center select-none shadow-xl pointer-events-none will-change-transform ${
-                isDragging && !isEditMode ? 'duration-0 border-amber-400 bg-neutral-950 scale-105' : 'duration-150 ease-out'
+              className={`w-10 h-10 rounded-full border-2 border-[#5C3A21] flex items-center justify-center select-none pointer-events-none will-change-transform ${
+                isDragging && !isEditMode ? 'bg-[#A8E6CF] duration-0' : 'bg-[#FFAE6D] duration-150 ease-out'
               }`}
               style={{
                 transform: 'translate3d(0px, 0px, 0px)',
+                boxShadow:
+                  isDragging && !isEditMode
+                    ? 'inset 0 2px 0 #D4F5E9, 0 2px 0 #5C3A21'
+                    : 'inset 0 2px 0 #FFD0A6, 0 2px 0 #5C3A21',
               }}
             >
-              <div
-                className={`w-3 sm:w-3.5 h-3 sm:h-3.5 rounded-full border transition-all ${
-                  isDragging && !isEditMode ? 'border-amber-400 bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.8)]' : 'border-white/30 bg-white/20'
-                }`}
-              />
+              <div className="w-3 h-3 rounded-full bg-[#FFF8EA] border border-[#5C3A21]" />
             </div>
           </div>
         </div>
       </div>
 
       {/* ================================================================ */}
-      {/* 2. TOMBOL MANCING (INDEPENDENT POSITION & RESIZE)                */}
+      {/* 2. TOMBOL ALAT FLEKSIBEL (MANCING / TANAM / CANGKUL / SIRAM [F])  */}
       {/* ================================================================ */}
       <div
-        className={`fixed ${isEditMode ? 'z-[70]' : 'z-[50]'} pointer-events-none select-none font-['Chakra_Petch']`}
+        className={`fixed ${isEditMode ? 'z-[70]' : 'z-[50]'} pointer-events-none select-none`}
         style={{
-          right: 'max(6rem, calc(env(safe-area-inset-right, 0px) + 5.5rem))',
-          bottom: 'max(1.5rem, calc(env(safe-area-inset-bottom, 0px) + 1.25rem))',
+          right: 'max(5.75rem, calc(env(safe-area-inset-right, 0px) + 5.5rem))',
+          bottom: 'max(0.875rem, calc(env(safe-area-inset-bottom, 0px) + 0.75rem))',
           transform: `translate(${layout.fishOffsetX || 0}px, ${-(layout.fishOffsetY || 0)}px) scale(${layout.fishScale})`,
           transformOrigin: 'center center',
-          transition: isEditMode ? 'none' : 'opacity 0.15s, transform 0.15s',
-          opacity: isChatOpen && !isEditMode ? 0 : 1,
+          transition: isEditMode ? 'none' : 'opacity 0.12s, transform 0.12s',
+          opacity: isHiddenByOverlay ? 0 : 1,
         }}
       >
-        {/* Floating Quick Resize Pill di atas Tombol Mancing saat terpilih */}
-        {isEditMode && selectedControl === 'fish' && (
-          <div
-            onPointerDown={(e) => e.stopPropagation()}
-            className="absolute -top-11 left-1/2 -translate-x-1/2 flex items-center gap-1.5 bg-neutral-950/95 border-2 border-amber-400 rounded-full px-2.5 py-1 shadow-[0_0_20px_rgba(245,158,11,0.8)] z-50 pointer-events-auto backdrop-blur-md animate-in fade-in zoom-in-90"
-          >
-            <button
-              type="button"
-              tabIndex={-1}
-              onPointerDown={(e) => { e.stopPropagation(); handleAdjustScale(-0.1); }}
-              className="w-6 h-6 rounded-full bg-neutral-800 hover:bg-neutral-700 active:scale-90 flex items-center justify-center text-amber-300 font-black cursor-pointer border border-neutral-700"
-              title="Perkecil (-)"
-            >
-              <Minus className="w-3.5 h-3.5 stroke-[3]" />
-            </button>
-            <span className="font-mono text-xs font-black text-amber-300 px-1 select-none">
-              {layout.fishScale.toFixed(1)}x
-            </span>
-            <button
-              type="button"
-              tabIndex={-1}
-              onPointerDown={(e) => { e.stopPropagation(); handleAdjustScale(0.1); }}
-              className="w-6 h-6 rounded-full bg-neutral-800 hover:bg-neutral-700 active:scale-90 flex items-center justify-center text-amber-300 font-black cursor-pointer border border-neutral-700"
-              title="Perbesar (+)"
-            >
-              <Plus className="w-3.5 h-3.5 stroke-[3]" />
-            </button>
-          </div>
-        )}
+        {isEditMode && selectedControl === 'fish' && renderResizePill(layout.fishScale)}
 
         <div
           onPointerDown={(e) => {
             if (isEditMode) handleControlPointerDown(e, 'fish');
           }}
-          className={`pointer-events-auto select-none touch-none ${
+          className={`${isHiddenByOverlay ? 'pointer-events-none' : 'pointer-events-auto'} select-none touch-none ${
             isEditMode
-              ? `cursor-move rounded-full p-1 ${
-                  selectedControl === 'fish'
-                    ? 'ring-4 ring-amber-400 border-2 border-amber-300 shadow-[0_0_25px_rgba(245,158,11,0.8)] animate-pulse'
-                    : 'border-2 border-dashed border-white/50 hover:border-amber-400'
+              ? `cursor-move rounded-2xl p-1 border-2 ${
+                  selectedControl === 'fish' ? 'border-[#5C3A21] bg-[#A8E6CF]/60' : 'border-dashed border-[#5C3A21]'
                 }`
               : ''
           }`}
@@ -957,78 +978,63 @@ export const VirtualControls: React.FC<VirtualControlsProps> = React.memo(({
             onPointerDown={handleFishPointerDown}
             onPointerUp={handleFishPointerUp}
             onPointerCancel={handleFishPointerUp}
-            onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); }}
-            className={`w-11.5 h-11.5 sm:w-13 sm:h-13 md:w-14 md:h-14 rounded-full flex flex-col items-center justify-center cursor-pointer active:scale-95 transition-all select-none ${
-              isFishBiting && !isEditMode
-                ? 'bg-amber-500/35 border-2 border-amber-400 text-amber-300 ring-4 ring-amber-400/50 animate-pulse shadow-[0_0_24px_rgba(245,158,11,0.7)]'
-                : 'bg-black/80 hover:bg-black/90 active:bg-neutral-800 border-2 border-white/30 text-neutral-200 shadow-xl'
+            onContextMenu={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
+            className={`w-12 h-12 sm:w-13 sm:h-13 rounded-2xl flex flex-col items-center justify-center select-none text-black ${
+              (isFishBiting || activeToolInfo.type === 'seed') && !isEditMode ? 'clay-btn-primary' : 'clay-btn-neutral'
             }`}
-            style={{ touchAction: 'none' }}
-            title={isFishBiting ? "IKAN MENYAMBAR! KETUK UNTUK TARIK!" : "Tahan untuk Menimbang Lemparan Kail / Strike (F)"}
-            aria-label="Tombol Mancing"
+            style={{ touchAction: 'none', borderRadius: '14px' }}
+            title={
+              isFishBiting
+                ? 'IKAN MENYAMBAR! KETUK UNTUK TARIK!'
+                : activeToolInfo.type === 'seed'
+                ? 'Tanam Bibit di Lahan Kebun Tani [F]'
+                : activeToolInfo.type === 'hoe'
+                ? 'Gemburkan Tanah / Panen [F]'
+                : activeToolInfo.type === 'watering'
+                ? 'Siram Tanaman Kebun [F]'
+                : 'Tahan untuk Lempar Kail / Strike (F)'
+            }
+            aria-label="Tombol Alat Fleksibel"
           >
-            <Fish className={`w-4.5 h-4.5 sm:w-5 sm:h-5 stroke-[2.2] transition-colors ${isFishBiting && !isEditMode ? 'text-amber-300 stroke-[2.8] animate-bounce' : 'text-amber-300'}`} />
-            <span className={`text-[6.5px] sm:text-[7.5px] font-mono font-black tracking-wider leading-none mt-0.5 ${isFishBiting && !isEditMode ? 'text-amber-300' : 'text-neutral-300'}`}>
-              {isFishBiting && !isEditMode ? 'TARIK!' : 'MANCING'}
+            {activeToolInfo.iconText ? (
+              <span className="text-base leading-none">{activeToolInfo.iconText}</span>
+            ) : (
+              <Fish className="w-4.5 h-4.5 stroke-[2.5] text-black" />
+            )}
+            <span className="text-[7px] font-bold leading-none mt-0.5 text-black">
+              {isFishBiting && !isEditMode ? 'TARIK!' : activeToolInfo.label}
             </span>
           </button>
         </div>
       </div>
 
       {/* ================================================================ */}
-      {/* 2.5 TOMBOL LARI / SPRINT (INDEPENDENT POSITION & RESIZE)         */}
+      {/* 2.5 TOMBOL LARI / SPRINT (DIAGONAL KIRI ATAS DARI AKSI)          */}
       {/* ================================================================ */}
       <div
-        className={`fixed ${isEditMode ? 'z-[70]' : 'z-[50]'} pointer-events-none select-none font-['Chakra_Petch']`}
+        className={`fixed ${isEditMode ? 'z-[70]' : 'z-[50]'} pointer-events-none select-none`}
         style={{
-          right: 'max(6rem, calc(env(safe-area-inset-right, 0px) + 5.5rem))',
-          bottom: 'max(5.25rem, calc(env(safe-area-inset-bottom, 0px) + 4.75rem))',
+          right: 'max(5.5rem, calc(env(safe-area-inset-right, 0px) + 5.25rem))',
+          bottom: 'max(4.75rem, calc(env(safe-area-inset-bottom, 0px) + 4.5rem))',
           transform: `translate(${layout.runOffsetX || 0}px, ${-(layout.runOffsetY || 0)}px) scale(${layout.runScale || 1.0})`,
           transformOrigin: 'center center',
-          transition: isEditMode ? 'none' : 'opacity 0.15s, transform 0.15s',
-          opacity: isChatOpen && !isEditMode ? 0 : 1,
+          transition: isEditMode ? 'none' : 'opacity 0.12s, transform 0.12s',
+          opacity: isHiddenByOverlay ? 0 : 1,
         }}
       >
-        {/* Floating Quick Resize Pill di atas Tombol Lari saat terpilih */}
-        {isEditMode && selectedControl === 'run' && (
-          <div
-            onPointerDown={(e) => e.stopPropagation()}
-            className="absolute -top-11 left-1/2 -translate-x-1/2 flex items-center gap-1.5 bg-neutral-950/95 border-2 border-amber-400 rounded-full px-2.5 py-1 shadow-[0_0_20px_rgba(245,158,11,0.8)] z-50 pointer-events-auto backdrop-blur-md animate-in fade-in zoom-in-90"
-          >
-            <button
-              type="button"
-              tabIndex={-1}
-              onPointerDown={(e) => { e.stopPropagation(); handleAdjustScale(-0.1); }}
-              className="w-6 h-6 rounded-full bg-neutral-800 hover:bg-neutral-700 active:scale-90 flex items-center justify-center text-amber-300 font-black cursor-pointer border border-neutral-700"
-              title="Perkecil (-)"
-            >
-              <Minus className="w-3.5 h-3.5 stroke-[3]" />
-            </button>
-            <span className="font-mono text-xs font-black text-amber-300 px-1 select-none">
-              {(layout.runScale || 1.0).toFixed(1)}x
-            </span>
-            <button
-              type="button"
-              tabIndex={-1}
-              onPointerDown={(e) => { e.stopPropagation(); handleAdjustScale(0.1); }}
-              className="w-6 h-6 rounded-full bg-neutral-800 hover:bg-neutral-700 active:scale-90 flex items-center justify-center text-amber-300 font-black cursor-pointer border border-neutral-700"
-              title="Perbesar (+)"
-            >
-              <Plus className="w-3.5 h-3.5 stroke-[3]" />
-            </button>
-          </div>
-        )}
+        {isEditMode && selectedControl === 'run' && renderResizePill(layout.runScale || 1.0)}
 
         <div
           onPointerDown={(e) => {
             if (isEditMode) handleControlPointerDown(e, 'run');
           }}
-          className={`pointer-events-auto select-none touch-none ${
+          className={`${isHiddenByOverlay ? 'pointer-events-none' : 'pointer-events-auto'} select-none touch-none ${
             isEditMode
-              ? `cursor-move rounded-full p-1 ${
-                  selectedControl === 'run'
-                    ? 'ring-4 ring-amber-400 border-2 border-amber-300 shadow-[0_0_25px_rgba(245,158,11,0.8)] animate-pulse'
-                    : 'border-2 border-dashed border-white/50 hover:border-amber-400'
+              ? `cursor-move rounded-2xl p-1 border-2 ${
+                  selectedControl === 'run' ? 'border-[#5C3A21] bg-[#A8E6CF]/60' : 'border-dashed border-[#5C3A21]'
                 }`
               : ''
           }`}
@@ -1038,78 +1044,49 @@ export const VirtualControls: React.FC<VirtualControlsProps> = React.memo(({
             type="button"
             tabIndex={-1}
             onPointerDown={handleRunTogglePress}
-            onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); }}
-            className={`w-11.5 h-11.5 sm:w-13 sm:h-13 md:w-14 md:h-14 rounded-full flex flex-col items-center justify-center cursor-pointer active:scale-95 transition-all select-none ${
-              isRunningActive && !isEditMode
-                ? 'bg-amber-500/40 border-2 border-amber-400 text-amber-300 ring-4 ring-amber-400/50 shadow-[0_0_24px_rgba(245,158,11,0.7)] scale-105'
-                : 'bg-black/80 hover:bg-black/90 active:bg-neutral-800 border-2 border-white/30 text-neutral-200 shadow-xl'
+            onContextMenu={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
+            className={`w-12 h-12 sm:w-13 sm:h-13 rounded-2xl flex flex-col items-center justify-center select-none text-black ${
+              isRunningActive && !isEditMode ? 'clay-btn-secondary' : 'clay-btn-neutral'
             }`}
-            style={{ touchAction: 'none' }}
+            style={{ touchAction: 'none', borderRadius: '14px' }}
             title="Lari Cepat / Sprint (Shift)"
             aria-label="Tombol Lari"
           >
-            <Zap className={`w-4.5 h-4.5 sm:w-5 sm:h-5 stroke-[2.5] transition-colors ${isRunningActive && !isEditMode ? 'text-amber-300 fill-amber-400 animate-pulse' : 'text-amber-300'}`} />
-            <span className={`text-[6.5px] sm:text-[7.5px] font-mono font-black tracking-wider leading-none mt-0.5 ${isRunningActive && !isEditMode ? 'text-amber-300' : 'text-neutral-300'}`}>
-              {isRunningActive && !isEditMode ? 'SPRINT!' : 'LARI'}
+            <Zap className={`w-4.5 h-4.5 stroke-[2.5] text-black ${isRunningActive && !isEditMode ? 'fill-black' : ''}`} />
+            <span className="text-[7px] font-bold leading-none mt-0.5 text-black">
+              {isRunningActive && !isEditMode ? 'SPRINT' : 'LARI'}
             </span>
           </button>
         </div>
       </div>
 
       {/* ================================================================ */}
-      {/* 3. TOMBOL LOMPAT (INDEPENDENT POSITION & RESIZE)                 */}
+      {/* 3. TOMBOL LOMPAT (DI ATAS TOMBOL AKSI - BEBAS DEMPET)             */}
       {/* ================================================================ */}
       <div
-        className={`fixed ${isEditMode ? 'z-[70]' : 'z-[50]'} pointer-events-none select-none font-['Chakra_Petch']`}
+        className={`fixed ${isEditMode ? 'z-[70]' : 'z-[50]'} pointer-events-none select-none`}
         style={{
-          right: 'max(2.25rem, calc(env(safe-area-inset-right, 0px) + 2rem))',
-          bottom: 'max(5.25rem, calc(env(safe-area-inset-bottom, 0px) + 4.75rem))',
+          right: 'max(0.875rem, calc(env(safe-area-inset-right, 0px) + 0.75rem))',
+          bottom: 'max(5.5rem, calc(env(safe-area-inset-bottom, 0px) + 5.25rem))',
           transform: `translate(${layout.jumpOffsetX || 0}px, ${-(layout.jumpOffsetY || 0)}px) scale(${layout.jumpScale})`,
           transformOrigin: 'center center',
-          transition: isEditMode ? 'none' : 'opacity 0.15s, transform 0.15s',
-          opacity: isChatOpen && !isEditMode ? 0 : 1,
+          transition: isEditMode ? 'none' : 'opacity 0.12s, transform 0.12s',
+          opacity: isHiddenByOverlay ? 0 : 1,
         }}
       >
-        {/* Floating Quick Resize Pill di atas Tombol Lompat saat terpilih */}
-        {isEditMode && selectedControl === 'jump' && (
-          <div
-            onPointerDown={(e) => e.stopPropagation()}
-            className="absolute -top-11 left-1/2 -translate-x-1/2 flex items-center gap-1.5 bg-neutral-950/95 border-2 border-amber-400 rounded-full px-2.5 py-1 shadow-[0_0_20px_rgba(245,158,11,0.8)] z-50 pointer-events-auto backdrop-blur-md animate-in fade-in zoom-in-90"
-          >
-            <button
-              type="button"
-              tabIndex={-1}
-              onPointerDown={(e) => { e.stopPropagation(); handleAdjustScale(-0.1); }}
-              className="w-6 h-6 rounded-full bg-neutral-800 hover:bg-neutral-700 active:scale-90 flex items-center justify-center text-amber-300 font-black cursor-pointer border border-neutral-700"
-              title="Perkecil (-)"
-            >
-              <Minus className="w-3.5 h-3.5 stroke-[3]" />
-            </button>
-            <span className="font-mono text-xs font-black text-amber-300 px-1 select-none">
-              {layout.jumpScale.toFixed(1)}x
-            </span>
-            <button
-              type="button"
-              tabIndex={-1}
-              onPointerDown={(e) => { e.stopPropagation(); handleAdjustScale(0.1); }}
-              className="w-6 h-6 rounded-full bg-neutral-800 hover:bg-neutral-700 active:scale-90 flex items-center justify-center text-amber-300 font-black cursor-pointer border border-neutral-700"
-              title="Perbesar (+)"
-            >
-              <Plus className="w-3.5 h-3.5 stroke-[3]" />
-            </button>
-          </div>
-        )}
+        {isEditMode && selectedControl === 'jump' && renderResizePill(layout.jumpScale)}
 
         <div
           onPointerDown={(e) => {
             if (isEditMode) handleControlPointerDown(e, 'jump');
           }}
-          className={`pointer-events-auto select-none touch-none ${
+          className={`${isHiddenByOverlay ? 'pointer-events-none' : 'pointer-events-auto'} select-none touch-none ${
             isEditMode
-              ? `cursor-move rounded-full p-1 ${
-                  selectedControl === 'jump'
-                    ? 'ring-4 ring-amber-400 border-2 border-amber-300 shadow-[0_0_25px_rgba(245,158,11,0.8)] animate-pulse'
-                    : 'border-2 border-dashed border-white/50 hover:border-amber-400'
+              ? `cursor-move rounded-2xl p-1 border-2 ${
+                  selectedControl === 'jump' ? 'border-[#5C3A21] bg-[#A8E6CF]/60' : 'border-dashed border-[#5C3A21]'
                 }`
               : ''
           }`}
@@ -1119,14 +1096,17 @@ export const VirtualControls: React.FC<VirtualControlsProps> = React.memo(({
             type="button"
             tabIndex={-1}
             onPointerDown={handleJumpPress}
-            onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); }}
-            className="w-11.5 h-11.5 sm:w-13 sm:h-13 md:w-14 md:h-14 rounded-full bg-black/80 hover:bg-black/90 active:bg-neutral-800 border-2 border-white/30 text-neutral-100 flex flex-col items-center justify-center cursor-pointer shadow-xl active:scale-95 transition-all select-none"
-            style={{ touchAction: 'none' }}
-            title="Lompat / Double Jump (Spasi)"
+            onContextMenu={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
+            className="clay-btn-neutral w-12 h-12 sm:w-13 sm:h-13 rounded-2xl flex flex-col items-center justify-center select-none text-black"
+            style={{ touchAction: 'none', borderRadius: '14px' }}
+            title="Lompat (Spasi)"
             aria-label="Tombol Lompat"
           >
-            <ArrowUp className="w-4.5 h-4.5 sm:w-5 sm:h-5 stroke-[2.5] text-amber-300" />
-            <span className="text-[6.5px] sm:text-[7.5px] font-mono font-bold tracking-wider leading-none mt-0.5 text-neutral-300">
+            <ArrowUp className="w-4.5 h-4.5 stroke-[2.5] text-black" />
+            <span className="text-[7px] font-bold leading-none mt-0.5 text-black">
               LOMPAT
             </span>
           </button>
@@ -1134,59 +1114,29 @@ export const VirtualControls: React.FC<VirtualControlsProps> = React.memo(({
       </div>
 
       {/* ================================================================ */}
-      {/* 4. TOMBOL AKSI UTAMA (INDEPENDENT POSITION & RESIZE)             */}
+      {/* 4. TOMBOL AKSI UTAMA (KANAN BAWAH - PRIMARY #FFAE6D)             */}
       {/* ================================================================ */}
       <div
-        className={`fixed ${isEditMode ? 'z-[70]' : 'z-[50]'} pointer-events-none select-none font-['Chakra_Petch']`}
+        className={`fixed ${isEditMode ? 'z-[70]' : 'z-[50]'} pointer-events-none select-none`}
         style={{
-          right: 'max(1.25rem, calc(env(safe-area-inset-right, 0px) + 1rem))',
-          bottom: 'max(1.25rem, calc(env(safe-area-inset-bottom, 0px) + 1rem))',
+          right: 'max(0.875rem, calc(env(safe-area-inset-right, 0px) + 0.75rem))',
+          bottom: 'max(0.875rem, calc(env(safe-area-inset-bottom, 0px) + 0.75rem))',
           transform: `translate(${layout.actionOffsetX}px, ${-layout.actionOffsetY}px) scale(${layout.actionScale})`,
           transformOrigin: 'center center',
-          transition: isEditMode ? 'none' : 'opacity 0.15s, transform 0.15s',
-          opacity: isChatOpen && !isEditMode ? 0 : 1,
+          transition: isEditMode ? 'none' : 'opacity 0.12s, transform 0.12s',
+          opacity: isHiddenByOverlay ? 0 : 1,
         }}
       >
-        {/* Floating Quick Resize Pill di atas Tombol Aksi saat terpilih */}
-        {isEditMode && selectedControl === 'action' && (
-          <div
-            onPointerDown={(e) => e.stopPropagation()}
-            className="absolute -top-11 left-1/2 -translate-x-1/2 flex items-center gap-1.5 bg-neutral-950/95 border-2 border-amber-400 rounded-full px-2.5 py-1 shadow-[0_0_20px_rgba(245,158,11,0.8)] z-50 pointer-events-auto backdrop-blur-md animate-in fade-in zoom-in-90"
-          >
-            <button
-              type="button"
-              tabIndex={-1}
-              onPointerDown={(e) => { e.stopPropagation(); handleAdjustScale(-0.1); }}
-              className="w-6 h-6 rounded-full bg-neutral-800 hover:bg-neutral-700 active:scale-90 flex items-center justify-center text-amber-300 font-black cursor-pointer border border-neutral-700"
-              title="Perkecil (-)"
-            >
-              <Minus className="w-3.5 h-3.5 stroke-[3]" />
-            </button>
-            <span className="font-mono text-xs font-black text-amber-300 px-1 select-none">
-              {layout.actionScale.toFixed(1)}x
-            </span>
-            <button
-              type="button"
-              tabIndex={-1}
-              onPointerDown={(e) => { e.stopPropagation(); handleAdjustScale(0.1); }}
-              className="w-6 h-6 rounded-full bg-neutral-800 hover:bg-neutral-700 active:scale-90 flex items-center justify-center text-amber-300 font-black cursor-pointer border border-neutral-700"
-              title="Perbesar (+)"
-            >
-              <Plus className="w-3.5 h-3.5 stroke-[3]" />
-            </button>
-          </div>
-        )}
+        {isEditMode && selectedControl === 'action' && renderResizePill(layout.actionScale)}
 
         <div
           onPointerDown={(e) => {
             if (isEditMode) handleControlPointerDown(e, 'action');
           }}
-          className={`pointer-events-auto select-none touch-none ${
+          className={`${isHiddenByOverlay ? 'pointer-events-none' : 'pointer-events-auto'} select-none touch-none ${
             isEditMode
-              ? `cursor-move rounded-full p-1 ${
-                  selectedControl === 'action'
-                    ? 'ring-4 ring-amber-400 border-2 border-amber-300 shadow-[0_0_25px_rgba(245,158,11,0.8)] animate-pulse'
-                    : 'border-2 border-dashed border-white/50 hover:border-amber-400'
+              ? `cursor-move rounded-2xl p-1 border-2 ${
+                  selectedControl === 'action' ? 'border-[#5C3A21] bg-[#A8E6CF]/60' : 'border-dashed border-[#5C3A21]'
                 }`
               : ''
           }`}
@@ -1196,26 +1146,23 @@ export const VirtualControls: React.FC<VirtualControlsProps> = React.memo(({
             type="button"
             tabIndex={-1}
             onPointerDown={handleActionButtonPress}
-            onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); }}
-            className={`w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 rounded-full flex flex-col items-center justify-center cursor-pointer transition-all select-none active:scale-95 shadow-2xl ${
-              isActionActive && !isEditMode
-                ? 'bg-amber-500/35 border-2 border-amber-400 text-amber-300 ring-4 ring-amber-400/40 animate-pulse shadow-[0_0_24px_rgba(245,158,11,0.5)]'
-                : 'bg-black/80 hover:bg-black/90 active:bg-neutral-800 border-2 border-white/30 text-neutral-200'
+            onContextMenu={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+            }}
+            className={`w-15 h-15 sm:w-16 sm:h-16 rounded-2xl flex flex-col items-center justify-center select-none text-black ${
+              isActionActive && !isEditMode ? 'clay-btn-secondary' : 'clay-btn-primary'
             }`}
-            style={{ touchAction: 'none' }}
-            title={isActionActive ? 'Sentuh untuk Berbicara / Interaksi' : 'Tombol Aksi [E]'}
+            style={{ touchAction: 'none', borderRadius: '16px' }}
+            title={isActionActive ? 'Sentuh untuk Berinteraksi' : 'Tombol Aksi [E]'}
             aria-label="Tombol Aksi"
           >
             <Zap
-              className={`w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 stroke-[2.2] transition-colors ${
-                isActionActive && !isEditMode ? 'text-amber-300 fill-amber-400/40' : 'text-neutral-200'
+              className={`w-6 h-6 stroke-[2.5] text-black ${
+                isActionActive && !isEditMode ? 'fill-black' : ''
               }`}
             />
-            <span
-              className={`text-[8px] sm:text-[9px] md:text-[10px] font-mono font-black tracking-widest uppercase mt-0.5 sm:mt-1 transition-colors ${
-                isActionActive && !isEditMode ? 'text-amber-300' : 'text-neutral-300'
-              }`}
-            >
+            <span className="text-[8.5px] font-bold uppercase mt-0.5 text-black">
               AKSI
             </span>
           </button>

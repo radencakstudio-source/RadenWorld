@@ -73,14 +73,30 @@ export const GameApp: React.FC = () => {
   // Screen state: 'home' (Lobby /) | 'playing' (Safe House, Open World, Portal Admin)
   const [gameState, setGameState] = useState<'home' | 'playing'>(isDirectInGame ? 'playing' : 'home');
   const [currentPath, setCurrentPath] = useState<string>(initialPath);
-  // LoadingScreen hanya aktif saat masuk langsung ke dalam game dengan akun yang terdaftar
-  const [isLoadingScreen, setIsLoadingScreen] = useState<boolean>(isDirectInGame);
+  // LoadingScreen buatan pengguna selalu aktif saat muat awal aplikasi maupun transisi masuk game
+  const [isLoadingScreen, setIsLoadingScreen] = useState<boolean>(true);
 
   // Game Settings State
   const [settings, setSettings] = useState<GameSettings>({
     language: 'id',
     masterVolume: 0.8,
-    bgmVolume: 0.05, // 5% sesuai permintaan pengguna
+    bgmVolume: (() => {
+      try {
+        const gs = localStorage.getItem('raden_game_settings');
+        if (gs) {
+          const parsed = JSON.parse(gs);
+          if (typeof parsed.bgmVolume === 'number' && parsed.bgmVolume >= 0 && parsed.bgmVolume <= 1) {
+            return parsed.bgmVolume;
+          }
+        }
+        const s = localStorage.getItem('raden_bgm_vol');
+        if (s) {
+          const v = parseFloat(s);
+          if (!isNaN(v) && v >= 0 && v <= 1) return v;
+        }
+      } catch (e) {}
+      return 0.35;
+    })(),
     sfxVolume: 0.8,
     isMuted: false,
     controlMode: (() => {
@@ -696,6 +712,7 @@ export const GameApp: React.FC = () => {
 
     const handleOpenCreatorStudio = () => {
       setIsCreatorStudioOpen(true);
+      EventBus.emit('dialogue-active', true);
     };
     EventBus.on('open-creator-studio', handleOpenCreatorStudio);
 
@@ -1569,7 +1586,7 @@ export const GameApp: React.FC = () => {
   }, [gameState, playerStats.level, playerStats.isSuperAdmin, playerStats.role, playerStats.name]);
 
   return (
-    <div className="fixed inset-0 w-full h-full h-[100dvh] overflow-hidden bg-[#0a0f1d] font-['Chakra_Petch'] select-none">
+    <div className="fixed inset-0 w-full h-full h-[100dvh] overflow-hidden bg-[#FFF8EA] text-black select-none">
       {/* 2D HTML5 Canvas Game Engine (Phaser 3) */}
       <GameCanvas />
 
@@ -1583,7 +1600,7 @@ export const GameApp: React.FC = () => {
         <LoadingScreen
           onComplete={handleLoadingComplete}
           serverCode={serverCode}
-          minDisplayTimeMs={gameState === 'playing' ? 800 : 1200}
+          minDisplayTimeMs={gameState === 'playing' ? 800 : 1000}
         />
       )}
 
@@ -1778,6 +1795,10 @@ export const GameApp: React.FC = () => {
                   setIsChatOpen(true);
                   EventBus.emit('open-private-chat', targetName);
                 }}
+                onOpenGuide={inspectedPlayer ? undefined : () => {
+                  setIsProfileOpen(false);
+                  setIsGuideOpen(true);
+                }}
                 onLogout={inspectedPlayer ? undefined : handleLogout}
                 email={
                   inspectedPlayer
@@ -1896,7 +1917,10 @@ export const GameApp: React.FC = () => {
           {isCreatorStudioOpen && (
             <CreatorStudioModal
               isOpen={isCreatorStudioOpen}
-              onClose={() => setIsCreatorStudioOpen(false)}
+              onClose={() => {
+                setIsCreatorStudioOpen(false);
+                EventBus.emit('dialogue-active', false);
+              }}
             />
           )}
 
@@ -2029,9 +2053,10 @@ export const GameApp: React.FC = () => {
             />
           )}
 
-          {/* Banner Peringatan Ikan Menyambar: Simpel, Elegan, Tanpa Shadow & Hover, Border Radius Tegas (rounded-sm) */}
+          {/* Banner Peringatan Ikan Menyambar: Clay-Pixel Cozycore, Tanpa Hover & Glow */}
           {isFishBiting && (
-            <div
+            <button
+              type="button"
               onPointerDown={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
@@ -2041,7 +2066,7 @@ export const GameApp: React.FC = () => {
                 EventBus.emit('fishing-charge-start');
               }}
               onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); }}
-              className="fixed left-1/2 -translate-x-1/2 z-50 bg-neutral-900 border border-neutral-700 text-neutral-100 px-3 py-1.5 sm:px-4 sm:py-2 rounded-sm flex items-center justify-between gap-3 cursor-pointer select-none touch-none max-w-[calc(100vw-1.5rem)] sm:max-w-md w-auto"
+              className="fixed left-1/2 -translate-x-1/2 z-50 clay-btn-primary px-3 py-2 sm:px-4 sm:py-2.5 flex items-center justify-between gap-3 select-none touch-none max-w-[calc(100dvw-1.5rem)] sm:max-w-md w-auto text-black"
               style={{
                 top: 'max(0.75rem, env(safe-area-inset-top, 0.75rem))',
                 touchAction: 'none'
@@ -2049,23 +2074,23 @@ export const GameApp: React.FC = () => {
               title="Ketuk untuk Menarik Kail Ikan!"
             >
               <div className="flex items-center gap-2 min-w-0">
-                <span className="w-2 h-2 bg-amber-400 shrink-0" />
-                <span className="font-mono text-[10px] sm:text-xs font-bold tracking-wider text-amber-400 uppercase shrink-0">
-                  IKAN MENYAMBAR
+                <span className="w-2.5 h-2.5 rounded-sm bg-[#A8E6CF] border border-[#5C3A21] shrink-0" />
+                <span className="text-[11px] sm:text-xs font-bold text-black uppercase shrink-0">
+                  IKAN MENYAMBAR!
                 </span>
-                <span className="text-neutral-500 hidden sm:inline">•</span>
-                <span className="text-[11px] sm:text-xs text-neutral-300 font-medium truncate">
+                <span className="text-xs text-black hidden sm:inline">•</span>
+                <span className="text-[11px] sm:text-xs text-black font-bold truncate">
                   Tarik kail sekarang!
                 </span>
               </div>
-              <div className="bg-neutral-800 border border-neutral-700 text-neutral-300 text-[10px] font-mono px-2 py-0.5 rounded-sm shrink-0 whitespace-nowrap">
+              <div className="clay-badge-secondary text-black text-[10px] sm:text-xs font-bold px-2 py-0.5 shrink-0 whitespace-nowrap">
                 KETUK / [F]
               </div>
-            </div>
+            </button>
           )}
 
           {/* Tombol Kontrol Virtual Layar Sentuh jika Mode Mobile dipilih ATAU perangkat sentuh mobile */}
-          {(settings.controlMode === 'mobile' || (typeof window !== 'undefined' && window.innerWidth < 768 && ('ontouchstart' in window || navigator.maxTouchPoints > 0))) && (
+          {!isFishingMinigameOpen && (settings.controlMode === 'mobile' || (typeof window !== 'undefined' && window.innerWidth < 768 && ('ontouchstart' in window || navigator.maxTouchPoints > 0))) && (
             <VirtualControls
               onActionPress={handleVirtualAction}
               onDirectionPress={handleVirtualDirectionPress}
@@ -2144,18 +2169,18 @@ export const GameApp: React.FC = () => {
                 setIsPharmacyModalOpen(false);
                 EventBus.emit('dialogue-active', false);
               }}
-              playerDiamonds={playerDiamonds}
-              onUpdateDiamonds={(d) => {
-                const delta = d - playerDiamonds;
+              playerGold={playerGold}
+              onUpdateGold={(g) => {
+                const delta = g - playerGold;
                 if (delta !== 0) {
-                  syncWalletWithServer(0, delta, 'pharmacy_purchase');
+                  syncWalletWithServer(delta, 0, 'pharmacy_purchase');
                 }
                 if (isCurrentUserAdmin) {
-                  setPlayerDiamonds(99999999999);
-                  localStorage.setItem('raden_player_diamonds', '99999999999');
+                  setPlayerGold(99999999999);
+                  localStorage.setItem('raden_player_gold', '99999999999');
                 } else {
-                  setPlayerDiamonds(d);
-                  localStorage.setItem('raden_player_diamonds', d.toString());
+                  setPlayerGold(g);
+                  localStorage.setItem('raden_player_gold', g.toString());
                 }
               }}
               isAdmin={isCurrentUserAdmin}

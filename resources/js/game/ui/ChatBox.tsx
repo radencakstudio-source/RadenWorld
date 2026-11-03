@@ -3,24 +3,10 @@
  * FILE: resources/js/game/ui/ChatBox.tsx
  * ============================================================================
  * FUNGSI UTAMA:
- * Jendela pop-up obrolan multiplayer di Kiri Atas (Top-Left), selaras dan sejajar
- * tepat di bawah profile HUD pemain.
- * 
- * ATURAN & FITUR:
- * 1. Tata Letak Rapi & Sejajar: Berada di top-[54px] sm:top-[66px] md:top-[72px] left-2 sm:left-4 md:left-5.
- * 2. Skema Warna Hitam Murni: Neutral Black (#000000, #080808, #0e0e0e) & Aksen Amber Emas (#f59e0b).
- * 3. Tab Header Obrolan Dinamis:
- *    - Tab '🌍 SEMUA' (Obrolan Global Dunia).
- *    - Tab Private Chat '👤 [Nama Pemain]' dengan tombol tutup '✖' & unread badge.
- * 4. Auto-Scroll Terjamin:
- *    - Otomatis scroll ke pesan paling bawah saat chatbox dibuka, tab diganti, atau pesan baru tiba.
- *    - Tombol melayang '⬇ Pesan Terbaru' jika pemain sedang scroll ke atas.
- * 5. Aksi Bisik / Private Chat Cepat:
- *    - Klik ikon '💬' pada pesan untuk langsung membuka obrolan pribadi dengan pemain tersebut.
- *    - Mendukung event bus 'open-private-chat' dari Profil Pemain.
- * 6. Fitur Ekspresi & Emotikon:
- *    - Palet reaksi wajah karakter untuk memunculkan balon reaksi visual di Phaser.
- * 7. Format Waktu Rapi: Format jam [HH:mm] mono yang rata dan sejajar.
+ * Jendela pop-up obrolan multiplayer di Kiri Atas (Top-Left) bergaya Cozycore Clay-Pixel:
+ * - Panel #FFF8EA, header/aksi utama #FFAE6D, aksen/privat #A8E6CF, outline 2px #5C3A21.
+ * - Teks #000000 kontras tinggi, tanpa hover & tanpa glow.
+ * - Responsif untuk PC Desktop, Mobile Portrait, dan Mobile Landscape tanpa terpotong.
  * ============================================================================
  */
 
@@ -45,41 +31,36 @@ interface ICharacterExpression {
   desc: string;
   fileMale: string;
   fileFemale: string;
-  badgeBorder: string;
 }
 
 const CHARACTER_EXPRESSIONS: ICharacterExpression[] = [
   {
     type: 'normal',
     name: 'Normal',
-    desc: 'Tenang & Siaga',
+    desc: 'Tenang',
     fileMale: '/assets/sprites/characters/Player/Male/Ekspression/NormalMale.webp',
     fileFemale: '/assets/sprites/characters/Player/Female/Ekspression/NormalFemale.webp',
-    badgeBorder: 'border-amber-500/40 hover:border-amber-400',
   },
   {
     type: 'smile',
     name: 'Senang',
-    desc: 'Tersenyum Ramah',
+    desc: 'Ramah',
     fileMale: '/assets/sprites/characters/Player/Male/Ekspression/SenangMale.webp',
     fileFemale: '/assets/sprites/characters/Player/Female/Ekspression/SenangFemale.webp',
-    badgeBorder: 'border-emerald-500/40 hover:border-emerald-400',
   },
   {
     type: 'shock',
     name: 'Kaget',
-    desc: 'Terkejut Heran',
+    desc: 'Terkejut',
     fileMale: '/assets/sprites/characters/Player/Male/Ekspression/KagetMale.webp',
     fileFemale: '/assets/sprites/characters/Player/Female/Ekspression/KagetFemale.webp',
-    badgeBorder: 'border-sky-500/40 hover:border-sky-400',
   },
   {
     type: 'angry',
     name: 'Marah',
-    desc: 'Emosi Geram',
+    desc: 'Geram',
     fileMale: '/assets/sprites/characters/Player/Male/Ekspression/MarahMale.webp',
     fileFemale: '/assets/sprites/characters/Player/Female/Ekspression/MarahFemale.webp',
-    badgeBorder: 'border-rose-500/40 hover:border-rose-400',
   },
 ];
 
@@ -93,7 +74,7 @@ export const ChatBox: React.FC<ChatBoxProps> = React.memo(({
 }) => {
   const [inputText, setInputText] = useState('');
   const [showExpressions, setShowExpressions] = useState(false);
-  const [activeTab, setActiveTab] = useState<string>('global'); // 'global' atau nama pemain sasaran
+  const [activeTab, setActiveTab] = useState<string>('global');
   const [privateTabs, setPrivateTabs] = useState<string[]>([]);
   const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
   const [showScrollBottomBtn, setShowScrollBottomBtn] = useState(false);
@@ -107,7 +88,6 @@ export const ChatBox: React.FC<ChatBoxProps> = React.memo(({
   const genderFolder = effectiveGender === 'female' ? 'Female' : 'Male';
   const myCleanName = (currentPlayerName || '').trim().toLowerCase();
 
-  // Fungsi scroll ke posisi paling bawah yang terjamin
   const scrollToBottom = (smooth = true) => {
     if (chatListRef.current) {
       chatListRef.current.scrollTo({
@@ -118,7 +98,6 @@ export const ChatBox: React.FC<ChatBoxProps> = React.memo(({
     messagesEndRef.current?.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto' });
   };
 
-  // Deteksi posisi scroll untuk memunculkan tombol '⬇ Pesan Terbaru'
   const handleScroll = () => {
     if (!chatListRef.current) return;
     const { scrollTop, scrollHeight, clientHeight } = chatListRef.current;
@@ -126,7 +105,6 @@ export const ChatBox: React.FC<ChatBoxProps> = React.memo(({
     setShowScrollBottomBtn(!isNearBottom);
   };
 
-  // Buka private chat dari event bus luar (misal tombol Bisik di ProfileModal)
   useEffect(() => {
     const handleOpenPrivateChat = (targetName: string) => {
       const cleanTarget = targetName ? targetName.trim() : '';
@@ -151,13 +129,11 @@ export const ChatBox: React.FC<ChatBoxProps> = React.memo(({
     };
   }, [myCleanName]);
 
-  // Otomatis deteksi pesan pribadi yang masuk untuk memunculkan tab pemain baru
   useEffect(() => {
     if (!messages.length) return;
     const lastMsg = messages[messages.length - 1];
     if (!lastMsg || !lastMsg.isPrivate) return;
 
-    // Tentukan siapa lawan bicara obrolan pribadi ini
     let peerName = '';
     const isSenderMe = (lastMsg.senderName || '').trim().toLowerCase() === myCleanName;
 
@@ -174,7 +150,6 @@ export const ChatBox: React.FC<ChatBoxProps> = React.memo(({
         return exists ? prev : [...prev, cleanPeer];
       });
 
-      // Tambahkan unread jika pesan datang saat kita tidak sedang membuka tab pemain tersebut
       if (activeTab.toLowerCase() !== cleanPeer.toLowerCase()) {
         setUnreadCounts((prev) => ({
           ...prev,
@@ -184,7 +159,6 @@ export const ChatBox: React.FC<ChatBoxProps> = React.memo(({
     }
   }, [messages, myCleanName, activeTab]);
 
-  // Filter daftar pesan sesuai tab yang sedang aktif
   const filteredMessages = useMemo(() => {
     if (activeTab === 'global') {
       return messages;
@@ -194,27 +168,22 @@ export const ChatBox: React.FC<ChatBoxProps> = React.memo(({
       const sName = (m.senderName || '').trim().toLowerCase();
       const rName = (m.recipientName || '').trim().toLowerCase();
 
-      // Cocokkan jika ini pesan antara saya dan lawan bicara di tab ini
       const isBetweenUs =
         (sName === cleanActiveTab && (rName === myCleanName || !rName)) ||
         (sName === myCleanName && rName === cleanActiveTab);
 
-      // Atau pesan sistem yang ditujukan untuk percakapan private ini
       const isSystemNotice = (m.senderId === 'system' || sName === 'sistem') && rName === cleanActiveTab;
 
       return isBetweenUs || isSystemNotice;
     });
   }, [messages, activeTab, myCleanName]);
 
-  // SELALU scroll ke paling bawah saat pesan baru tiba atau tab berganti
   useEffect(() => {
     scrollToBottom(true);
   }, [filteredMessages.length]);
 
-  // SELALU scroll ke paling bawah saat chatbox dibuka (isOpen = true)
   useEffect(() => {
     if (isOpen) {
-      // Jalankan beberapa interval singkat untuk memastikan layout selesai render
       requestAnimationFrame(() => scrollToBottom(false));
       const t1 = setTimeout(() => scrollToBottom(false), 50);
       const t2 = setTimeout(() => scrollToBottom(false), 160);
@@ -228,7 +197,6 @@ export const ChatBox: React.FC<ChatBoxProps> = React.memo(({
     }
   }, [isOpen, activeTab]);
 
-  // Global listener untuk tombol '/' memfokuskan chat
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === '/') {
@@ -246,7 +214,6 @@ export const ChatBox: React.FC<ChatBoxProps> = React.memo(({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  // Listener untuk prefill pesan (misal bisikan / sapaan dari modal profil)
   useEffect(() => {
     const handlePrefill = (text: string) => {
       setInputText(text);
@@ -260,7 +227,6 @@ export const ChatBox: React.FC<ChatBoxProps> = React.memo(({
     };
   }, []);
 
-  // Handler berpindah tab obrolan
   const handleSelectTab = (tabName: string) => {
     sound.playClick();
     setActiveTab(tabName);
@@ -271,7 +237,6 @@ export const ChatBox: React.FC<ChatBoxProps> = React.memo(({
     }, 50);
   };
 
-  // Handler menutup tab private chat
   const handleClosePrivateTab = (e: React.MouseEvent, tabName: string) => {
     e.stopPropagation();
     sound.playClick();
@@ -281,7 +246,6 @@ export const ChatBox: React.FC<ChatBoxProps> = React.memo(({
     }
   };
 
-  // Handler membuka private tab langsung dari pesan seseorang di obrolan
   const handleStartWhisperFromMessage = (targetName: string) => {
     sound.playClick();
     const cleanTarget = targetName.trim();
@@ -332,47 +296,49 @@ export const ChatBox: React.FC<ChatBoxProps> = React.memo(({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed top-[46px] sm:top-[66px] md:top-[72px] left-1.5 sm:left-4 md:left-5 z-50 w-[270px] sm:w-80 md:w-[380px] max-w-[calc(100vw-0.75rem)] flex flex-col bg-black/95 backdrop-blur-md border border-neutral-800 rounded-md overflow-hidden transition-all pointer-events-auto font-['Chakra_Petch'] animate-in fade-in slide-in-from-top-1 duration-150 shadow-2xl">
-      
-      {/* 1. HEADER CHAT: Rata & Sejajar Presisi (Flat Minimalist) */}
-      <div className="px-2 sm:px-3.5 py-1.5 sm:py-2.5 border-b border-neutral-800 bg-[#0a0a0a] flex items-center justify-between text-xs font-bold text-amber-400 uppercase tracking-wider">
-        <div className="flex items-center gap-1.5 sm:gap-2">
-          <div className="w-5 h-5 sm:w-6 sm:h-6 rounded bg-neutral-900 border border-neutral-800 flex items-center justify-center text-amber-400">
-            <MessageSquare className="w-3 sm:w-3.5 h-3 sm:h-3.5" />
+    <div
+      className="fixed z-50 w-[285px] sm:w-[340px] md:w-[385px] max-w-[calc(100dvw-1rem)] max-h-[calc(100dvh-3.75rem)] flex flex-col clay-panel overflow-hidden pointer-events-auto text-black"
+      style={{
+        top: 'max(3rem, calc(env(safe-area-inset-top, 0px) + 3rem))',
+        left: 'max(0.5rem, env(safe-area-inset-left, 0.5rem))',
+      }}
+    >
+      {/* 1. HEADER CHAT */}
+      <div className="clay-header px-2.5 sm:px-3.5 py-2 flex items-center justify-between gap-2 text-xs font-bold text-black uppercase shrink-0">
+        <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+          <div className="w-6 h-6 rounded-md bg-[#FFF8EA] border-2 border-[#5C3A21] flex items-center justify-center text-black shrink-0">
+            <MessageSquare className="w-3.5 h-3.5 stroke-[2.5]" />
           </div>
-          <span className="font-bold tracking-wider text-[11px] sm:text-xs">
-            {activeTab === 'global' ? 'OBROLAN DUNIA' : `BISIKAN PRIBADI`}
+          <span className="font-bold text-[11px] sm:text-xs truncate">
+            {activeTab === 'global' ? 'OBROLAN DUNIA' : 'BISIKAN PRIBADI'}
           </span>
           {activeTab === 'global' ? (
-            <span className="flex items-center gap-1 text-[8.5px] sm:text-[9px] font-mono text-emerald-400 bg-neutral-900 px-1.5 py-0.5 rounded border border-neutral-800">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="clay-badge-secondary px-1.5 py-0.5 text-[9px] font-bold text-black shrink-0">
               LIVE
             </span>
           ) : (
-            <span className="flex items-center gap-1 text-[8.5px] sm:text-[9px] font-mono text-purple-300 bg-purple-950/60 px-1.5 py-0.5 rounded border border-purple-800/60">
-              <Lock className="w-2.5 h-2.5 text-purple-400" />
+            <span className="clay-badge-secondary px-1.5 py-0.5 text-[9px] font-bold text-black inline-flex items-center gap-1 shrink-0">
+              <Lock className="w-2.5 h-2.5 stroke-[2.5]" />
               PRIVAT
             </span>
           )}
         </div>
 
-        <div className="flex items-center gap-1.5">
-          {/* Tombol Toggle Palet Ekspresi Karakter */}
+        <div className="flex items-center gap-1.5 shrink-0">
           <button
             type="button"
             onClick={() => {
               sound.playClick();
               setShowExpressions(!showExpressions);
             }}
-            className={`h-6 sm:h-7 px-2 sm:px-2.5 rounded text-[9px] sm:text-[10px] font-bold tracking-wider flex items-center gap-1 sm:gap-1.5 transition-all cursor-pointer border ${
-              showExpressions
-                ? 'bg-amber-500 text-black border-amber-400'
-                : 'bg-neutral-900 text-amber-400 border-neutral-800 hover:border-amber-400 hover:bg-neutral-800'
+            className={`h-7 px-2 text-[9px] sm:text-[10px] font-bold flex items-center gap-1 ${
+              showExpressions ? 'clay-btn-secondary' : 'clay-btn-neutral'
             }`}
+            style={{ borderRadius: '7px' }}
             title="Buka Palet Reaksi Ekspresi Wajah Karakter"
           >
-            <Smile className="w-3 sm:w-3.5 h-3 sm:h-3.5" />
-            <span>EKSPRESI</span>
+            <Smile className="w-3.5 h-3.5 stroke-[2.5]" />
+            <span className="hidden xs:inline">EKSPRESI</span>
           </button>
 
           {onClose && (
@@ -382,32 +348,30 @@ export const ChatBox: React.FC<ChatBoxProps> = React.memo(({
                 sound.playClick();
                 onClose();
               }}
-              className="h-6 sm:h-7 w-6 sm:w-7 rounded flex items-center justify-center text-neutral-400 hover:text-amber-400 hover:bg-neutral-800 transition-all cursor-pointer border border-transparent hover:border-neutral-700"
+              className="clay-btn-neutral h-7 w-7 flex items-center justify-center text-black"
+              style={{ borderRadius: '7px' }}
               title="Tutup Obrolan"
             >
-              <X className="w-3.5 h-3.5" />
+              <X className="w-3.5 h-3.5 stroke-[2.5]" />
             </button>
           )}
         </div>
       </div>
 
-      {/* 2. TAB HEADER OBROLAN: TAB GLOBAL & TAB CHAT PRIBADI DENGAN NAMA ORANG */}
-      <div className="px-2.5 py-1.5 bg-[#060606] border-b border-neutral-800 flex items-center gap-1.5 overflow-x-auto no-scrollbar">
-        {/* Tab Global / Semua */}
+      {/* 2. TAB HEADER OBROLAN */}
+      <div className="px-2.5 py-1.5 bg-[#FFF8EA] border-b-2 border-[#5C3A21] flex items-center gap-1.5 overflow-x-auto no-scrollbar shrink-0">
         <button
           type="button"
           onClick={() => handleSelectTab('global')}
-          className={`h-6 sm:h-6.5 px-2.5 rounded text-[10px] sm:text-[10.5px] font-bold tracking-wider flex items-center gap-1.5 cursor-pointer shrink-0 transition-all border ${
-            activeTab === 'global'
-              ? 'bg-amber-500 text-black border-amber-400 shadow-sm'
-              : 'bg-neutral-900 text-neutral-400 border-neutral-800 hover:text-amber-300 hover:bg-neutral-800/80 hover:border-neutral-700'
+          className={`h-6.5 px-2.5 text-[10px] font-bold flex items-center gap-1.5 shrink-0 ${
+            activeTab === 'global' ? 'clay-btn-primary' : 'clay-btn-neutral'
           }`}
+          style={{ borderRadius: '7px' }}
         >
-          <Globe className="w-3 h-3" />
+          <Globe className="w-3 h-3 stroke-[2.5]" />
           <span>SEMUA</span>
         </button>
 
-        {/* Tab Chat Pribadi yang sedang aktif / dibuka */}
         {privateTabs.map((pName) => {
           const isActive = activeTab.toLowerCase() === pName.toLowerCase();
           const unread = unreadCounts[pName] || 0;
@@ -416,50 +380,48 @@ export const ChatBox: React.FC<ChatBoxProps> = React.memo(({
             <div
               key={pName}
               onClick={() => handleSelectTab(pName)}
-              className={`group h-6 sm:h-6.5 pl-2 pr-1.5 rounded text-[10px] sm:text-[10.5px] font-bold tracking-wider flex items-center gap-1.5 cursor-pointer shrink-0 transition-all border ${
-                isActive
-                  ? 'bg-purple-900/90 text-purple-100 border-purple-500 shadow-sm'
-                  : 'bg-neutral-900 text-neutral-300 border-neutral-800 hover:text-purple-300 hover:border-purple-800/80'
+              className={`h-6.5 pl-2 pr-1 text-[10px] font-bold flex items-center gap-1 shrink-0 ${
+                isActive ? 'clay-btn-secondary' : 'clay-btn-neutral'
               }`}
+              style={{ borderRadius: '7px' }}
               title={`Obrolan pribadi dengan ${pName}`}
             >
-              <User className="w-3 h-3 text-purple-400" />
-              <span className="max-w-[80px] sm:max-w-[105px] truncate">{pName}</span>
+              <User className="w-3 h-3 stroke-[2.5]" />
+              <span className="max-w-[80px] sm:max-w-[100px] truncate">{pName}</span>
 
               {unread > 0 && !isActive && (
-                <span className="bg-amber-500 text-black text-[8.5px] font-extrabold px-1 rounded-full animate-bounce">
+                <span className="clay-badge-primary text-[8.5px] font-bold px-1 leading-none">
                   {unread}
                 </span>
               )}
 
-              {/* Tombol Tutup Tab Pribadi */}
               <button
                 type="button"
                 onClick={(e) => handleClosePrivateTab(e, pName)}
-                className="w-4 h-4 rounded flex items-center justify-center text-neutral-400 hover:text-rose-400 hover:bg-neutral-800/80 transition-colors ml-0.5"
+                className="w-4 h-4 rounded flex items-center justify-center text-black active:translate-y-[1px] cursor-pointer ml-0.5"
                 title={`Tutup tab obrolan dengan ${pName}`}
               >
-                <X className="w-2.5 h-2.5" />
+                <X className="w-3 h-3 stroke-[2.5]" />
               </button>
             </div>
           );
         })}
       </div>
 
-      {/* 3. DRAWER PALET REAKSI EKSPRESI KARAKTER (Grid Simetris 4 Kolom) */}
+      {/* 3. DRAWER PALET REAKSI EKSPRESI KARAKTER */}
       {showExpressions && (
-        <div className="p-3 bg-[#0d0d0d] border-b border-neutral-800 animate-in fade-in slide-in-from-top-2 duration-150">
-          <div className="flex items-center justify-between mb-2 px-0.5">
-            <span className="text-[10px] font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
-              <Sparkles className="w-3 h-3 text-amber-400" />
-              REAKSI KARAKTER ({genderFolder.toUpperCase()}):
+        <div className="p-2.5 bg-[#FFF8EA] border-b-2 border-[#5C3A21] shrink-0">
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-[10px] font-bold text-black uppercase flex items-center gap-1">
+              <Sparkles className="w-3 h-3 stroke-[2.5]" />
+              REAKSI ({genderFolder.toUpperCase()}):
             </span>
-            <span className="text-[9px] text-neutral-400 bg-neutral-900 px-2 py-0.5 rounded border border-neutral-800 font-mono">
-              Balon Di Atas Kepala
+            <span className="clay-badge-secondary px-1.5 py-0.5 text-[8.5px] font-bold text-black">
+              Balon Kepala
             </span>
           </div>
 
-          <div className="grid grid-cols-4 gap-2">
+          <div className="grid grid-cols-4 gap-1.5">
             {CHARACTER_EXPRESSIONS.map((expr) => {
               const imageSrc = effectiveGender === 'female' ? expr.fileFemale : expr.fileMale;
               return (
@@ -467,21 +429,18 @@ export const ChatBox: React.FC<ChatBoxProps> = React.memo(({
                   key={expr.type}
                   type="button"
                   onClick={() => handleTriggerCharacterExpression(expr)}
-                  className="group flex flex-col items-center justify-center p-1.5 rounded-xl bg-neutral-900 border border-neutral-800 hover:border-amber-400/60 hover:bg-neutral-800 transition-all cursor-pointer"
-                  title={`Munculkan reaksi wajah ${expr.name} di atas kepala`}
+                  className="clay-btn-neutral flex flex-col items-center justify-center p-1.5 text-black"
+                  title={`Munculkan reaksi wajah ${expr.name}`}
                 >
-                  <div className="relative w-full h-12 rounded-lg overflow-hidden bg-black border border-neutral-800 p-1 flex items-center justify-center group-hover:border-amber-400/40 transition-colors">
+                  <div className="w-full h-10 landscape:max-md:h-7 rounded-md overflow-hidden bg-[#FFF8EA] border border-[#5C3A21] p-0.5 flex items-center justify-center">
                     <img
                       src={imageSrc}
                       alt={expr.name}
-                      className="max-w-full max-h-full object-contain group-hover:scale-105 transition-transform duration-200"
+                      className="max-w-full max-h-full object-contain pixelated"
                     />
                   </div>
-                  <span className="text-[10px] font-bold text-amber-300 mt-1 uppercase tracking-wider group-hover:text-amber-200">
+                  <span className="text-[9px] font-bold text-black mt-1 uppercase truncate max-w-full">
                     {expr.name}
-                  </span>
-                  <span className="text-[8px] text-neutral-400 scale-90 truncate max-w-full">
-                    {expr.desc}
                   </span>
                 </button>
               );
@@ -490,31 +449,30 @@ export const ChatBox: React.FC<ChatBoxProps> = React.memo(({
         </div>
       )}
 
-      {/* 4. DAFTAR PESAN OBROLAN: Rapi, Sejajar, & Selalu Scroll Ke Bawah */}
-      <div className="relative">
+      {/* 4. DAFTAR PESAN OBROLAN */}
+      <div className="relative flex-1 min-h-0 flex flex-col">
         <div
           ref={chatListRef}
           onScroll={handleScroll}
-          className="p-1.5 sm:p-2.5 max-h-[120px] sm:max-h-[200px] md:max-h-[260px] min-h-[70px] sm:min-h-[100px] overflow-y-auto space-y-1 sm:space-y-1.5 text-xs custom-scrollbar bg-black/90 scroll-smooth"
+          className="p-2 flex-1 min-h-[64px] max-h-[170px] sm:max-h-[210px] md:max-h-[250px] landscape:max-md:max-h-[95px] overflow-y-auto space-y-1.5 text-xs custom-scrollbar bg-[#FFF8EA]"
         >
-          {/* Banner Indikator Tab Private */}
           {activeTab !== 'global' && (
-            <div className="p-2 mb-2 bg-purple-950/40 border border-purple-800/50 rounded flex items-center justify-between text-[10px] text-purple-200">
-              <div className="flex items-center gap-1.5">
-                <Lock className="w-3.5 h-3.5 text-purple-400 shrink-0" />
-                <span>
-                  Obrolan Rahasia dengan <strong className="text-amber-300">{activeTab}</strong>.
+            <div className="clay-card-secondary p-2 mb-1.5 flex items-center justify-between text-[10px] text-black font-bold">
+              <div className="flex items-center gap-1.5 min-w-0">
+                <Lock className="w-3.5 h-3.5 shrink-0 stroke-[2.5]" />
+                <span className="truncate">
+                  Obrolan Rahasia dengan <strong>{activeTab}</strong>
                 </span>
               </div>
-              <span className="text-[9px] text-purple-400/80 font-mono">Privat</span>
+              <span className="clay-badge-neutral px-1.5 py-0.5 text-[8.5px]">Privat</span>
             </div>
           )}
 
           {filteredMessages.length === 0 ? (
-            <div className="text-neutral-500 text-center py-7 text-[11px] italic">
+            <div className="text-black text-center py-5 text-[11px] font-bold px-2">
               {activeTab === 'global'
-                ? 'Belum ada obrolan. Ketik pesan di bawah untuk menyapa pemain lain di RadenWorld!'
-                : `Belum ada pesan pribadi dengan ${activeTab}. Ketik pesan di bawah untuk memulai bisikan rahasia!`}
+                ? 'Belum ada obrolan. Ketik pesan di bawah untuk menyapa pemain lain!'
+                : `Belum ada pesan pribadi dengan ${activeTab}.`}
             </div>
           ) : (
             filteredMessages.map((msg, idx) => {
@@ -537,41 +495,37 @@ export const ChatBox: React.FC<ChatBoxProps> = React.memo(({
               return (
                 <div
                   key={`${msg.id || 'msg'}_${idx}`}
-                  className={`group/msg flex items-start gap-1.5 text-xs px-2 py-1.5 rounded-lg transition-colors leading-relaxed ${
+                  className={`flex items-start gap-1.5 text-[11px] px-2 py-1.5 leading-snug ${
                     isPrivate
-                      ? 'bg-purple-950/30 border border-purple-800/40'
+                      ? 'clay-card-secondary'
                       : isSuper
-                        ? 'bg-amber-500/10 border border-amber-500/30'
-                        : isSystem
-                          ? 'bg-neutral-900/60 border border-neutral-800'
-                          : 'hover:bg-neutral-900/40'
+                        ? 'clay-card-primary'
+                        : 'clay-card'
                   }`}
                 >
-                  <span className="text-[10px] text-neutral-500 font-mono shrink-0 pt-0.5">
+                  <span className="text-[9.5px] text-black font-bold shrink-0 pt-0.5">
                     [{timeText}]
                   </span>
 
-                  <div className="flex-1 min-w-0 break-words">
-                    {/* Badge Bisikan Pribadi */}
+                  <div className="flex-1 min-w-0 break-words text-black">
                     {isPrivate && (
-                      <span className="inline-block bg-purple-900/90 text-purple-200 font-black text-[8.5px] px-1.5 py-0.2 rounded border border-purple-700/60 mr-1 align-baseline">
+                      <span className="clay-badge-neutral inline-block font-bold text-[8.5px] px-1.5 py-0.2 mr-1 align-baseline">
                         🔒 BISIKAN {msg.recipientName ? `➔ ${msg.recipientName}` : ''}
                       </span>
                     )}
 
                     {isSuper && (
-                      <span className="inline-block bg-amber-400 text-black font-black text-[9px] px-1.5 py-0.2 rounded mr-1 align-baseline">
+                      <span className="clay-badge-neutral inline-block font-bold text-[8.5px] px-1.5 py-0.2 mr-1 align-baseline">
                         👑 ADMIN
                       </span>
                     )}
 
                     {isSystem && (
-                      <span className="inline-block bg-neutral-800 text-amber-400 font-bold text-[9px] px-1.5 py-0.2 rounded border border-neutral-700 mr-1 align-baseline">
+                      <span className="clay-badge-secondary inline-block font-bold text-[8.5px] px-1.5 py-0.2 mr-1 align-baseline">
                         SISTEM
                       </span>
                     )}
 
-                    {/* Nama Pengirim */}
                     <span
                       onClick={() => {
                         if (!isSystem && msg.senderName) {
@@ -593,47 +547,27 @@ export const ChatBox: React.FC<ChatBoxProps> = React.memo(({
                           });
                         }
                       }}
-                      className={`font-bold mr-1.5 ${
-                        !isSystem ? 'cursor-pointer hover:underline hover:text-amber-300' : ''
-                      } ${
-                        isPrivate
-                          ? 'text-purple-300'
-                          : isSuper
-                            ? 'text-amber-300'
-                            : isSystem
-                              ? 'text-amber-400'
-                              : 'text-amber-400'
+                      className={`font-bold mr-1.5 text-black ${
+                        !isSystem ? 'cursor-pointer underline' : ''
                       }`}
                       title={!isSystem ? `Klik untuk melihat profil ${msg.senderName}` : undefined}
                     >
                       {isMe ? 'Anda' : msg.senderName}:
                     </span>
 
-                    {/* Teks Pesan */}
-                    <span
-                      className={
-                        isPrivate
-                          ? 'text-purple-100 font-medium'
-                          : isSuper
-                            ? 'text-amber-100 font-medium'
-                            : isSystem
-                              ? 'text-amber-200'
-                              : 'text-neutral-200'
-                      }
-                    >
-                      {msg.text}
-                    </span>
+                    <span className="text-black font-normal">{msg.text}</span>
                   </div>
 
-                  {/* Tombol Cepat Bisik / Chat Pribadi jika bukan pesan sendiri atau sistem */}
+                  {/* Tombol Cepat Bisik (Selalu Tampil untuk Perangkat Sentuh & PC) */}
                   {!isMe && !isSystem && msg.senderName && (
                     <button
                       type="button"
                       onClick={() => handleStartWhisperFromMessage(msg.senderName)}
-                      className="opacity-0 group-hover/msg:opacity-100 transition-opacity p-1 rounded hover:bg-neutral-800 text-neutral-400 hover:text-amber-300 shrink-0 cursor-pointer"
+                      className="clay-btn-secondary p-1 text-black shrink-0"
+                      style={{ borderRadius: '6px' }}
                       title={`Buka Tab Chat Pribadi dengan ${msg.senderName}`}
                     >
-                      <MessageCircle className="w-3.5 h-3.5" />
+                      <MessageCircle className="w-3 h-3 stroke-[2.5]" />
                     </button>
                   )}
                 </div>
@@ -643,56 +577,52 @@ export const ChatBox: React.FC<ChatBoxProps> = React.memo(({
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Tombol Melayang '⬇ Pesan Terbaru' saat user scroll ke atas */}
         {showScrollBottomBtn && (
           <button
             type="button"
             onClick={() => scrollToBottom(true)}
-            className="absolute bottom-2 right-3 z-10 px-2.5 py-1 rounded-full bg-amber-500 hover:bg-amber-400 text-black font-bold text-[10px] tracking-wider flex items-center gap-1 shadow-lg cursor-pointer transition-all animate-bounce"
+            className="clay-btn-primary absolute bottom-2 right-3 z-10 px-2.5 py-1 text-black font-bold text-[10px] flex items-center gap-1"
             title="Gulir ke pesan terbaru"
           >
-            <ChevronDown className="w-3.5 h-3.5" />
+            <ChevronDown className="w-3.5 h-3.5 stroke-[2.5]" />
             <span>TERBARU</span>
           </button>
         )}
       </div>
 
-      {/* 5. BARIS CEPAT EMOJI: Simetris & Responsif */}
-      <div className="px-2 sm:px-3 py-1 bg-[#0a0a0a] border-t border-neutral-800 flex items-center gap-1 sm:gap-1.5 overflow-x-auto no-scrollbar">
-        <span className="text-[9px] sm:text-[10px] font-bold text-amber-500/70 shrink-0 font-mono">CEPAT:</span>
+      {/* 5. BARIS CEPAT EMOJI */}
+      <div className="px-2.5 py-1 bg-[#FFF8EA] border-t-2 border-[#5C3A21] flex items-center gap-1 overflow-x-auto no-scrollbar shrink-0 landscape:max-md:hidden">
+        <span className="text-[9px] font-bold text-black shrink-0 mr-0.5">CEPAT:</span>
         {['👋', '😊', '😂', '👑', '⚔️', '❤️', '⚡', '🔥'].map((em, i) => (
           <button
             key={i}
             type="button"
             onClick={() => handleInsertEmoji(em)}
-            className="w-5 h-5 sm:w-6 sm:h-6 rounded hover:bg-neutral-800 flex items-center justify-center text-[11px] sm:text-xs hover:scale-125 transition-transform cursor-pointer shrink-0"
-            title={`Tambahkan ${em} ke input teks`}
+            className="w-6 h-6 rounded-md bg-[#FFF8EA] border border-[#5C3A21] active:translate-y-[1px] flex items-center justify-center text-xs cursor-pointer shrink-0"
+            title={`Tambahkan ${em}`}
           >
             {em}
           </button>
         ))}
       </div>
 
-      {/* 6. FORM INPUT: Rata, Sejajar, Presisi Tinggi */}
-      <form onSubmit={handleSubmit} className="p-1.5 sm:p-2.5 border-t border-neutral-800 flex items-center gap-1.5 sm:gap-2 bg-[#080808]">
-        {/* Tombol Ekspresi */}
+      {/* 6. FORM INPUT */}
+      <form onSubmit={handleSubmit} className="p-2 border-t-2 border-[#5C3A21] flex items-center gap-1.5 bg-[#FFF8EA] shrink-0">
         <button
           type="button"
           onClick={() => {
             sound.playClick();
             setShowExpressions(!showExpressions);
           }}
-          className={`w-7 h-7 sm:w-9 sm:h-9 rounded-md border flex items-center justify-center transition-colors cursor-pointer shrink-0 ${
-            showExpressions
-              ? 'bg-amber-500 text-black border-amber-400'
-              : 'bg-neutral-900 text-amber-400 border-neutral-800 hover:bg-neutral-800 hover:border-amber-400'
+          className={`w-8 h-8 flex items-center justify-center shrink-0 text-black ${
+            showExpressions ? 'clay-btn-secondary' : 'clay-btn-neutral'
           }`}
-          title="Pilih Ekspresi & Emotikon"
+          style={{ borderRadius: '8px' }}
+          title="Pilih Ekspresi"
         >
-          <Smile className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+          <Smile className="w-4 h-4 stroke-[2.5]" />
         </button>
 
-        {/* Kotak Input Teks */}
         <input
           ref={inputRef}
           type="text"
@@ -702,21 +632,21 @@ export const ChatBox: React.FC<ChatBoxProps> = React.memo(({
           onKeyUp={(e) => e.stopPropagation()}
           placeholder={
             activeTab === 'global'
-              ? "Ketik pesan..."
+              ? 'Ketik pesan...'
               : `Bisik ke ${activeTab}...`
           }
           maxLength={150}
-          className="flex-1 h-7 sm:h-9 px-2 sm:px-3 bg-neutral-900 border border-neutral-800 focus:border-amber-400 rounded-md text-[11px] sm:text-xs text-amber-200 placeholder-neutral-500 font-['Chakra_Petch'] outline-none transition-colors"
+          className="clay-input flex-1 min-w-0 h-8 px-2.5 text-[11px] sm:text-xs text-black font-bold"
         />
 
-        {/* Tombol Kirim */}
         <button
           type="submit"
-          className="h-7 sm:h-9 px-2.5 sm:px-3.5 rounded-md bg-amber-500 hover:bg-amber-400 active:scale-95 text-black font-bold text-[10px] sm:text-xs flex items-center justify-center gap-1 sm:gap-1.5 transition-colors cursor-pointer shrink-0 border border-amber-400"
+          className="clay-btn-primary h-8 px-2.5 sm:px-3.5 text-black font-bold text-[10px] sm:text-xs flex items-center justify-center gap-1 shrink-0"
+          style={{ borderRadius: '8px' }}
           title="Kirim Pesan"
         >
           <span className="hidden sm:inline">KIRIM</span>
-          <Send className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+          <Send className="w-3.5 h-3.5 stroke-[2.5]" />
         </button>
       </form>
     </div>

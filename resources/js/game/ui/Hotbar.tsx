@@ -3,11 +3,11 @@
  * FILE: resources/js/game/ui/Hotbar.tsx
  * ============================================================================
  * FUNGSI UTAMA:
- * Mini Inventaris / Quick Bar di Tengah Bawah Layar:
+ * Mini Inventaris / Quick Bar di Tengah Bawah Layar (Cozycore Clay-Pixel):
  * 1. 6 Slot cepat (Slot 1-6) dengan hotkey [1] s/d [6].
- * 2. Border radius proporsional, tegas dan rapi (rounded-md/rounded-lg, tidak terlalu bulat).
- * 3. Ringan (Ultra-Lightweight): Bebas backdrop-blur agar GPU tidak lag/berat saat game berjalan.
- * 4. Tombol Tas: Ikon tas di atas + teks "Tas" di bawah icon (shortcut [B] ada di panduan PC).
+ * 2. Panel Clay-Pixel (#FFF8EA, outline 2px #5C3A21, slot aktif #FFAE6D, badge #A8E6CF).
+ * 3. Tanpa efek :hover & tanpa glow; umpan balik tekan :active yang tegas.
+ * 4. Tombol Tas [B] untuk membuka inventaris lengkap 30 slot.
  * ============================================================================
  */
 
@@ -30,18 +30,24 @@ export const Hotbar: React.FC<HotbarProps> = React.memo(({ onOpenBackpack, isBac
   const [hotbarItems, setHotbarItems] = useState<(IInventoryItem | null)[]>(inv.getHotbarItems());
   const [activeSlot, setActiveSlot] = useState<number>(inv.getActiveSlotIndex());
   const [totalItemCount, setTotalItemCount] = useState<number>(inv.getItemCount());
-  const [hoveredItem, setHoveredItem] = useState<{ item: IInventoryItem; index: number } | null>(null);
   const [isFullMapOpen, setIsFullMapOpen] = useState<boolean>(false);
+  const [isDialogueOpen, setIsDialogueOpen] = useState<boolean>(false);
   const [draggedSlot, setDraggedSlot] = useState<number | null>(null);
   const [dragOverSlot, setDragOverSlot] = useState<number | null>(null);
 
   useEffect(() => {
-    const handleMapToggle = (open: boolean) => {
-      setIsFullMapOpen(open);
-    };
+    const handleMapToggle = (open: boolean) => setIsFullMapOpen(open);
+    const handleOpenDlg = () => setIsDialogueOpen(true);
+    const handleCloseDlg = () => setIsDialogueOpen(false);
+
     EventBus.on('full-map-toggled', handleMapToggle);
+    EventBus.on('open-dialogue', handleOpenDlg);
+    EventBus.on('close-dialogue', handleCloseDlg);
+
     return () => {
       EventBus.off('full-map-toggled', handleMapToggle);
+      EventBus.off('open-dialogue', handleOpenDlg);
+      EventBus.off('close-dialogue', handleCloseDlg);
     };
   }, []);
 
@@ -128,49 +134,31 @@ export const Hotbar: React.FC<HotbarProps> = React.memo(({ onOpenBackpack, isBac
     setDragOverSlot(null);
   };
 
-  const getRarityBorder = (rarity?: string) => {
-    switch (rarity) {
-      case 'Legendary':
-        return 'border-amber-400';
-      case 'Rare':
-        return 'border-sky-400';
-      case 'Uncommon':
-        return 'border-emerald-400';
-      default:
-        return 'border-neutral-800';
-    }
-  };
-
-  // Sembunyikan hotbar saat peta dunia atlas di-maximize agar tidak menimpa peta
-  if (isFullMapOpen || propIsFullMapOpen) {
+  if (isFullMapOpen || propIsFullMapOpen || isDialogueOpen) {
     return null;
   }
+
+  const activeItem = hotbarItems[activeSlot];
 
   return (
     <aside
       aria-label="Mini Inventaris"
-      className="fixed bottom-[max(0.75rem,env(safe-area-inset-bottom,0.75rem))] left-1/2 -translate-x-1/2 z-40 select-none font-['Chakra_Petch'] origin-bottom scale-[0.82] xs:scale-90 sm:scale-100 pointer-events-auto"
+      className="fixed left-1/2 -translate-x-1/2 z-40 select-none pointer-events-auto flex flex-col items-center gap-1"
+      style={{
+        bottom: 'max(0.5rem, env(safe-area-inset-bottom, 0.5rem))',
+      }}
     >
-      {/* Tooltip Hover Item (Ringan, Tanpa Blur) */}
-      {hoveredItem && hoveredItem.item && (
-        <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-[#0c101d] border border-amber-400/80 rounded-md px-3 py-1.5 shadow-lg pointer-events-none min-w-[130px] max-w-[220px] text-center">
-          <div className="text-xs font-bold text-amber-300 truncate">{hoveredItem.item.name}</div>
-          <div className="text-[10px] text-neutral-400 font-medium line-clamp-2 mt-0.5 leading-snug">
-            {hoveredItem.item.description}
-          </div>
-          {hoveredItem.item.price > 0 && (
-            <div className="text-[10px] font-bold text-amber-400 mt-1 flex items-center justify-center gap-1">
-              <span>Nilai:</span>
-              <span>💰 {hoveredItem.item.price} Gold</span>
-            </div>
-          )}
+      {/* Label Item Aktif Ringkas */}
+      {activeItem && (
+        <div className="clay-badge-neutral px-2.5 py-0.5 text-[9px] sm:text-[10px] font-bold text-black max-w-[200px] truncate pointer-events-none">
+          {activeItem.name}
         </div>
       )}
 
-      {/* Wadah Mini Hotbar (Tegas, Elegan, Ringan & Cepat 60 FPS) */}
-      <div className="flex items-center gap-1 sm:gap-1.5 bg-[#0a0c14] border border-white/10 rounded-lg p-1 sm:p-1.5 shadow-xl">
+      {/* Wadah Mini Hotbar Clay-Pixel */}
+      <div className="clay-panel flex items-center gap-1 sm:gap-1.5 p-1 sm:p-1.5">
         {/* 6 Slot Hotbar */}
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 sm:gap-1.5">
           {hotbarItems.map((item, idx) => {
             const isActive = activeSlot === idx;
             const isDragging = draggedSlot === idx;
@@ -186,85 +174,64 @@ export const Hotbar: React.FC<HotbarProps> = React.memo(({ onOpenBackpack, isBac
                 onDrop={(e) => handleDrop(e, idx)}
                 onDragEnd={handleDragEnd}
                 onClick={() => handleSelectSlot(idx)}
-                onMouseEnter={() => item && setHoveredItem({ item, index: idx })}
-                onMouseLeave={() => setHoveredItem(null)}
-                className={`relative w-8 h-8 sm:w-10 sm:h-10 md:w-11 md:h-11 rounded-md flex items-center justify-center transition-all ${
-                  item ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'
-                } ${
-                  isDragging ? 'opacity-30 border-dashed border-amber-400 scale-95' : ''
-                } ${
+                className={`relative w-8 h-8 sm:w-10 sm:h-10 md:w-11 md:h-11 landscape:max-md:w-8 landscape:max-md:h-8 flex items-center justify-center ${
                   isDragOver
-                    ? 'border-2 border-amber-400 bg-amber-400/25 scale-105 z-10'
+                    ? 'clay-btn-secondary'
                     : isActive
-                    ? 'bg-amber-400/20 border-2 border-amber-400'
-                    : 'bg-neutral-900 hover:bg-neutral-850 border border-neutral-800 hover:border-neutral-700'
-                } ${item && !isDragOver && !isActive ? getRarityBorder(item.rarity) : ''}`}
-                title={item ? `${item.name} [Slot ${idx + 1}] - Drag untuk memindahkan` : `Slot ${idx + 1}`}
+                    ? 'clay-btn-primary'
+                    : 'clay-btn-neutral'
+                } ${isDragging ? 'opacity-45' : ''}`}
+                style={{ borderRadius: '8px' }}
+                title={item ? `${item.name} [Slot ${idx + 1}]` : `Slot ${idx + 1}`}
               >
                 {/* Nomor Slot Hotkey */}
-                <span
-                  className={`absolute top-0.5 left-1 text-[8px] sm:text-[9px] font-mono leading-none ${
-                    isActive ? 'text-amber-300 font-black' : 'text-neutral-500 font-bold'
-                  }`}
-                >
+                <span className="absolute top-0.5 left-1 text-[8px] sm:text-[9px] font-bold text-black leading-none">
                   {idx + 1}
                 </span>
 
                 {/* Konten Item */}
                 {item ? (
                   <>
-                    <span className="text-base sm:text-xl md:text-2xl select-none">
+                    <span className="text-sm sm:text-lg md:text-xl landscape:max-md:text-sm select-none leading-none">
                       {item.icon}
                     </span>
-                    {/* Badge Stack Kuantitas */}
                     {item.quantity > 1 && (
-                      <span className="absolute bottom-0.5 right-1 bg-black text-amber-300 text-[8px] sm:text-[9px] font-bold px-1 rounded leading-tight border border-amber-500/30">
+                      <span className="absolute -bottom-0.5 -right-0.5 bg-[#A8E6CF] text-black text-[8px] font-bold px-1 rounded border border-[#5C3A21] leading-tight">
                         {item.quantity}
                       </span>
                     )}
                   </>
                 ) : (
-                  <span className="text-[9px] sm:text-[10px] text-neutral-700 font-bold pointer-events-none">•</span>
+                  <span className="text-[9px] text-black/35 font-bold pointer-events-none">•</span>
                 )}
               </button>
             );
           })}
         </div>
 
-        {/* Separator Garis Lembut */}
-        <div className="w-[1px] h-6 sm:h-7 bg-neutral-800 mx-0.5" />
+        {/* Garis Pemisah */}
+        <div className="w-[2px] h-6 sm:h-7 bg-[#5C3A21]/40 rounded-full mx-0.5" />
 
-        {/* Tombol Tas: Ikon Tas di Atas + Teks "Tas" di Bawah */}
+        {/* Tombol Tas */}
         <button
           type="button"
           onClick={() => {
             sound.playClick();
             onOpenBackpack();
           }}
-          className={`relative flex flex-col items-center justify-center w-8 h-8 sm:w-10 sm:h-10 md:w-11 md:h-11 rounded-md transition-colors cursor-pointer ${
-            isBackpackOpen
-              ? 'bg-amber-400 text-neutral-950 border border-amber-300 font-black'
-              : 'bg-neutral-900 hover:bg-neutral-850 text-amber-300 hover:text-amber-200 border border-neutral-800 hover:border-amber-400/50'
+          className={`relative flex flex-col items-center justify-center w-9 h-8 sm:w-11 sm:h-10 md:w-12 md:h-11 landscape:max-md:w-9 landscape:max-md:h-8 text-black ${
+            isBackpackOpen ? 'clay-btn-primary' : 'clay-btn-secondary'
           }`}
-          title="Buka Tas Inventaris"
+          style={{ borderRadius: '8px' }}
+          title="Buka Tas Inventaris [B]"
         >
-          {/* Icon Tas */}
-          <Backpack className="w-3.5 h-3.5 sm:w-4 sm:h-4 stroke-[2]" />
-
-          {/* Teks Tas di Bawah Icon */}
-          <span className="text-[7.5px] sm:text-[9px] font-bold tracking-wide leading-none mt-0.5">
+          <Backpack className="w-3.5 h-3.5 sm:w-4 sm:h-4 stroke-[2.5]" />
+          <span className="text-[7.5px] sm:text-[9px] font-bold leading-none mt-0.5">
             Tas
           </span>
 
-          {/* Badge Kuantitas Isi Tas */}
           {totalItemCount > 0 && (
-            <span
-              className={`absolute -top-1 -right-1 min-w-[15px] h-[15px] px-1 rounded text-[8px] font-bold flex items-center justify-center ${
-                isBackpackOpen
-                  ? 'bg-black text-amber-300'
-                  : 'bg-amber-400 text-neutral-950'
-              }`}
-            >
+            <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-[16px] px-1 rounded bg-[#FFAE6D] border border-[#5C3A21] text-black text-[8px] font-bold flex items-center justify-center">
               {totalItemCount}
             </span>
           )}

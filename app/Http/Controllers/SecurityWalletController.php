@@ -171,12 +171,13 @@ class SecurityWalletController extends Controller
         $isFishing = str_starts_with($action, 'catch_fish') || str_starts_with($action, 'fishing');
         $isTrash = str_starts_with($action, 'trash');
         $isQuiz = str_starts_with($action, 'quiz') || str_starts_with($action, 'school');
+        $isFarming = str_starts_with($action, 'harvest') || str_starts_with($action, 'farm') || $action === 'market_sell';
+        $isBank = str_starts_with($action, 'bank_');
         $isPurchase = in_array($action, ['market_transaction', 'pharmacy_purchase', 'store_purchase', 'wardrobe_purchase']);
 
         if ($isFishing) {
-            // Ikan langka / legendaris maksimal 600 gold dan 5 diamonds
-            if ($deltaGold > 600 || $deltaDiamonds > 5 || $deltaGold < 0) {
-                Log::warning("AntiCheat Fishing Alert: Invalid catch delta ({$deltaGold}G, {$deltaDiamonds}D) by user {$user->id}");
+            if ($deltaGold > 2200 || $deltaDiamonds > 10 || $deltaGold < 0) {
+                Log::warning("AntiCheat Fishing Alert: Invalid catch delta ({$deltaGold}G) by user {$user->id}");
                 return response()->json([
                     'status' => 'error',
                     'message' => '🛡️ Anti-Cheat: Hadiah tangkapan ikan tidak valid.',
@@ -185,7 +186,7 @@ class SecurityWalletController extends Controller
                 ], 403);
             }
         } elseif ($isTrash) {
-            if ($deltaGold > 50 || $deltaDiamonds > 0 || $deltaGold < 0) {
+            if ($deltaGold > 100 || $deltaDiamonds > 0 || $deltaGold < 0) {
                 return response()->json([
                     'status' => 'error',
                     'message' => '🛡️ Anti-Cheat: Hadiah membersihkan sampah melebihi batas legal.',
@@ -194,7 +195,7 @@ class SecurityWalletController extends Controller
                 ], 403);
             }
         } elseif ($isQuiz) {
-            if ($deltaGold > 200 || $deltaDiamonds > 0 || $deltaGold < 0) {
+            if ($deltaGold > 1200 || $deltaDiamonds > 0 || $deltaGold < 0) {
                 return response()->json([
                     'status' => 'error',
                     'message' => '🛡️ Anti-Cheat: Hadiah kuis melebihi batas legal.',
@@ -202,9 +203,27 @@ class SecurityWalletController extends Controller
                     'diamonds' => (int) $user->diamonds,
                 ], 403);
             }
+        } elseif ($isFarming) {
+            if ($deltaGold > 25000 || $deltaDiamonds > 0) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => '🛡️ Anti-Cheat: Transaksi hasil tani/pasar melebihi batas wajar.',
+                    'gold' => (int) $user->gold,
+                    'diamonds' => (int) $user->diamonds,
+                ], 403);
+            }
+        } elseif ($isBank) {
+            if (abs($deltaGold) > 500000 || $deltaDiamonds > 0) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => '🛡️ Anti-Cheat: Nominal transaksi bank melebihi batas harian.',
+                    'gold' => (int) $user->gold,
+                    'diamonds' => (int) $user->diamonds,
+                ], 403);
+            }
         } elseif ($isPurchase) {
-            // Belanja di toko TIDAK BOLEH bernilai positif (menambah uang secara gratis)
-            if ($deltaGold > 0 || $deltaDiamonds > 0) {
+            // Belanja di toko TIDAK BOLEH bernilai positif (kecuali market_transaction jual ikan/panen)
+            if ($action !== 'market_transaction' && ($deltaGold > 0 || $deltaDiamonds > 0)) {
                 Log::warning("AntiCheat Shop Exploit: User {$user->id} attempted positive delta in store: {$action}");
                 return response()->json([
                     'status' => 'error',
@@ -213,9 +232,17 @@ class SecurityWalletController extends Controller
                     'diamonds' => (int) $user->diamonds,
                 ], 403);
             }
+            if ($action === 'market_transaction' && $deltaGold > 25000) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => '🛡️ Anti-Cheat: Penjualan pasar melebihi batas transaksi.',
+                    'gold' => (int) $user->gold,
+                    'diamonds' => (int) $user->diamonds,
+                ], 403);
+            }
         } else {
-            // Transaksi umum lainnya: maks 500 gold, 0 diamonds (kecuali admin/topup)
-            if ($deltaGold > 500 && !in_array($action, ['admin_grant', 'topup_reward', 'bank_transaction'])) {
+            // Transaksi umum lainnya: maks 2500 gold, 0 diamonds
+            if ($deltaGold > 2500 && !in_array($action, ['admin_grant'])) {
                 Log::warning("AntiCheat Generic Alert: Impossible gold delta ({$deltaGold}) by {$user->id}");
                 return response()->json([
                     'status' => 'error',
@@ -224,21 +251,13 @@ class SecurityWalletController extends Controller
                     'diamonds' => (int) $user->diamonds,
                 ], 403);
             }
-            if ($deltaDiamonds > 0 && !in_array($action, ['topup_success', 'admin_grant', 'topup_purchase'])) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => '🛡️ Anti-Cheat: Penambahan berlian hanya diizinkan via Top Up resmi.',
-                    'gold' => (int) $user->gold,
-                    'diamonds' => (int) $user->diamonds,
-                ], 403);
-            }
         }
 
-        // 3. Velocity Limit: Maksimal perolehan koin per menit (maksimal 3,500 gold/menit)
-        if ($deltaGold > 0 && !in_array($action, ['admin_grant', 'topup_reward'])) {
+        // 3. Velocity Limit: Maksimal perolehan koin murni per menit (kecuali penarikan bank / jual panen besar)
+        if ($deltaGold > 0 && !$isBank && !$isFarming && $action !== 'market_transaction' && !in_array($action, ['admin_grant'])) {
             $minuteKey = "wallet_velo_{$throttleId}_" . floor(time() / 60);
             $currentVelocity = (int) \Illuminate\Support\Facades\Cache::get($minuteKey, 0);
-            if ($currentVelocity + $deltaGold > 3500) {
+            if ($currentVelocity + $deltaGold > 8000) {
                 Log::warning("AntiCheat Velocity Alert: User {$user->id} gained too much gold in 1 minute ({$currentVelocity} + {$deltaGold})");
                 return response()->json([
                     'status' => 'error',

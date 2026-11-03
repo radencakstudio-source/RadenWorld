@@ -2,15 +2,13 @@
  * ============================================================================
  * FILE: resources/js/game/ui/LoadingScreen.tsx
  * ============================================================================
- * Loading Screen RadenWorld Otentik & Realtime:
- * 1. Background lantai catur ubin oranye (Orange Checkered Pattern).
- * 2. Judul 'RADEN WORLD' pixel kuning retro di kiri atas.
- * 3. Status server 'Server: ASIA - RADEN - 0001' di kanan atas.
- * 4. Teks tengah dinamis: melacak tahap pemuatan asli aset & inisialisasi scene.
- * 5. Bar progres putih dengan isian warna kuning terang di bawah.
- * 6. Karakter cowok berjalan dari kiri bergerak maju menuju ke karakter cewek di kanan!
- * 7. 100% Real Loading: Menunggu aset Phaser, tekstur prosedural, dan scene siap
- *    (scene-ready) sehingga saat loading selesai, game 100% bebas bug & tidak ada missing asset.
+ * Loading Screen RadenWorld Otentik & Realtime (Cozycore Clay-Pixel):
+ * 1. Background lantai catur pastel hangat (#FFF8EA & #FFAE6D) bersih tanpa noise.
+ * 2. Judul 'RADEN WORLD' di kiri atas & badge 'Server: ...' di kanan atas.
+ * 3. Teks tengah dinamis: melacak tahap pemuatan asli aset & inisialisasi scene.
+ * 4. Bar progres Clay-Pixel tebal (#FFF8EA + isian #FFAE6D & #A8E6CF, outline #5C3A21).
+ * 5. Karakter cowok berjalan dari kiri bergerak maju menuju ke karakter cewek di kanan!
+ * 6. 100% Real Loading: Menunggu aset Phaser, tekstur prosedural, dan scene siap.
  * ============================================================================
  */
 
@@ -27,20 +25,20 @@ interface LoadingScreenProps {
 export const LoadingScreen: React.FC<LoadingScreenProps> = ({
   onComplete,
   serverCode = 'ASIA - 0001',
-  minDisplayTimeMs = 400,
-  maxTimeoutMs = 2500,
+  minDisplayTimeMs = 550,
+  maxTimeoutMs = 2600,
 }) => {
   const [progress, setProgress] = useState(8);
-  const [dots, setDots] = useState('..........');
+  const [dots, setDots] = useState('...');
   const [walkFrame, setWalkFrame] = useState(1);
 
-  // Derive stageText langsung dari progress untuk menghemat 50% siklus render React
+  // Derive stageText langsung dari progress untuk menghemat siklus render React
   const stageText = React.useMemo(() => {
-    if (progress < 40) return 'mengunduh berkas karakter & lingkungan';
-    if (progress < 75) return 'memuat tekstur map & audio dunia';
-    if (progress < 92) return 'menyiapkan animasi & interior ruangan';
-    if (progress < 100) return `menghubungkan ke server ${serverCode}`;
-    return 'dunia siap, selamat berpetualang';
+    if (progress < 40) return 'Mengunduh berkas karakter & lingkungan';
+    if (progress < 75) return 'Memuat tekstur map & audio dunia';
+    if (progress < 92) return 'Menyiapkan animasi & interior ruangan';
+    if (progress < 100) return `Menghubungkan ke server ${serverCode}`;
+    return 'Dunia siap, selamat berpetualang';
   }, [progress, serverCode]);
 
   const isCompleteRef = useRef(false);
@@ -56,7 +54,7 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
   // Animasi titik-titik teks pemuatan
   useEffect(() => {
     const dotInterval = setInterval(() => {
-      setDots((prev) => (prev.length >= 10 ? '..' : prev + '.'));
+      setDots((prev) => (prev.length >= 6 ? '.' : prev + '.'));
     }, 300);
     return () => clearInterval(dotInterval);
   }, []);
@@ -79,7 +77,7 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
       (typeof window !== 'undefined' && (window as any).__raden_last_scene_ready)
     );
     sceneReadyRef.current = alreadyReady;
-    targetProgressRef.current = alreadyReady ? 100 : 15;
+    targetProgressRef.current = alreadyReady ? 100 : 18;
 
     const triggerComplete = () => {
       if (isCompleteRef.current) return;
@@ -94,7 +92,7 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
 
     // Handler event asli Phaser saat mendownload file aset
     const handlePhaserProgress = (val: number) => {
-      const pct = Math.max(15, Math.floor(val * 100));
+      const pct = Math.max(18, Math.floor(val * 100));
       targetProgressRef.current = Math.max(targetProgressRef.current, pct);
     };
 
@@ -109,7 +107,7 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
       targetProgressRef.current = 100;
     };
 
-    // Ticker untuk pergerakan bar progres yang di-throttle ke 90ms (~11 FPS yang sangat ringan)
+    // Ticker untuk pergerakan bar progres yang ringan
     const progressTicker = setInterval(() => {
       const elapsed = Date.now() - startTimeRef.current;
       const target = targetProgressRef.current;
@@ -119,13 +117,13 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
 
         let next = current;
         if (sceneReadyRef.current && elapsed >= minDisplayTimeMs) {
-          const step = Math.max(3, Math.ceil((100 - current) * 0.4));
+          const step = Math.max(4, Math.ceil((100 - current) * 0.4));
           next = Math.min(100, current + step);
         } else if (current < target) {
-          const step = Math.max(1, Math.ceil((target - current) * 0.25));
+          const step = Math.max(2, Math.ceil((target - current) * 0.28));
           next = Math.min(sceneReadyRef.current ? 100 : 94, current + step);
-        } else if (current < 90 && elapsed > 400) {
-          next = Math.min(90, current + 1);
+        } else if (current < 90 && elapsed > 350) {
+          next = Math.min(90, current + 2);
         }
 
         if (next >= 100) {
@@ -135,7 +133,7 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
 
         return next;
       });
-    }, 90);
+    }, 85);
 
     // Hard fallback safety: Jika jaringan offline/sangat lambat, jangan gantung selamanya
     const fallbackTimer = setTimeout(() => {
@@ -157,95 +155,122 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
     };
   }, [minDisplayTimeMs, maxTimeoutMs, serverCode]);
 
-  // Perhitungan posisi cowok: dari 3% di kiri hingga mencapai cewek (~86% di kanan)
-  const boyLeftPercent = 3 + (progress / 100) * 83;
+  // Perhitungan posisi cowok: dari 6% di kiri hingga mencapai cewek (~85% di kanan)
+  const boyLeftPercent = 6 + (progress / 100) * 79;
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col justify-between p-3 sm:p-6 md:p-10 select-none overflow-hidden font-['Chakra_Petch']">
-      {/* Background Kotak Catur Oranye (Orange Checkered Grid) */}
+    <div
+      className="fixed inset-0 z-50 flex flex-col justify-between select-none overflow-hidden text-black"
+      style={{
+        paddingTop: 'max(0.75rem, env(safe-area-inset-top, 0.75rem))',
+        paddingRight: 'max(0.875rem, env(safe-area-inset-right, 0.875rem))',
+        paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom, 0.75rem))',
+        paddingLeft: 'max(0.875rem, env(safe-area-inset-left, 0.875rem))',
+      }}
+    >
+      {/* Background Kotak Catur Pastel Hangat (Creamy Vanilla #FFF8EA & Soft Pastel Orange #FFAE6D) */}
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
-          backgroundColor: '#ea580c',
+          backgroundColor: '#FFF8EA',
           backgroundImage: `
-            linear-gradient(45deg, #f97316 25%, transparent 25%),
-            linear-gradient(-45deg, #f97316 25%, transparent 25%),
-            linear-gradient(45deg, transparent 75%, #f97316 75%),
-            linear-gradient(-45deg, transparent 75%, #f97316 75%)
+            linear-gradient(45deg, #FFAE6D 25%, transparent 25%),
+            linear-gradient(-45deg, #FFAE6D 25%, transparent 25%),
+            linear-gradient(45deg, transparent 75%, #FFAE6D 75%),
+            linear-gradient(-45deg, transparent 75%, #FFAE6D 75%)
           `,
-          backgroundSize: '90px 90px',
-          backgroundPosition: '0 0, 0 45px, 45px -45px, -45px 0px',
+          backgroundSize: '88px 88px',
+          backgroundPosition: '0 0, 0 44px, 44px -44px, -44px 0px',
         }}
       />
 
+      {/* Lapisan lembut Creamy Milk Vanilla semi-solid agar kontras panel nyaman di mata */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{ backgroundColor: 'rgba(255, 248, 234, 0.55)' }}
+      />
+
       {/* Top Header Bar */}
-      <div className="relative z-10 w-full flex items-start justify-between gap-2">
-        {/* Judul Game Pixel Kuning (Top Left) */}
-        <div>
-          <h1
-            className="text-xl sm:text-4xl md:text-6xl font-black text-[#FFE600] font-['Press_Start_2P'] tracking-wider leading-none"
-            style={{
-              textShadow: '3px 3px 0px #000, -2px -2px 0px #000, 2px -2px 0px #000, -2px 2px 0px #000',
-            }}
-          >
+      <div className="relative z-10 w-full max-w-6xl mx-auto flex flex-wrap items-center justify-between gap-2 sm:gap-4">
+        {/* Judul Game Clay-Pixel (Top Left) */}
+        <div className="clay-panel px-3 py-1.5 sm:px-5 sm:py-2.5 bg-[#FFAE6D]" style={{ backgroundColor: '#FFAE6D', boxShadow: 'inset 0 2px 0 #FFD0A6, inset 0 -3px 0 #E5924F, 0 3px 0 #5C3A21' }}>
+          <h1 className="text-base sm:text-2xl md:text-4xl font-bold text-black tracking-wide leading-none">
             RADEN WORLD
           </h1>
         </div>
 
         {/* Server Pill Badge (Top Right) */}
-        <div className="px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-md bg-[#ff7a18] border border-black shadow text-black text-[10px] sm:text-xs font-black tracking-wide shrink-0">
+        <div className="clay-badge-secondary px-3 py-1.5 sm:px-4 sm:py-2 text-[11px] sm:text-sm font-bold text-black shrink-0" style={{ borderWidth: '2px', boxShadow: 'inset 0 2px 0 #D4F5E9, 0 2px 0 #5C3A21' }}>
           Server: {serverCode}
         </div>
       </div>
 
-      {/* Center Text: loading status text.......... */}
-      <div className="relative z-10 text-center my-auto">
-        <p className="text-white text-sm sm:text-base md:text-xl font-normal tracking-wide drop-shadow-md lowercase">
-          {stageText}{progress < 100 ? dots : '!'}
-        </p>
+      {/* Center Status Card */}
+      <div className="relative z-10 my-auto flex flex-col items-center justify-center px-2">
+        <div className="clay-panel px-4 py-2.5 sm:px-6 sm:py-3.5 max-w-xl w-auto text-center flex flex-col items-center gap-1.5">
+          <div className="flex items-center gap-2">
+            <span className="clay-badge-secondary px-2 py-0.5 text-[10px] sm:text-xs font-bold text-black">
+              MEMUAT DUNIA
+            </span>
+            <span className="clay-badge-primary px-2 py-0.5 text-[10px] sm:text-xs font-bold text-black">
+              {progress}%
+            </span>
+          </div>
+          <p className="text-black text-xs sm:text-sm md:text-base font-bold leading-snug">
+            {stageText}{progress < 100 ? dots : '!'}
+          </p>
+        </div>
       </div>
 
       {/* Bottom Progress Bar & Walking Characters Animation */}
-      <div className="relative z-10 w-full max-w-6xl mx-auto pb-2 sm:pb-6 flex flex-col items-center">
+      <div className="relative z-10 w-full max-w-5xl mx-auto pb-1 sm:pb-3 flex flex-col items-center">
         {/* Walking Track Area for Boy & Girl */}
-        <div className="relative w-full h-16 sm:h-22 md:h-28 mb-1">
+        <div className="relative w-full h-14 sm:h-20 md:h-24 landscape:max-md:h-12 mb-1.5">
           {/* Cowok Berjalan Maju Bergerak ke Arah Kanan Menuju Cewek */}
           <div
-            className="absolute bottom-0 -mb-1 flex flex-col items-center transition-[left] ease-linear duration-75"
+            className="absolute bottom-0 flex flex-col items-center transition-[left] ease-linear duration-75"
             style={{ left: `${boyLeftPercent}%`, transform: 'translateX(-50%)' }}
           >
             <img
               src={`/assets/sprites/characters/Player/Male/MovementSide/MaleWalkSide${walkFrame}.webp`}
               alt="Male Walking"
-              className="relative z-10 w-12 sm:w-16 md:w-20 h-14 sm:h-20 md:h-24 object-contain pixelated pointer-events-none"
+              className="relative z-10 w-11 sm:w-16 md:w-20 landscape:max-md:w-10 h-13 sm:h-19 md:h-23 landscape:max-md:h-11 object-contain pixelated pointer-events-none"
               onError={(e) => {
                 (e.target as HTMLImageElement).src = '/assets/sprites/characters/Player/Male/Idle/Front/Front%20Male.webp';
               }}
             />
-            {/* Bayangan Lantai Cowok (di bawah kaki) */}
-            <div className="w-10 sm:w-12 h-2 sm:h-2.5 bg-black/40 rounded-full blur-[2px] -mt-2" />
+            {/* Bayangan Lantai Pixel Bersih Tanpa Blur */}
+            <div className="w-8 sm:w-11 h-1.5 sm:h-2 bg-[#5C3A21]/25 rounded-full -mt-1" />
           </div>
 
           {/* Cewek Berdiri di Sisi Kanan Menunggu Cowok */}
           <div
-            className="absolute bottom-0 -mb-1 flex flex-col items-center"
-            style={{ left: '88%', transform: 'translateX(-50%)' }}
+            className="absolute bottom-0 flex flex-col items-center"
+            style={{ left: '90%', transform: 'translateX(-50%)' }}
           >
             <img
               src="/assets/sprites/characters/Player/Female/Idle/Front/Front%20Female.webp"
               alt="Female Idle"
-              className="relative z-10 w-12 sm:w-16 md:w-20 h-14 sm:h-20 md:h-24 object-contain pixelated pointer-events-none"
+              className="relative z-10 w-11 sm:w-16 md:w-20 landscape:max-md:w-10 h-13 sm:h-19 md:h-23 landscape:max-md:h-11 object-contain pixelated pointer-events-none"
             />
-            {/* Bayangan Lantai Cewek (di bawah kaki) */}
-            <div className="w-10 sm:w-12 h-2 sm:h-2.5 bg-black/40 rounded-full blur-[2px] -mt-2" />
+            {/* Bayangan Lantai Pixel Bersih Tanpa Blur */}
+            <div className="w-8 sm:w-11 h-1.5 sm:h-2 bg-[#5C3A21]/25 rounded-full -mt-1" />
           </div>
         </div>
 
-        {/* Progress Bar Container: Putih Tebal dengan Isi Kuning Terang Sesuai Gambar */}
-        <div className="w-full h-4 sm:h-6 md:h-7 bg-white border border-black/80 rounded-none overflow-hidden relative shadow-md">
+        {/* Progress Bar Container: Clay-Pixel (#FFF8EA track, #FFAE6D fill, 2px #5C3A21 border) */}
+        <div
+          className="w-full h-5 sm:h-7 md:h-8 bg-[#FFF8EA] border-2 border-[#5C3A21] rounded-xl overflow-hidden relative p-0.5"
+          style={{
+            boxShadow: 'inset 0 2px 0 #EADBC0, 0 3px 0 #5C3A21',
+          }}
+        >
           <div
-            className="h-full bg-[#FFE600] transition-all ease-linear duration-75"
-            style={{ width: `${progress}%` }}
+            className="h-full bg-[#FFAE6D] border-r-2 border-[#5C3A21] rounded-lg transition-all ease-linear duration-75"
+            style={{
+              width: `${Math.max(4, progress)}%`,
+              boxShadow: 'inset 0 2px 0 #FFD0A6, inset 0 -2px 0 #E5924F',
+            }}
           />
         </div>
       </div>

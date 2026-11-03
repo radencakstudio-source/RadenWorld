@@ -20,6 +20,9 @@ import React, { useState, useEffect, useMemo } from 'react';
  */
 export const SunbeamOverlay: React.FC = React.memo(() => {
   const [currentTime, setCurrentTime] = useState<Date>(new Date());
+  const isMobile = typeof window !== 'undefined' && (
+    window.innerWidth < 768 || window.innerHeight < 550 || ('ontouchstart' in window) || (navigator.maxTouchPoints > 0)
+  );
 
   useEffect(() => {
     // Sinkronisasi realtime setiap 30 detik (menghemat CPU dan render loop)
@@ -44,33 +47,31 @@ export const SunbeamOverlay: React.FC = React.memo(() => {
 
     // Klasifikasi Jam Tropis Indonesia (WIB)
     if (timeDecimal >= 18.5 || timeDecimal < 5.0) {
-      // Malam Hari (18:30 - 05:00)
+      // Malam Hari (18:30 - 05:00): Biru Malam Sungguhan (terintegrasi dengan Lightmap WorldScene)
       isNight = true;
-      if (timeDecimal >= 19.5 || timeDecimal < 4.0) {
-        nightDarkness = 0.26; // Suasana malam yang adem, jernih, dan sangat nyaman di mata
-      } else if (timeDecimal >= 18.5 && timeDecimal < 19.5) {
-        // Transisi senja -> malam (18:30 - 19:30)
-        const progress = (timeDecimal - 18.5) / 1.0;
-        nightDarkness = 0.10 + progress * 0.16;
+      if (timeDecimal >= 19.25 || timeDecimal < 4.5) {
+        nightDarkness = 0.18;
+      } else if (timeDecimal >= 18.5 && timeDecimal < 19.25) {
+        const progress = (timeDecimal - 18.5) / 0.75;
+        nightDarkness = 0.08 + progress * 0.10;
       } else {
-        // Transisi malam -> fajar (04:00 - 05:00)
-        const progress = (5.0 - timeDecimal) / 1.0;
-        nightDarkness = 0.10 + progress * 0.16;
+        const progress = (5.0 - timeDecimal) / 0.5;
+        nightDarkness = 0.08 + Math.max(0, progress) * 0.10;
       }
-    } else if (timeDecimal >= 5.0 && timeDecimal < 6.5) {
-      // Fajar Pagi (05:00 - 06:30): Meredup lembut menuju terang siang
-      const progress = (timeDecimal - 5.0) / 1.5;
-      nightDarkness = Math.max(0, 0.15 * (1 - progress));
-    } else if (timeDecimal >= 6.5 && timeDecimal < 16.5) {
-      // Siang Cerah (06:30 - 16:30): Terang benderang murni 100%
+    } else if (timeDecimal >= 5.0 && timeDecimal < 6.25) {
+      // Fajar Pagi Biru (05:00 - 06:15)
+      const progress = (timeDecimal - 5.0) / 1.25;
+      nightDarkness = Math.max(0, 0.10 * (1 - progress));
+    } else if (timeDecimal >= 6.25 && timeDecimal < 16.5) {
+      // Siang Cerah (06:15 - 16:30)
       nightDarkness = 0;
       sunsetTint = 0;
     } else {
-      // Sore / Senja (16:30 - 18:30): Langit keemasan menuju senja
+      // Sore / Senja (16:30 - 18:30)
       isSunset = true;
       const progress = (timeDecimal - 16.5) / 2.0;
       sunsetTint = 0.12;
-      nightDarkness = progress * 0.12;
+      nightDarkness = progress * 0.08;
     }
 
     return {
@@ -136,28 +137,27 @@ export const SunbeamOverlay: React.FC = React.memo(() => {
       aria-hidden="true"
     >
       {/* ==================================================================== */}
-      {/* 1. LAPISAN SUASANA MALAM REALTIME (DEEP SLATE NAVY BERSIH & ADEM)    */}
-      {/* Warna malam yang jernih, nyaman di mata, tidak mengubah warna rumput */}
+      {/* 1. LAPISAN NUANSA BIRU MALAM SAFIR & REMBULAN                        */}
       {/* ==================================================================== */}
       {lighting.nightDarkness > 0 && (
         <div
           className="absolute inset-0 w-full h-full transition-opacity duration-1000 ease-linear pointer-events-none"
           style={{
-            backgroundColor: '#0f172a', // Slate-900: Teduh malam alami
+            backgroundColor: '#0d2b7a', // Royal Sapphire Night Blue
             mixBlendMode: 'multiply',
             opacity: lighting.nightDarkness,
           }}
         />
       )}
 
-      {/* Pendaran Vignette Malam Lembut di Tepian Layar (Fokus Tengah Tetap Jernih) */}
+      {/* Pendaran Vignette Malam Biru Safir di Tepian Layar */}
       {lighting.isNight && (
         <div
           className="absolute inset-0 w-full h-full transition-opacity duration-1000 ease-linear pointer-events-none"
           style={{
-            background: 'radial-gradient(circle at 50% 50%, rgba(2, 6, 23, 0) 45%, rgba(15, 23, 42, 0.24) 100%)',
+            background: 'radial-gradient(circle at 50% 50%, rgba(10, 30, 88, 0) 42%, rgba(8, 26, 82, 0.34) 100%)',
             mixBlendMode: 'multiply',
-            opacity: 0.85,
+            opacity: 0.9,
           }}
         />
       )}
@@ -192,7 +192,7 @@ export const SunbeamOverlay: React.FC = React.memo(() => {
         <defs>
           {/* Filter blur lembut alami agar tepi berkas sinar menyatu halus dengan dunia game */}
           <filter id="softRayBlur" x="-20%" y="-20%" width="140%" height="140%">
-            <feGaussianBlur stdDeviation="30" />
+            <feGaussianBlur stdDeviation={isMobile ? "10" : "28"} />
           </filter>
 
           {/* Gradien linear berkas sinar diagonal (Lembut & Tidak Silau) */}

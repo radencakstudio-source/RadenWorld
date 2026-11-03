@@ -3,9 +3,8 @@
  * FILE: resources/js/game/ui/WardrobeModal.tsx
  * ============================================================================
  * FUNGSI UTAMA:
- * Modal interaktif Lemari Pakaian (Wardrobe) di dalam Rumah Pribadi Karakter.
- * Mengizinkan pemain untuk mengubah gender, warna kulit, baju, celana, dan topi
- * dengan preview real-time dan palet 2 warna ketat (Dark Obsidian & Amber Gold).
+ * Modal interaktif Lemari Pakaian (Wardrobe) di dalam Rumah Pribadi Karakter
+ * dengan desain Cozycore Clay-Pixel.
  * ============================================================================
  */
 
@@ -33,8 +32,8 @@ export const WardrobeModal: React.FC<WardrobeModalProps> = ({
   if (!isOpen) return null;
 
   const skinColors = ['#fed7aa', '#fcd34d', '#f59e0b', '#d97706', '#92400e', '#78350f'];
-  const shirtColors = ['#f59e0b', '#d97706', '#b45309', '#78350f', '#1e293b', '#0f172a'];
-  const pantsColors = ['#0f172a', '#1e293b', '#334155', '#78350f', '#b45309', '#f59e0b'];
+  const shirtColors = ['#FFAE6D', '#A8E6CF', '#f59e0b', '#d97706', '#78350f', '#5C3A21'];
+  const pantsColors = ['#5C3A21', '#78350f', '#b45309', '#f59e0b', '#FFAE6D', '#A8E6CF'];
   const hatTypes: { type: HatType; label: string }[] = [
     { type: 'none', label: 'Polos' },
     { type: 'adventurer', label: 'Petualang' },
@@ -64,43 +63,67 @@ export const WardrobeModal: React.FC<WardrobeModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/85 font-['Chakra_Petch']">
-      <div className="relative w-full max-w-lg bg-black border border-neutral-800 rounded-2xl overflow-hidden p-4 sm:p-6 text-amber-400 flex flex-col max-h-[94dvh]">
+    <div className="ui-modal-backdrop">
+      <div className="clay-panel landscape-compact-modal w-full max-w-xl max-h-[92dvh] flex flex-col overflow-hidden text-black">
         {/* Header */}
-        <div className="flex items-center justify-between pb-3 border-b border-neutral-800 shrink-0">
-          <div className="flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-amber-500" />
-            <h2 className="text-sm sm:text-base font-bold tracking-wider uppercase text-amber-400">
+        <div className="clay-header landscape-compact-header px-4 py-3 flex items-center justify-between gap-2 shrink-0">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="w-8 h-8 rounded-lg bg-[#FFF8EA] border-2 border-[#5C3A21] flex items-center justify-center shrink-0">
+              <Sparkles className="w-4 h-4 text-black stroke-[2.5]" />
+            </div>
+            <h2 className="text-xs sm:text-sm font-bold uppercase text-black truncate">
               LEMARI PAKAIAN (GANTI AVATAR)
             </h2>
           </div>
           <button
+            type="button"
             onClick={() => {
               sound.playClick();
               onClose();
             }}
-            className="p-1 rounded-lg border border-neutral-700 hover:bg-amber-500 hover:text-black transition-all cursor-pointer"
+            className="clay-btn-neutral w-8 h-8 flex items-center justify-center shrink-0 text-black"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4 stroke-[2.5]" />
           </button>
         </div>
 
-        {/* Content: Preview & Customization Grid */}
-        <div className="mt-4 grid grid-cols-1 md:grid-cols-12 gap-4 items-center flex-1 min-h-0 overflow-y-auto custom-scrollbar pr-1">
+        {/* Content: Single Scroll Container (No nested scroll traps) */}
+        <div className="landscape-compact-body p-4 grid grid-cols-1 md:grid-cols-12 gap-4 items-start flex-1 min-h-0 overflow-y-auto custom-scrollbar">
           {/* Avatar Preview */}
-          <div className="md:col-span-5 flex flex-col items-center justify-center p-3 rounded-xl border border-neutral-800 bg-neutral-900">
-            <AvatarPreview avatar={avatar} size={110} />
-            <span className="mt-2 text-[10px] sm:text-xs font-bold uppercase tracking-widest text-amber-400">
-              PRATINJAU KARAKTER
+          <div className="md:col-span-5 clay-card p-3.5 flex flex-col items-center justify-center gap-2">
+            <AvatarPreview avatar={avatar} size={112} />
+            <span className="clay-badge-secondary px-2.5 py-0.5 text-[10px] font-bold uppercase text-black">
+              {avatar.gender === 'female' ? '♀ PEREMPUAN' : '♂ LAKI-LAKI'}
             </span>
+            {/* Swatch Ringkasan Warna Pilihan */}
+            <div className="flex items-center gap-1.5 pt-1">
+              <span
+                className="w-4 h-4 rounded border border-[#5C3A21]"
+                style={{ backgroundColor: avatar.skinColor }}
+                title="Warna Kulit"
+              />
+              <span
+                className="w-4 h-4 rounded border border-[#5C3A21]"
+                style={{ backgroundColor: avatar.shirtColor }}
+                title="Warna Baju"
+              />
+              <span
+                className="w-4 h-4 rounded border border-[#5C3A21]"
+                style={{ backgroundColor: avatar.pantsColor }}
+                title="Warna Celana"
+              />
+              <span className="text-[10px] font-bold text-black ml-1">
+                {hatTypes.find((h) => h.type === avatar.hatType)?.label || 'Polos'}
+              </span>
+            </div>
           </div>
 
           {/* Options */}
-          <div className="md:col-span-7 space-y-3.5 max-h-[340px] overflow-y-auto pr-1">
+          <div className="md:col-span-7 space-y-3">
             {/* Gender */}
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider mb-1.5 text-amber-400">
-                GENDER
+              <label className="block text-[11px] font-bold uppercase mb-1.5 text-black">
+                GENDER KARAKTER
               </label>
               <div className="grid grid-cols-2 gap-2">
                 {(['male', 'female'] as Gender[]).map((g) => (
@@ -111,10 +134,8 @@ export const WardrobeModal: React.FC<WardrobeModalProps> = ({
                       sound.playClick();
                       setAvatar({ ...avatar, gender: g });
                     }}
-                    className={`py-1.5 px-3 rounded-lg border text-xs font-bold uppercase tracking-wider transition-all cursor-pointer ${
-                      avatar.gender === g
-                        ? 'bg-amber-500 text-[#0a0f1d] border-amber-400'
-                        : 'bg-[#0a0f1d] text-amber-400 border-amber-500/40 hover:border-amber-500'
+                    className={`py-2 px-3 text-xs font-bold uppercase ${
+                      avatar.gender === g ? 'clay-btn-primary' : 'clay-btn-neutral'
                     }`}
                   >
                     {g === 'male' ? '♂ LAKI-LAKI' : '♀ PEREMPUAN'}
@@ -125,79 +146,99 @@ export const WardrobeModal: React.FC<WardrobeModalProps> = ({
 
             {/* Warna Kulit */}
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider mb-1 text-amber-400">
+              <label className="block text-[11px] font-bold uppercase mb-1.5 text-black">
                 WARNA KULIT
               </label>
-              <div className="flex gap-2">
-                {skinColors.map((color) => (
-                  <button
-                    key={color}
-                    type="button"
-                    onClick={() => {
-                      sound.playClick();
-                      setAvatar({ ...avatar, skinColor: color });
-                    }}
-                    className={`w-7 h-7 rounded-lg border-2 transition-transform cursor-pointer ${
-                      avatar.skinColor === color ? 'border-amber-400 scale-110' : 'border-neutral-700'
-                    }`}
-                    style={{ backgroundColor: color }}
-                  />
-                ))}
+              <div className="flex flex-wrap gap-2">
+                {skinColors.map((color) => {
+                  const active = avatar.skinColor === color;
+                  return (
+                    <button
+                      key={color}
+                      type="button"
+                      onClick={() => {
+                        sound.playClick();
+                        setAvatar({ ...avatar, skinColor: color });
+                      }}
+                      className="w-8 h-8 rounded-lg border-2 border-[#5C3A21] flex items-center justify-center active:translate-y-[2px] cursor-pointer"
+                      style={{
+                        backgroundColor: color,
+                        boxShadow: active ? '0 0 0 2px #A8E6CF, 0 2px 0 #5C3A21' : '0 2px 0 #5C3A21',
+                      }}
+                    >
+                      {active && <Check className="w-4 h-4 text-black stroke-[3]" />}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
             {/* Warna Baju */}
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider mb-1 text-amber-400">
+              <label className="block text-[11px] font-bold uppercase mb-1.5 text-black">
                 WARNA BAJU
               </label>
-              <div className="flex gap-2">
-                {shirtColors.map((color) => (
-                  <button
-                    key={color}
-                    type="button"
-                    onClick={() => {
-                      sound.playClick();
-                      setAvatar({ ...avatar, shirtColor: color });
-                    }}
-                    className={`w-7 h-7 rounded-lg border-2 transition-transform cursor-pointer ${
-                      avatar.shirtColor === color ? 'border-amber-400 scale-110' : 'border-neutral-700'
-                    }`}
-                    style={{ backgroundColor: color }}
-                  />
-                ))}
+              <div className="flex flex-wrap gap-2">
+                {shirtColors.map((color) => {
+                  const active = avatar.shirtColor === color;
+                  const isDark = color === '#5C3A21' || color === '#78350f';
+                  return (
+                    <button
+                      key={color}
+                      type="button"
+                      onClick={() => {
+                        sound.playClick();
+                        setAvatar({ ...avatar, shirtColor: color });
+                      }}
+                      className="w-8 h-8 rounded-lg border-2 border-[#5C3A21] flex items-center justify-center active:translate-y-[2px] cursor-pointer"
+                      style={{
+                        backgroundColor: color,
+                        boxShadow: active ? '0 0 0 2px #A8E6CF, 0 2px 0 #5C3A21' : '0 2px 0 #5C3A21',
+                      }}
+                    >
+                      {active && <Check className={`w-4 h-4 stroke-[3] ${isDark ? 'text-white' : 'text-black'}`} />}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
             {/* Warna Celana */}
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider mb-1 text-amber-400">
+              <label className="block text-[11px] font-bold uppercase mb-1.5 text-black">
                 WARNA CELANA
               </label>
-              <div className="flex gap-2">
-                {pantsColors.map((color) => (
-                  <button
-                    key={color}
-                    type="button"
-                    onClick={() => {
-                      sound.playClick();
-                      setAvatar({ ...avatar, pantsColor: color });
-                    }}
-                    className={`w-7 h-7 rounded-lg border-2 transition-transform cursor-pointer ${
-                      avatar.pantsColor === color ? 'border-amber-400 scale-110' : 'border-neutral-700'
-                    }`}
-                    style={{ backgroundColor: color }}
-                  />
-                ))}
+              <div className="flex flex-wrap gap-2">
+                {pantsColors.map((color) => {
+                  const active = avatar.pantsColor === color;
+                  const isDark = color === '#5C3A21' || color === '#78350f';
+                  return (
+                    <button
+                      key={color}
+                      type="button"
+                      onClick={() => {
+                        sound.playClick();
+                        setAvatar({ ...avatar, pantsColor: color });
+                      }}
+                      className="w-8 h-8 rounded-lg border-2 border-[#5C3A21] flex items-center justify-center active:translate-y-[2px] cursor-pointer"
+                      style={{
+                        backgroundColor: color,
+                        boxShadow: active ? '0 0 0 2px #A8E6CF, 0 2px 0 #5C3A21' : '0 2px 0 #5C3A21',
+                      }}
+                    >
+                      {active && <Check className={`w-4 h-4 stroke-[3] ${isDark ? 'text-white' : 'text-black'}`} />}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
             {/* Topi */}
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wider mb-1 text-amber-400">
-                TOPI / AKSESORIS KEPALA
+              <label className="block text-[11px] font-bold uppercase mb-1.5 text-black">
+                TOPI / AKSESORI KEPALA
               </label>
-              <div className="grid grid-cols-3 gap-1.5">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                 {hatTypes.map((h) => (
                   <button
                     key={h.type}
@@ -206,10 +247,8 @@ export const WardrobeModal: React.FC<WardrobeModalProps> = ({
                       sound.playClick();
                       setAvatar({ ...avatar, hatType: h.type });
                     }}
-                    className={`py-1 px-2 rounded-lg border text-[11px] font-bold uppercase transition-all cursor-pointer ${
-                      avatar.hatType === h.type
-                        ? 'bg-amber-500 text-black border-amber-400'
-                        : 'bg-neutral-900 text-amber-400 border-neutral-800 hover:border-amber-500'
+                    className={`py-1.5 px-2 text-[11px] font-bold uppercase ${
+                      avatar.hatType === h.type ? 'clay-btn-secondary' : 'clay-btn-neutral'
                     }`}
                   >
                     {h.label}
@@ -221,23 +260,23 @@ export const WardrobeModal: React.FC<WardrobeModalProps> = ({
         </div>
 
         {/* Action Buttons */}
-        <div className="mt-4 pt-3 border-t border-neutral-800 flex items-center justify-end gap-3 shrink-0">
+        <div className="px-4 py-3 border-t-2 border-[#5C3A21] bg-[#FFF8EA] flex items-center justify-end gap-2.5 shrink-0">
           <button
             type="button"
             onClick={() => {
               sound.playClick();
               onClose();
             }}
-            className="px-4 py-2 rounded-xl border border-neutral-700 bg-neutral-900 text-amber-400 text-xs font-bold uppercase tracking-wider hover:border-amber-400 cursor-pointer transition-all"
+            className="clay-btn-neutral px-4 py-2 text-black text-xs font-bold uppercase"
           >
             BATAL
           </button>
           <button
             type="button"
             onClick={handleSave}
-            className="flex items-center gap-1.5 px-6 py-2 rounded-xl bg-amber-500 text-black text-xs font-bold uppercase tracking-wider hover:bg-amber-400 cursor-pointer transition-all"
+            className="clay-btn-primary flex items-center gap-1.5 px-5 py-2 text-black text-xs font-bold uppercase"
           >
-            <Check className="w-4 h-4" />
+            <Check className="w-4 h-4 stroke-[2.5]" />
             <span>SIMPAN AVATAR</span>
           </button>
         </div>

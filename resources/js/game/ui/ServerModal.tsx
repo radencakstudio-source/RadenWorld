@@ -2,15 +2,11 @@
  * ============================================================================
  * FILE: resources/js/game/ui/ServerModal.tsx
  * ============================================================================
- * FUNGSI UTAMA:
- * Modal pemilih dan perpindahan server (Server Switcher) ultra-responsif untuk RadenWorld.
- * 
- * FITUR LENGKAP:
+ * Modal Pemilih & Perpindahan Server (Cozycore Clay-Pixel):
  * 1. Pilihan Realm Server Resmi (Asia Utama, Asia Emerald, Nusantara, Global).
- * 2. Pengukuran Latensi Ping Nyata (Real-time Ping Measurement) dengan tombol Uji Latensi.
+ * 2. Pengukuran Latensi Ping Nyata (Real-time Ping Measurement).
  * 3. Koneksi Fleksibel Jaringan Sama (Wi-Fi / LAN) tanpa edit kode.
- * 4. Tombol cepat satu-klik: "Gunakan IP Wi-Fi Saya", "Gunakan Localhost", dan "Salin Link untuk Teman".
- * 5. Integrasi mulus dengan NetworkManager (auto-reconnect, pembersihan remote player lama, dan notifikasi obrolan).
+ * 4. Tombol cepat: "IP Wi-Fi Saya", "Localhost", dan "Undang Teman".
  * ============================================================================
  */
 
@@ -21,10 +17,8 @@ import {
   Check,
   Wifi,
   Globe,
-  Radio,
   RefreshCw,
   Activity,
-  Copy,
   Zap,
   ShieldCheck,
   Share2,
@@ -79,7 +73,6 @@ export const ServerModal: React.FC<ServerModalProps> = ({
   const [copiedLink, setCopiedLink] = useState(false);
   const [isPinging, setIsPinging] = useState(false);
 
-  // Statistik jumlah pemain real-time per server channel
   const [serverStats, setServerStats] = useState<Record<string, number>>(() => {
     return networkMgr.getServerStats();
   });
@@ -95,10 +88,9 @@ export const ServerModal: React.FC<ServerModalProps> = ({
     };
   }, []);
 
-  // Deteksi hostname browser saat ini (misal: 192.168.1.5 atau localhost)
-  const currentBrowserHost = typeof window !== 'undefined' ? (window.location.hostname || 'localhost') : 'localhost';
+  const currentBrowserHost =
+    typeof window !== 'undefined' ? window.location.hostname || 'localhost' : 'localhost';
 
-  // State latensi untuk masing-masing server
   const [serverPings, setServerPings] = useState<Record<string, number>>({
     'Asia 1': 14,
     'Asia 2': 24,
@@ -114,7 +106,8 @@ export const ServerModal: React.FC<ServerModalProps> = ({
       code: 'Asia 1',
       name: 'Sanctuary Utama',
       region: 'Jakarta / Singapore (Asia)',
-      description: 'Server utama komunitas petualang. Tempat berkumpul paling ramai seluruh penjelajah open world.',
+      description:
+        'Server utama komunitas petualang. Tempat berkumpul paling ramai seluruh penjelajah open world.',
       host: currentBrowserHost,
       port: 3001,
       ping: serverPings['Asia 1'] || 14,
@@ -127,7 +120,8 @@ export const ServerModal: React.FC<ServerModalProps> = ({
       code: 'Asia 2',
       name: 'Emerald Sanctuary',
       region: 'Tokyo / East Asia',
-      description: 'Dunia petualangan alternatif yang damai untuk eksplorasi quest edukasi, membaca buku, dan berkebun.',
+      description:
+        'Dunia petualangan alternatif yang damai untuk eksplorasi quest edukasi, membaca buku, dan berkebun.',
       host: currentBrowserHost,
       port: 3001,
       ping: serverPings['Asia 2'] || 24,
@@ -139,7 +133,8 @@ export const ServerModal: React.FC<ServerModalProps> = ({
       code: 'Asia 3',
       name: 'Nusantara Realm',
       region: 'Indonesia (Lokal / Wi-Fi)',
-      description: 'Dioptimalkan khusus untuk jaringan Wi-Fi lokal, sekolah, kampus, dan konektivitas domestik Indonesia.',
+      description:
+        'Dioptimalkan khusus untuk jaringan Wi-Fi lokal, sekolah, kampus, dan konektivitas domestik Indonesia.',
       host: currentBrowserHost,
       port: 3001,
       ping: serverPings['Asia 3'] || 8,
@@ -152,7 +147,8 @@ export const ServerModal: React.FC<ServerModalProps> = ({
       code: 'Asia 4',
       name: 'Global Frontier',
       region: 'Frankfurt / Global Gateway',
-      description: 'Server internasional multi-bahasa untuk menghubungkan para pembelajar dan pemain dari berbagai negara.',
+      description:
+        'Server internasional multi-bahasa untuk menghubungkan para pembelajar dan pemain dari berbagai negara.',
       host: currentBrowserHost,
       port: 3001,
       ping: serverPings['Asia 4'] || 65,
@@ -169,16 +165,12 @@ export const ServerModal: React.FC<ServerModalProps> = ({
       try {
         setCustomHostInput(localStorage.getItem('raden_server_host') || '');
       } catch (e) {}
-      // Otomatis ukur latensi server saat modal dibuka
       testAllServerLatencies();
     }
   }, [isOpen, currentServerCode]);
 
   if (!isOpen) return null;
 
-  /**
-   * Mengukur latensi aktual ke server
-   */
   const testAllServerLatencies = async () => {
     setIsPinging(true);
     try {
@@ -201,9 +193,6 @@ export const ServerModal: React.FC<ServerModalProps> = ({
     }
   };
 
-  /**
-   * Mengeksekusi perpindahan server dengan pembersihan entitas lama
-   */
   const handleSwitchToServer = (server: IGameServerOption) => {
     sound.playClick();
     setIsSwitching(true);
@@ -223,16 +212,12 @@ export const ServerModal: React.FC<ServerModalProps> = ({
       }
     } catch (e) {}
 
-    // 1. Eksekusi perpindahan server channel di NetworkManager secara real-time
     networkMgr.switchServer(server.code);
     if (server.id === 'custom') {
       networkMgr.setCustomHost(targetHost);
     }
 
-    // 2. Beritahu seluruh scene Phaser untuk menghapus entitas remote player sebelumnya dan meminta pemain baru
     EventBus.emit('server-switched', server);
-
-    // 3. Efek suara sukses dan banner konfirmasi
     sound.playSuccess();
     setSuccessMessage(`Berhasil berpindah ke ${server.name} (${server.code})!`);
 
@@ -253,7 +238,8 @@ export const ServerModal: React.FC<ServerModalProps> = ({
       code: 'Custom Host',
       name: 'Server Jaringan Kustom (LAN / IP)',
       region: `Host: ${customHost}`,
-      description: 'Terhubung langsung ke komputer host game server dalam jaringan Wi-Fi lokal atau internet.',
+      description:
+        'Terhubung langsung ke komputer host game server dalam jaringan Wi-Fi lokal atau internet.',
       host: customHost,
       port: 3001,
       ping: 8,
@@ -267,245 +253,243 @@ export const ServerModal: React.FC<ServerModalProps> = ({
     sound.playClick();
     const port = window.location.port ? `:${window.location.port}` : '';
     const shareUrl = `${window.location.protocol}//${window.location.hostname}${port}`;
-    navigator.clipboard.writeText(shareUrl).then(() => {
-      setCopiedLink(true);
-      setTimeout(() => setCopiedLink(false), 2500);
-    }).catch(() => {});
+    navigator.clipboard
+      .writeText(shareUrl)
+      .then(() => {
+        setCopiedLink(true);
+        setTimeout(() => setCopiedLink(false), 2500);
+      })
+      .catch(() => {});
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/80 font-['Chakra_Petch'] select-none animate-in fade-in duration-200">
-      <div className="relative w-full max-w-2xl bg-black border border-neutral-800 rounded-xl flex flex-col overflow-hidden max-h-[94dvh]">
-
+    <div
+      className="ui-modal-backdrop select-none"
+      onKeyDown={(e) => e.stopPropagation()}
+    >
+      <div className="clay-panel landscape-compact-modal relative w-full max-w-2xl max-h-[min(92dvh,calc(100dvh-1rem))] flex flex-col overflow-hidden text-black">
         {/* Loading Overlay Saat Berpindah Server */}
         {isSwitching && (
-          <div className="absolute inset-0 bg-black/90 backdrop-blur-sm z-50 flex flex-col items-center justify-center p-6 text-center animate-in fade-in">
-            <RefreshCw className="w-10 h-10 text-amber-400 animate-spin mb-3" />
-            <h3 className="text-base font-bold text-white uppercase tracking-wider">
-              Menghubungkan ke Server {selectedCode}...
-            </h3>
-            <p className="text-xs text-neutral-400 mt-1 max-w-xs">
-              Memindahkan kanal room, memperbarui daftar petualang, dan menyinkronkan koneksi real-time.
-            </p>
+          <div className="absolute inset-0 bg-[#FFF8EA]/95 z-50 flex flex-col items-center justify-center p-6 text-center text-black">
+            <div className="clay-card-primary p-5 flex flex-col items-center gap-2 max-w-sm">
+              <RefreshCw className="w-8 h-8 text-black animate-spin stroke-[2.5]" />
+              <h3 className="text-sm sm:text-base font-bold uppercase text-black">
+                Menghubungkan ke {selectedCode}...
+              </h3>
+              <p className="text-xs text-black leading-snug">
+                Memindahkan kanal room dan menyinkronkan petualang secara real-time.
+              </p>
+            </div>
           </div>
         )}
 
-        {/* ==================================================================== */}
-        {/* HEADER MODAL: Flat Pure Black                                        */}
-        {/* ==================================================================== */}
-        <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-neutral-800 bg-[#0a0a0a] shrink-0">
-          <div className="flex items-center gap-2.5 sm:gap-3">
-            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-md bg-neutral-900 border border-neutral-800 flex items-center justify-center text-amber-400 shrink-0">
-              <Server className="w-4 h-4" />
+        {/* HEADER MODAL */}
+        <div className="clay-header landscape-compact-header flex items-center justify-between px-4 sm:px-5 py-3 gap-2 shrink-0">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-[#FFF8EA] border-2 border-[#5C3A21] flex items-center justify-center text-black shrink-0">
+              <Server className="w-4 h-4 stroke-[2.5]" />
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-sm sm:text-base font-bold text-amber-400 tracking-wider uppercase">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h2 className="text-sm sm:text-base font-bold text-black uppercase">
                   Daftar & Pindah Server
                 </h2>
-                <span className="text-[9px] sm:text-[10px] font-mono font-bold bg-amber-500 text-black px-1.5 py-0.5 rounded">
+                <span className="clay-badge-secondary text-[9px] sm:text-[10px] font-bold px-1.5 py-0.5 text-black">
                   MULTI-REALM
                 </span>
               </div>
-              <p className="text-[11px] sm:text-xs text-neutral-400 mt-0.5 hidden sm:block">
+              <p className="text-[11px] text-black hidden sm:block truncate">
                 Bermain bersama teman di realm server yang sama atau jaringan Wi-Fi lokal.
               </p>
             </div>
           </div>
 
           <button
+            type="button"
             onClick={() => {
               sound.playClick();
               onClose();
             }}
-            className="p-1.5 rounded-md text-neutral-400 hover:text-amber-400 hover:bg-neutral-800 transition-colors cursor-pointer shrink-0"
+            className="clay-btn-neutral w-8 h-8 flex items-center justify-center text-black shrink-0"
             title="Tutup"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4 stroke-[2.5]" />
           </button>
         </div>
 
-        {/* ==================================================================== */}
-        {/* BODY CONTENT: SERVER LIST & CUSTOM LAN                               */}
-        {/* ==================================================================== */}
-        <div className="p-3.5 sm:p-6 overflow-y-auto space-y-4 sm:space-y-5 custom-scrollbar flex-1 min-h-0">
-
+        {/* BODY CONTENT */}
+        <div className="landscape-compact-body p-3.5 sm:p-5 overflow-y-auto space-y-4 custom-scrollbar flex-1 min-h-0">
           {successMessage && (
-            <div className="flex items-center gap-2.5 p-3.5 bg-neutral-900 border border-emerald-500/50 rounded-md text-emerald-300 text-xs font-semibold animate-in fade-in">
-              <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
+            <div className="clay-card-secondary flex items-center gap-2.5 p-3 text-black text-xs font-bold">
+              <ShieldCheck className="w-4 h-4 stroke-[2.5] shrink-0" />
               <span>{successMessage}</span>
             </div>
           )}
 
           {/* STATUS SERVER AKTIF SAAT INI */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-[#0e0e0e] border border-neutral-800 rounded-md">
-            <div className="flex items-center gap-3">
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0" />
-              <div>
-                <span className="text-[10px] uppercase tracking-wider text-neutral-400 font-bold">
+          <div className="clay-card p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <span className="w-3 h-3 rounded-full bg-[#A8E6CF] border-2 border-[#5C3A21] shrink-0" />
+              <div className="min-w-0">
+                <span className="text-[10px] uppercase text-black font-bold">
                   Server Terhubung Saat Ini:
                 </span>
-                <div className="text-sm font-bold text-amber-400 tracking-wider flex items-center gap-2 mt-0.5 font-mono">
+                <div className="text-xs sm:text-sm font-bold text-black flex flex-wrap items-center gap-1.5 mt-0.5">
                   <span>{cleanServerCode(currentServerCode)}</span>
-                  <span className="text-xs text-neutral-400 font-mono font-normal">
+                  <span className="text-[11px] font-normal">
                     ({currentBrowserHost}:3001)
                   </span>
                 </div>
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2 shrink-0">
               <button
                 type="button"
                 onClick={testAllServerLatencies}
                 disabled={isPinging}
-                className="px-3 py-1.5 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-amber-400 border border-neutral-700 text-xs font-bold uppercase transition-all flex items-center gap-1.5 cursor-pointer shrink-0"
+                className="clay-btn-secondary px-3 py-1.5 text-black text-xs font-bold uppercase flex items-center gap-1.5"
                 title="Periksa Kecepatan Seluruh Server"
               >
-                <Activity className={`w-3.5 h-3.5 ${isPinging ? 'animate-spin' : ''}`} />
+                <Activity className={`w-3.5 h-3.5 stroke-[2.5] ${isPinging ? 'animate-spin' : ''}`} />
                 <span>{isPinging ? 'Menguji...' : 'Uji Ping'}</span>
               </button>
 
               <button
                 type="button"
                 onClick={handleCopyInvitationLink}
-                className="px-3 py-1.5 rounded-md bg-neutral-900 hover:bg-neutral-800 text-amber-300 border border-neutral-700 text-xs font-bold uppercase transition-colors flex items-center gap-1.5 cursor-pointer shrink-0"
+                className="clay-btn-primary px-3 py-1.5 text-black text-xs font-bold uppercase flex items-center gap-1.5"
                 title="Salin tautan agar teman di Wi-Fi yang sama bisa langsung bergabung"
               >
-                <Share2 className="w-3.5 h-3.5" />
+                <Share2 className="w-3.5 h-3.5 stroke-[2.5]" />
                 <span>{copiedLink ? 'Tersalin!' : 'Undang Teman'}</span>
               </button>
             </div>
           </div>
 
           {/* GRID REALM SERVER RESMI */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-amber-400 uppercase tracking-wider">
-                Pilih Realm Dunia:
-              </span>
-              <span className="text-[11px] text-neutral-400 font-mono">
-                Klik kartu untuk langsung berpindah
+          <div className="space-y-2.5">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <span className="text-xs font-bold text-black uppercase">Pilih Realm Dunia:</span>
+              <span className="text-[11px] font-bold text-black">
+                Klik kartu untuk berpindah
               </span>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {serverList.map((srv) => {
                 const isCurrent = cleanServerCode(srv.code) === cleanServerCode(currentServerCode);
                 const pingVal = serverPings[srv.code] || srv.ping;
 
-                let pingColor = 'text-emerald-400';
                 let pingLabel = 'Lancar';
-                if (pingVal > 50) {
-                  pingColor = 'text-amber-400';
-                  pingLabel = 'Sedang';
-                }
-                if (pingVal > 100) {
-                  pingColor = 'text-rose-400';
-                  pingLabel = 'Lambat';
-                }
+                if (pingVal > 50) pingLabel = 'Sedang';
+                if (pingVal > 100) pingLabel = 'Lambat';
 
                 return (
-                  <div
+                  <button
                     key={srv.code}
+                    type="button"
                     onClick={() => handleSwitchToServer(srv)}
-                    className={`relative p-4 rounded-md border transition-colors cursor-pointer flex flex-col justify-between group ${
-                      isCurrent
-                        ? 'bg-neutral-900 border-amber-400'
-                        : 'bg-[#0e0e0e] border-neutral-800 hover:border-amber-400/50 hover:bg-neutral-900'
+                    className={`p-3.5 text-left flex flex-col justify-between text-black ${
+                      isCurrent ? 'clay-btn-secondary' : 'clay-btn-neutral'
                     }`}
                   >
-                    <div>
-                      {/* Top Header Card */}
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-2">
-                          <span className={`w-2 h-2 rounded-full ${isCurrent ? 'bg-emerald-400' : 'bg-neutral-600'}`} />
-                          <span className="font-bold text-xs text-amber-400 uppercase tracking-wider font-mono">
+                    <div className="w-full">
+                      <div className="flex items-center justify-between gap-2 flex-wrap">
+                        <div className="flex items-center gap-1.5">
+                          <span
+                            className={`w-2.5 h-2.5 rounded-full border border-[#5C3A21] ${
+                              isCurrent ? 'bg-[#FFAE6D]' : 'bg-[#FFF8EA]'
+                            }`}
+                          />
+                          <span className="font-bold text-xs text-black uppercase">
                             {srv.code}
                           </span>
                         </div>
 
                         <div className="flex items-center gap-1.5">
                           {srv.isRecommended && (
-                            <span className="text-[9px] font-black bg-amber-500 text-black px-1.5 py-0.5 rounded">
+                            <span className="clay-badge-primary text-[9px] font-bold px-1.5 py-0.5 text-black">
                               REKOMENDASI
                             </span>
                           )}
                           {isCurrent && (
-                            <span className="text-[9px] font-black bg-emerald-500 text-black px-1.5 py-0.5 rounded flex items-center gap-0.5">
+                            <span className="clay-badge-cocoa text-[9px] font-bold px-1.5 py-0.5 text-white flex items-center gap-0.5">
                               <Check className="w-2.5 h-2.5 stroke-[3]" /> AKTIF
                             </span>
                           )}
                         </div>
                       </div>
 
-                      {/* Judul & Deskripsi */}
-                      <h3 className="text-sm font-bold text-white mt-2 group-hover:text-amber-300 transition-colors flex items-center gap-1.5">
+                      <h3 className="text-sm font-bold text-black mt-2 flex items-center gap-1.5">
                         <span>{srv.name}</span>
-                        {isCurrent && <Sparkles className="w-3.5 h-3.5 text-amber-400 shrink-0" />}
+                        {isCurrent && <Sparkles className="w-3.5 h-3.5 stroke-[2.5] shrink-0" />}
                       </h3>
-                      <p className="text-[11px] text-neutral-400 line-clamp-2 mt-1 leading-snug">
+                      <p className="text-[11px] text-black line-clamp-2 mt-1 leading-snug">
                         {srv.description}
                       </p>
                     </div>
 
-                    {/* Bottom Metadata: Region, Ping, Players */}
-                    <div className="flex items-center justify-between mt-3.5 pt-2.5 border-t border-neutral-800 text-[10px]">
-                      <span className="flex items-center gap-1 text-neutral-400 truncate max-w-[130px]">
-                        <Globe className="w-3 h-3 text-amber-400 shrink-0" />
+                    <div className="w-full flex items-center justify-between gap-2 mt-3 pt-2 border-t-2 border-[#5C3A21]/30 text-[10px] font-bold text-black">
+                      <span className="flex items-center gap-1 truncate max-w-[140px]">
+                        <Globe className="w-3 h-3 shrink-0 stroke-[2.5]" />
                         <span className="truncate">{srv.region}</span>
                       </span>
 
-                      <div className="flex items-center gap-2 font-mono">
-                        <span className={`${pingColor} font-bold`}>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <span>
                           {pingVal}ms ({pingLabel})
                         </span>
-                        <span className="text-neutral-600">•</span>
-                        <span className="text-amber-300 font-semibold">
+                        <span>•</span>
+                        <span>
                           {srv.onlineCount}/{srv.maxPlayers}
                         </span>
                       </div>
                     </div>
-                  </div>
+                  </button>
                 );
               })}
             </div>
           </div>
 
-          {/* ==================================================================== */}
-          {/* LAN & CUSTOM SERVER SWITCHER                                         */}
-          {/* ==================================================================== */}
-          <div className="p-4 bg-[#0e0e0e] border border-neutral-800 rounded-2xl space-y-3">
-            <div className="flex items-center justify-between">
+          {/* LAN & CUSTOM SERVER SWITCHER */}
+          <div className="clay-card p-3.5 space-y-2.5">
+            <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-2">
-                <Wifi className="w-4 h-4 text-amber-400" />
-                <h4 className="text-xs font-bold text-amber-400 uppercase tracking-wider">
-                  Main Bersama di Jaringan Wi-Fi / LAN yang Sama
+                <Wifi className="w-4 h-4 stroke-[2.5] text-black" />
+                <h4 className="text-xs font-bold text-black uppercase">
+                  Main Bersama di Wi-Fi / LAN yang Sama
                 </h4>
               </div>
-              <span className="text-[10px] text-neutral-400 font-mono">
-                Port Standar: 3001
+              <span className="clay-badge-secondary px-2 py-0.5 text-[10px] font-bold text-black">
+                Port: 3001
               </span>
             </div>
 
-            <p className="text-xs text-neutral-400 leading-relaxed">
-              Jika Anda bermain di Wi-Fi yang sama dengan teman (satu rumah / sekolah), cukup masukkan IP komputer host teman Anda di bawah ini:
+            <p className="text-[11px] text-black leading-snug">
+              Masukkan alamat IP komputer host teman Anda di jaringan Wi-Fi yang sama:
             </p>
 
             {/* Quick Fill Buttons */}
-            <div className="flex items-center gap-2 text-[10px] font-mono">
-              <span className="text-neutral-400">Pilihan Cepat:</span>
+            <div className="flex flex-wrap items-center gap-1.5 text-[10px] font-bold text-black">
+              <span>Pilihan Cepat:</span>
               <button
                 type="button"
-                onClick={() => setCustomHostInput(currentBrowserHost)}
-                className="px-2 py-0.5 rounded bg-neutral-900 hover:bg-neutral-800 text-amber-300 border border-neutral-700 cursor-pointer"
+                onClick={() => {
+                  sound.playClick();
+                  setCustomHostInput(currentBrowserHost);
+                }}
+                className="clay-badge-primary px-2 py-0.5 text-black cursor-pointer"
               >
                 IP Wi-Fi Saya ({currentBrowserHost})
               </button>
               <button
                 type="button"
-                onClick={() => setCustomHostInput('localhost')}
-                className="px-2 py-0.5 rounded bg-neutral-900 hover:bg-neutral-800 text-neutral-300 border border-neutral-700 cursor-pointer"
+                onClick={() => {
+                  sound.playClick();
+                  setCustomHostInput('localhost');
+                }}
+                className="clay-badge-neutral px-2 py-0.5 text-black cursor-pointer"
               >
                 Localhost
               </button>
@@ -517,46 +501,43 @@ export const ServerModal: React.FC<ServerModalProps> = ({
                 value={customHostInput}
                 onChange={(e) => setCustomHostInput(e.target.value)}
                 placeholder={`Contoh: ${currentBrowserHost} atau 192.168.1.5`}
-                className="flex-1 bg-black border border-neutral-700 rounded-md px-3.5 py-2.5 text-xs text-amber-300 placeholder-neutral-600 focus:outline-none focus:border-amber-400 font-mono"
+                className="clay-input flex-1 px-3 py-2 text-xs text-black"
               />
 
               <button
                 type="button"
                 onClick={handleApplyCustomHost}
                 disabled={isSwitching}
-                className="px-4 py-2.5 bg-amber-500 hover:bg-amber-400 active:scale-95 text-black font-bold text-xs uppercase tracking-wider rounded-md transition-colors cursor-pointer flex items-center justify-center gap-1.5 shrink-0"
+                className="clay-btn-primary px-4 py-2 text-black font-bold text-xs uppercase flex items-center justify-center gap-1.5 shrink-0"
               >
                 {isSwitching ? (
-                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin stroke-[2.5]" />
                 ) : (
-                  <Zap className="w-3.5 h-3.5 fill-current" />
+                  <Zap className="w-3.5 h-3.5 stroke-[2.5]" />
                 )}
                 <span>Pindah ke Server Ini</span>
               </button>
             </div>
           </div>
-
         </div>
 
-        {/* ==================================================================== */}
-        {/* FOOTER ACTIONS                                                       */}
-        {/* ==================================================================== */}
-        <div className="px-6 py-3.5 border-t border-neutral-800 bg-[#0a0a0a] flex items-center justify-between text-xs">
-          <div className="text-[11px] text-neutral-400">
-            Sistem otomatis menyinkronkan avatar dan posisi saat berpindah realm.
+        {/* FOOTER ACTIONS */}
+        <div className="px-4 sm:px-5 py-2.5 border-t-2 border-[#5C3A21] bg-[#FFF8EA] flex items-center justify-between gap-2 text-xs shrink-0">
+          <div className="text-[10px] sm:text-[11px] font-bold text-black truncate">
+            Avatar & posisi otomatis tersinkron saat berpindah realm.
           </div>
 
           <button
+            type="button"
             onClick={() => {
               sound.playClick();
               onClose();
             }}
-            className="px-4 py-1.5 rounded-md border border-neutral-700 text-neutral-300 hover:text-white hover:border-amber-400 transition-colors font-bold text-xs cursor-pointer"
+            className="clay-btn-neutral px-3.5 py-1.5 font-bold text-xs text-black shrink-0"
           >
             Tutup
           </button>
         </div>
-
       </div>
     </div>
   );

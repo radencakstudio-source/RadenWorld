@@ -774,8 +774,7 @@ export class Player extends Entity {
     const item = inv.getActiveItem();
     this.currentHeldItem = item;
 
-    // Syarat: hanya item yang BUKAN terkategori 'tool' (alat)
-    if (!item || item.category === 'tool') {
+    if (!item) {
       this.heldItemContainer.setVisible(false);
       return;
     }

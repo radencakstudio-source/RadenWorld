@@ -3,66 +3,43 @@
  * FILE: resources/js/game/ui/SchoolSubjectsModal.tsx
  * ============================================================================
  * FUNGSI UTAMA:
- * Modal GAME KUIS EDUKASI RADENWORLD (SD, SMP, SMA).
- * 
- * ATURAN & FITUR UTAMA SESUAI WIREFRAME:
- * 1. TAMPILAN WIREFRAME RESIK & PRESISI (RESPONSIF LANDSCAPE & PORTRAIT):
- *    - Latar putih bersih (Clean White Canvas) dengan kontras elemen hitam pekat & merah cerah.
- *    - Top Header Bar:
- *      * Box Hitam "No Soal : X"
- *      * Tombol Merah Terang "Menyerah?" (Font bold hitam, konfirmasi menyerah)
- *      * Box Hitam "Timer : 01:00" (Durasi 1 Menit tiap soal)
- *      * 3 Hati Merah (❤️❤️❤️) indikator nyawa
- *    - Question Box:
- *      * Kotak hitam besar rounded-3xl dengan tulisan "Isi Soal" & teks pertanyaan.
- *      * Aksen garis titik-titik (dotted lines) sesuai wireframe.
- *    - 4 Kartu Pilihan Jawaban (A, B, C, D):
- *      * Landscape/Desktop: 4 kartu berjejer menyamping (grid-cols-4).
- *      * Portrait/Mobile: Grid 2 x 2 rapi (A & B atas, C & D bawah).
- *      * Border radius rounded-[28px] s/d rounded-[36px] yang presisi.
- *      * Huruf A, B, C, D di bagian atas tengah dan isi teks jawaban di tengah.
- *    - Footer Bawah:
- *      * Teks tengah tebal "Total Soal : X/20".
- * 
- * 2. MEKANISME GAME & ANIMASI:
- *    - Total Soal SELALU 20 soal untuk semua mata pelajaran dan semua tingkatan kelas!
- *    - Timer SELALU 1 Menit (60 Detik) per soal.
- *    - Jika jawaban BENAR:
- *      * Kartu yang dipilih beranimasi pop/pulse & berubah menjadi warna HIJAU (#16a34a).
- *    - Jika SALAH pilih:
- *      * Kartu yang dipilih beranimasi getar (shake) & berubah menjadi warna MERAH (#dc2626).
- *      * Kartu jawaban yang BENAR otomatis beranimasi pop/pulse & berubah warna HIJAU (#16a34a).
- *      * Nyawa berkurang 1 (hati merah memudar/retak).
- *    - Jika WAKTU HABIS (Timer = 0):
- *      * Nyawa berkurang 1, kartu jawaban benar beranimasi warna hijau.
- *    - Player TIDAK BISA keluar sembarangan (tidak bisa klik luar / ESC langsung keluar),
- *      harus menekan tombol "Menyerah?" dengan pop-up konfirmasi.
+ * Modal GAME KUIS EDUKASI & LEADERBOARD SEKOLAH RADENWORLD (SD, SMP, SMA).
+ * Gaya Visual: Chunky Pastel Pixel (Cozycore UI) & Cute Minimalist Clay-Pixel.
+ * Navigasi: Sidebar Kiri Responsif (Ujian Mapel, Juara Kelas, Juara Sekolah).
  * ============================================================================
  */
 
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import {
   X,
-  ArrowLeft,
   Trophy,
   Sparkles,
   BookOpen,
-  CheckCircle2,
   XCircle,
   RotateCcw,
-  Flame,
   Award,
   ArrowRight,
   AlertTriangle,
+  Medal,
+  Crown,
+  School,
 } from 'lucide-react';
 import { SoundManager } from '../core/SoundManager';
 import { EventBus } from '../core/EventBus';
 import { SD_CURRICULUM_DATA } from './SdSubjectsModal';
 import {
   generateTextQuizSession,
+  getQuizSubjectsForSchool,
   ITextQuizQuestion,
   ITextQuizOption,
 } from '../data/SchoolQuizBank';
+import {
+  fetchSchoolLeaderboards,
+  submitQuizScoreToLeaderboard,
+  getOfficialClassLabel,
+  ILeaderboardPayload,
+  ILeaderboardStudentEntry,
+} from '../core/LeaderboardClient';
 
 // Re-export kurikulum untuk kompatibilitas penuh dengan SchoolGradeSelectModal & komponen lain
 export * from '../data/SchoolCurriculumData';
@@ -71,16 +48,19 @@ import {
   SMA_CURRICULUM_DATA,
 } from '../data/SchoolCurriculumData';
 
+export type SchoolModalTab = 'quiz' | 'class_leaderboard' | 'school_leaderboard';
+
 interface SchoolSubjectsModalProps {
   isOpen: boolean;
   schoolType?: 'sd' | 'smp' | 'sma';
   grade?: number;
   deskType?: 'guru' | 'siswa';
+  playerName?: string;
+  initialTab?: SchoolModalTab;
   onClose: () => void;
   onStudySubject?: (subjectName: string, expEarned: number) => void;
 }
 
-// 1 Menit (60 Detik) per soal sesuai permintaan
 const QUESTION_TIME_LIMIT = 60;
 const TOTAL_QUESTIONS_COUNT = 20;
 
@@ -88,14 +68,21 @@ export const SchoolSubjectsModal: React.FC<SchoolSubjectsModalProps> = ({
   isOpen,
   schoolType = 'sd',
   grade = 1,
-  deskType = 'guru',
+  playerName = 'Siswa Raden',
+  initialTab = 'quiz',
   onClose,
   onStudySubject,
 }) => {
   const sound = SoundManager.getInstance();
 
+  const [activeTab, setActiveTab] = useState<SchoolModalTab>(initialTab);
   const [currentGrade, setCurrentGrade] = useState<number>(() => (grade >= 1 ? grade : 1));
+  const [selectedSchoolBoard, setSelectedSchoolBoard] = useState<'sd' | 'smp' | 'sma'>(schoolType);
   const [selectedSubject, setSelectedSubject] = useState<string>('Semua Mapel');
+
+  // --- State Leaderboard ---
+  const [lbData, setLbData] = useState<ILeaderboardPayload | null>(null);
+  const [isLbLoading, setIsLbLoading] = useState<boolean>(false);
 
   // --- State Game Quiz ---
   const [isQuizActive, setIsQuizActive] = useState<boolean>(false);
@@ -109,28 +96,40 @@ export const SchoolSubjectsModal: React.FC<SchoolSubjectsModalProps> = ({
   const [isAnswerRevealed, setIsAnswerRevealed] = useState<boolean>(false);
   const [isQuizFinished, setIsQuizFinished] = useState<boolean>(false);
   const [isGameOver, setIsGameOver] = useState<boolean>(false);
-
-  // --- State Nyawa & Timer ---
-  const [lives, setLives] = useState<number>(3);
-  const [timeLeft, setTimeLeft] = useState<number>(QUESTION_TIME_LIMIT);
-
-  // --- State Modal Konfirmasi Menyerah ---
   const [showSurrenderConfirm, setShowSurrenderConfirm] = useState<boolean>(false);
 
   const autoNextTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const [lives, setLives] = useState<number>(3);
+  const [timeLeft, setTimeLeft] = useState<number>(QUESTION_TIME_LIMIT);
 
-  // Sinkronisasi saat prop grade atau schoolType berubah
   useEffect(() => {
-    if (grade >= 1) setCurrentGrade(grade);
+    if (grade >= 1) {
+      const maxG = schoolType === 'sd' ? 6 : 3;
+      setCurrentGrade(Math.min(maxG, grade));
+    }
+    setSelectedSchoolBoard(schoolType);
+    setActiveTab(initialTab || 'quiz');
     setSelectedSubject('Semua Mapel');
     setIsQuizActive(false);
     setIsQuizFinished(false);
     setIsGameOver(false);
     setShowSurrenderConfirm(false);
-  }, [grade, schoolType]);
+  }, [grade, schoolType, initialTab, isOpen]);
 
-  // Bersihkan timer & timeout saat unmount
+  const loadLeaderboard = useCallback(async () => {
+    setIsLbLoading(true);
+    const payload = await fetchSchoolLeaderboards(schoolType, currentGrade);
+    setLbData(payload);
+    setIsLbLoading(false);
+  }, [schoolType, currentGrade]);
+
+  useEffect(() => {
+    if (isOpen) {
+      loadLeaderboard();
+    }
+  }, [isOpen, loadLeaderboard]);
+
   useEffect(() => {
     return () => {
       if (autoNextTimeoutRef.current) clearTimeout(autoNextTimeoutRef.current);
@@ -138,14 +137,12 @@ export const SchoolSubjectsModal: React.FC<SchoolSubjectsModalProps> = ({
     };
   }, []);
 
-  // Format Waktu MM:SS (contoh 60 -> 01:00, 59 -> 00:59)
   const formatTime = (seconds: number) => {
     const m = Math.floor(seconds / 60);
     const s = seconds % 60;
     return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
   };
 
-  // Keyboard shortcut ESC: Tidak boleh keluar langsung saat quiz aktif! Harus konfirmasi menyerah.
   useEffect(() => {
     if (!isOpen) return;
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -162,7 +159,6 @@ export const SchoolSubjectsModal: React.FC<SchoolSubjectsModalProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose, sound, isQuizActive, isQuizFinished, isGameOver]);
 
-  // Ambil data kurikulum berdasarkan schoolType dan currentGrade
   const gradeData = useMemo(() => {
     if (schoolType === 'sd') {
       return SD_CURRICULUM_DATA[currentGrade] || SD_CURRICULUM_DATA[1];
@@ -175,208 +171,257 @@ export const SchoolSubjectsModal: React.FC<SchoolSubjectsModalProps> = ({
     }
   }, [schoolType, currentGrade]);
 
+  const subjectList = useMemo(() => getQuizSubjectsForSchool(schoolType), [schoolType]);
   const currentQ = quizQuestions[currentIdx];
 
-  // Mulai Sesi Game Quiz Baru (Selalu 20 Soal)
-  const startQuiz = useCallback((subjectName: string = 'Semua Mapel') => {
-    if (autoNextTimeoutRef.current) clearTimeout(autoNextTimeoutRef.current);
-    if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
+  const startQuiz = useCallback(
+    (subjectName: string = 'Semua Mapel') => {
+      if (autoNextTimeoutRef.current) clearTimeout(autoNextTimeoutRef.current);
+      if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
 
-    sound.playSuccess();
-    sound.playCardDeal();
-    const gradeKey = `${schoolType}-${currentGrade}`;
-    const questions = generateTextQuizSession(subjectName, TOTAL_QUESTIONS_COUNT, gradeKey);
+      sound.playSuccess();
+      sound.playCardDeal();
+      const gradeKey = `${schoolType}-${currentGrade}`;
+      const questions = generateTextQuizSession(subjectName, TOTAL_QUESTIONS_COUNT, gradeKey);
 
-    setQuizQuestions(questions);
-    setSelectedSubject(subjectName);
-    setCurrentIdx(0);
-    setScore(0);
-    setCombo(0);
-    setMaxCombo(0);
-    setCorrectCount(0);
-    setLives(3);
-    setTimeLeft(QUESTION_TIME_LIMIT);
+      setQuizQuestions(questions);
+      setSelectedSubject(subjectName);
+      setCurrentIdx(0);
+      setScore(0);
+      setCombo(0);
+      setMaxCombo(0);
+      setCorrectCount(0);
+      setLives(3);
+      setTimeLeft(QUESTION_TIME_LIMIT);
+      setSelectedOptionKey(null);
+      setIsAnswerRevealed(false);
+      setIsQuizFinished(false);
+      setIsGameOver(false);
+      setShowSurrenderConfirm(false);
+      setIsQuizActive(true);
+    },
+    [sound, schoolType, currentGrade]
+  );
+
+  const finishQuizSession = useCallback(
+    (
+      finalScore: number,
+      finalCorrect: number,
+      finalMaxCombo: number,
+      isCleared: boolean = true
+    ) => {
+      if (autoNextTimeoutRef.current) clearTimeout(autoNextTimeoutRef.current);
+      if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
+
+      if (isCleared) {
+        sound.playGoal();
+      } else {
+        sound.playWrong();
+      }
+
+      setIsQuizFinished(true);
+      setIsGameOver(!isCleared);
+
+      const expEarned = Math.max(50, finalCorrect * 15 + finalMaxCombo * 5 + (isCleared ? 80 : 20));
+      const goldEarned = Math.max(60, finalCorrect * 25 + Math.floor(finalScore / 10));
+
+      // Sinkronkan hadiah koin ke dompet pemain & server
+      EventBus.emit('quiz-gold-earned', goldEarned);
+
+      if (onStudySubject) {
+        onStudySubject(`Quiz ${selectedSubject} (${gradeData.gradeName})`, expEarned);
+      }
+
+      // Kirim skor ke Leaderboard Tiap Kelas & Leaderboard Tiap Sekolah
+      submitQuizScoreToLeaderboard({
+        playerName: playerName || localStorage.getItem('raden_saved_name') || 'Siswa Raden',
+        schoolType,
+        grade: currentGrade,
+        score: finalScore,
+        correctCount: finalCorrect,
+        totalQuestions: TOTAL_QUESTIONS_COUNT,
+        subject: selectedSubject,
+      }).then((updatedLb) => {
+        setLbData(updatedLb);
+      });
+
+      EventBus.emit('new-chat-message', {
+        id: `quiz_win_${Date.now()}`,
+        sender: 'KUIS RADEN',
+        text: isCleared
+          ? `🏆 LUAR BIASA! Kamu menuntaskan Kuis ${selectedSubject} (${finalCorrect}/${TOTAL_QUESTIONS_COUNT} Benar) Skor: ${finalScore} PTS! +${expEarned} EXP & +${goldEarned} G!`
+          : `💔 Sesi Kuis ${selectedSubject} selesai (${finalCorrect}/${TOTAL_QUESTIONS_COUNT} Benar, ${finalScore} PTS). +${expEarned} EXP & +${goldEarned} G!`,
+        timestamp: Date.now(),
+        isSystem: true,
+      });
+    },
+    [sound, selectedSubject, gradeData.gradeName, onStudySubject, playerName, schoolType, currentGrade]
+  );
+
+  const handleNextQuestion = useCallback(
+    (
+      currentScore = score,
+      currentCorrect = correctCount,
+      currentMaxCombo = maxCombo,
+      _currentLives = lives
+    ) => {
+      if (autoNextTimeoutRef.current) clearTimeout(autoNextTimeoutRef.current);
+      if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
+
+      const nextIdx = currentIdx + 1;
+      if (nextIdx >= quizQuestions.length) {
+        finishQuizSession(currentScore, currentCorrect, currentMaxCombo, true);
+      } else {
+        sound.playCardDeal();
+        setCurrentIdx(nextIdx);
+        setSelectedOptionKey(null);
+        setIsAnswerRevealed(false);
+        setTimeLeft(QUESTION_TIME_LIMIT);
+      }
+    },
+    [score, correctCount, maxCombo, lives, currentIdx, quizQuestions.length, finishQuizSession, sound]
+  );
+
+  const handleTimeOut = useCallback(() => {
+    if (isAnswerRevealed || isQuizFinished || isGameOver) return;
+    sound.playWrong();
+    setIsAnswerRevealed(true);
     setSelectedOptionKey(null);
-    setIsAnswerRevealed(false);
-    setIsQuizFinished(false);
-    setIsGameOver(false);
-    setShowSurrenderConfirm(false);
-    setIsQuizActive(true);
-  }, [sound, schoolType, currentGrade]);
+    setCombo(0);
 
-  // Selesaikan Kuis & Bagikan Hadiah ke Dompet Player
-  const finishQuizSession = useCallback((
-    finalScore: number,
-    finalCorrect: number,
-    finalMaxCombo: number,
-    isCleared: boolean = true
-  ) => {
-    if (autoNextTimeoutRef.current) clearTimeout(autoNextTimeoutRef.current);
-    if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
+    const newLives = lives - 1;
+    setLives(newLives);
 
-    if (isCleared) {
-      sound.playGoal();
+    if (newLives <= 0) {
+      autoNextTimeoutRef.current = setTimeout(() => {
+        finishQuizSession(score, correctCount, maxCombo, false);
+      }, 2000);
     } else {
-      sound.playWrong();
+      autoNextTimeoutRef.current = setTimeout(() => {
+        handleNextQuestion(score, correctCount, maxCombo, newLives);
+      }, 2200);
     }
+  }, [
+    isAnswerRevealed,
+    isQuizFinished,
+    isGameOver,
+    sound,
+    lives,
+    score,
+    correctCount,
+    maxCombo,
+    finishQuizSession,
+    handleNextQuestion,
+  ]);
 
-    setIsQuizFinished(true);
-    setIsGameOver(!isCleared);
-
-    const expEarned = Math.max(50, finalCorrect * 15 + finalMaxCombo * 5 + (isCleared ? 80 : 20));
-    const goldEarned = Math.max(60, finalCorrect * 25 + Math.floor(finalScore / 10));
-
-    // Update koin ke localStorage & sinkronkan
-    try {
-      const curGold = parseInt(localStorage.getItem('raden_player_gold') || '0', 10);
-      const newGold = curGold + goldEarned;
-      localStorage.setItem('raden_player_gold', newGold.toString());
-      EventBus.emit('update-player-gold', newGold);
-    } catch (e) {}
-
-    // Berikan EXP
-    if (onStudySubject) {
-      onStudySubject(`Quiz ${selectedSubject} (${gradeData.gradeName})`, expEarned);
-    }
-
-    // Siarkan ke Chatbox
-    EventBus.emit('new-chat-message', {
-      id: `quiz_win_${Date.now()}`,
-      sender: 'KUIS RADEN',
-      text: isCleared
-        ? `🏆 LUAR BIASA! Kamu menuntaskan Kuis ${selectedSubject} (${finalCorrect}/20 Benar) Skor: ${finalScore} PTS! Mendapatkan +${expEarned} EXP & +${goldEarned} Koin Emas!`
-        : `💔 Game Over di Kuis ${selectedSubject}! Kamu meraih ${finalCorrect}/20 jawaban benar (${finalScore} PTS). Mendapatkan +${expEarned} EXP & +${goldEarned} Koin Emas!`,
-      timestamp: Date.now(),
-      isSystem: true,
-    });
-  }, [sound, selectedSubject, gradeData.gradeName, onStudySubject]);
-
-  // Pindah ke Soal Berikutnya
-  const handleNextQuestion = useCallback((
-    currentScore = score,
-    currentCorrect = correctCount,
-    currentMaxCombo = maxCombo,
-    currentLives = lives
-  ) => {
-    if (autoNextTimeoutRef.current) clearTimeout(autoNextTimeoutRef.current);
-    if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
-
-    const nextIdx = currentIdx + 1;
-    if (nextIdx >= quizQuestions.length) {
-       finishQuizSession(currentScore, currentCorrect, currentMaxCombo, true);
-     } else {
-       sound.playCardDeal();
-       setCurrentIdx(nextIdx);
-       setSelectedOptionKey(null);
-       setIsAnswerRevealed(false);
-       setTimeLeft(QUESTION_TIME_LIMIT);
-     }
-   }, [score, correctCount, maxCombo, lives, currentIdx, quizQuestions.length, finishQuizSession, sound]);
-
-    // Tangani Kehabisan Waktu (Time Out: 1 Menit Habis)
-   const handleTimeOut = useCallback(() => {
-     if (isAnswerRevealed || isQuizFinished || isGameOver) return;
-     sound.playWrong();
-     setIsAnswerRevealed(true);
-     setSelectedOptionKey(null);
-     setCombo(0);
-
-     const newLives = lives - 1;
-     setLives(newLives);
-
-     if (newLives <= 0) {
-       autoNextTimeoutRef.current = setTimeout(() => {
-         finishQuizSession(score, correctCount, maxCombo, false);
-       }, 2200);
-     } else {
-       autoNextTimeoutRef.current = setTimeout(() => {
-         handleNextQuestion(score, correctCount, maxCombo, newLives);
-       }, 2500);
-     }
-   }, [isAnswerRevealed, isQuizFinished, isGameOver, sound, lives, score, correctCount, maxCombo, finishQuizSession, handleNextQuestion]);
-
-   // Countdown Timer Interval Loop (1 Menit / 60 Detik per soal)
-   // Otomatis pause jika modal konfirmasi menyerah sedang terbuka!
-   useEffect(() => {
-     if (!isQuizActive || isAnswerRevealed || isQuizFinished || isGameOver || showSurrenderConfirm) {
-       if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
-       return;
-     }
-
-     timerIntervalRef.current = setInterval(() => {
-       setTimeLeft((prev) => {
-         if (prev <= 1) {
-           clearInterval(timerIntervalRef.current as NodeJS.Timeout);
-           handleTimeOut();
-           return 0;
-         }
-         if (prev <= 6) {
-           sound.playTimerTick();
-         }
-         return prev - 1;
-       });
-     }, 1000);
-
-     return () => {
-       if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
-     };
-   }, [isQuizActive, isAnswerRevealed, isQuizFinished, isGameOver, showSurrenderConfirm, currentIdx, handleTimeOut, sound]);
-
-   // Tangani Klik Pilihan Jawaban
-   const handleSelectOption = useCallback((option: ITextQuizOption) => {
-     if (isAnswerRevealed || isQuizFinished || isGameOver || showSurrenderConfirm) return;
-     if (autoNextTimeoutRef.current) clearTimeout(autoNextTimeoutRef.current);
-     if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
-
-     sound.playCardFlip();
-     setSelectedOptionKey(option.key);
-     setIsAnswerRevealed(true);
-
-     if (option.isCorrect) {
-       // JAWABAN BENAR: Animasi hijau + suara benar
-       sound.playCorrect();
-       const newCombo = combo + 1;
-       const points = 100 + (newCombo > 1 ? (newCombo - 1) * 20 : 0);
-
-       const newScore = score + points;
-       const newCorrect = correctCount + 1;
-       const newMaxCombo = Math.max(maxCombo, newCombo);
-
-       setScore(newScore);
-       setCombo(newCombo);
-       setMaxCombo(newMaxCombo);
-       setCorrectCount(newCorrect);
-
-       if (newCombo >= 2) {
-         sound.playCombo(newCombo);
-       }
-
-       // Auto-lanjut ke soal berikutnya setelah animasi hijau
-       autoNextTimeoutRef.current = setTimeout(() => {
-         handleNextQuestion(newScore, newCorrect, newMaxCombo, lives);
-       }, 1800);
-     } else {
-       // JAWABAN SALAH: Animasi merah pada kartu dipilih + animasi hijau pada jawaban benar + nyawa berkurang 1
-       sound.playWrong();
-       setCombo(0);
-       const newLives = lives - 1;
-       setLives(newLives);
-
-       if (newLives <= 0) {
-         autoNextTimeoutRef.current = setTimeout(() => {
-           finishQuizSession(score, correctCount, maxCombo, false);
-         }, 2200);
-       } else {
-         autoNextTimeoutRef.current = setTimeout(() => {
-           handleNextQuestion(score, correctCount, maxCombo, newLives);
-         }, 2600);
-       }
-     }
-  }, [isAnswerRevealed, isQuizFinished, isGameOver, showSurrenderConfirm, sound, combo, score, correctCount, maxCombo, lives, handleNextQuestion, finishQuizSession]);
-
-  // Keyboard Controller: Tombol A, B, C, D atau 1, 2, 3, 4
   useEffect(() => {
-    if (!isQuizActive || isAnswerRevealed || isQuizFinished || isGameOver || showSurrenderConfirm || !currentQ) return;
+    if (!isQuizActive || isAnswerRevealed || isQuizFinished || isGameOver || showSurrenderConfirm) {
+      if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
+      return;
+    }
+
+    timerIntervalRef.current = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          clearInterval(timerIntervalRef.current as NodeJS.Timeout);
+          handleTimeOut();
+          return 0;
+        }
+        if (prev <= 6) {
+          sound.playTimerTick();
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => {
+      if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
+    };
+  }, [
+    isQuizActive,
+    isAnswerRevealed,
+    isQuizFinished,
+    isGameOver,
+    showSurrenderConfirm,
+    currentIdx,
+    handleTimeOut,
+    sound,
+  ]);
+
+  const handleSelectOption = useCallback(
+    (option: ITextQuizOption) => {
+      if (isAnswerRevealed || isQuizFinished || isGameOver || showSurrenderConfirm) return;
+      if (autoNextTimeoutRef.current) clearTimeout(autoNextTimeoutRef.current);
+      if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
+
+      sound.playCardFlip();
+      setSelectedOptionKey(option.key);
+      setIsAnswerRevealed(true);
+
+      if (option.isCorrect) {
+        sound.playCorrect();
+        const newCombo = combo + 1;
+        const points = 100 + (newCombo > 1 ? (newCombo - 1) * 20 : 0);
+
+        const newScore = score + points;
+        const newCorrect = correctCount + 1;
+        const newMaxCombo = Math.max(maxCombo, newCombo);
+
+        setScore(newScore);
+        setCombo(newCombo);
+        setMaxCombo(newMaxCombo);
+        setCorrectCount(newCorrect);
+
+        if (newCombo >= 2) {
+          sound.playCombo(newCombo);
+        }
+
+        autoNextTimeoutRef.current = setTimeout(() => {
+          handleNextQuestion(newScore, newCorrect, newMaxCombo, lives);
+        }, 1600);
+      } else {
+        sound.playWrong();
+        setCombo(0);
+        const newLives = lives - 1;
+        setLives(newLives);
+
+        if (newLives <= 0) {
+          autoNextTimeoutRef.current = setTimeout(() => {
+            finishQuizSession(score, correctCount, maxCombo, false);
+          }, 2000);
+        } else {
+          autoNextTimeoutRef.current = setTimeout(() => {
+            handleNextQuestion(score, correctCount, maxCombo, newLives);
+          }, 2200);
+        }
+      }
+    },
+    [
+      isAnswerRevealed,
+      isQuizFinished,
+      isGameOver,
+      showSurrenderConfirm,
+      sound,
+      combo,
+      score,
+      correctCount,
+      maxCombo,
+      lives,
+      handleNextQuestion,
+      finishQuizSession,
+    ]
+  );
+
+  useEffect(() => {
+    if (
+      !isQuizActive ||
+      isAnswerRevealed ||
+      isQuizFinished ||
+      isGameOver ||
+      showSurrenderConfirm ||
+      !currentQ
+    )
+      return;
 
     const handleKeyQuiz = (e: KeyboardEvent) => {
       const key = e.key.toUpperCase();
@@ -395,221 +440,235 @@ export const SchoolSubjectsModal: React.FC<SchoolSubjectsModalProps> = ({
 
     window.addEventListener('keydown', handleKeyQuiz);
     return () => window.removeEventListener('keydown', handleKeyQuiz);
-  }, [isQuizActive, isAnswerRevealed, isQuizFinished, isGameOver, showSurrenderConfirm, currentQ, handleSelectOption]);
+  }, [
+    isQuizActive,
+    isAnswerRevealed,
+    isQuizFinished,
+    isGameOver,
+    showSurrenderConfirm,
+    currentQ,
+    handleSelectOption,
+  ]);
 
   if (!isOpen) return null;
 
-  // Daftar mapel populer untuk dipilih di lobby
-  const subjectList = [
-    { name: 'Semua Mapel', emoji: '🌟', desc: 'Campuran Soal Lengkap' },
-    { name: 'Matematika', emoji: '🔢', desc: 'Aritmatika & Geometri' },
-    { name: 'IPA', emoji: '🔬', desc: 'Fisika & Makhluk Hidup' },
-    { name: 'Bahasa Indonesia', emoji: '🇮🇩', desc: 'Kosakata & Kalimat' },
-    { name: 'Bahasa Inggris', emoji: '🇬🇧', desc: 'Vocabulary & Grammar' },
-    { name: 'IPS', emoji: '🌍', desc: 'Sosial & Sejarah Bangsa' },
-    { name: 'Pancasila', emoji: '⚖️', desc: 'Moral & Lambang Negara' },
-  ];
+  const rankTier =
+    correctCount >= 18 ? 'S' : correctCount >= 14 ? 'A' : correctCount >= 10 ? 'B' : 'C';
 
-  // Hitung Skor Akurasi & Rank Medali
-  const accuracyPercent = Math.round((correctCount / Math.max(1, currentIdx + (isQuizFinished ? 0 : 1))) * 100);
-  const rankTier = correctCount >= 18 ? 'S' : correctCount >= 14 ? 'A' : correctCount >= 10 ? 'B' : 'C';
+  const renderRankBadge = (index: number) => {
+    if (index === 0) return <span className="px-2 py-0.5 clay-badge-primary font-bold text-xs text-black">🥇 #1</span>;
+    if (index === 1) return <span className="px-2 py-0.5 clay-badge-secondary font-bold text-xs text-black">🥈 #2</span>;
+    if (index === 2) return <span className="px-2 py-0.5 clay-badge-cocoa font-bold text-xs text-white">🥉 #3</span>;
+    return <span className="px-2 py-0.5 clay-badge-neutral font-bold text-xs text-black">#{index + 1}</span>;
+  };
+
+  const renderLeaderboardList = (entries: ILeaderboardStudentEntry[], showClassBadge: boolean) => {
+    const myNorm = (playerName || '').trim().toLowerCase();
+    if (isLbLoading && entries.length === 0) {
+      return (
+        <div className="p-6 clay-card text-center font-bold text-xs text-black">
+          Memuat Papan Peringkat Prestasi...
+        </div>
+      );
+    }
+    if (entries.length === 0) {
+      return (
+        <div className="p-6 clay-card text-center font-bold text-xs text-black">
+          Belum ada skor tercatat di kelas ini. Jadilah Juara #1 pertama!
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-2">
+        {entries.map((entry, idx) => {
+          const isMe = myNorm !== '' && entry.name.trim().toLowerCase() === myNorm;
+          return (
+            <div
+              key={`${entry.classKey}-${entry.name}-${idx}`}
+              className={`p-2.5 sm:p-3 flex items-center justify-between gap-2.5 ${
+                isMe ? 'clay-card-secondary' : idx === 0 ? 'clay-card-primary' : 'clay-card'
+              }`}
+            >
+              <div className="flex items-center gap-2.5 min-w-0">
+                {renderRankBadge(idx)}
+                <div className="min-w-0">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="font-bold text-xs sm:text-sm text-black truncate">
+                      {entry.name}
+                    </span>
+                    {isMe && (
+                      <span className="px-1.5 py-0.5 clay-badge-cocoa text-white text-[9px] font-bold">
+                        KAMU
+                      </span>
+                    )}
+                    {showClassBadge && (
+                      <span className="px-1.5 py-0.5 clay-badge-neutral text-black text-[10px] font-bold">
+                        {entry.classLabel}
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-[10px] sm:text-[11px] text-black flex items-center gap-1.5 flex-wrap">
+                    <span>Mapel: {entry.subject}</span>
+                    <span>•</span>
+                    <span>Akurasi {entry.accuracy}%</span>
+                    <span>•</span>
+                    <span>{entry.quizzesPlayed}x Ujian</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="text-right shrink-0">
+                <div className="font-bold text-xs sm:text-sm text-black">
+                  {entry.bestScore.toLocaleString('id-ID')} PTS
+                </div>
+                <div className="text-[10px] font-bold text-black">
+                  Total: {entry.totalScore.toLocaleString('id-ID')}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
 
   // ==========================================================================
-  // TAMPILAN 1: ARENA GAME KUIS (WIRE-FRAME PERSIS SESUAI PERMINTAAN USER)
-  // Aktif ketika isQuizActive = true (Menggunakan Kamera Blur / Backdrop Blur)
+  // TAMPILAN 1: ARENA GAME KUIS AKTIF
   // ==========================================================================
   if (isQuizActive && !isQuizFinished && !isGameOver && currentQ) {
     return (
-      <div className="fixed inset-0 z-[80] backdrop-blur-2xl bg-black/45 text-white flex flex-col justify-between p-3 sm:p-6 md:p-8 select-none font-sans overflow-y-auto">
-        {/* Style Animasi Scoped - Halus dengan GPU translate3d tanpa glitch */}
-        <style>{`
-          /* Animasi Jawaban Benar: Bouncy Pop pada kartu */
-          @keyframes quiz-correct {
-            0% { transform: scale(1); }
-            30% { transform: scale(1.05); }
-            60% { transform: scale(0.98); }
-            100% { transform: scale(1); }
-          }
-          .animate-quiz-correct {
-            animation: quiz-correct 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
-            will-change: transform;
-          }
-
-          /* Animasi Jawaban Salah: Shake horizontal halus */
-          @keyframes quiz-wrong {
-            0%, 100% { transform: translate3d(0, 0, 0); }
-            20% { transform: translate3d(-10px, 0, 0); }
-            40% { transform: translate3d(10px, 0, 0); }
-            60% { transform: translate3d(-6px, 0, 0); }
-            80% { transform: translate3d(6px, 0, 0); }
-          }
-          .animate-quiz-wrong {
-            animation: quiz-wrong 0.45s ease-in-out;
-            will-change: transform;
-          }
-        `}</style>
-
-        {/* ================================================================ */}
-        {/* MODAL KONFIRMASI MENYERAH (PLAYER TIDAK BISA KELUAR SEMBARANGAN) */}
-        {/* ================================================================ */}
+      <div className="ui-modal-backdrop !z-[80] font-pixel select-none overflow-y-auto custom-scrollbar">
         {showSurrenderConfirm && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-150">
-            <div className="bg-neutral-900 border-2 border-neutral-700 rounded-[28px] p-6 sm:p-8 max-w-md w-full text-center shadow-2xl text-white">
-              <div className="w-16 h-16 rounded-full bg-red-950/80 text-red-500 flex items-center justify-center mx-auto mb-4 border-2 border-red-500/50">
-                <AlertTriangle className="w-8 h-8 stroke-[2.5]" />
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#5C3A21]/65 p-3">
+            <div className="clay-panel max-w-md w-full overflow-hidden text-black">
+              <div className="px-4 py-3 clay-header flex items-center gap-2.5">
+                <AlertTriangle className="w-5 h-5 text-black shrink-0" />
+                <h3 className="text-base sm:text-lg font-bold text-black tracking-wide">
+                  Yakin Ingin Menyerah?
+                </h3>
               </div>
-              <h3 className="text-xl sm:text-2xl font-black mb-2 text-white tracking-wide">
-                Yakin Ingin Menyerah?
-              </h3>
-              <p className="text-xs sm:text-sm text-neutral-400 mb-6 font-sans leading-relaxed">
-                Jika kamu menyerah sekarang, permainan kuis akan dihentikan dan progres soalmu tidak akan disimpan.
-              </p>
-              <div className="flex items-center justify-center gap-3">
-                <button
-                  type="button"
-                  onClick={() => {
-                    sound.playClick();
-                    setShowSurrenderConfirm(false);
-                  }}
-                  className="px-5 py-3 rounded-2xl bg-neutral-800 hover:bg-neutral-700 text-white font-black text-xs sm:text-sm cursor-pointer active:scale-95 transition-all shadow-md"
-                >
-                  Lanjut Bermain
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    sound.playWrong();
-                    setShowSurrenderConfirm(false);
-                    setIsQuizActive(false);
-                    setIsQuizFinished(false);
-                    setIsGameOver(false);
-                    onClose();
-                  }}
-                  className="px-5 py-3 rounded-2xl bg-red-600 hover:bg-red-700 text-white font-black text-xs sm:text-sm cursor-pointer active:scale-95 transition-all shadow-md"
-                >
-                  Ya, Menyerah
-                </button>
+              <div className="p-4 sm:p-5 text-center space-y-4">
+                <p className="text-xs sm:text-sm text-black leading-relaxed">
+                  Jika kamu menyerah sekarang, sesi kuis akan dihentikan dan progres soalmu tidak disimpan.
+                </p>
+                <div className="flex items-center justify-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      sound.playClick();
+                      setShowSurrenderConfirm(false);
+                    }}
+                    className="px-4 py-2 clay-btn-secondary text-black font-bold text-xs sm:text-sm"
+                  >
+                    Lanjut Bermain
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      sound.playWrong();
+                      setShowSurrenderConfirm(false);
+                      setIsQuizActive(false);
+                      setIsQuizFinished(false);
+                      setIsGameOver(false);
+                    }}
+                    className="px-4 py-2 clay-btn-cocoa text-white font-bold text-xs sm:text-sm"
+                  >
+                    Ya, Menyerah
+                  </button>
+                </div>
               </div>
             </div>
           </div>
         )}
 
-        <div className="max-w-7xl w-full mx-auto flex-1 flex flex-col justify-between">
-          {/* ========================================================== */}
-          {/* 1. TOP HEADER STATUS BAR                                    */}
-          {/* Sisi Kiri: No Soal : X | Menyerah? | Timer                 */}
-          {/* Sisi Kanan: 3 Ruby Hearts                                  */}
-          {/* ========================================================== */}
-          <div className="flex items-center justify-between gap-2 sm:gap-4 shrink-0 pb-2">
-            {/* Sisi Kiri Header */}
-            <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
-              {/* Box 1: No Soal */}
-              <div className="bg-black/90 backdrop-blur-md text-white border border-white/20 rounded-xl px-4 py-2 sm:px-6 sm:py-2.5 font-black text-xs sm:text-base tracking-wide flex items-center justify-center shadow-lg select-none min-w-[90px] sm:min-w-[120px]">
-                No Soal : {currentIdx + 1}
+        <div className="w-full max-w-5xl m-auto clay-panel p-3 sm:p-5 landscape:max-md:p-2.5 flex flex-col justify-between gap-2.5 sm:gap-4 landscape:max-md:gap-2">
+          {/* 1. TOP HEADER STATUS BAR */}
+          <div className="flex items-center justify-between gap-2 flex-wrap shrink-0">
+            <div className="flex items-center gap-1.5 sm:gap-2.5 flex-wrap">
+              <div className="clay-badge-primary px-3 py-1.5 sm:px-4 sm:py-2 font-bold text-xs sm:text-sm text-black">
+                Soal {currentIdx + 1}/{quizQuestions.length}
               </div>
 
-              {/* Box 2: Tombol Menyerah? */}
               <button
                 type="button"
                 onClick={() => {
                   sound.playClick();
                   setShowSurrenderConfirm(true);
                 }}
-                className="bg-red-600 hover:bg-red-700 text-white font-black px-4 py-2 sm:px-6 sm:py-2.5 text-xs sm:text-base tracking-wide flex items-center justify-center cursor-pointer transition-transform active:scale-95 shadow-lg select-none rounded-xl border border-red-500"
+                className="clay-btn-cocoa text-white font-bold px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm"
               >
-                Menyerah?
+                Menyerah
               </button>
 
-              {/* Box 3: Timer 1 Menit */}
               <div
-                className={`bg-black/90 backdrop-blur-md text-white border border-white/20 rounded-xl px-4 py-2 sm:px-6 sm:py-2.5 font-black text-xs sm:text-base tracking-wide flex items-center justify-center font-mono shadow-lg select-none min-w-[100px] sm:min-w-[140px] ${
-                  timeLeft <= 10 ? 'text-red-400 border-red-500 animate-pulse' : ''
-                }`}
+                className={`${
+                  timeLeft <= 10 ? 'clay-badge-primary' : 'clay-badge-secondary'
+                } px-3 py-1.5 sm:px-4 sm:py-2 font-bold text-xs sm:text-sm text-black`}
               >
-                Timer : {formatTime(timeLeft)}
+                ⏱ {formatTime(timeLeft)}
+              </div>
+
+              <div className="clay-badge-neutral px-3 py-1.5 font-bold text-xs sm:text-sm text-black">
+                Skor: {score}
               </div>
             </div>
 
-            {/* Sisi Kanan: 3 Ruby Hearts */}
-            <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
-              {[1, 2, 3].map((heartIndex) => {
-                const isAlive = heartIndex <= lives;
-                return (
-                  <svg
-                    key={heartIndex}
-                    className={`w-7 h-7 sm:w-10 sm:h-10 md:w-12 md:h-12 transition-all duration-300 ${
-                      isAlive
-                        ? 'fill-[#ef4444] text-[#ef4444] drop-shadow-[0_0_10px_rgba(239,68,68,0.5)] scale-100'
-                        : 'fill-white/10 text-white/10 opacity-25 scale-75'
-                    }`}
-                    viewBox="0 0 24 24"
-                  >
-                    <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
-                  </svg>
-                );
-              })}
+            <div className="clay-badge-neutral px-2.5 py-1 sm:px-3 sm:py-1.5 flex items-center gap-1 sm:gap-2 shrink-0">
+              {[1, 2, 3].map((heartIndex) => (
+                <span
+                  key={heartIndex}
+                  className={`text-base sm:text-xl leading-none ${
+                    heartIndex <= lives ? 'opacity-100' : 'opacity-25'
+                  }`}
+                >
+                  ❤️
+                </span>
+              ))}
             </div>
           </div>
 
-          {/* ========================================================== */}
-          {/* 2. QUESTION BOX (Isi Soal)                                 */}
-          {/* Kotak Hitam Besar Memanjang dengan Rounded Presisi         */}
-          {/* ========================================================== */}
-          <div className="w-full bg-black/90 backdrop-blur-md text-white rounded-[24px] sm:rounded-[30px] md:rounded-[36px] p-5 sm:p-7 md:p-9 shadow-2xl my-3 sm:my-5 border border-white/15 transition-all">
-            <div className="flex items-center justify-between mb-2 sm:mb-3">
-              <span className="font-black text-sm sm:text-base tracking-wider text-white">
-                Isi Soal
+          {/* 2. QUESTION BOX */}
+          <div className="w-full clay-card p-3.5 sm:p-5 landscape:max-md:p-2.5 text-black">
+            <div className="flex items-center justify-between gap-2 mb-2 flex-wrap">
+              <span className="px-2.5 py-0.5 clay-badge-primary font-bold text-xs text-black">
+                {currentQ.emoji} {currentQ.subject}
               </span>
-              <span className="text-[11px] sm:text-xs text-neutral-400 font-mono">
-                {currentQ.subject} • {gradeData.gradeName}
+              <span className="px-2.5 py-0.5 clay-badge-secondary text-[10px] sm:text-xs font-bold text-black">
+                {getOfficialClassLabel(schoolType, currentGrade)}
               </span>
             </div>
 
-            {/* Teks Pertanyaan Utama */}
-            <div className="py-1">
-              <p className="text-base sm:text-xl md:text-2xl font-bold text-white leading-relaxed font-sans">
-                {currentQ.question}
-              </p>
-            </div>
+            <p className="text-sm sm:text-lg md:text-xl landscape:max-md:text-xs font-bold text-black leading-relaxed">
+              {currentQ.question}
+            </p>
 
-            {/* Garis Dotted Dekoratif Sesuai Mockup */}
-            <div className="mt-4 pt-2 border-t border-dotted border-neutral-700/80 flex flex-col gap-1.5 opacity-60">
-              <div className="w-full border-b border-dotted border-neutral-500" />
-              <div className="w-4/5 border-b border-dotted border-neutral-500" />
-            </div>
+            {isAnswerRevealed && currentQ.explanation && (
+              <div className="mt-3 p-2.5 clay-card-secondary text-xs font-bold text-black">
+                💡 Pembahasan: {currentQ.explanation}
+              </div>
+            )}
           </div>
 
-          {/* ========================================================== */}
-          {/* 3. 4 KARTU JAWABAN (A, B, C, D)                            */}
-          {/* - Landscape / Layar Lebar: 4 Kolom Berjejer Sejajar        */}
-          {/* - Portrait / Layar HP: Grid 2 x 2 Rapi                     */}
-          {/* - Animasi Warna:                                           */}
-          {/*   * Benar -> Berubah Hijau + Animasi Pop                   */}
-          {/*   * Salah -> Pilihan Merah + Jawaban Benar Hijau + Nyawa -1*/}
-          {/* ========================================================== */}
-          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 landscape:grid-cols-4 gap-3 sm:gap-5 md:gap-6 items-stretch my-auto">
+          {/* 3. 4 KARTU JAWABAN (A, B, C, D) */}
+          <div className="grid grid-cols-2 md:grid-cols-4 landscape:grid-cols-4 gap-2.5 sm:gap-3.5 items-stretch">
             {currentQ.options.map((opt) => {
               const isSelected = selectedOptionKey === opt.key;
               const isCorrectOption = opt.isCorrect;
 
-              let cardBg = 'bg-black/90 text-white border-2 border-white/15 hover:border-white/40 hover:bg-black/95';
-              let animClass = '';
+              let cardClass = 'clay-btn-neutral text-black';
+              let keyBadgeClass = 'clay-badge-primary text-black';
 
               if (isAnswerRevealed) {
-                if (isSelected && isCorrectOption) {
-                  // Benar: berubah hijau cerah + animasi pop
-                  cardBg = 'bg-[#16a34a] text-white border-2 border-green-400 shadow-[0_0_35px_rgba(22,163,74,0.9)]';
-                  animClass = 'animate-quiz-correct';
+                if (isCorrectOption) {
+                  cardClass = 'clay-card-secondary text-black';
+                  keyBadgeClass = 'clay-badge-cocoa text-white';
                 } else if (isSelected && !isCorrectOption) {
-                  // Salah pilih: berubah merah cerah + animasi goyang pada kartu ini saja
-                  cardBg = 'bg-[#dc2626] text-white border-2 border-red-400 shadow-[0_0_35px_rgba(220,38,38,0.9)]';
-                  animClass = 'animate-quiz-wrong';
-                } else if (isCorrectOption) {
-                  // Jawaban yang benar tetap di-highlight hijau + animasi pop
-                  cardBg = 'bg-[#16a34a] text-white border-2 border-green-400 shadow-[0_0_35px_rgba(22,163,74,0.9)]';
-                  animClass = 'animate-quiz-correct';
+                  cardClass = 'bg-[#5C3A21] border-2 border-[#5C3A21] rounded-[10px] text-white';
+                  keyBadgeClass = 'clay-badge-primary text-black';
                 } else {
-                  cardBg = 'bg-black/40 text-white/30 border border-white/5 opacity-40';
+                  cardClass = 'clay-card text-black opacity-50';
+                  keyBadgeClass = 'clay-badge-neutral text-black';
                 }
               }
 
@@ -619,37 +678,30 @@ export const SchoolSubjectsModal: React.FC<SchoolSubjectsModalProps> = ({
                   type="button"
                   disabled={isAnswerRevealed}
                   onClick={() => handleSelectOption(opt)}
-                  className={`w-full min-h-[170px] sm:min-h-[220px] md:min-h-[300px] lg:min-h-[340px] rounded-[26px] sm:rounded-[32px] md:rounded-[38px] flex flex-col justify-between p-4 sm:p-6 md:p-7 text-center transition-colors duration-200 cursor-pointer select-none active:scale-95 shadow-xl ${cardBg} ${animClass}`}
+                  className={`w-full min-h-[90px] sm:min-h-[130px] md:min-h-[155px] landscape:max-md:min-h-[66px] flex flex-col justify-between p-2.5 sm:p-4 landscape:max-md:p-2 text-center select-none ${cardClass}`}
                 >
-                  {/* Huruf A / B / C / D di atas tengah */}
-                  <div className="w-full text-center">
-                    <span className="font-black text-xl sm:text-2xl md:text-3xl tracking-wider block">
+                  <div className="w-full flex items-center justify-center">
+                    <span className={`px-2.5 py-0.5 font-bold text-xs sm:text-sm ${keyBadgeClass}`}>
                       {opt.key}
                     </span>
                   </div>
 
-                  {/* Isi Teks Jawaban di tengah kartu */}
-                  <div className="flex-1 flex items-center justify-center px-1 sm:px-2 py-2">
-                    <span className="font-bold text-sm sm:text-base md:text-lg font-sans leading-snug">
+                  <div className="flex-1 flex items-center justify-center px-1 py-1.5">
+                    <span className="font-bold text-xs sm:text-sm md:text-base landscape:max-md:text-[11px] leading-snug">
                       {opt.text}
                     </span>
                   </div>
 
-                  {/* Spacer bawah untuk keseimbangan visual */}
-                  <div className="h-2" />
+                  {isAnswerRevealed && (isCorrectOption || isSelected) ? (
+                    <div className="text-[10px] font-bold">
+                      {isCorrectOption ? '✓ BENAR' : '✕ SALAH'}
+                    </div>
+                  ) : (
+                    <div className="h-2" />
+                  )}
                 </button>
               );
             })}
-          </div>
-
-          {/* ========================================================== */}
-          {/* 4. TOTAL SOAL DI BAWAH (Total Soal : X/20)                 */}
-          {/* Badge pill yang kontras & terbaca jelas di atas kamera blur*/}
-          {/* ========================================================== */}
-          <div className="w-full text-center py-2 sm:py-3 mt-2 shrink-0">
-            <span className="font-black text-sm sm:text-base md:text-xl text-white tracking-wide bg-black/80 backdrop-blur-md px-6 py-2 rounded-full border border-white/20 inline-block shadow-lg drop-shadow-md">
-              Total Soal : {currentIdx + 1}/{TOTAL_QUESTIONS_COUNT}
-            </span>
           </div>
         </div>
       </div>
@@ -657,261 +709,387 @@ export const SchoolSubjectsModal: React.FC<SchoolSubjectsModalProps> = ({
   }
 
   // ==========================================================================
-  // TAMPILAN 2: LOBBY PILIH MAPEL ATAU HASIL AKHIR VICTORY / GAME OVER
+  // TAMPILAN 2: MODAL SIDEBAR KIRI (UJIAN MAPEL + JUARA KELAS + JUARA SEKOLAH)
   // ==========================================================================
+  const gradesArray = schoolType === 'sd' ? [1, 2, 3, 4, 5, 6] : [1, 2, 3];
+  const activeSchoolBoardObj = lbData?.schoolsOverview?.[selectedSchoolBoard];
+
   return (
-    <div
-      className="fixed inset-0 z-[65] flex items-center justify-center p-2 sm:p-4 bg-black/85 backdrop-blur-[3px] animate-in fade-in duration-100"
-      onClick={onClose}
-    >
+    <div className="ui-modal-backdrop !z-[65] font-pixel" onClick={onClose}>
       <div
-        className="w-full max-w-2xl bg-neutral-950 border-2 border-neutral-800 rounded-3xl shadow-[0_0_50px_rgba(0,0,0,0.9)] flex flex-col max-h-[96vh] sm:max-h-[92vh] overflow-hidden font-['Chakra_Petch'] text-white transition-transform"
+        className="w-full max-w-4xl clay-modal-shell h-[min(88dvh,640px)] text-black"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header Modal Lobby / Hasil */}
-        <div className="flex items-center justify-between px-3 sm:px-5 py-2.5 sm:py-3 bg-gradient-to-r from-neutral-950 via-neutral-900 to-neutral-950 border-b border-neutral-800/90 shrink-0">
-          <div className="flex items-center gap-2.5">
-            <span className="p-1.5 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 text-neutral-950 shadow-[0_0_15px_rgba(245,158,11,0.5)]">
-              <BookOpen className="w-4 h-4 sm:w-5 sm:h-5 fill-neutral-950" />
+        {/* LEFT SIDEBAR NAVIGATION */}
+        <aside className="clay-sidebar">
+          <div className="clay-sidebar-brand">
+            <span className="w-8 h-8 clay-card flex items-center justify-center shrink-0">
+              <BookOpen className="w-4 h-4 text-black" />
             </span>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="font-black text-sm sm:text-base tracking-wider uppercase bg-gradient-to-r from-amber-300 to-orange-400 bg-clip-text text-transparent">
-                  RADEN QUIZ GAME
-                </span>
-                <span className="px-2 py-0.5 rounded-md text-[10px] font-mono bg-neutral-800 text-amber-300 font-bold border border-neutral-700">
-                  {schoolType.toUpperCase()} • {gradeData.gradeName}
-                </span>
+            <div className="min-w-0 hidden sm:block landscape:block">
+              <div className="font-bold text-xs text-black truncate">SEKOLAH RADEN</div>
+              <div className="text-[10px] font-bold text-black truncate">
+                {getOfficialClassLabel(schoolType, currentGrade)}
               </div>
-              <p className="text-[10px] sm:text-[11px] text-neutral-400 hidden sm:block">
-                Uji kecerdasan, kumpulkan koin emas & menangkan reward EXP!
-              </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="clay-sidebar-nav custom-scrollbar">
+            <div className="clay-sidebar-section-label">Menu Akademik</div>
+
+            <button
+              type="button"
+              onClick={() => {
+                sound.playClick();
+                setActiveTab('quiz');
+              }}
+              className={`clay-sidebar-item ${
+                activeTab === 'quiz' ? 'clay-btn-primary text-black' : 'clay-btn-neutral text-black'
+              }`}
+            >
+              <BookOpen className="w-4 h-4 shrink-0" />
+              <span className="truncate">Ujian Mapel</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                sound.playClick();
+                setActiveTab('class_leaderboard');
+                loadLeaderboard();
+              }}
+              className={`clay-sidebar-item ${
+                activeTab === 'class_leaderboard'
+                  ? 'clay-btn-primary text-black'
+                  : 'clay-btn-neutral text-black'
+              }`}
+            >
+              <Medal className="w-4 h-4 shrink-0" />
+              <span className="truncate">Juara Kelas</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                sound.playClick();
+                setActiveTab('school_leaderboard');
+                setSelectedSchoolBoard(schoolType);
+                loadLeaderboard();
+              }}
+              className={`clay-sidebar-item ${
+                activeTab === 'school_leaderboard'
+                  ? 'clay-btn-primary text-black'
+                  : 'clay-btn-neutral text-black'
+              }`}
+            >
+              <Crown className="w-4 h-4 shrink-0" />
+              <span className="truncate">Juara Sekolah</span>
+            </button>
+
+            <div className="clay-sidebar-section-label pt-2">Pilih Kelas</div>
+            <div className="grid grid-cols-1 gap-1.5">
+              {gradesArray.map((g) => (
+                <button
+                  key={g}
+                  type="button"
+                  onClick={() => {
+                    sound.playClick();
+                    setCurrentGrade(g);
+                    setIsQuizFinished(false);
+                    setIsGameOver(false);
+                  }}
+                  className={`clay-sidebar-item !py-1.5 ${
+                    currentGrade === g
+                      ? 'clay-btn-secondary text-black'
+                      : 'clay-btn-neutral text-black'
+                  }`}
+                >
+                  <span className="font-bold text-[11px] truncate">
+                    {getOfficialClassLabel(schoolType, g)}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="clay-sidebar-footer">
             <button
               type="button"
               onClick={() => {
                 sound.playClick();
                 onClose();
               }}
-              className="p-1.5 sm:p-2 rounded-xl bg-neutral-900 hover:bg-rose-600 hover:text-white text-neutral-400 cursor-pointer active:scale-95 transition-colors border border-neutral-800"
-              title="Tutup Modal"
-              aria-label="Tutup"
+              className="w-full py-2 px-2 clay-btn-cocoa text-white font-bold text-xs flex items-center justify-center gap-1.5"
             >
-              <X className="w-4 h-4 sm:w-5 sm:h-5" />
+              <X className="w-4 h-4 shrink-0" />
+              <span className="hidden sm:inline landscape:inline">Tutup</span>
             </button>
           </div>
-        </div>
+        </aside>
 
-        {/* Body Content */}
-        <div className="p-3 sm:p-5 overflow-y-auto flex-1 flex flex-col justify-between custom-scrollbar bg-neutral-950/60">
-          {/* SCREEN A: LOBBY PILIH MAPEL */}
-          {!isQuizActive && !isQuizFinished && !isGameOver && (
-            <div className="space-y-4">
-              {/* Tab Pilihan Tingkat Kelas */}
-              <div className="space-y-2">
-                <span className="text-xs font-bold text-neutral-400 uppercase tracking-wider flex items-center gap-1.5">
-                  <BookOpen className="w-3.5 h-3.5 text-amber-400" />
-                  Pilih Tingkat Kelas:
-                </span>
-                <div className="flex flex-wrap gap-1.5 sm:gap-2">
-                  {(schoolType === 'sd' ? [1, 2, 3, 4, 5, 6] : [1, 2, 3]).map((g) => (
-                    <button
-                      key={g}
-                      type="button"
-                      onClick={() => {
-                        sound.playClick();
-                        setCurrentGrade(g);
-                      }}
-                      className={`px-3 sm:px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer border ${
-                        currentGrade === g
-                          ? 'bg-gradient-to-r from-amber-400 to-amber-500 text-neutral-950 border-amber-300 shadow-[0_0_15px_rgba(245,158,11,0.4)] scale-102'
-                          : 'bg-neutral-900/90 hover:bg-neutral-800 text-neutral-400 hover:text-white border-neutral-800'
-                      }`}
-                    >
-                      {schoolType === 'sd' ? `Kelas ${g} SD` : schoolType === 'smp' ? `Kelas ${g + 6} SMP` : `Kelas ${g + 9} SMA`}
-                    </button>
-                  ))}
+        {/* RIGHT MAIN CONTENT PANE */}
+        <main className="clay-main-pane">
+          <div className="clay-main-topbar">
+            <div className="flex items-center gap-2 min-w-0 flex-wrap">
+              <h2 className="font-bold text-sm sm:text-base text-black uppercase tracking-wide truncate">
+                {activeTab === 'quiz'
+                  ? `Ujian Kuis • ${getOfficialClassLabel(schoolType, currentGrade)}`
+                  : activeTab === 'class_leaderboard'
+                  ? `Leaderboard ${getOfficialClassLabel(schoolType, currentGrade)}`
+                  : `Leaderboard Sekolah (${selectedSchoolBoard.toUpperCase()})`}
+              </h2>
+              <span className="px-2 py-0.5 clay-badge-secondary text-[10px] font-bold text-black">
+                Anti-Soal Kembar
+              </span>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                sound.playClick();
+                onClose();
+              }}
+              className="w-8 h-8 clay-btn-cocoa text-white flex items-center justify-center shrink-0"
+              aria-label="Tutup"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+
+          <div className="clay-main-body custom-scrollbar">
+            {/* TAB 1: UJIAN MAPEL ATAU HASIL KUIS */}
+            {activeTab === 'quiz' && !isQuizFinished && !isGameOver && (
+              <div className="space-y-3.5">
+                <div className="p-3 clay-card-secondary flex items-center justify-between gap-3 flex-wrap">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <Sparkles className="w-5 h-5 text-black shrink-0" />
+                    <div className="text-xs text-black">
+                      <div className="font-bold">
+                        {gradeData.gradeName} — Pilih Mata Pelajaran Ujian
+                      </div>
+                      <div className="text-[11px]">
+                        20 Soal Acak Unik • 3 Nyawa • Hadiah Koin Emas (G) & Skor Leaderboard!
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              </div>
 
-              {/* Grid Kartu Quest Mapel */}
-              <div className="space-y-2">
-                <span className="text-xs font-bold text-neutral-400 uppercase tracking-wider flex items-center gap-1.5">
-                  <Trophy className="w-3.5 h-3.5 text-amber-400" />
-                  Pilih Mata Pelajaran Kuis:
-                </span>
-                <div className="grid grid-cols-1 sm:grid-cols-2 landscape:grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                   {subjectList.map((sub) => (
                     <button
                       key={sub.name}
                       type="button"
                       onClick={() => startQuiz(sub.name)}
-                      className="p-3.5 sm:p-4 rounded-2xl bg-neutral-900/90 hover:bg-neutral-850 border-2 border-neutral-800 hover:border-amber-400/70 text-left transition-all cursor-pointer flex items-center justify-between group shadow-md hover:-translate-y-0.5 active:translate-y-0"
+                      className="p-3 clay-btn-neutral text-black text-left flex items-center justify-between gap-2"
                     >
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div className="w-12 h-12 rounded-2xl bg-neutral-950 border border-neutral-800 flex items-center justify-center text-2xl shrink-0 group-hover:scale-110 group-hover:border-amber-400/50 transition-all shadow-inner">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="w-10 h-10 clay-badge-primary flex items-center justify-center text-xl shrink-0">
                           {sub.emoji}
                         </div>
                         <div className="min-w-0">
-                          <div className="font-extrabold text-sm sm:text-base text-white group-hover:text-amber-300 transition-colors truncate">
+                          <div className="font-bold text-xs sm:text-sm text-black truncate">
                             {sub.name}
                           </div>
-                          <div className="text-[11px] text-neutral-400 font-sans truncate">
-                            {sub.desc}
-                          </div>
-                          <div className="flex items-center gap-2 mt-1 text-[10px] font-mono text-amber-400 font-bold">
-                            <span>{TOTAL_QUESTIONS_COUNT} Soal</span>
-                            <span className="text-neutral-600">•</span>
-                            <span className="text-emerald-400">1 Menit/Soal</span>
-                          </div>
+                          <div className="text-[11px] text-black truncate">{sub.desc}</div>
                         </div>
                       </div>
-                      <span className="px-3.5 py-2 rounded-xl bg-neutral-950 group-hover:bg-amber-400 group-hover:text-neutral-950 text-neutral-300 font-black text-xs transition-colors shrink-0 border border-neutral-800 group-hover:border-amber-300 shadow-sm flex items-center gap-1.5">
-                        <span>MAIN</span>
-                        <ArrowRight className="w-3.5 h-3.5 stroke-[2.5]" />
+                      <span className="px-2.5 py-1.5 clay-badge-secondary text-black font-bold text-[11px] shrink-0 flex items-center gap-1">
+                        <span>MULAI</span>
+                        <ArrowRight className="w-3.5 h-3.5" />
                       </span>
                     </button>
                   ))}
                 </div>
               </div>
+            )}
 
-              {/* Info Aturan Game */}
-              <div className="p-3.5 rounded-2xl bg-gradient-to-r from-amber-500/10 via-neutral-900/80 to-orange-500/10 border border-amber-500/20 flex items-center gap-3.5 text-xs text-amber-200/90">
-                <Sparkles className="w-6 h-6 text-amber-400 shrink-0" />
-                <div className="space-y-0.5">
-                  <div className="font-bold text-amber-300 text-[11px] uppercase tracking-wider">
-                    Aturan Main Kuis:
+            {/* LAYAR HASIL AKHIR KUIS */}
+            {activeTab === 'quiz' && (isQuizFinished || isGameOver) && (
+              <div className="py-2 flex flex-col items-center text-center space-y-3.5">
+                <div className="relative">
+                  <div
+                    className={`w-16 h-16 sm:w-20 sm:h-20 flex items-center justify-center ${
+                      isGameOver ? 'clay-card text-black' : 'clay-card-primary text-black'
+                    }`}
+                  >
+                    {isGameOver ? (
+                      <XCircle className="w-9 h-9 text-black" />
+                    ) : rankTier === 'S' ? (
+                      <Trophy className="w-9 h-9 text-black" />
+                    ) : (
+                      <Award className="w-9 h-9 text-black" />
+                    )}
                   </div>
-                  <p className="text-[11px] text-neutral-300 leading-relaxed font-sans">
-                    Kamu memiliki <strong>3 Nyawa (Hearts)</strong>, waktu <strong>1 Menit</strong> per soal, dan total <strong>20 Soal</strong> per kuis. Jangan sampai kehabisan nyawa!
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* SCREEN C: HASIL AKHIR KUIS / VICTORY / GAME OVER */}
-          {(isQuizFinished || isGameOver) && (
-            <div className="py-2 sm:py-4 flex flex-col items-center text-center space-y-4 animate-in fade-in zoom-in-95 duration-200">
-              {/* Badge Peringkat Medali Rank */}
-              <div className="relative">
-                <div
-                  className={`w-20 h-20 sm:w-24 sm:h-24 rounded-3xl flex items-center justify-center border-4 shadow-2xl transition-transform ${
-                    isGameOver
-                      ? 'bg-rose-950/60 border-rose-500 text-rose-400 shadow-[0_0_30px_rgba(244,63,94,0.6)]'
-                      : rankTier === 'S'
-                      ? 'bg-gradient-to-br from-amber-400 to-yellow-600 border-amber-300 text-neutral-950 shadow-[0_0_40px_rgba(245,158,11,0.8)] scale-105'
-                      : 'bg-gradient-to-br from-sky-500 to-indigo-600 border-sky-300 text-white shadow-[0_0_30px_rgba(14,165,233,0.6)]'
-                  }`}
-                >
-                  {isGameOver ? (
-                    <XCircle className="w-12 h-12 stroke-[2.5]" />
-                  ) : rankTier === 'S' ? (
-                    <Trophy className="w-12 h-12 stroke-[2.5]" />
-                  ) : (
-                    <Award className="w-12 h-12 stroke-[2.5]" />
+                  {!isGameOver && (
+                    <span className="absolute -bottom-2 -right-2 px-2 py-0.5 clay-badge-secondary text-black font-bold text-[11px]">
+                      RANK {rankTier}
+                    </span>
                   )}
                 </div>
 
-                {!isGameOver && (
-                  <span className="absolute -bottom-2 -right-2 px-2.5 py-0.5 rounded-full bg-amber-400 text-neutral-950 font-black text-xs border-2 border-neutral-950 shadow-md">
-                    RANK {rankTier}
-                  </span>
-                )}
-              </div>
+                <div className="space-y-1">
+                  <h3 className="text-base sm:text-xl font-bold uppercase tracking-wider text-black">
+                    {isGameOver ? 'NYAWA HABIS! SKOR TERCATAT' : 'UJIAN TUNTAS! SKOR MASUK LEADERBOARD'}
+                  </h3>
+                  <p className="text-xs text-black">
+                    {selectedSubject} • {getOfficialClassLabel(schoolType, currentGrade)}
+                  </p>
+                </div>
 
-              <div className="space-y-1">
-                <h3
-                  className={`text-xl sm:text-2xl font-black uppercase tracking-wider ${
-                    isGameOver ? 'text-rose-400' : 'text-amber-400'
-                  }`}
-                >
-                  {isGameOver ? 'GAME OVER! NYAWA HABIS' : 'VICTORY! KUIS SELESAI'}
-                </h3>
-                <p className="text-xs text-neutral-300 font-sans">
-                  {isGameOver
-                    ? `Kamu kehabisan nyawa di kuis ${selectedSubject}. Jangan patah semangat, coba lagi!`
-                    : `Luar biasa! Kamu menyelesaikan seluruh 20 soal di kuis ${selectedSubject} (${gradeData.gradeName})`}
-                </p>
-              </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 w-full max-w-lg">
+                  <div className="p-2.5 clay-card text-center">
+                    <span className="text-[10px] text-black block font-bold">Skor Akhir</span>
+                    <span className="text-sm sm:text-base font-bold text-black">{score}</span>
+                  </div>
+                  <div className="p-2.5 clay-card text-center">
+                    <span className="text-[10px] text-black block font-bold">Benar</span>
+                    <span className="text-sm sm:text-base font-bold text-black">
+                      {correctCount}/{TOTAL_QUESTIONS_COUNT}
+                    </span>
+                  </div>
+                  <div className="p-2.5 clay-card text-center">
+                    <span className="text-[10px] text-black block font-bold">Max Streak</span>
+                    <span className="text-sm sm:text-base font-bold text-black">{maxCombo}x</span>
+                  </div>
+                  <div className="p-2.5 clay-card text-center">
+                    <span className="text-[10px] text-black block font-bold">Sisa Nyawa</span>
+                    <span className="text-sm sm:text-base font-bold text-black">
+                      {lives > 0 ? `${lives} ❤️` : '0 💔'}
+                    </span>
+                  </div>
+                </div>
 
-              {/* Statistik Hasil Kuis */}
-              <div className="grid grid-cols-4 gap-2 sm:gap-2.5 w-full max-w-lg">
-                <div className="p-2.5 sm:p-3 rounded-2xl bg-neutral-900 border border-neutral-800 text-center">
-                  <span className="text-[10px] text-neutral-400 block font-mono">Skor Akhir</span>
-                  <span className="text-sm sm:text-base font-black text-amber-400">{score}</span>
-                </div>
-                <div className="p-2.5 sm:p-3 rounded-2xl bg-neutral-900 border border-neutral-800 text-center">
-                  <span className="text-[10px] text-neutral-400 block font-mono">Benar</span>
-                  <span className="text-sm sm:text-base font-black text-emerald-400">
-                    {correctCount} / {TOTAL_QUESTIONS_COUNT}
+                <div className="p-3 clay-card-secondary w-full max-w-lg text-xs font-bold text-black flex items-center justify-around">
+                  <span>
+                    ✨ +{Math.max(50, correctCount * 15 + maxCombo * 5 + (!isGameOver ? 80 : 20))} EXP
                   </span>
-                </div>
-                <div className="p-2.5 sm:p-3 rounded-2xl bg-neutral-900 border border-neutral-800 text-center">
-                  <span className="text-[10px] text-neutral-400 block font-mono">Max Streak</span>
-                  <span className="text-sm sm:text-base font-black text-orange-400">{maxCombo}x</span>
-                </div>
-                <div className="p-2.5 sm:p-3 rounded-2xl bg-neutral-900 border border-neutral-800 text-center">
-                  <span className="text-[10px] text-neutral-400 block font-mono">Sisa Nyawa</span>
-                  <span className="text-sm sm:text-base font-black text-rose-400">
-                    {lives > 0 ? `${lives} ❤️` : '0 💔'}
+                  <span>•</span>
+                  <span>
+                    🪙 +{Math.max(60, correctCount * 25 + Math.floor(score / 10))} Koin (G)
                   </span>
                 </div>
-              </div>
 
-              {/* Banner Hadiah yang Diterima */}
-              <div className="p-3.5 rounded-2xl bg-gradient-to-r from-amber-500/20 via-emerald-500/20 to-amber-500/20 border-2 border-amber-400/50 w-full max-w-lg text-xs font-bold text-amber-200 flex items-center justify-around shadow-lg">
-                <span className="flex items-center gap-1.5 text-amber-300">
-                  <Sparkles className="w-4 h-4 text-amber-400" />
-                  +{Math.max(50, correctCount * 15 + maxCombo * 5 + (!isGameOver ? 80 : 20))} EXP
-                </span>
-                <span className="text-neutral-600 font-mono">•</span>
-                <span className="flex items-center gap-1.5 text-emerald-300">
-                  <Award className="w-4 h-4 text-emerald-400" />
-                  +{Math.max(60, correctCount * 25 + Math.floor(score / 10))} Koin Emas
-                </span>
+                <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => startQuiz(selectedSubject)}
+                    className="px-4 py-2 clay-btn-primary text-black text-xs font-bold flex items-center gap-1.5"
+                  >
+                    <RotateCcw className="w-4 h-4" />
+                    <span>Ujian Soal Baru</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      sound.playClick();
+                      setActiveTab('class_leaderboard');
+                    }}
+                    className="px-4 py-2 clay-btn-secondary text-black text-xs font-bold flex items-center gap-1.5"
+                  >
+                    <Medal className="w-4 h-4" />
+                    <span>Cek Peringkat Kelas</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      sound.playClick();
+                      setIsQuizActive(false);
+                      setIsQuizFinished(false);
+                      setIsGameOver(false);
+                    }}
+                    className="px-4 py-2 clay-btn-neutral text-black text-xs font-bold"
+                  >
+                    Pilih Mapel Lain
+                  </button>
+                </div>
               </div>
+            )}
 
-              {/* Tombol Aksi */}
-              <div className="flex flex-wrap items-center justify-center gap-2.5 pt-2 w-full">
-                <button
-                  type="button"
-                  onClick={() => startQuiz(selectedSubject)}
-                  className="px-5 py-2.5 rounded-2xl bg-gradient-to-r from-amber-400 to-amber-500 hover:brightness-110 text-neutral-950 text-xs font-black shadow-lg cursor-pointer flex items-center gap-2 active:scale-95 transition-all"
-                >
-                  <RotateCcw className="w-4 h-4" />
-                  <span>Main Lagi 🎮</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    sound.playClick();
-                    setIsQuizActive(false);
-                    setIsQuizFinished(false);
-                    setIsGameOver(false);
-                  }}
-                  className="px-4 py-2.5 rounded-2xl bg-neutral-900 hover:bg-neutral-800 text-neutral-200 text-xs font-bold border border-neutral-700 cursor-pointer flex items-center gap-2 active:scale-95 transition-all shadow-sm"
-                >
-                  <BookOpen className="w-4 h-4 text-amber-400" />
-                  <span>Pilih Mapel Lain</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    sound.playClick();
-                    onClose();
-                  }}
-                  className="px-4 py-2.5 rounded-2xl bg-neutral-950 hover:bg-neutral-900 text-neutral-400 hover:text-white text-xs font-bold border border-neutral-800 cursor-pointer active:scale-95 transition-all"
-                >
-                  <span>Tutup</span>
-                </button>
+            {/* TAB 2: LEADERBOARD TIAP KELAS */}
+            {activeTab === 'class_leaderboard' && (
+              <div className="space-y-3">
+                <div className="p-3 clay-card-primary flex items-center justify-between gap-2 flex-wrap">
+                  <div className="flex items-center gap-2.5">
+                    <Medal className="w-5 h-5 text-black shrink-0" />
+                    <div>
+                      <div className="font-bold text-xs sm:text-sm text-black">
+                        Peringkat Siswa {getOfficialClassLabel(schoolType, currentGrade)}
+                      </div>
+                      <div className="text-[11px] text-black">
+                        Diurutkan berdasarkan Skor Tertinggi & Akumulasi Poin Ujian Kelas
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      sound.playClick();
+                      setActiveTab('quiz');
+                    }}
+                    className="px-3 py-1.5 clay-btn-secondary text-black font-bold text-xs"
+                  >
+                    + Kejar Skor
+                  </button>
+                </div>
+
+                {renderLeaderboardList(lbData?.classLeaderboard || [], false)}
               </div>
-            </div>
-          )}
-        </div>
+            )}
+
+            {/* TAB 3: LEADERBOARD TIAP SEKOLAH (SD, SMP, SMA) */}
+            {activeTab === 'school_leaderboard' && (
+              <div className="space-y-3.5">
+                {/* Kartu Ringkasan 3 Sekolah (SD, SMP, SMA) */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                  {(['sd', 'smp', 'sma'] as const).map((sCode) => {
+                    const info = lbData?.schoolsOverview?.[sCode];
+                    const isSelected = selectedSchoolBoard === sCode;
+                    return (
+                      <button
+                        key={sCode}
+                        type="button"
+                        onClick={() => {
+                          sound.playClick();
+                          setSelectedSchoolBoard(sCode);
+                        }}
+                        className={`p-3 text-left flex flex-col justify-between gap-1.5 ${
+                          isSelected ? 'clay-btn-primary text-black' : 'clay-btn-neutral text-black'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-1 w-full">
+                          <span className="font-bold text-xs sm:text-sm uppercase flex items-center gap-1">
+                            <School className="w-3.5 h-3.5" />
+                            <span>{sCode.toUpperCase()}</span>
+                          </span>
+                          <span className="px-1.5 py-0.5 clay-badge-secondary text-[10px] font-bold text-black">
+                            {info?.studentCount || 0} Siswa
+                          </span>
+                        </div>
+                        <div className="text-[11px] font-bold text-black truncate w-full">
+                          👑 {info?.champion ? `${info.champion.name} (${info.champion.bestScore})` : '-'}
+                        </div>
+                        <div className="text-[10px] text-black">
+                          Total Poin Sekolah: {(info?.totalSchoolPoints || 0).toLocaleString('id-ID')}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div className="p-2.5 clay-card-secondary flex items-center justify-between gap-2">
+                  <span className="font-bold text-xs text-black">
+                    🏆 Daftar Juara Umum {activeSchoolBoardObj?.schoolTitle || selectedSchoolBoard.toUpperCase()}
+                  </span>
+                  <span className="text-[11px] font-bold text-black">
+                    Gabungan Seluruh Kelas {selectedSchoolBoard.toUpperCase()}
+                  </span>
+                </div>
+
+                {renderLeaderboardList(activeSchoolBoardObj?.entries || [], true)}
+              </div>
+            )}
+          </div>
+        </main>
       </div>
     </div>
   );

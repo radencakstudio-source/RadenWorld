@@ -32,24 +32,67 @@ export interface IOccludingProp {
   baseY: number;
 }
 
+export interface IBuildingLightInstance {
+  id: string;
+  name: string;
+  doorX: number;
+  doorY: number;
+  radius: number;
+  surroundings: Array<{ x: number; y: number; r: number }>;
+  sprites: Phaser.GameObjects.Image[];
+  phase: number;
+}
+
+export interface ILampLightInstance {
+  lampImg: Phaser.GameObjects.Image;
+  bulbCore: Phaser.GameObjects.Image;
+  haloGlow: Phaser.GameObjects.Image;
+  groundPool: Phaser.GameObjects.Image;
+  lanternX: number;
+  lanternY: number;
+  groundX: number;
+  groundY: number;
+  phase: number;
+}
+
 export class WorldProps {
   /**
    * Kumpulan sprite rumput liar untuk interaksi goyangan saat diinjak / didekati pemain yang bergerak
    */
   public static wildGrassSprites: Phaser.GameObjects.Image[] = [];
   public static occludingProps: IOccludingProp[] = [];
+  public static lampLights: ILampLightInstance[] = [];
+  public static buildingLights: IBuildingLightInstance[] = [];
   private static lastGrassSwayTime: number = 0;
   private static lastOcclusionTime: number = 0;
+  private static lastLampLightTime: number = 0;
   private static anyGrassSwaying: boolean = false;
 
   /**
    * Reset seluruh kumpulan props saat inisialisasi ulang scene
    */
   public static resetProps(): void {
+    this.lampLights.forEach((l) => {
+      try {
+        if (l.bulbCore?.active) l.bulbCore.destroy();
+        if (l.haloGlow?.active) l.haloGlow.destroy();
+        if (l.groundPool?.active) l.groundPool.destroy();
+      } catch (e) {}
+    });
+    this.lampLights = [];
+    this.buildingLights.forEach((b) => {
+      b.sprites.forEach((s) => {
+        try {
+          if (s?.active) s.destroy();
+        } catch (e) {}
+      });
+    });
+    this.buildingLights = [];
     this.wildGrassSprites = [];
     this.occludingProps = [];
     this.lastGrassSwayTime = 0;
     this.lastOcclusionTime = 0;
+    this.lastLampLightTime = 0;
   }
 
   /**
@@ -213,6 +256,61 @@ export class WorldProps {
       });
     }
 
+    // Pasang cahaya lentera menyala otomatis pada seluruh aset lampu jalan (prop-lampu 1x3)
+    if (key === 'prop-lampu') {
+      const lanternX = centerX;
+      // Kaca lentera prop-lampu (1x3 = 120x360px) berada tepat di 41.5% tinggi dari atas -> centerY - 31px
+      const lanternY = centerY - Math.round(pixelH * 0.086);
+      const groundX = centerX;
+      // Dasar kaki batu lampu jalan berada tepat di permukaan aspal/trotoar -> centerY + 148px
+      const groundY = centerY + Math.round(pixelH * 0.41);
+
+      const groundPool = scene.textures.exists('lamp-ground-pool')
+        ? scene.add.image(groundX, groundY, 'lamp-ground-pool')
+        : scene.add.image(groundX, groundY, 'soft-light-glow');
+      groundPool.setDisplaySize(350, 235);
+      groundPool.setBlendMode(Phaser.BlendModes.ADD);
+      groundPool.setDepth(-92);
+      groundPool.setAlpha(0.55);
+
+      const haloGlow = scene.textures.exists('lamp-halo-glow')
+        ? scene.add.image(lanternX, lanternY, 'lamp-halo-glow')
+        : scene.add.image(lanternX, lanternY, 'soft-light-glow');
+      haloGlow.setDisplaySize(215, 215);
+      haloGlow.setBlendMode(Phaser.BlendModes.ADD);
+      haloGlow.setDepth(img.depth + 1);
+      haloGlow.setAlpha(0.65);
+
+      const bulbCore = scene.textures.exists('lamp-bulb-core')
+        ? scene.add.image(lanternX, lanternY, 'lamp-bulb-core')
+        : scene.add.image(lanternX, lanternY, 'soft-light-glow');
+      bulbCore.setDisplaySize(74, 80);
+      bulbCore.setBlendMode(Phaser.BlendModes.ADD);
+      bulbCore.setDepth(img.depth + 2);
+      bulbCore.setAlpha(0.88);
+
+      const lampInst: ILampLightInstance = {
+        lampImg: img,
+        bulbCore,
+        haloGlow,
+        groundPool,
+        lanternX,
+        lanternY,
+        groundX,
+        groundY,
+        phase: (gx * 0.73 + gy * 1.19) % (Math.PI * 2),
+      };
+      this.lampLights.push(lampInst);
+
+      img.once(Phaser.GameObjects.Events.DESTROY, () => {
+        const lIdx = this.lampLights.indexOf(lampInst);
+        if (lIdx !== -1) this.lampLights.splice(lIdx, 1);
+        if (bulbCore.active) bulbCore.destroy();
+        if (haloGlow.active) haloGlow.destroy();
+        if (groundPool.active) groundPool.destroy();
+      });
+    }
+
     return img;
   }
 
@@ -268,6 +366,49 @@ export class WorldProps {
    * tetap aman dan tidak perlu dianalisis ulang, serta kode tetap modular!
    * ==========================================================================
    */
+  /**
+   * Mendaftarkan lampu pencahayaan hangat untuk gedung/rumah/billboard
+   */
+  public static addBuildingLighting(
+    scene: Phaser.Scene,
+    id: string,
+    name: string,
+    doorX: number,
+    doorY: number,
+    radius: number,
+    surroundings: Array<{ x: number; y: number; r?: number }>,
+    baseDepth: number = 0
+  ): IBuildingLightInstance {
+    const sprites: Phaser.GameObjects.Image[] = [];
+
+    // Kolam cahaya lembut di sekeliling tanah & halaman depan gedung (bukan bola di tengah bangunan)
+    const allPools = [{ x: doorX, y: doorY, r: radius }, ...surroundings];
+    allPools.forEach((p) => {
+      const pr = p.r || radius;
+      const groundPool = scene.textures.exists('lamp-ground-pool')
+        ? scene.add.image(p.x, p.y, 'lamp-ground-pool')
+        : scene.add.image(p.x, p.y, 'soft-light-glow');
+      groundPool.setDisplaySize(pr * 1.8, pr * 1.1);
+      groundPool.setBlendMode(Phaser.BlendModes.ADD);
+      groundPool.setDepth(-91);
+      groundPool.setAlpha(0.48);
+      sprites.push(groundPool);
+    });
+
+    const instance: IBuildingLightInstance = {
+      id,
+      name,
+      doorX,
+      doorY,
+      radius,
+      surroundings: allPools.map((p) => ({ x: p.x, y: p.y, r: p.r || radius })),
+      sprites,
+      phase: Math.random() * Math.PI * 2,
+    };
+    this.buildingLights.push(instance);
+    return instance;
+  }
+
   public static buildFutureBuildings(
     scene: Phaser.Scene,
     tileSize: number,
@@ -308,6 +449,7 @@ export class WorldProps {
     // 3. Gedung SMA : gx: 37..41, gy: 0..9 (5x10 petak)
     // ========================================================================
     // 1. Gedung SD Merah
+    this.addBuildingLighting(scene, 'school-sd', 'Gedung SD', 3300, 1140, 220, [{ x: 3180, y: 1140, r: 180 }, { x: 3420, y: 1140, r: 180 }], (0 + 10) * tileSize);
     addGridPropFn(
       'school-sd-building',
       25,
@@ -322,6 +464,7 @@ export class WorldProps {
     );
 
     // 2. Gedung SMP Biru
+    this.addBuildingLighting(scene, 'school-smp', 'Gedung SMP', 4020, 1140, 220, [{ x: 3900, y: 1140, r: 180 }, { x: 4140, y: 1140, r: 180 }], (0 + 10) * tileSize);
     addGridPropFn(
       'school-smp-building',
       31,
@@ -336,6 +479,7 @@ export class WorldProps {
     );
 
     // 3. Gedung SMA Cyan
+    this.addBuildingLighting(scene, 'school-sma', 'Gedung SMA', 4740, 1140, 220, [{ x: 4620, y: 1140, r: 180 }, { x: 4860, y: 1140, r: 180 }], (0 + 10) * tileSize);
     addGridPropFn(
       'school-sma-building',
       37,
@@ -353,6 +497,7 @@ export class WorldProps {
     // RUMAH PRIBADI PEMAIN 5x5 (gx: 9..13, gy: 2..6, Pintu: gx: 11.5, gy: 7)
     // Berada tepat di tengah kawasan residensial di antara deretan pohon zigzag
     // ========================================================================
+    this.addBuildingLighting(scene, 'house', 'Rumah Pribadi', 1380, 840, 200, [{ x: 1260, y: 840, r: 160 }, { x: 1500, y: 840, r: 160 }], (2 + 5) * tileSize);
     addGridPropFn(
       'house-5x5',
       9,
@@ -498,6 +643,7 @@ export class WorldProps {
     }
 
     // 1. Papan Popup Kiri (gx: 22, gy: 40..50, collider 1 baris di y: 49, ukuran 10x10)
+    this.addBuildingLighting(scene, 'billboard-left', 'Billboard Barat', 3240, 5940, 240, [{ x: 2880, y: 5940, r: 200 }, { x: 3600, y: 5940, r: 200 }], (40 + 10) * tileSize);
     const popupLeft = addGridPropFn(
       'popup-billboard',
       22,
@@ -529,6 +675,7 @@ export class WorldProps {
     }
 
     // 2. Papan Popup Kanan (gx: 45, gy: 40..50, collider 1 baris di y: 49, ukuran 10x10)
+    this.addBuildingLighting(scene, 'billboard-right', 'Billboard Timur', 6000, 5940, 240, [{ x: 5640, y: 5940, r: 200 }, { x: 6360, y: 5940, r: 200 }], (40 + 10) * tileSize);
     const popupRight = addGridPropFn(
       'popup-billboard',
       45,
@@ -557,6 +704,7 @@ export class WorldProps {
     //   - gx: 12, gy: 53 -> Kantor Makelar Properti (5x5)
     // ========================================================================
     // 1. Raden Cafe 5x5 (gx: 1, gy: 21)
+    this.addBuildingLighting(scene, 'cafe', 'Raden Cafe', 420, 3000, 200, [{ x: 300, y: 3000, r: 160 }, { x: 540, y: 3000, r: 160 }], (21 + 5) * tileSize);
     addGridPropFn(
       'building-cafe',
       1,
@@ -575,6 +723,7 @@ export class WorldProps {
     );
 
     // 2. Perpustakaan 5x5 (gx: 12, gy: 21)
+    this.addBuildingLighting(scene, 'perpustakaan', 'Perpustakaan', 1740, 3000, 200, [{ x: 1620, y: 3000, r: 160 }, { x: 1860, y: 3000, r: 160 }], (21 + 5) * tileSize);
     addGridPropFn(
       'building-perpustakaan',
       12,
@@ -593,6 +742,7 @@ export class WorldProps {
     );
 
     // 3. Kantor Polisi 5x5 (gx: 1, gy: 37)
+    this.addBuildingLighting(scene, 'kantor-polisi', 'Kantor Polisi', 420, 4920, 200, [{ x: 300, y: 4920, r: 160 }, { x: 540, y: 4920, r: 160 }], (37 + 5) * tileSize);
     addGridPropFn(
       'building-kantor-polisi',
       1,
@@ -607,6 +757,7 @@ export class WorldProps {
     );
 
     // 4. Kantor Bank 5x5 (gx: 12, gy: 37)
+    this.addBuildingLighting(scene, 'bank', 'Bank Sentral', 1740, 4920, 200, [{ x: 1620, y: 4920, r: 160 }, { x: 1860, y: 4920, r: 160 }], (37 + 5) * tileSize);
     addGridPropFn(
       'building-bank',
       12,
@@ -621,6 +772,7 @@ export class WorldProps {
     );
 
     // 5. Apotek 5x5 (gx: 1, gy: 53)
+    this.addBuildingLighting(scene, 'apotek', 'Apotek Farma', 420, 6840, 200, [{ x: 300, y: 6840, r: 160 }, { x: 540, y: 6840, r: 160 }], (53 + 5) * tileSize);
     addGridPropFn(
       'building-apotek',
       1,
@@ -635,6 +787,7 @@ export class WorldProps {
     );
 
     // 6. Makelar 5x5 (gx: 12, gy: 53)
+    this.addBuildingLighting(scene, 'makelar', 'Makelar Properti', 1740, 6840, 200, [{ x: 1620, y: 6840, r: 160 }, { x: 1860, y: 6840, r: 160 }], (53 + 5) * tileSize);
     addGridPropFn(
       'building-makelar',
       12,
@@ -802,6 +955,67 @@ export class WorldProps {
       } else if (prop.img.alpha !== targetAlpha) {
         prop.img.alpha = targetAlpha;
       }
+    }
+  }
+
+  /**
+   * Mengatur intensitas nyala lampu jalan secara dinamis berdasarkan waktu siang/senja/malam.
+   * Kaca lentera selalu tampak menyala hangat, dan memancar terang ke jalanan saat senja/malam.
+   */
+  public static updateStreetLampLights(
+    time: number,
+    nightFactor: number,
+    viewBounds?: { left: number; right: number; top: number; bottom: number }
+  ): void {
+    if (!this.lampLights || this.lampLights.length === 0) return;
+    if (time - this.lastLampLightTime < 45) return;
+    this.lastLampLightTime = time;
+
+    const clampedNight = Phaser.Math.Clamp(nightFactor, 0, 1);
+    const baseBulb = 0.62 + clampedNight * 0.36;   // 0.62 siang -> 0.98 malam
+    const baseHalo = 0.28 + clampedNight * 0.62;   // 0.28 siang -> 0.90 malam
+    const basePool = 0.16 + clampedNight * 0.68;   // 0.16 siang -> 0.84 malam
+
+    // Update nyala lampu gedung, rumah, cafe, perpustakaan, apotek, bank, kantor & billboard
+    for (let i = 0; i < this.buildingLights.length; i++) {
+      const b = this.buildingLights[i];
+      const pulse = Math.sin(time * 0.003 + b.phase) * 0.04;
+      for (let j = 0; j < b.sprites.length; j++) {
+        const s = b.sprites[j];
+        if (!s || !s.active) continue;
+        const targetA = (s.depth < 0 ? basePool : baseBulb) + pulse;
+        s.setAlpha(Phaser.Math.Clamp(targetA, 0.15, 0.95));
+      }
+    }
+
+    for (let i = 0; i < this.lampLights.length; i++) {
+      const l = this.lampLights[i];
+      if (!l.lampImg || !l.lampImg.active) continue;
+
+      if (viewBounds) {
+        const inView =
+          l.lanternX >= viewBounds.left - 320 &&
+          l.lanternX <= viewBounds.right + 320 &&
+          l.groundY >= viewBounds.top - 380 &&
+          l.lanternY <= viewBounds.bottom + 320;
+        if (!inView) {
+          if (l.bulbCore.visible) l.bulbCore.setVisible(false);
+          if (l.haloGlow.visible) l.haloGlow.setVisible(false);
+          if (l.groundPool.visible) l.groundPool.setVisible(false);
+          continue;
+        }
+      }
+
+      if (!l.bulbCore.visible) l.bulbCore.setVisible(true);
+      if (!l.haloGlow.visible) l.haloGlow.setVisible(true);
+      if (!l.groundPool.visible) l.groundPool.setVisible(true);
+
+      const pulse = Math.sin(time * 0.0032 + l.phase) * 0.035;
+      const occl = l.lampImg.alpha;
+
+      l.bulbCore.setAlpha(Phaser.Math.Clamp((baseBulb + pulse) * occl, 0.15, 1.0));
+      l.haloGlow.setAlpha(Phaser.Math.Clamp((baseHalo + pulse * 0.8) * Math.max(0.55, occl), 0.1, 1.0));
+      l.groundPool.setAlpha(Phaser.Math.Clamp(basePool + pulse * 0.6, 0.08, 0.95));
     }
   }
 }

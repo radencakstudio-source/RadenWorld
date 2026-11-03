@@ -192,7 +192,90 @@ Route::get('/api/game/world', function () {
 // 4. API AUTENTIKASI AKUN NYATA (REAL ACCOUNT AUTH SYSTEM)
 // ============================================================================
 
+
+// A0. Kirim Kode OTP Verifikasi Email (6 Digit)
+Route::post('/api/auth/send-otp', function (\Illuminate\Http\Request $request) {
+    $email = strtolower(trim((string) $request->input('email', '')));
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        return response()->json([
+            'status' => 'error',
+            'message' => 'Format alamat email tidak valid.',
+        ], 422);
+    }
+
+    $purpose = trim((string) $request->input('purpose', 'register'));
+    $otpCode = (string) random_int(100000, 999999);
+    $expiresAt = time() + (10 * 60); // 10 menit
+
+    $otpFile = storage_path('app/email_otp_codes.json');
+    $codes = file_exists($otpFile) ? (json_decode(file_get_contents($otpFile), true) ?: []) : [];
+    $codes[$email] = [
+        'code' => $otpCode,
+        'expires_at' => $expiresAt,
+        'purpose' => $purpose,
+        'verified' => false,
+        'sent_at' => date('Y-m-d H:i:s'),
+    ];
+    @file_put_contents($otpFile, json_encode($codes, JSON_PRETTY_PRINT));
+
+    // Kirim email via Mail::raw
+    try {
+        \Illuminate\Support\Facades\Mail::raw("Kode OTP Verifikasi RadenWorld Anda adalah: {$otpCode}\n\nKode ini berlaku selama 10 menit. Masukkan kode ini pada halaman verifikasi.", function ($message) use ($email) {
+            $message->to($email)->subject('Kode OTP Verifikasi Akun RadenWorld');
+        });
+    } catch (\Throwable $e) {
+        \Illuminate\Support\Facades\Log::info("OTP untuk {$email}: {$otpCode}");
+    }
+
+    return response()->json([
+        'status' => 'success',
+        'message' => 'Kode OTP 6 digit berhasil dikirim ke ' . $email . '! Cek kotak masuk atau spam.',
+        'debug_otp' => app()->environment('local') ? $otpCode : null,
+    ]);
+});
+
+// A01. Verifikasi Kode OTP Email
+Route::post('/api/auth/verify-otp', function (\Illuminate\Http\Request $request) {
+    $email = strtolower(trim((string) $request->input('email', '')));
+    $code = trim((string) $request->input('code', ''));
+
+    $otpFile = storage_path('app/email_otp_codes.json');
+    $codes = file_exists($otpFile) ? (json_decode(file_get_contents($otpFile), true) ?: []) : [];
+
+    if (!isset($codes[$email])) {
+        return response()->json([
+            'status' => 'error',
+            'message' => 'Belum ada permintaan OTP untuk email ini. Silakan klik tombol Kirim OTP.',
+        ], 400);
+    }
+
+    $record = $codes[$email];
+    if (time() > ($record['expires_at'] ?? 0)) {
+        return response()->json([
+            'status' => 'error',
+            'message' => 'Kode OTP telah kadaluarsa (lebih dari 10 menit). Silakan minta kode baru.',
+        ], 400);
+    }
+
+    if ((string) ($record['code'] ?? '') !== $code) {
+        return response()->json([
+            'status' => 'error',
+            'message' => 'Kode OTP 6-digit salah. Silakan periksa kembali email Anda.',
+        ], 400);
+    }
+
+    $codes[$email]['verified'] = true;
+    @file_put_contents($otpFile, json_encode($codes, JSON_PRETTY_PRINT));
+
+    return response()->json([
+        'status' => 'success',
+        'verified' => true,
+        'message' => 'Email berhasil diverifikasi dengan OTP!',
+    ]);
+});
+
 // A. Register Akun Baru
+
 Route::post('/api/auth/register', function (\Illuminate\Http\Request $request) {
     $data = $request->json()->all() ?: $request->all();
     
@@ -1388,6 +1471,330 @@ Route::post('/api/pixel-canvas/reset', function () {
         'message' => 'Seluruh kanvas iklan telah dikosongkan.',
     ]);
 });
+
+// ============================================================================
+// LEADERBOARD TIAP KELAS (KELAS 1-12) & TIAP SEKOLAH (SD, SMP, SMA)
+// ============================================================================
+$loadOrSeedSchoolLeaderboards = function (): array {
+    $filePath = storage_path('app/school_leaderboards.json');
+    if (file_exists($filePath)) {
+        $decoded = json_decode((string) file_get_contents($filePath), true);
+        if (is_array($decoded) && isset($decoded['classes']) && is_array($decoded['classes'])) {
+            return $decoded;
+        }
+    }
+
+    $classDefs = [
+        'sd-1' => ['school' => 'sd', 'label' => 'Kelas 1 SD', 'students' => [
+            ['Alya Putri', 1840, 3920, 3, 18, 'Matematika'],
+            ['Budi Santoso', 1680, 3100, 2, 17, 'Semua Mapel'],
+            ['Citra Kirana', 1520, 2890, 2, 16, 'Bahasa Indonesia'],
+            ['Daffa Pratama', 1340, 1340, 1, 14, 'IPAS'],
+            ['Eka Saputra', 1120, 1120, 1, 12, 'Pendidikan Pancasila'],
+        ]],
+        'sd-2' => ['school' => 'sd', 'label' => 'Kelas 2 SD', 'students' => [
+            ['Farhan Rizki', 1920, 4120, 3, 19, 'Matematika'],
+            ['Gita Nirmala', 1740, 3300, 2, 17, 'Semua Mapel'],
+            ['Hana Safitri', 1580, 1580, 1, 16, 'Bahasa Indonesia'],
+            ['Indra Wijaya', 1390, 2450, 2, 14, 'IPAS'],
+            ['Joko Susilo', 1180, 1180, 1, 12, 'Pendidikan Pancasila'],
+        ]],
+        'sd-3' => ['school' => 'sd', 'label' => 'Kelas 3 SD', 'students' => [
+            ['Kirana Dewi', 1980, 4680, 3, 19, 'IPAS'],
+            ['Luthfi Hakim', 1760, 3420, 2, 18, 'Matematika'],
+            ['Maya Sari', 1600, 1600, 1, 16, 'Semua Mapel'],
+            ['Naufal Azhar', 1420, 2600, 2, 15, 'Bahasa Indonesia'],
+            ['Olivia Natasya', 1240, 1240, 1, 13, 'Pendidikan Pancasila'],
+        ]],
+        'sd-4' => ['school' => 'sd', 'label' => 'Kelas 4 SD', 'students' => [
+            ['Putra Ramadhan', 2040, 5120, 3, 19, 'Semua Mapel'],
+            ['Qori Amalia', 1820, 3550, 2, 18, 'IPAS'],
+            ['Rafi Ahmad', 1640, 3120, 2, 17, 'Matematika'],
+            ['Sinta Bella', 1480, 1480, 1, 15, 'Bahasa Indonesia'],
+            ['Tegar Prakoso', 1260, 1260, 1, 13, 'Pendidikan Pancasila'],
+        ]],
+        'sd-5' => ['school' => 'sd', 'label' => 'Kelas 5 SD', 'students' => [
+            ['Umar Faruq', 2100, 5600, 3, 20, 'Matematika'],
+            ['Vina Panduwinata', 1880, 3680, 2, 18, 'IPAS'],
+            ['Wahyu Setiawan', 1700, 3200, 2, 17, 'Semua Mapel'],
+            ['Yuni Shara', 1500, 1500, 1, 15, 'Bahasa Indonesia'],
+            ['Zaki Mubarak', 1300, 1300, 1, 13, 'Pendidikan Pancasila'],
+        ]],
+        'sd-6' => ['school' => 'sd', 'label' => 'Kelas 6 SD', 'students' => [
+            ['Bagas Adi', 2180, 6240, 4, 20, 'Semua Mapel'],
+            ['Tiara Andini', 1960, 3890, 2, 19, 'Matematika'],
+            ['Rizky Nazar', 1780, 3400, 2, 18, 'IPAS'],
+            ['Nabila Syakieb', 1560, 1560, 1, 16, 'Bahasa Indonesia'],
+            ['Fajar Sadboy', 1320, 1320, 1, 14, 'Pendidikan Pancasila'],
+        ]],
+        'smp-1' => ['school' => 'smp', 'label' => 'Kelas 7 SMP', 'students' => [
+            ['Rian Aditya', 2120, 5980, 3, 20, 'IPA'],
+            ['Aurelia Maharani', 1940, 3800, 2, 19, 'Matematika'],
+            ['Bima Arya', 1720, 3310, 2, 17, 'Bahasa Inggris'],
+            ['Chelsea Islan', 1540, 1540, 1, 16, 'IPS'],
+            ['Kevin Sanjaya', 1360, 1360, 1, 14, 'PPKn'],
+        ]],
+        'smp-2' => ['school' => 'smp', 'label' => 'Kelas 8 SMP', 'students' => [
+            ['Nadia Vega', 2200, 6450, 4, 20, 'Matematika'],
+            ['Galih Permana', 1980, 3910, 2, 19, 'IPA'],
+            ['Ratna Galih', 1760, 3420, 2, 18, 'Semua Mapel'],
+            ['Yoga Pratama', 1580, 1580, 1, 16, 'Bahasa Inggris'],
+            ['Salsaabila', 1380, 1380, 1, 14, 'IPS'],
+        ]],
+        'smp-3' => ['school' => 'smp', 'label' => 'Kelas 9 SMP', 'students' => [
+            ['Arjuna Wiwaha', 2280, 7100, 4, 20, 'Semua Mapel'],
+            ['Dewi Sartika', 2060, 4120, 2, 19, 'IPA'],
+            ['Fikri Haikal', 1840, 3600, 2, 18, 'Matematika'],
+            ['Larasati Putri', 1620, 1620, 1, 16, 'Bahasa Indonesia'],
+            ['Reza Rahadian', 1420, 1420, 1, 15, 'PPKn'],
+        ]],
+        'sma-1' => ['school' => 'sma', 'label' => 'Kelas 10 SMA', 'students' => [
+            ['Bintang Kejora', 2220, 6320, 3, 20, 'Fisika'],
+            ['Maudy Ayunda', 2080, 4150, 2, 19, 'Matematika'],
+            ['Jerome Polin', 1960, 3890, 2, 19, 'Kimia'],
+            ['Sherina Munaf', 1720, 1720, 1, 17, 'Biologi'],
+            ['Iqbaal Ramadhan', 1540, 1540, 1, 16, 'Ekonomi'],
+        ]],
+        'sma-2' => ['school' => 'sma', 'label' => 'Kelas 11 SMA', 'students' => [
+            ['Cinta Laura', 2300, 6980, 4, 20, 'Bahasa Inggris'],
+            ['Nicholas Saputra', 2140, 4280, 2, 20, 'Fisika'],
+            [' Tasya Kamila', 1920, 3760, 2, 19, 'Kimia'],
+            ['Angga Yunanda', 1700, 1700, 1, 17, 'Sosiologi'],
+            ['Prilly Latuconsina', 1520, 1520, 1, 15, 'Ekonomi'],
+        ]],
+        'sma-3' => ['school' => 'sma', 'label' => 'Kelas 12 SMA', 'students' => [
+            ['Dimas Alamsyah', 2380, 7840, 4, 20, 'Semua Mapel'],
+            ['Gita Savitri', 2200, 4400, 2, 20, 'Kimia'],
+            ['Najwa Shihab', 2040, 4080, 2, 19, 'Sosiologi'],
+            [' Raditya Dika', 1800, 1800, 1, 18, 'Bahasa Indonesia'],
+            ['Afgan Syahreza', 1600, 1600, 1, 16, 'Matematika'],
+        ]],
+    ];
+
+    $classes = [];
+    $now = now()->toIso8601String();
+    foreach ($classDefs as $cKey => $meta) {
+        $classes[$cKey] = [];
+        foreach ($meta['students'] as $s) {
+            $classes[$cKey][] = [
+                'name' => trim($s[0]),
+                'classKey' => $cKey,
+                'classLabel' => $meta['label'],
+                'school' => $meta['school'],
+                'bestScore' => (int) $s[1],
+                'totalScore' => (int) $s[2],
+                'quizzesPlayed' => (int) $s[3],
+                'bestCorrect' => (int) $s[4],
+                'accuracy' => min(100, (int) round(($s[4] / 20) * 100)),
+                'subject' => $s[5],
+                'updatedAt' => $now,
+            ];
+        }
+    }
+
+    $seeded = ['classes' => $classes];
+    @file_put_contents($filePath, json_encode($seeded, JSON_PRETTY_PRINT));
+    return $seeded;
+};
+
+$buildLeaderboardResponse = function (array $store, string $schoolType, int $grade) {
+    $school = in_array($schoolType, ['sd', 'smp', 'sma'], true) ? $schoolType : 'sd';
+    $maxGrade = $school === 'sd' ? 6 : 3;
+    $clampedGrade = max(1, min($maxGrade, $grade));
+    $classKey = "{$school}-{$clampedGrade}";
+
+    $classes = $store['classes'] ?? [];
+    $rawEntries = $classes[$classKey] ?? [];
+    
+    // Prioritaskan pemain nyata (isReal: true) di atas bot/seed
+    $realClassEntries = [];
+    $mockClassEntries = [];
+    foreach ($rawEntries as $entry) {
+        if (!empty($entry['isReal'])) {
+            $realClassEntries[] = $entry;
+        } else {
+            $mockClassEntries[] = $entry;
+        }
+    }
+    usort($realClassEntries, function ($a, $b) {
+        if (($b['bestScore'] ?? 0) !== ($a['bestScore'] ?? 0)) {
+            return ($b['bestScore'] ?? 0) <=> ($a['bestScore'] ?? 0);
+        }
+        return ($b['totalScore'] ?? 0) <=> ($a['totalScore'] ?? 0);
+    });
+    // Jika ada pemain real, tampilkan pemain real secara eksklusif agar genuine Juara Kelas
+    if (count($realClassEntries) > 0) {
+        $classEntries = array_slice($realClassEntries, 0, 30);
+    } else {
+        usort($mockClassEntries, function ($a, $b) {
+            return ($b['bestScore'] ?? 0) <=> ($a['bestScore'] ?? 0);
+        });
+        $classEntries = array_slice($mockClassEntries, 0, 10);
+    }
+
+    // Aggregate school-wide leaderboard across all classes of $school
+    $buildSchoolBoard = function (string $targetSchool) use ($classes): array {
+        $byPlayer = [];
+        foreach ($classes as $cKey => $list) {
+            if (!str_starts_with($cKey, $targetSchool . '-') || !is_array($list)) {
+                continue;
+            }
+            foreach ($list as $row) {
+                $pKey = strtolower(trim((string) ($row['name'] ?? 'Siswa')));
+                if (!isset($byPlayer[$pKey])) {
+                    $byPlayer[$pKey] = $row;
+                } else {
+                    $byPlayer[$pKey]['totalScore'] = (int) ($byPlayer[$pKey]['totalScore'] ?? 0) + (int) ($row['totalScore'] ?? 0);
+                    $byPlayer[$pKey]['quizzesPlayed'] = (int) ($byPlayer[$pKey]['quizzesPlayed'] ?? 0) + (int) ($row['quizzesPlayed'] ?? 0);
+                    if ((int) ($row['bestScore'] ?? 0) >= (int) ($byPlayer[$pKey]['bestScore'] ?? 0)) {
+                        $byPlayer[$pKey]['bestScore'] = (int) ($row['bestScore'] ?? 0);
+                        $byPlayer[$pKey]['bestCorrect'] = max((int) ($byPlayer[$pKey]['bestCorrect'] ?? 0), (int) ($row['bestCorrect'] ?? 0));
+                        $byPlayer[$pKey]['accuracy'] = max((int) ($byPlayer[$pKey]['accuracy'] ?? 0), (int) ($row['accuracy'] ?? 0));
+                        $byPlayer[$pKey]['classKey'] = $row['classKey'] ?? $cKey;
+                        $byPlayer[$pKey]['classLabel'] = $row['classLabel'] ?? strtoupper($cKey);
+                        $byPlayer[$pKey]['subject'] = $row['subject'] ?? 'Semua Mapel';
+                    }
+                }
+            }
+        }
+        $unified = array_values($byPlayer);
+        $realSchoolEntries = [];
+        $mockSchoolEntries = [];
+        foreach ($unified as $entry) {
+            if (!empty($entry['isReal'])) {
+                $realSchoolEntries[] = $entry;
+            } else {
+                $mockSchoolEntries[] = $entry;
+            }
+        }
+        if (count($realSchoolEntries) > 0) {
+            usort($realSchoolEntries, function ($a, $b) {
+                if (($b['bestScore'] ?? 0) !== ($a['bestScore'] ?? 0)) {
+                    return ($b['bestScore'] ?? 0) <=> ($a['bestScore'] ?? 0);
+                }
+                return ($b['totalScore'] ?? 0) <=> ($a['totalScore'] ?? 0);
+            });
+            return array_slice($realSchoolEntries, 0, 30);
+        }
+        usort($mockSchoolEntries, function ($a, $b) {
+            if (($b['bestScore'] ?? 0) !== ($a['bestScore'] ?? 0)) {
+                return ($b['bestScore'] ?? 0) <=> ($a['bestScore'] ?? 0);
+            }
+            return ($b['totalScore'] ?? 0) <=> ($a['totalScore'] ?? 0);
+        });
+        return array_slice($mockSchoolEntries, 0, 30);
+    };
+
+    $schoolBoard = $buildSchoolBoard($school);
+    $schoolsOverview = [];
+    foreach (['sd' => 'SD RadenWorld', 'smp' => 'SMP RadenWorld', 'sma' => 'SMA RadenWorld'] as $sCode => $sTitle) {
+        $sb = $sCode === $school ? $schoolBoard : $buildSchoolBoard($sCode);
+        $totalSchoolPts = array_reduce($sb, fn($carry, $item) => $carry + (int) ($item['totalScore'] ?? 0), 0);
+        $schoolsOverview[$sCode] = [
+            'school' => $sCode,
+            'schoolTitle' => $sTitle,
+            'studentCount' => count($sb),
+            'totalSchoolPoints' => $totalSchoolPts,
+            'champion' => $sb[0] ?? null,
+            'entries' => $sb,
+        ];
+    }
+
+    return [
+        'status' => 'success',
+        'school' => $school,
+        'grade' => $clampedGrade,
+        'classKey' => $classKey,
+        'classLeaderboard' => $classEntries,
+        'schoolLeaderboard' => $schoolBoard,
+        'schoolsOverview' => $schoolsOverview,
+    ];
+};
+
+Route::get('/api/game/leaderboard', function (\Illuminate\Http\Request $request) use ($loadOrSeedSchoolLeaderboards, $buildLeaderboardResponse) {
+    $school = strtolower(trim((string) $request->query('school', 'sd')));
+    $grade = (int) $request->query('grade', 1);
+    $store = $loadOrSeedSchoolLeaderboards();
+    return response()->json($buildLeaderboardResponse($store, $school, $grade));
+});
+
+Route::post('/api/game/leaderboard/submit', function (\Illuminate\Http\Request $request) use ($loadOrSeedSchoolLeaderboards, $buildLeaderboardResponse) {
+    $data = $request->json()->all() ?: $request->all();
+    $playerName = trim((string) ($data['player_name'] ?? 'Siswa Tamu'));
+    if ($playerName === '') {
+        $playerName = 'Siswa Tamu';
+    }
+    $playerName = mb_substr($playerName, 0, 40);
+
+    $school = strtolower(trim((string) ($data['school_type'] ?? 'sd')));
+    if (!in_array($school, ['sd', 'smp', 'sma'], true)) {
+        $school = 'sd';
+    }
+    $maxGrade = $school === 'sd' ? 6 : 3;
+    $grade = max(1, min($maxGrade, (int) ($data['grade'] ?? 1)));
+    $classKey = "{$school}-{$grade}";
+    $classLabel = $school === 'sd'
+        ? "Kelas {$grade} SD"
+        : ($school === 'smp' ? 'Kelas ' . ($grade + 6) . ' SMP' : 'Kelas ' . ($grade + 9) . ' SMA');
+
+    $score = max(0, min(10000, (int) ($data['score'] ?? 0)));
+    $totalQuestions = max(1, min(50, (int) ($data['total_questions'] ?? 20)));
+    $correctCount = max(0, min($totalQuestions, (int) ($data['correct_count'] ?? 0)));
+    $accuracy = (int) round(($correctCount / $totalQuestions) * 100);
+    $subject = mb_substr(trim((string) ($data['subject'] ?? 'Semua Mapel')), 0, 40) ?: 'Semua Mapel';
+
+    $store = $loadOrSeedSchoolLeaderboards();
+    if (!isset($store['classes'][$classKey]) || !is_array($store['classes'][$classKey])) {
+        $store['classes'][$classKey] = [];
+    }
+
+    $foundIdx = null;
+    foreach ($store['classes'][$classKey] as $idx => $entry) {
+        if (strtolower(trim((string) ($entry['name'] ?? ''))) === strtolower($playerName)) {
+            $foundIdx = $idx;
+            break;
+        }
+    }
+
+    $now = now()->toIso8601String();
+    if ($foundIdx !== null) {
+        $prev = $store['classes'][$classKey][$foundIdx];
+        $isNewBest = $score >= (int) ($prev['bestScore'] ?? 0);
+        $store['classes'][$classKey][$foundIdx] = [
+            'name' => $playerName,
+            'classKey' => $classKey,
+            'classLabel' => $classLabel,
+            'school' => $school,
+            'bestScore' => max((int) ($prev['bestScore'] ?? 0), $score),
+            'totalScore' => (int) ($prev['totalScore'] ?? 0) + $score,
+            'quizzesPlayed' => (int) ($prev['quizzesPlayed'] ?? 0) + 1,
+            'bestCorrect' => max((int) ($prev['bestCorrect'] ?? 0), $correctCount),
+            'accuracy' => $isNewBest ? $accuracy : max((int) ($prev['accuracy'] ?? 0), $accuracy),
+            'subject' => $isNewBest ? $subject : ($prev['subject'] ?? $subject),
+            'updatedAt' => $now,
+        ];
+    } else {
+        $store['classes'][$classKey][] = [
+            'name' => $playerName,
+            'classKey' => $classKey,
+            'classLabel' => $classLabel,
+            'school' => $school,
+            'bestScore' => $score,
+            'totalScore' => $score,
+            'quizzesPlayed' => 1,
+            'bestCorrect' => $correctCount,
+            'accuracy' => $accuracy,
+            'subject' => $subject,
+            'updatedAt' => $now,
+        ];
+    }
+
+    $filePath = storage_path('app/school_leaderboards.json');
+    @file_put_contents($filePath, json_encode($store, JSON_PRETTY_PRINT));
+
+    return response()->json($buildLeaderboardResponse($store, $school, $grade));
+});
+
 
 
 

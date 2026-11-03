@@ -10,7 +10,7 @@
  * ============================================================================
  */
 
-const CACHE_NAME = 'radenworld-static-v1';
+const CACHE_NAME = 'radenworld-static-v3';
 
 // Pola URL yang dikecualikan dari cache (harus selalu live realtime)
 const NETWORK_ONLY_PATTERNS = [
@@ -55,8 +55,8 @@ self.addEventListener('fetch', (event) => {
   const request = event.request;
   const url = new URL(request.url);
 
-  // 1. Abaikan request non-GET (POST, PUT, DELETE)
-  if (request.method !== 'GET') {
+  // 1. Abaikan request non-GET (POST, PUT, DELETE) dan server dev Vite (:5173)
+  if (request.method !== 'GET' || url.port === '5173') {
     return;
   }
 

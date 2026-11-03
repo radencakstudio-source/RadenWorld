@@ -2,15 +2,12 @@
  * ============================================================================
  * FILE: resources/js/game/ui/SettingsModal.tsx
  * ============================================================================
- * FUNGSI UTAMA:
- * Modal Pengaturan komprehensif, modern, dan interaktif untuk game RadenWorld.
- * 
- * FITUR TERLENGKAP:
- * 1. Pilihan Bahasa: Indonesia, English, Sunda, Jawa.
- * 2. Suara & Audio: Master Volume, BGM, SFX, Mute, & Tombol Uji Suara Real-time.
- * 3. Tampilan & Kamera: Zoom Kamera (0.75x, 0.9x, 1.1x, 1.35x) & Mode Fullscreen.
- * 4. Kontrol Permainan: Mode PC (WASD/Panah/Mouse) & Mode Mobile (Virtual Joystick).
- * 5. Jaringan & Server: Live Ping Latensi, Host LAN, Salin Link, & Pintasan Pindah Server.
+ * Modal Pengaturan RadenWorld (Cozycore Clay-Pixel):
+ * 1. Pilihan Bahasa (10 Bahasa Internasional).
+ * 2. Suara & Audio: Master Volume, BGM, SFX, Mute, & Uji Suara Real-time.
+ * 3. Tampilan & Kamera: Zoom Kamera & Mode Fullscreen.
+ * 4. Kontrol Permainan: Mode PC & Mode Mobile + Pengatur HUD di Layar.
+ * 5. Jaringan & Server: Live Ping Latensi, Host LAN, Salin Link, & Pindah Server.
  * ============================================================================
  */
 
@@ -72,7 +69,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   onUpdateSettings,
   onOpenServerModal,
 }) => {
-  const [activeSection, setActiveSection] = useState<'language' | 'sound' | 'display' | 'controls' | 'network'>('language');
+  const [activeSection, setActiveSection] = useState<
+    'language' | 'sound' | 'display' | 'controls' | 'network'
+  >('language');
   const sound = SoundManager.getInstance();
   const networkMgr = NetworkManager.getInstance();
 
@@ -96,8 +95,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   });
   const [isBgmPlaying, setIsBgmPlaying] = useState<boolean>(() => sound.getIsBgmPlaying());
 
-  // Kustomisasi Ukuran & Posisi Kontrol Virtual Mobile
-  const [controlsLayout, setControlsLayout] = useState<IVirtualControlsLayout>(() => {
+  const [, setControlsLayout] = useState<IVirtualControlsLayout>(() => {
     try {
       const saved = localStorage.getItem('raden_virtual_controls_layout');
       if (saved) return { ...DEFAULT_CONTROLS_LAYOUT, ...JSON.parse(saved) };
@@ -105,22 +103,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     return DEFAULT_CONTROLS_LAYOUT;
   });
 
-  const handleUpdateControlsLayout = (patch: Partial<IVirtualControlsLayout>) => {
-    setControlsLayout((prev) => {
-      const updated = { ...prev, ...patch };
-      try {
-        localStorage.setItem('raden_virtual_controls_layout', JSON.stringify(updated));
-      } catch (e) {}
-      EventBus.emit('virtual-controls-layout-updated', updated);
-      return updated;
-    });
-  };
-
   const handleResetControlsLayout = () => {
     sound.playClick();
     setControlsLayout(DEFAULT_CONTROLS_LAYOUT);
     try {
-      localStorage.setItem('raden_virtual_controls_layout', JSON.stringify(DEFAULT_CONTROLS_LAYOUT));
+      localStorage.setItem(
+        'raden_virtual_controls_layout',
+        JSON.stringify(DEFAULT_CONTROLS_LAYOUT)
+      );
     } catch (e) {}
     EventBus.emit('virtual-controls-layout-updated', DEFAULT_CONTROLS_LAYOUT);
   };
@@ -144,7 +134,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     EventBus.on('network-status-changed', handleNet);
     document.addEventListener('fullscreenchange', handleFsChange);
 
-    // Otomatis ukur ping saat modal dibuka
     measureLivePing();
 
     return () => {
@@ -155,9 +144,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
   if (!isOpen) return null;
 
-  /**
-   * Mengukur latensi real-time ke server game
-   */
   const measureLivePing = async () => {
     setIsTestingPing(true);
     try {
@@ -183,7 +169,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     onUpdateSettings({ ...settings, controlMode: mode });
   };
 
-  const handleVolumeChange = (field: 'masterVolume' | 'bgmVolume' | 'sfxVolume', value: number) => {
+  const handleVolumeChange = (
+    field: 'masterVolume' | 'bgmVolume' | 'sfxVolume',
+    value: number
+  ) => {
     const updated = { ...settings, [field]: value };
     onUpdateSettings(updated);
     sound.setVolume(updated.masterVolume, updated.sfxVolume, updated.bgmVolume);
@@ -197,7 +186,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     sound.playClick();
     setCurrentCameraZoom(zoom);
     onUpdateSettings({ ...settings, cameraZoom: zoom });
-    // Pancarkan ke scene game agar kamera langsung merespons
     EventBus.emit('camera-zoom-set', zoom);
   };
 
@@ -221,10 +209,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     sound.playClick();
     const port = window.location.port ? `:${window.location.port}` : '';
     const shareUrl = `${window.location.protocol}//${window.location.hostname}${port}`;
-    navigator.clipboard.writeText(shareUrl).then(() => {
-      setCopiedLink(true);
-      setTimeout(() => setCopiedLink(false), 2500);
-    }).catch(() => {});
+    navigator.clipboard
+      .writeText(shareUrl)
+      .then(() => {
+        setCopiedLink(true);
+        setTimeout(() => setCopiedLink(false), 2500);
+      })
+      .catch(() => {});
   };
 
   const languagesList: { code: LanguageCode; name: string; region: string; flag: string }[] = [
@@ -234,109 +225,119 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     { code: 'ja', name: '日本語 (Japanese)', region: 'Japan (Nihon)', flag: '🇯🇵' },
     { code: 'ko', name: '한국어 (Korean)', region: 'South Korea (Hanguk)', flag: '🇰🇷' },
     { code: 'ar', name: 'العربية (Arabic)', region: 'Timur Tengah & Afrika Utara', flag: '🇸🇦' },
-    { code: 'fr', name: 'Français (French)', region: 'Prancis & Komunitas Frankofon', flag: '🇫🇷' },
+    { code: 'fr', name: 'Français (French)', region: 'Prancis & Frankofon', flag: '🇫🇷' },
     { code: 'ru', name: 'Русский (Russian)', region: 'Rusia & Negara CIS', flag: '🇷🇺' },
     { code: 'de', name: 'Deutsch (German)', region: 'Jerman / Austria / Swiss', flag: '🇩🇪' },
     { code: 'es', name: 'Español (Spanish)', region: 'Spanyol & Amerika Latin', flag: '🇪🇸' },
   ];
 
   const cameraZoomPresets = [
-    { label: 'Panorama Luas (80×80)', value: 0.6, desc: 'Melihat kawasan open world 80x80 ekstra luas' },
+    {
+      label: 'Panorama Luas (80×80)',
+      value: 0.6,
+      desc: 'Melihat kawasan open world ekstra luas',
+    },
     { label: 'Jauh / Luas', value: 0.75, desc: 'Melihat area sekitar lebih lebar' },
     { label: 'Standar Open World', value: 0.9, desc: 'Tampilan proporsional Simulasi' },
     { label: 'Fokus Karakter', value: 1.15, desc: 'Lebih dekat dengan avatar' },
-    { label: 'Detail / Zoom In', value: 1.4, desc: 'Melihat ekspresi & tekstur HD' },
+    { label: 'Detail / Zoom In', value: 1.4, desc: 'Melihat ekspresi & tekstur dekat' },
   ];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/80 font-['Chakra_Petch'] select-none animate-in fade-in duration-200">
-      <div className="relative w-full max-w-2xl bg-black border border-neutral-800 rounded-xl flex flex-col overflow-hidden max-h-[min(90dvh,88vh)] my-auto">
-
-        {/* ==================================================================== */}
-        {/* HEADER MODAL: Flat Pure Black                                        */}
-        {/* ==================================================================== */}
-        <div className="flex items-center justify-between px-3 sm:px-6 py-2 sm:py-3.5 border-b border-neutral-800 bg-[#0a0a0a] shrink-0">
-          <div className="flex items-center gap-2.5 sm:gap-3">
-            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-md bg-neutral-900 border border-neutral-800 flex items-center justify-center text-amber-400 shrink-0">
-              <Sliders className="w-4 h-4" />
+    <div
+      className="ui-modal-backdrop select-none"
+      onKeyDown={(e) => e.stopPropagation()}
+    >
+      <div className="clay-panel landscape-compact-modal relative w-full max-w-3xl max-h-[min(92dvh,calc(100dvh-1rem))] flex flex-col overflow-hidden text-black">
+        <div className="clay-modal-shell flex-1 min-h-0">
+          {/* SIDEBAR KIRI: LOGO DI ATAS, TEKS DI BAWAH */}
+          <aside className="clay-sidebar">
+            <div className="clay-sidebar-brand">
+              <Sliders className="w-5 h-5 text-black stroke-[2.5]" />
+              <span className="clay-sidebar-title">PENGATURAN</span>
+              <span className="clay-sidebar-subtitle">SISTEM GAME</span>
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-sm sm:text-base font-bold text-amber-400 tracking-wider uppercase">
-                  Pengaturan Game
-                </h2>
-                <span className="text-[9px] sm:text-[10px] font-mono font-bold bg-amber-500 text-black px-1.5 py-0.5 rounded">
-                  SISTEM
+
+            <div className="clay-sidebar-nav custom-scrollbar">
+              {[
+                { id: 'language', label: 'Bahasa', icon: Languages },
+                { id: 'sound', label: 'Audio', icon: Volume2 },
+                { id: 'display', label: 'Tampilan', icon: ZoomIn },
+                { id: 'controls', label: 'Kontrol', icon: Gamepad2 },
+                { id: 'network', label: 'Jaringan', icon: Wifi },
+              ].map((tab) => {
+                const Icon = tab.icon;
+                const isActive = activeSection === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => {
+                      sound.playClick();
+                      setActiveSection(tab.id as any);
+                    }}
+                    className={`clay-sidebar-btn ${
+                      isActive ? 'clay-sidebar-btn-active' : 'clay-sidebar-btn-inactive'
+                    }`}
+                  >
+                    <Icon className="w-5 h-5 stroke-[2.5] shrink-0" />
+                    <span>{tab.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="clay-sidebar-footer">
+              <span className="clay-badge-neutral text-[9px] font-bold text-center py-0.5">
+                RADEN v2.0
+              </span>
+            </div>
+          </aside>
+
+          {/* MAIN CONTENT PANE */}
+          <div className="clay-main-pane flex-1 min-w-0 flex flex-col">
+            <div className="clay-main-topbar flex items-center justify-between px-3.5 sm:px-4 py-2 border-b-2 border-[#5C3A21] bg-[#FFF8EA] shrink-0">
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="text-xs sm:text-sm font-bold uppercase text-black truncate">
+                  {activeSection === 'language' && 'PILIHAN BAHASA DUNIA'}
+                  {activeSection === 'sound' && 'AUDIO & EFEK SUARA'}
+                  {activeSection === 'display' && 'TAMPILAN & KAMERA'}
+                  {activeSection === 'controls' && 'KONTROL PERMAINAN'}
+                  {activeSection === 'network' && 'JARINGAN & MULTIPLAYER'}
+                </span>
+                <span className="clay-badge-secondary hidden sm:inline-block text-[9px] font-bold px-1.5 py-0.5 text-black">
+                  AKTIF
                 </span>
               </div>
-              <p className="text-[11px] sm:text-xs text-neutral-400 mt-0.5 hidden sm:block">
-                Sesuaikan audio, grafis kamera, bahasa, dan konfigurasi server.
-              </p>
-            </div>
-          </div>
 
-          <button
-            onClick={() => {
-              sound.playClick();
-              onClose();
-            }}
-            className="p-1.5 rounded-md text-neutral-400 hover:text-amber-400 hover:bg-neutral-800 transition-colors cursor-pointer shrink-0"
-            title="Tutup"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* ==================================================================== */}
-        {/* TAB NAVIGATION BAR (5 TAB RESPONSIF)                                  */}
-        {/* ==================================================================== */}
-        <div className="flex items-center gap-1.5 px-3 sm:px-6 pt-2 pb-1.5 border-b border-neutral-800 bg-[#0a0a0a] overflow-x-auto no-scrollbar shrink-0">
-          {[
-            { id: 'language', label: 'Bahasa', icon: Languages },
-            { id: 'sound', label: 'Audio', icon: Volume2 },
-            { id: 'display', label: 'Tampilan', icon: ZoomIn },
-            { id: 'controls', label: 'Kontrol', icon: Gamepad2 },
-            { id: 'network', label: 'Jaringan', icon: Wifi },
-          ].map((tab) => {
-            const Icon = tab.icon;
-            const isActive = activeSection === tab.id;
-            return (
               <button
-                key={tab.id}
                 type="button"
                 onClick={() => {
                   sound.playClick();
-                  setActiveSection(tab.id as any);
+                  onClose();
                 }}
-                className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-md text-[11px] sm:text-xs font-bold uppercase tracking-wider flex items-center gap-1 sm:gap-1.5 transition-colors cursor-pointer shrink-0 ${
-                  isActive
-                    ? 'bg-amber-500 text-black font-black'
-                    : 'text-neutral-400 hover:text-amber-300 hover:bg-neutral-800'
-                }`}
+                className="clay-btn-neutral w-8 h-8 flex items-center justify-center text-black shrink-0"
+                title="Tutup Pengaturan"
               >
-                <Icon className="w-3 sm:w-3.5 h-3 sm:h-3.5" />
-                <span>{tab.label}</span>
+                <X className="w-4 h-4 stroke-[2.5]" />
               </button>
-            );
-          })}
-        </div>
+            </div>
 
-        {/* ==================================================================== */}
-        {/* MODAL CONTENT BODY                                                   */}
-        {/* ==================================================================== */}
-        <div className="p-3 sm:p-5 overflow-y-auto space-y-3 sm:space-y-4 custom-scrollbar flex-1 min-h-0">
-
+            {/* MODAL CONTENT BODY */}
+            <div className="clay-main-body p-3.5 sm:p-5 overflow-y-auto space-y-3.5 custom-scrollbar flex-1 min-h-0">
           {/* TAB 1: BAHASA */}
           {activeSection === 'language' && (
-            <div className="space-y-3 sm:space-y-3.5 animate-in fade-in duration-150">
-              <div className="flex items-center justify-between">
-                <label className="text-xs font-bold text-amber-400 uppercase tracking-wider">
+            <div className="space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <label className="text-xs font-bold text-black uppercase">
                   Pilih Bahasa Dialog & Antarmuka:
                 </label>
-                <span className="text-[11px] text-neutral-400">Aktif: {settings.language.toUpperCase()}</span>
+                <span className="clay-badge-secondary px-2 py-0.5 text-[10px] font-bold text-black">
+                  Aktif: {settings.language.toUpperCase()}
+                </span>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                 {languagesList.map((lang) => {
                   const isSelected = settings.language === lang.code;
                   return (
@@ -344,23 +345,21 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       key={lang.code}
                       type="button"
                       onClick={() => handleLanguageChange(lang.code)}
-                      className={`p-2.5 sm:p-3.5 rounded-md border text-left flex items-center justify-between transition-colors cursor-pointer ${
-                        isSelected
-                          ? 'bg-neutral-900 border-amber-400'
-                          : 'bg-[#0e0e0e] border-neutral-800 hover:border-amber-500/40 hover:bg-neutral-900'
+                      className={`p-2.5 sm:p-3 text-left flex items-center justify-between gap-2 text-black ${
+                        isSelected ? 'clay-btn-secondary' : 'clay-btn-neutral'
                       }`}
                     >
-                      <div className="flex items-center gap-3">
-                        <span className="text-xl">{lang.flag}</span>
-                        <div>
-                          <div className={`font-bold text-xs uppercase tracking-wide ${isSelected ? 'text-amber-300' : 'text-white'}`}>
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <span className="text-lg shrink-0">{lang.flag}</span>
+                        <div className="min-w-0">
+                          <div className="font-bold text-xs uppercase text-black truncate">
                             {lang.name}
                           </div>
-                          <div className="text-[10px] text-neutral-400 mt-0.5">{lang.region}</div>
+                          <div className="text-[10px] text-black truncate">{lang.region}</div>
                         </div>
                       </div>
                       {isSelected && (
-                        <div className="w-5 h-5 rounded-full bg-amber-400 text-black flex items-center justify-center shrink-0">
+                        <div className="w-5 h-5 rounded-full bg-[#FFAE6D] border-2 border-[#5C3A21] text-black flex items-center justify-center shrink-0">
                           <Check className="w-3 h-3 stroke-[3]" />
                         </div>
                       )}
@@ -373,19 +372,29 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
           {/* TAB 2: AUDIO & SUARA */}
           {activeSection === 'sound' && (
-            <div className="space-y-4 animate-in fade-in duration-150">
+            <div className="space-y-3">
               {/* Master Mute Bar */}
-              <div className="flex items-center justify-between p-3.5 rounded-md bg-[#0e0e0e] border border-neutral-800">
-                <div className="flex items-center gap-3">
-                  <div className={`p-2 rounded-md ${settings.isMuted ? 'bg-rose-950/40 text-rose-400 border border-rose-500/40' : 'bg-emerald-950/40 text-emerald-400 border border-emerald-500/40'}`}>
-                    {settings.isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+              <div className="clay-card p-3 flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div
+                    className={`w-9 h-9 rounded-lg border-2 border-[#5C3A21] flex items-center justify-center text-black shrink-0 ${
+                      settings.isMuted ? 'bg-[#FFAE6D]' : 'bg-[#A8E6CF]'
+                    }`}
+                  >
+                    {settings.isMuted ? (
+                      <VolumeX className="w-4 h-4 stroke-[2.5]" />
+                    ) : (
+                      <Volume2 className="w-4 h-4 stroke-[2.5]" />
+                    )}
                   </div>
-                  <div>
-                    <div className="text-xs font-bold text-white uppercase tracking-wider">
+                  <div className="min-w-0">
+                    <div className="text-xs font-bold text-black uppercase truncate">
                       Bisukan Seluruh Audio (Mute)
                     </div>
-                    <div className="text-[10px] text-neutral-400">
-                      {settings.isMuted ? 'Semua audio dinonaktifkan' : 'Musik BGM dan Efek SFX aktif'}
+                    <div className="text-[10px] text-black truncate">
+                      {settings.isMuted
+                        ? 'Semua audio dinonaktifkan'
+                        : 'Musik BGM dan Efek SFX aktif'}
                     </div>
                   </div>
                 </div>
@@ -393,10 +402,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 <button
                   type="button"
                   onClick={toggleMute}
-                  className={`px-3 py-1.5 rounded-md text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer ${
-                    settings.isMuted
-                      ? 'bg-rose-950/40 text-rose-300 border border-rose-500/50'
-                      : 'bg-emerald-500 text-black'
+                  className={`px-3 py-1.5 text-xs font-bold uppercase text-black shrink-0 ${
+                    settings.isMuted ? 'clay-btn-primary' : 'clay-btn-secondary'
                   }`}
                 >
                   {settings.isMuted ? 'MUTED' : 'ON'}
@@ -404,10 +411,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               </div>
 
               {/* Slider Master Volume */}
-              <div className="p-3.5 rounded-md bg-[#0e0e0e] border border-neutral-800 space-y-2">
-                <div className="flex justify-between text-xs font-bold">
-                  <span className="text-neutral-300 uppercase tracking-wider">Volume Master</span>
-                  <span className="text-amber-400 font-mono">{Math.round(settings.masterVolume * 100)}%</span>
+              <div className="clay-card p-3 space-y-2">
+                <div className="flex justify-between text-xs font-bold text-black">
+                  <span className="uppercase">Volume Master</span>
+                  <span>{Math.round(settings.masterVolume * 100)}%</span>
                 </div>
                 <input
                   type="range"
@@ -416,27 +423,29 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   step="0.05"
                   value={settings.masterVolume}
                   onChange={(e) => handleVolumeChange('masterVolume', parseFloat(e.target.value))}
-                  className="w-full accent-amber-500 cursor-pointer h-2 bg-neutral-800 rounded-lg"
+                  className="w-full accent-[#FFAE6D] cursor-pointer h-2.5 bg-[#FFF8EA] border border-[#5C3A21] rounded-lg"
                 />
               </div>
 
-              {/* BGM Musik Resmi RadenWorld + Play/Pause Controller */}
-              <div className="p-3.5 rounded-md bg-[#0e0e0e] border border-neutral-800 space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-md bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
-                      <Music className="w-4 h-4" />
+              {/* BGM Controller */}
+              <div className="clay-card p-3 space-y-2.5">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-8 h-8 rounded-lg bg-[#A8E6CF] border-2 border-[#5C3A21] flex items-center justify-center text-black shrink-0">
+                      <Music className="w-4 h-4 stroke-[2.5]" />
                     </div>
-                    <div>
-                      <div className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
-                        <span>Musik Latar Resmi (BGM)</span>
-                        <span className={`text-[9px] px-1.5 py-0.2 rounded font-mono font-bold ${isBgmPlaying ? 'bg-emerald-500 text-black' : 'bg-neutral-800 text-neutral-300'}`}>
+                    <div className="min-w-0">
+                      <div className="text-xs font-bold text-black uppercase flex items-center gap-1.5 flex-wrap">
+                        <span>Musik Latar (BGM)</span>
+                        <span
+                          className={`text-[9px] px-1.5 py-0.5 font-bold ${
+                            isBgmPlaying ? 'clay-badge-secondary' : 'clay-badge-neutral'
+                          }`}
+                        >
                           {isBgmPlaying ? 'MEMUTAR' : 'JEDA'}
                         </span>
                       </div>
-                      <div className="text-[10px] text-amber-400/80 font-mono mt-0.5">
-                        RadenWorld Music.mp3
-                      </div>
+                      <div className="text-[10px] text-black truncate">RadenWorld Music.mp3</div>
                     </div>
                   </div>
 
@@ -446,7 +455,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       sound.toggleBGM();
                       setIsBgmPlaying(sound.getIsBgmPlaying());
                     }}
-                    className="px-3 py-1.5 rounded-md bg-amber-500 hover:bg-amber-400 active:scale-95 text-black font-bold text-xs uppercase tracking-wider transition-colors cursor-pointer flex items-center gap-1.5"
+                    className="clay-btn-primary px-3 py-1.5 text-black font-bold text-xs uppercase flex items-center gap-1.5 shrink-0"
                   >
                     {isBgmPlaying ? (
                       <>
@@ -462,10 +471,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   </button>
                 </div>
 
-                <div className="pt-1 space-y-1.5">
-                  <div className="flex justify-between text-xs font-bold">
-                    <span className="text-neutral-400 text-[11px] uppercase tracking-wider">Volume BGM</span>
-                    <span className="text-amber-400 font-mono">{Math.round(settings.bgmVolume * 100)}%</span>
+                <div className="space-y-1.5">
+                  <div className="flex justify-between text-xs font-bold text-black">
+                    <span className="text-[11px] uppercase">Volume BGM</span>
+                    <span>{Math.round(settings.bgmVolume * 100)}%</span>
                   </div>
                   <input
                     type="range"
@@ -474,16 +483,16 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     step="0.05"
                     value={settings.bgmVolume}
                     onChange={(e) => handleVolumeChange('bgmVolume', parseFloat(e.target.value))}
-                    className="w-full accent-amber-500 cursor-pointer h-2 bg-neutral-800 rounded-lg"
+                    className="w-full accent-[#FFAE6D] cursor-pointer h-2.5 bg-[#FFF8EA] border border-[#5C3A21] rounded-lg"
                   />
                 </div>
               </div>
 
-              {/* Slider SFX Efek Suara + Preview Button */}
-              <div className="p-3.5 rounded-md bg-[#0e0e0e] border border-neutral-800 space-y-2">
-                <div className="flex justify-between text-xs font-bold">
-                  <span className="text-neutral-300 uppercase tracking-wider">Efek Suara (SFX)</span>
-                  <span className="text-amber-400 font-mono">{Math.round(settings.sfxVolume * 100)}%</span>
+              {/* Slider SFX */}
+              <div className="clay-card p-3 space-y-2">
+                <div className="flex justify-between text-xs font-bold text-black">
+                  <span className="uppercase">Efek Suara (SFX)</span>
+                  <span>{Math.round(settings.sfxVolume * 100)}%</span>
                 </div>
                 <input
                   type="range"
@@ -492,19 +501,19 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   step="0.05"
                   value={settings.sfxVolume}
                   onChange={(e) => handleVolumeChange('sfxVolume', parseFloat(e.target.value))}
-                  className="w-full accent-amber-500 cursor-pointer h-2 bg-neutral-800 rounded-lg"
+                  className="w-full accent-[#FFAE6D] cursor-pointer h-2.5 bg-[#FFF8EA] border border-[#5C3A21] rounded-lg"
                 />
               </div>
 
-              {/* Tombol Uji Audio SFX */}
-              <div className="flex items-center justify-between p-3 rounded-md bg-neutral-900 border border-neutral-800">
-                <span className="text-xs text-amber-300 font-medium">
-                  Tes sampel efek audio synthesised Web Audio:
+              {/* Uji Suara */}
+              <div className="clay-card-secondary p-3 flex flex-wrap items-center justify-between gap-2">
+                <span className="text-xs font-bold text-black">
+                  Tes sampel efek audio Web Audio:
                 </span>
                 <button
                   type="button"
                   onClick={handleTestSoundChime}
-                  className="px-3 py-1.5 rounded-md bg-amber-500 hover:bg-amber-400 active:scale-95 text-black font-bold text-xs uppercase tracking-wider transition-colors cursor-pointer flex items-center gap-1.5"
+                  className="clay-btn-primary px-3 py-1.5 text-black font-bold text-xs uppercase flex items-center gap-1.5 shrink-0"
                 >
                   <Play className="w-3.5 h-3.5 fill-current" />
                   <span>Uji Suara</span>
@@ -515,19 +524,18 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
           {/* TAB 3: TAMPILAN & KAMERA */}
           {activeSection === 'display' && (
-            <div className="space-y-4 animate-in fade-in duration-150">
-              {/* Tingkat Zoom Kamera */}
-              <div className="space-y-2.5">
-                <div className="flex items-center justify-between">
-                  <label className="text-xs font-bold text-amber-400 uppercase tracking-wider">
-                    Jarak Pandang Kamera (Camera Zoom):
+            <div className="space-y-3.5">
+              <div className="space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <label className="text-xs font-bold text-black uppercase">
+                    Jarak Pandang Kamera (Zoom):
                   </label>
-                  <span className="text-xs font-mono text-amber-300 font-bold">
+                  <span className="clay-badge-primary px-2 py-0.5 text-xs font-bold text-black">
                     {Math.round(currentCameraZoom * 100)}%
                   </span>
                 </div>
 
-                <div className="grid grid-cols-2 gap-2.5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                   {cameraZoomPresets.map((preset) => {
                     const isSelected = Math.abs(currentCameraZoom - preset.value) < 0.08;
                     return (
@@ -535,41 +543,47 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         key={preset.value}
                         type="button"
                         onClick={() => handleZoomChange(preset.value)}
-                        className={`p-3 rounded-md border text-left flex flex-col justify-between transition-colors cursor-pointer ${
-                          isSelected
-                            ? 'bg-neutral-900 border-amber-400'
-                            : 'bg-[#0e0e0e] border-neutral-800 hover:border-amber-500/40 hover:bg-neutral-900'
+                        className={`p-3 text-left flex flex-col justify-between text-black ${
+                          isSelected ? 'clay-btn-secondary' : 'clay-btn-neutral'
                         }`}
                       >
-                        <div className="flex items-center justify-between">
-                          <span className={`text-xs font-bold uppercase tracking-wider ${isSelected ? 'text-amber-300' : 'text-white'}`}>
+                        <div className="flex items-center justify-between gap-2 w-full">
+                          <span className="text-xs font-bold uppercase text-black">
                             {preset.label}
                           </span>
-                          <span className="text-[10px] font-mono text-amber-400 font-bold">
+                          <span className="clay-badge-primary px-1.5 py-0.5 text-[10px] font-bold text-black shrink-0">
                             {preset.value}x
                           </span>
                         </div>
-                        <p className="text-[10px] text-neutral-400 mt-1">{preset.desc}</p>
+                        <p className="text-[10px] text-black mt-1 leading-snug">{preset.desc}</p>
                       </button>
                     );
                   })}
                 </div>
               </div>
 
-              {/* Mode Layar Penuh Fullscreen */}
-              <div className="flex items-center justify-between p-3.5 rounded-md bg-[#0e0e0e] border border-neutral-800">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-md bg-neutral-900 text-amber-400 border border-neutral-800">
-                    {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+              {/* Fullscreen */}
+              <div className="clay-card p-3 flex flex-wrap items-center justify-between gap-2.5">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="w-9 h-9 rounded-lg bg-[#A8E6CF] border-2 border-[#5C3A21] flex items-center justify-center text-black shrink-0">
+                    {isFullscreen ? (
+                      <Minimize2 className="w-4 h-4 stroke-[2.5]" />
+                    ) : (
+                      <Maximize2 className="w-4 h-4 stroke-[2.5]" />
+                    )}
                   </div>
-                  <div>
-                    <div className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                  <div className="min-w-0">
+                    <div className="text-xs font-bold text-black uppercase flex items-center gap-1.5 flex-wrap">
                       <span>Layar Penuh (Fullscreen)</span>
-                      <span className={`text-[9px] px-1.5 py-0.2 rounded font-mono font-bold ${isFullscreen ? 'bg-emerald-500 text-black' : 'bg-neutral-800 text-neutral-300'}`}>
+                      <span
+                        className={`text-[9px] px-1.5 py-0.5 font-bold ${
+                          isFullscreen ? 'clay-badge-secondary' : 'clay-badge-neutral'
+                        }`}
+                      >
                         {isFullscreen ? 'AKTIF' : 'JENDELA'}
                       </span>
                     </div>
-                    <div className="text-[10px] text-neutral-400">
+                    <div className="text-[10px] text-black">
                       Meningkatkan fokus dan imersi visual permainan
                     </div>
                   </div>
@@ -578,7 +592,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 <button
                   type="button"
                   onClick={toggleFullscreen}
-                  className="px-3.5 py-1.5 rounded-md bg-amber-500 hover:bg-amber-400 active:scale-95 text-black font-bold text-xs uppercase tracking-wider transition-colors cursor-pointer"
+                  className="clay-btn-primary px-3.5 py-1.5 text-black font-bold text-xs uppercase shrink-0"
                 >
                   {isFullscreen ? 'Keluar Fullscreen' : 'Masuk Fullscreen'}
                 </button>
@@ -588,129 +602,118 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
           {/* TAB 4: KONTROL */}
           {activeSection === 'controls' && (
-            <div className="space-y-4 animate-in fade-in duration-150">
-              <label className="text-xs font-bold text-amber-400 uppercase tracking-wider">
+            <div className="space-y-3.5">
+              <label className="text-xs font-bold text-black uppercase block">
                 Pilih Mode Navigasi Karakter:
               </label>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {/* 1. Mode PC */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                 <button
                   type="button"
                   onClick={() => handleControlModeChange('pc')}
-                  className={`p-4 rounded-md border text-left flex flex-col gap-2.5 transition-colors cursor-pointer ${
-                    settings.controlMode === 'pc'
-                      ? 'bg-neutral-900 border-amber-400'
-                      : 'bg-[#0e0e0e] border-neutral-800 hover:border-amber-500/40 hover:bg-neutral-900'
+                  className={`p-3.5 text-left flex flex-col gap-2 text-black ${
+                    settings.controlMode === 'pc' ? 'clay-btn-secondary' : 'clay-btn-neutral'
                   }`}
                 >
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between w-full">
                     <div className="flex items-center gap-2">
-                      <Monitor className="w-4 h-4 text-amber-400" />
-                      <span className="text-xs font-bold text-white uppercase tracking-wider">
-                        Mode PC / Laptop
-                      </span>
+                      <Monitor className="w-4 h-4 stroke-[2.5]" />
+                      <span className="text-xs font-bold uppercase">Mode PC / Laptop</span>
                     </div>
-                    {settings.controlMode === 'pc' && <Check className="w-4 h-4 text-amber-400" />}
+                    {settings.controlMode === 'pc' && <Check className="w-4 h-4 stroke-[3]" />}
                   </div>
-                  <p className="text-[11px] text-neutral-400 leading-relaxed">
-                    Navigasi tombol keyboard <strong>WASD / Tombol Panah</strong> dan <strong>Klik Mouse (Tap-to-move)</strong>.
+                  <p className="text-[11px] leading-snug">
+                    Navigasi keyboard <strong>WASD / Panah</strong> dan{' '}
+                    <strong>Klik Mouse (Tap-to-move)</strong>.
                   </p>
                 </button>
 
-                {/* 2. Mode Mobile */}
                 <button
                   type="button"
                   onClick={() => handleControlModeChange('mobile')}
-                  className={`p-4 rounded-md border text-left flex flex-col gap-2.5 transition-colors cursor-pointer ${
-                    settings.controlMode === 'mobile'
-                      ? 'bg-neutral-900 border-amber-400'
-                      : 'bg-[#0e0e0e] border-neutral-800 hover:border-amber-500/40 hover:bg-neutral-900'
+                  className={`p-3.5 text-left flex flex-col gap-2 text-black ${
+                    settings.controlMode === 'mobile' ? 'clay-btn-secondary' : 'clay-btn-neutral'
                   }`}
                 >
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between w-full">
                     <div className="flex items-center gap-2">
-                      <Smartphone className="w-4 h-4 text-amber-400" />
-                      <span className="text-xs font-bold text-white uppercase tracking-wider">
-                        Mode Layar Sentuh (Mobile)
-                      </span>
+                      <Smartphone className="w-4 h-4 stroke-[2.5]" />
+                      <span className="text-xs font-bold uppercase">Mode Layar Sentuh</span>
                     </div>
-                    {settings.controlMode === 'mobile' && <Check className="w-4 h-4 text-amber-400" />}
+                    {settings.controlMode === 'mobile' && <Check className="w-4 h-4 stroke-[3]" />}
                   </div>
-                  <p className="text-[11px] text-neutral-400 leading-relaxed">
-                    Menampilkan <strong>Virtual D-Pad Joystick</strong> dan tombol aksi sentuh di layar.
+                  <p className="text-[11px] leading-snug">
+                    Menampilkan <strong>Analog Joystick 360°</strong> dan tombol aksi sentuh di
+                    layar.
                   </p>
                 </button>
               </div>
 
-              {/* Cheatsheet Bantuan Tombol (Sesuai Mode Kontrol yang Dipilih) */}
               {settings.controlMode === 'pc' ? (
-                <div className="p-3.5 rounded-md bg-[#0e0e0e] border border-neutral-800 text-xs space-y-2">
-                  <span className="font-bold text-amber-400 uppercase tracking-wider text-[11px]">
+                <div className="clay-card p-3 text-xs space-y-2 text-black">
+                  <span className="font-bold uppercase text-[11px] block">
                     Daftar Tombol Pintas PC:
                   </span>
-                  <div className="grid grid-cols-2 gap-2 text-neutral-300 font-mono text-[11px]">
-                    <div>WASD / Panah : Bergerak</div>
-                    <div>Klik Kiri : Point & Move</div>
-                    <div>E : Interaksi Objek / Pintu</div>
-                    <div>/ (Slash) : Buka Chat Box</div>
-                    <div>Scroll Mouse : Zoom Kamera</div>
-                    <div>+ / - : Zoom In / Out</div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-[11px]">
+                    <div>• WASD / Panah : Bergerak</div>
+                    <div>• Klik Kiri : Point & Move</div>
+                    <div>• E : Interaksi Objek / Pintu</div>
+                    <div>• / (Slash) : Buka Chat Box</div>
+                    <div>• Scroll Mouse : Zoom Kamera</div>
+                    <div>• B / M : Tas / Peta Dunia</div>
                   </div>
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {/* KUSTOMISASI KONTROL LAYAR SENTUH (LANGSUNG DI LAYAR) */}
-                  <div className="p-4 rounded-xl bg-gradient-to-br from-amber-500/10 via-black to-neutral-900 border-2 border-amber-500/30 space-y-3.5 shadow-lg">
-                    <div className="flex items-center justify-between">
+                  <div className="clay-card-secondary p-3.5 space-y-2.5 text-black">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
                       <div className="flex items-center gap-2">
-                        <Sliders className="w-4 h-4 text-amber-400" />
-                        <span className="font-bold text-amber-400 uppercase tracking-wider text-xs">
+                        <Sliders className="w-4 h-4 stroke-[2.5]" />
+                        <span className="font-bold uppercase text-xs">
                           Kustomisasi Posisi & Skala Kontrol:
                         </span>
                       </div>
                       <button
                         type="button"
                         onClick={handleResetControlsLayout}
-                        className="px-2.5 py-1 rounded-lg bg-neutral-900 hover:bg-neutral-800 border border-neutral-700 text-[10px] font-bold text-neutral-300 hover:text-amber-400 cursor-pointer flex items-center gap-1 transition-colors"
-                        title="Kembalikan posisi & skala kontrol virtual ke standar pabrik"
+                        className="clay-btn-neutral px-2.5 py-1 text-[10px] font-bold text-black flex items-center gap-1"
+                        title="Kembalikan posisi & skala kontrol virtual ke standar"
                       >
-                        <RefreshCw className="w-3 h-3" />
+                        <RefreshCw className="w-3 h-3 stroke-[2.5]" />
                         <span>Reset Standar</span>
                       </button>
                     </div>
 
-                    <p className="text-xs text-neutral-300 leading-relaxed">
-                      Kamu bisa <strong>menggeser analog & setiap tombol langsung dengan jari di layar game</strong>, serta memilih tombol untuk langsung memperbesar (<span className="text-amber-400 font-bold">+</span>) atau memperkecil (<span className="text-amber-400 font-bold">-</span>) ukurannya tanpa perlu repot mengatur slider!
+                    <p className="text-[11px] leading-snug">
+                      Geser analog & setiap tombol langsung dengan jari di layar game, serta atur
+                      ukurannya sesuai kenyamanan tanganmu.
                     </p>
 
-                    <div className="pt-1">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          handleControlModeChange('mobile');
-                          onClose();
-                          setTimeout(() => {
-                            EventBus.emit('open-controls-layout-editor');
-                          }, 120);
-                        }}
-                        className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-neutral-950 font-black text-xs uppercase tracking-wider shadow-lg flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-98"
-                      >
-                        <Move className="w-4 h-4 stroke-[2.5]" />
-                        <span>📱 Buka Pengatur Kontrol di Layar (Drag & Resize)</span>
-                      </button>
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        handleControlModeChange('mobile');
+                        onClose();
+                        setTimeout(() => {
+                          EventBus.emit('open-controls-layout-editor');
+                        }, 120);
+                      }}
+                      className="clay-btn-primary w-full py-2.5 px-4 text-black font-bold text-xs uppercase flex items-center justify-center gap-2"
+                    >
+                      <Move className="w-4 h-4 stroke-[2.5]" />
+                      <span>Buka Pengatur Kontrol di Layar</span>
+                    </button>
                   </div>
 
-                  <div className="p-3.5 rounded-md bg-[#0e0e0e] border border-neutral-800 text-xs space-y-2">
-                    <span className="font-bold text-amber-400 uppercase tracking-wider text-[11px]">
-                      Panduan Kontrol Layar Sentuh (Mobile):
+                  <div className="clay-card p-3 text-xs space-y-1.5 text-black">
+                    <span className="font-bold uppercase text-[11px] block">
+                      Panduan Kontrol Layar Sentuh:
                     </span>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-neutral-300 text-[11px]">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-[11px]">
                       <div>• Analog Kiri : Gerak 360° Mulus</div>
                       <div>• Tap Lantai : Navigasi Otomatis</div>
-                      <div>• Tombol Bulat AKSI : Bicara & Pintu</div>
-                      <div>• Ikon Chat Profil : Buka Obrolan</div>
+                      <div>• Tombol AKSI : Bicara & Pintu</div>
+                      <div>• Tombol CHAT : Buka Obrolan</div>
                     </div>
                   </div>
                 </div>
@@ -720,47 +723,49 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
           {/* TAB 5: JARINGAN & SERVER */}
           {activeSection === 'network' && (
-            <div className="space-y-4 animate-in fade-in duration-150">
-              {/* Status Server Real-Time */}
-              <div className="p-3.5 rounded-md bg-[#0e0e0e] border border-neutral-800 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <span className={`w-3 h-3 rounded-full shrink-0 ${isSocketConnected ? 'bg-emerald-400 border border-emerald-300' : 'bg-rose-500 border border-rose-400'}`} />
-                  <div>
-                    <div className="text-xs font-bold text-white flex items-center gap-2 uppercase tracking-wide">
-                      <span>{isSocketConnected ? 'Terhubung ke Multiplayer Server' : 'Server Socket Terputus'}</span>
+            <div className="space-y-3">
+              <div className="clay-card p-3 flex flex-wrap items-center justify-between gap-2.5">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <span
+                    className={`w-3 h-3 rounded-full border-2 border-[#5C3A21] shrink-0 ${
+                      isSocketConnected ? 'bg-[#A8E6CF]' : 'bg-[#FFAE6D]'
+                    }`}
+                  />
+                  <div className="min-w-0">
+                    <div className="text-xs font-bold text-black uppercase truncate">
+                      {isSocketConnected
+                        ? 'Terhubung ke Multiplayer Server'
+                        : 'Server Socket Terputus'}
                     </div>
-                    <div className="text-[11px] text-neutral-400 font-mono mt-0.5">
-                      {currentSocketUrl}
-                    </div>
+                    <div className="text-[11px] text-black truncate">{currentSocketUrl}</div>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={measureLivePing}
-                    disabled={isTestingPing}
-                    className="px-2.5 py-1.5 rounded-md bg-neutral-900 hover:bg-neutral-800 text-amber-400 border border-neutral-700 text-[11px] font-bold uppercase transition-colors flex items-center gap-1.5 cursor-pointer"
-                    title="Uji Ping"
-                  >
-                    <Activity className={`w-3.5 h-3.5 ${isTestingPing ? 'animate-spin' : ''}`} />
-                    <span>{activePing !== null ? `${activePing} ms` : 'Uji Ping'}</span>
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  onClick={measureLivePing}
+                  disabled={isTestingPing}
+                  className="clay-btn-secondary px-3 py-1.5 text-black text-[11px] font-bold uppercase flex items-center gap-1.5 shrink-0"
+                  title="Uji Ping"
+                >
+                  <Activity
+                    className={`w-3.5 h-3.5 stroke-[2.5] ${isTestingPing ? 'animate-spin' : ''}`}
+                  />
+                  <span>{activePing !== null ? `${activePing} ms` : 'Uji Ping'}</span>
+                </button>
               </div>
 
-              {/* Pintasan Langsung ke Menu Pindah Server */}
               {onOpenServerModal && (
-                <div className="p-4 rounded-md bg-[#0e0e0e] border border-neutral-800 flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-md bg-neutral-900 border border-neutral-800 flex items-center justify-center text-amber-400">
-                      <Server className="w-4 h-4" />
+                <div className="clay-card p-3 flex flex-wrap items-center justify-between gap-2.5">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-9 h-9 rounded-lg bg-[#A8E6CF] border-2 border-[#5C3A21] flex items-center justify-center text-black shrink-0">
+                      <Server className="w-4 h-4 stroke-[2.5]" />
                     </div>
-                    <div>
-                      <div className="text-xs font-bold text-white uppercase tracking-wide">
+                    <div className="min-w-0">
+                      <div className="text-xs font-bold text-black uppercase">
                         Pilih & Pindah Realm Server
                       </div>
-                      <div className="text-[10px] text-neutral-400 mt-0.5">
+                      <div className="text-[10px] text-black">
                         Pindah ke realm Asia, Nusantara, Global, atau server Wi-Fi teman
                       </div>
                     </div>
@@ -772,53 +777,54 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       sound.playClick();
                       onOpenServerModal();
                     }}
-                    className="px-4 py-2 rounded-md bg-amber-500 hover:bg-amber-400 active:scale-95 text-black font-bold text-xs uppercase tracking-wider transition-colors cursor-pointer shrink-0"
+                    className="clay-btn-primary px-3.5 py-2 text-black font-bold text-xs uppercase shrink-0"
                   >
                     Buka Daftar Server
                   </button>
                 </div>
               )}
 
-              {/* Salin Tautan LAN untuk Teman */}
-              <div className="p-3.5 rounded-md bg-[#0e0e0e] border border-neutral-800 flex items-center justify-between">
-                <div>
-                  <div className="text-xs font-bold text-white uppercase tracking-wider">
+              <div className="clay-card p-3 flex flex-wrap items-center justify-between gap-2.5">
+                <div className="min-w-0">
+                  <div className="text-xs font-bold text-black uppercase">
                     Tautan Akses Wi-Fi / LAN
                   </div>
-                  <div className="text-[10px] text-neutral-400 mt-0.5 font-mono">
-                    {window.location.protocol}//{window.location.hostname}{window.location.port ? `:${window.location.port}` : ''}
+                  <div className="text-[10px] text-black truncate">
+                    {window.location.protocol}//{window.location.hostname}
+                    {window.location.port ? `:${window.location.port}` : ''}
                   </div>
                 </div>
 
                 <button
                   type="button"
                   onClick={handleCopyLink}
-                  className="px-3 py-1.5 rounded-md bg-neutral-900 hover:bg-neutral-800 text-amber-400 border border-neutral-700 text-xs font-bold transition-colors flex items-center gap-1.5 cursor-pointer"
+                  className="clay-btn-secondary px-3 py-1.5 text-black text-xs font-bold flex items-center gap-1.5 shrink-0"
                 >
-                  <Copy className="w-3.5 h-3.5" />
+                  <Copy className="w-3.5 h-3.5 stroke-[2.5]" />
                   <span>{copiedLink ? 'Tersalin!' : 'Salin'}</span>
                 </button>
               </div>
 
-              {/* Input Custom IP Host */}
-              <div className="p-3.5 rounded-md bg-[#0e0e0e] border border-neutral-800 space-y-2">
-                <div className="flex items-center justify-between">
-                  <label className="text-xs font-bold text-amber-400 uppercase tracking-wide flex items-center gap-1.5">
-                    <Globe className="w-3.5 h-3.5" />
+              <div className="clay-card p-3 space-y-2">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <label className="text-xs font-bold text-black uppercase flex items-center gap-1.5">
+                    <Globe className="w-3.5 h-3.5 stroke-[2.5]" />
                     <span>Override Host IP Server Manual</span>
                   </label>
-                  <span className="text-[10px] text-neutral-400 font-mono">
+                  <span className="text-[10px] font-bold text-black">
                     Otomatis: {typeof window !== 'undefined' ? window.location.hostname : 'localhost'}
                   </span>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                   <input
                     type="text"
                     value={customHost}
                     onChange={(e) => setCustomHost(e.target.value)}
-                    placeholder={`Contoh: ${typeof window !== 'undefined' ? window.location.hostname : '192.168.1.5'}`}
-                    className="flex-1 bg-black border border-neutral-700 rounded-md px-3 py-2 text-xs text-amber-300 placeholder-neutral-600 font-mono focus:outline-none focus:border-amber-400"
+                    placeholder={`Contoh: ${
+                      typeof window !== 'undefined' ? window.location.hostname : '192.168.1.5'
+                    }`}
+                    className="clay-input flex-1 px-3 py-2 text-xs text-black"
                   />
                   <button
                     type="button"
@@ -826,7 +832,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       sound.playClick();
                       networkMgr.setCustomHost(customHost);
                     }}
-                    className="px-3 py-2 bg-amber-500 hover:bg-amber-400 active:scale-95 text-black font-bold text-xs uppercase tracking-wider rounded-md transition-colors cursor-pointer shrink-0"
+                    className="clay-btn-primary px-3.5 py-2 text-black font-bold text-xs uppercase shrink-0"
                   >
                     Simpan
                   </button>
@@ -834,28 +840,27 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               </div>
             </div>
           )}
+            </div>
 
-        </div>
+            {/* FOOTER ACTIONS */}
+            <div className="px-4 sm:px-5 py-2.5 border-t-2 border-[#5C3A21] bg-[#FFF8EA] flex items-center justify-between gap-2 text-xs shrink-0">
+              <div className="text-[10px] sm:text-[11px] font-bold text-black truncate">
+                RadenWorld Engine • Client Build 2026
+              </div>
 
-        {/* ==================================================================== */}
-        {/* FOOTER ACTIONS                                                       */}
-        {/* ==================================================================== */}
-        <div className="px-4 sm:px-6 py-2.5 sm:py-3 border-t border-neutral-800 bg-[#0a0a0a] flex items-center justify-between text-xs shrink-0 z-10">
-          <div className="text-[10px] sm:text-[11px] text-neutral-400 font-mono">
-            RadenWorld Engine v2.4 • Client Build 2026
+              <button
+                type="button"
+                onClick={() => {
+                  sound.playClick();
+                  onClose();
+                }}
+                className="clay-btn-primary px-4 py-1.5 font-bold text-xs text-black shrink-0"
+              >
+                Selesai
+              </button>
+            </div>
           </div>
-
-          <button
-            onClick={() => {
-              sound.playClick();
-              onClose();
-            }}
-            className="px-3.5 py-1.5 rounded-md border border-neutral-700 text-neutral-300 hover:text-white hover:border-amber-400 transition-colors font-bold text-xs cursor-pointer"
-          >
-            Selesai
-          </button>
         </div>
-
       </div>
     </div>
   );

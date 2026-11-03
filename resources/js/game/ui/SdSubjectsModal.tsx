@@ -58,11 +58,11 @@ export const SD_CURRICULUM_DATA: Record<number, { gradeName: string; fase: strin
         emoji: '🔢',
         badge: 'Angka 1-20',
         subtitle: 'Mengenal bilangan 1 sampai 20 & hitung tambah buah-buahan!',
-        cardBg: 'bg-amber-50/90',
-        cardBorder: 'border-amber-300',
-        cardHover: 'hover:border-amber-400 hover:bg-amber-100/80',
-        badgeBg: 'bg-amber-200 text-amber-900',
-        btnBg: 'bg-amber-500 hover:bg-amber-600 text-neutral-900 font-bold',
+        cardBg: 'clay-card',
+        cardBorder: 'border-[#5C3A21]',
+        cardHover: '',
+        badgeBg: 'clay-badge-secondary text-black',
+        btnBg: 'clay-btn-primary text-black',
         points: [
           'Membilang banyak benda dari 1 sampai 20 dengan gambar lucu 🍎.',
           'Penjumlahan gampang: 3 apel ditambah 2 apel sama dengan 5 apel!',
@@ -83,11 +83,11 @@ export const SD_CURRICULUM_DATA: Record<number, { gradeName: string; fase: strin
         emoji: '🌙',
         badge: 'Rukun Iman & Doa',
         subtitle: 'Huruf hijaiyah tunggal, doa makan, & sayang orang tua!',
-        cardBg: 'bg-teal-50/90',
-        cardBorder: 'border-teal-300',
-        cardHover: 'hover:border-teal-400 hover:bg-teal-100/80',
-        badgeBg: 'bg-teal-200 text-teal-900',
-        btnBg: 'bg-teal-500 hover:bg-teal-600 text-white',
+        cardBg: 'clay-card',
+        cardBorder: 'border-[#5C3A21]',
+        cardHover: '',
+        badgeBg: 'clay-badge-secondary text-black',
+        btnBg: 'clay-btn-primary text-black',
         points: [
           'Mengenal huruf hijaiyah: Alif (ا), Ba (ب), Ta (ت), Tsa (ث), Jim (ج).',
           'Doa sebelum makan: Membaca Basmalah agar berkah dan sehat 🤲.',
@@ -108,11 +108,11 @@ export const SD_CURRICULUM_DATA: Record<number, { gradeName: string; fase: strin
         emoji: '🦅',
         badge: 'Simbol Garuda',
         subtitle: 'Mengenal burung Garuda & tata tertib di rumah dan sekolah!',
-        cardBg: 'bg-rose-50/90',
-        cardBorder: 'border-rose-300',
-        cardHover: 'hover:border-rose-400 hover:bg-rose-100/80',
-        badgeBg: 'bg-rose-200 text-rose-900',
-        btnBg: 'bg-rose-500 hover:bg-rose-600 text-white',
+        cardBg: 'clay-card',
+        cardBorder: 'border-[#5C3A21]',
+        cardHover: '',
+        badgeBg: 'clay-badge-secondary text-black',
+        btnBg: 'clay-btn-primary text-black',
         points: [
           'Mengenal lambang negara: Burung Garuda Pancasila yang gagah 🇮🇩.',
           'Tertib di kelas: Mendengarkan bapak/ibu guru saat menerangkan pelajaran.',
@@ -133,11 +133,11 @@ export const SD_CURRICULUM_DATA: Record<number, { gradeName: string; fase: strin
         emoji: '🕌',
         badge: 'Sapaan & Angka',
         subtitle: 'Sapaan ramah Shobahul Khoir & angka Arab Wahid-Khamsah!',
-        cardBg: 'bg-emerald-50/90',
-        cardBorder: 'border-emerald-300',
-        cardHover: 'hover:border-emerald-400 hover:bg-emerald-100/80',
-        badgeBg: 'bg-emerald-200 text-emerald-900',
-        btnBg: 'bg-emerald-500 hover:bg-emerald-600 text-white',
+        cardBg: 'clay-card',
+        cardBorder: 'border-[#5C3A21]',
+        cardHover: '',
+        badgeBg: 'clay-badge-secondary text-black',
+        btnBg: 'clay-btn-primary text-black',
         points: [
           'Sapaan pagi: "Shobahul Khoir" (Selamat pagi) dijawab "Shobahun Nuur" ☀️.',
           'Hitung 1-5: Wahid (1), Itsnan (2), Tsalatsah (3), Arba\'ah (4), Khamsah (5).',
@@ -158,11 +158,11 @@ export const SD_CURRICULUM_DATA: Record<number, { gradeName: string; fase: strin
         emoji: '🎭',
         badge: 'Tembang Dolanan',
         subtitle: 'Sinau tembang dolanan Menthok-Menthok & basa ngoko rukun!',
-        cardBg: 'bg-orange-50/90',
-        cardBorder: 'border-orange-300',
-        cardHover: 'hover:border-orange-400 hover:bg-orange-100/80',
-        badgeBg: 'bg-orange-200 text-orange-900',
-        btnBg: 'bg-orange-500 hover:bg-orange-600 text-white',
+        cardBg: 'clay-card',
+        cardBorder: 'border-[#5C3A21]',
+        cardHover: '',
+        badgeBg: 'clay-badge-secondary text-black',
+        btnBg: 'clay-btn-primary text-black',
         points: [
           'Tembang Dolanan: "Menthok, menthok tak kandhani... mung lakumu megal-megol gawe guyu" 🦆.',
           'Rukun karo kanca: Ora pareng tukaran lan seneng tetulung.',
@@ -193,11 +193,11 @@ export const SD_CURRICULUM_DATA: Record<number, { gradeName: string; fase: strin
         emoji: '🔢',
         badge: 'Ratusan & Bentuk',
         subtitle: 'Penjumlahan ratusan, ukur panjang meteran, & bangun datar!',
-        cardBg: 'bg-amber-50/90',
-        cardBorder: 'border-amber-300',
-        cardHover: 'hover:border-amber-400 hover:bg-amber-100/80',
-        badgeBg: 'bg-amber-200 text-amber-900',
-        btnBg: 'bg-amber-500 hover:bg-amber-600 text-neutral-900 font-bold',
+        cardBg: 'clay-card',
+        cardBorder: 'border-[#5C3A21]',
+        cardHover: '',
+        badgeBg: 'clay-badge-secondary text-black',
+        btnBg: 'clay-btn-primary text-black',
         points: [
           'Penjumlahan & Pengurangan sampai 100 dengan teknik bersusun 📝.',
           'Mengenal satuan panjang: Centimeter (cm) dengan penggaris kelas 📏.',
@@ -218,11 +218,11 @@ export const SD_CURRICULUM_DATA: Record<number, { gradeName: string; fase: strin
         emoji: '🌙',
         badge: 'Wudhu & Sholat',
         subtitle: 'Tata cara wudhu yang benar, rukun sholat, & surat Al-Ikhlas!',
-        cardBg: 'bg-teal-50/90',
-        cardBorder: 'border-teal-300',
-        cardHover: 'hover:border-teal-400 hover:bg-teal-100/80',
-        badgeBg: 'bg-teal-200 text-teal-900',
-        btnBg: 'bg-teal-500 hover:bg-teal-600 text-white',
+        cardBg: 'clay-card',
+        cardBorder: 'border-[#5C3A21]',
+        cardHover: '',
+        badgeBg: 'clay-badge-secondary text-black',
+        btnBg: 'clay-btn-primary text-black',
         points: [
           'Urutan wudhu tertib: Cuci tangan, kumur, hidung, muka, tangan, kepala, telinga, kaki 💧.',
           'Surat Al-Ikhlas: Menegaskan bahwa Allah SWT itu Esa dan tempat meminta.',
@@ -243,11 +243,11 @@ export const SD_CURRICULUM_DATA: Record<number, { gradeName: string; fase: strin
         emoji: '🦅',
         badge: 'Tolong Menolong',
         subtitle: 'Sikap tolong-menolong, rukun tetangga, & jujur setiap hari!',
-        cardBg: 'bg-rose-50/90',
-        cardBorder: 'border-rose-300',
-        cardHover: 'hover:border-rose-400 hover:bg-rose-100/80',
-        badgeBg: 'bg-rose-200 text-rose-900',
-        btnBg: 'bg-rose-500 hover:bg-rose-600 text-white',
+        cardBg: 'clay-card',
+        cardBorder: 'border-[#5C3A21]',
+        cardHover: '',
+        badgeBg: 'clay-badge-secondary text-black',
+        btnBg: 'clay-btn-primary text-black',
         points: [
           'Pengamalan Sila 2: Menolong teman yang terjatuh di halaman sekolah ❤️.',
           'Menghargai keragaman teman yang berasal dari suku atau agama berbeda.',
@@ -268,11 +268,11 @@ export const SD_CURRICULUM_DATA: Record<number, { gradeName: string; fase: strin
         emoji: '🌍',
         badge: 'Colors & Animals',
         subtitle: 'Mengenal warna-warni pelangi & nama hewan lucu dalam bahasa Inggris!',
-        cardBg: 'bg-sky-50/90',
-        cardBorder: 'border-sky-300',
-        cardHover: 'hover:border-sky-400 hover:bg-sky-100/80',
-        badgeBg: 'bg-sky-200 text-sky-900',
-        btnBg: 'bg-sky-500 hover:bg-sky-600 text-white',
+        cardBg: 'clay-card',
+        cardBorder: 'border-[#5C3A21]',
+        cardHover: '',
+        badgeBg: 'clay-badge-secondary text-black',
+        btnBg: 'clay-btn-primary text-black',
         points: [
           'Rainbow Colors: Red (Merah) 🔴, Blue (Biru) 🔵, Yellow (Kuning) 🟡, Green (Hijau) 🟢.',
           'Cute Animals: Cat (Kucing) 🐱, Dog (Anjing) 🐶, Bird (Burung) 🐦, Fish (Ikan) 🐟.',
@@ -293,11 +293,11 @@ export const SD_CURRICULUM_DATA: Record<number, { gradeName: string; fase: strin
         emoji: '🕌',
         badge: 'Benda di Kelas',
         subtitle: 'Menamai benda di meja kelas dengan bahasa Arab!',
-        cardBg: 'bg-emerald-50/90',
-        cardBorder: 'border-emerald-300',
-        cardHover: 'hover:border-emerald-400 hover:bg-emerald-100/80',
-        badgeBg: 'bg-emerald-200 text-emerald-900',
-        btnBg: 'bg-emerald-500 hover:bg-emerald-600 text-white',
+        cardBg: 'clay-card',
+        cardBorder: 'border-[#5C3A21]',
+        cardHover: '',
+        badgeBg: 'clay-badge-secondary text-black',
+        btnBg: 'clay-btn-primary text-black',
         points: [
           'Maktabun (مَكْتَبٌ) = Meja belajar siswa / Meja guru 🪑.',
           'Kursiyyun (كُرْسِيٌّ) = Kursi belajar.',
@@ -319,11 +319,11 @@ export const SD_CURRICULUM_DATA: Record<number, { gradeName: string; fase: strin
         emoji: '🎭',
         badge: 'Unggah-Ungguh',
         subtitle: 'Unggah-ungguh marang wong tuwa & tembang Gundhul Pacul!',
-        cardBg: 'bg-orange-50/90',
-        cardBorder: 'border-orange-300',
-        cardHover: 'hover:border-orange-400 hover:bg-orange-100/80',
-        badgeBg: 'bg-orange-200 text-orange-900',
-        btnBg: 'bg-orange-500 hover:bg-orange-600 text-white',
+        cardBg: 'clay-card',
+        cardBorder: 'border-[#5C3A21]',
+        cardHover: '',
+        badgeBg: 'clay-badge-secondary text-black',
+        btnBg: 'clay-btn-primary text-black',
         points: [
           'Basa Krama marang Bapak/Ibu: "Kula nyuwun pamit badhe bidhal sekolah" 🎒.',
           'Tembang Gundhul Pacul: Ajar supaya dadi bocah sing ora sombong.',
@@ -354,11 +354,11 @@ export const SD_CURRICULUM_DATA: Record<number, { gradeName: string; fase: strin
         emoji: '🔬',
         badge: 'Mulai IPAS! 🌿',
         subtitle: 'Daur hidup kupu-kupu, wujud zat padat/cair, & panca indra!',
-        cardBg: 'bg-lime-50/90',
-        cardBorder: 'border-lime-300',
-        cardHover: 'hover:border-lime-400 hover:bg-lime-100/80',
-        badgeBg: 'bg-lime-200 text-lime-900',
-        btnBg: 'bg-lime-500 hover:bg-lime-600 text-neutral-900 font-bold',
+        cardBg: 'clay-card',
+        cardBorder: 'border-[#5C3A21]',
+        cardHover: '',
+        badgeBg: 'clay-badge-secondary text-black',
+        btnBg: 'clay-btn-primary text-black',
         points: [
           'Metamorfosis Kupu-Kupu: Telur ➔ Ulat lucu ➔ Kepompong ➔ Kupu-kupu cantik 🦋.',
           'Wujud Benda: Padat (meja/buku), Cair (air/minyak), Gas (udara/balon) 🎈.',
@@ -379,11 +379,11 @@ export const SD_CURRICULUM_DATA: Record<number, { gradeName: string; fase: strin
         emoji: '🔢',
         badge: 'Perkalian & Jam',
         subtitle: 'Perkalian 1-10, pecahan sederhana 1/2 dan 1/4, serta membaca jam!',
-        cardBg: 'bg-amber-50/90',
-        cardBorder: 'border-amber-300',
-        cardHover: 'hover:border-amber-400 hover:bg-amber-100/80',
-        badgeBg: 'bg-amber-200 text-amber-900',
-        btnBg: 'bg-amber-500 hover:bg-amber-600 text-neutral-900 font-bold',
+        cardBg: 'clay-card',
+        cardBorder: 'border-[#5C3A21]',
+        cardHover: '',
+        badgeBg: 'clay-badge-secondary text-black',
+        btnBg: 'clay-btn-primary text-black',
         points: [
           'Perkalian Cepat: 6 x 5 = 30. Perkalian adalah penjumlahan berulang!',
           'Pecahan Pizza: Satu kue dibagi 2 sama rata adalah 1/2 (setengah) 🍕.',
@@ -404,11 +404,11 @@ export const SD_CURRICULUM_DATA: Record<number, { gradeName: string; fase: strin
         emoji: '🌙',
         badge: 'Sholat & Nabi',
         subtitle: 'Sholat berjamaah, puasa Ramadhan, & 4 sifat wajib Rasul!',
-        cardBg: 'bg-teal-50/90',
-        cardBorder: 'border-teal-300',
-        cardHover: 'hover:border-teal-400 hover:bg-teal-100/80',
-        badgeBg: 'bg-teal-200 text-teal-900',
-        btnBg: 'bg-teal-500 hover:bg-teal-600 text-white',
+        cardBg: 'clay-card',
+        cardBorder: 'border-[#5C3A21]',
+        cardHover: '',
+        badgeBg: 'clay-badge-secondary text-black',
+        btnBg: 'clay-btn-primary text-black',
         points: [
           'Sholat Berjamaah di sekolah melatih kekompakan dan pahala 27 derajat 🕌.',
           '4 Sifat Wajib Rasul: Siddiq (jujur), Amanah (terpercaya), Tabligh (menyampaikan), Fathonah (cerdas).',
@@ -429,11 +429,11 @@ export const SD_CURRICULUM_DATA: Record<number, { gradeName: string; fase: strin
         emoji: '🦅',
         badge: 'Musyawarah Kelas',
         subtitle: 'Pohon beringin persatuan, musyawarah kelas, & gotong royong!',
-        cardBg: 'bg-rose-50/90',
-        cardBorder: 'border-rose-300',
-        cardHover: 'hover:border-rose-400 hover:bg-rose-100/80',
-        badgeBg: 'bg-rose-200 text-rose-900',
-        btnBg: 'bg-rose-500 hover:bg-rose-600 text-white',
+        cardBg: 'clay-card',
+        cardBorder: 'border-[#5C3A21]',
+        cardHover: '',
+        badgeBg: 'clay-badge-secondary text-black',
+        btnBg: 'clay-btn-primary text-black',
         points: [
           'Sila ke-3 (Persatuan Indonesia): Menjaga kebersamaan dengan teman tanpa membeda-bedakan.',
           'Sila ke-4 (Musyawarah): Memilih pengurus kelas lewat diskusi yang adil dan rukun.',
@@ -454,11 +454,11 @@ export const SD_CURRICULUM_DATA: Record<number, { gradeName: string; fase: strin
         emoji: '🌍',
         badge: 'Classroom & Talk',
         subtitle: 'Menamai benda meja belajar & percakapan sederhana di sekolah!',
-        cardBg: 'bg-sky-50/90',
-        cardBorder: 'border-sky-300',
-        cardHover: 'hover:border-sky-400 hover:bg-sky-100/80',
-        badgeBg: 'bg-sky-200 text-sky-900',
-        btnBg: 'bg-sky-500 hover:bg-sky-600 text-white',
+        cardBg: 'clay-card',
+        cardBorder: 'border-[#5C3A21]',
+        cardHover: '',
+        badgeBg: 'clay-badge-secondary text-black',
+        btnBg: 'clay-btn-primary text-black',
         points: [
           'Desk words: Teacher\'s Desk (Meja Guru), Student Desk (Meja Siswa), Chair (Kursi).',
           'Phrases: "May I borrow your ruler?" (Bolehkah saya pinjam penggarismu?).',
@@ -479,11 +479,11 @@ export const SD_CURRICULUM_DATA: Record<number, { gradeName: string; fase: strin
         emoji: '🎭',
         badge: 'Aksara & Wayang',
         subtitle: 'Mengenal 20 Aksara Jawa legena & cerita 4 Punakawan!',
-        cardBg: 'bg-orange-50/90',
-        cardBorder: 'border-orange-300',
-        cardHover: 'hover:border-orange-400 hover:bg-orange-100/80',
-        badgeBg: 'bg-orange-200 text-orange-900',
-        btnBg: 'bg-orange-500 hover:bg-orange-600 text-white',
+        cardBg: 'clay-card',
+        cardBorder: 'border-[#5C3A21]',
+        cardHover: '',
+        badgeBg: 'clay-badge-secondary text-black',
+        btnBg: 'clay-btn-primary text-black',
         points: [
           'Aksara Jawa: Ha, Na, Ca, Ra, Ka... Data Sawala... Padha Jayanya... Maga Bathanga.',
           'Punakawan: Kyai Semar, Gareng, Petruk (irunge dawa), Bagong (awake lemu bunder).',
@@ -504,11 +504,11 @@ export const SD_CURRICULUM_DATA: Record<number, { gradeName: string; fase: strin
         emoji: '🕌',
         badge: 'Hiwar & Tubuh',
         subtitle: 'Percakapan sapaan Al-Hiwar & nama anggota tubuh bahasa Arab!',
-        cardBg: 'bg-emerald-50/90',
-        cardBorder: 'border-emerald-300',
-        cardHover: 'hover:border-emerald-400 hover:bg-emerald-100/80',
-        badgeBg: 'bg-emerald-200 text-emerald-900',
-        btnBg: 'bg-emerald-500 hover:bg-emerald-600 text-white',
+        cardBg: 'clay-card',
+        cardBorder: 'border-[#5C3A21]',
+        cardHover: '',
+        badgeBg: 'clay-badge-secondary text-black',
+        btnBg: 'clay-btn-primary text-black',
         points: [
           'Al-Hiwar: "Kaifa Haluk?" (Bagaimana kabarmu?) dijawab "Bi-khoirin Alhamdulillah" ✨.',
           'A\'dha-ul Jismi (Anggota Tubuh): Ra\'sun (Kepala), \'Ainun (Mata), Yadun (Tangan).',
@@ -539,11 +539,11 @@ export const SD_CURRICULUM_DATA: Record<number, { gradeName: string; fase: strin
         emoji: '🔬',
         badge: 'Energi & Peta',
         subtitle: 'Gaya magnet, perubahan energi, bentang alam, & peta nusantara!',
-        cardBg: 'bg-lime-50/90',
-        cardBorder: 'border-lime-300',
-        cardHover: 'hover:border-lime-400 hover:bg-lime-100/80',
-        badgeBg: 'bg-lime-200 text-lime-900',
-        btnBg: 'bg-lime-500 hover:bg-lime-600 text-neutral-900 font-bold',
+        cardBg: 'clay-card',
+        cardBorder: 'border-[#5C3A21]',
+        cardHover: '',
+        badgeBg: 'clay-badge-secondary text-black',
+        btnBg: 'clay-btn-primary text-black',
         points: [
           'Gaya & Magnet: Magnet punya 2 kutub (Utara & Selatan). Kutub senama tolak-menolak 🧲.',
           'Perubahan Energi: Energi listrik jadi cahaya (lampu) & gerak (kipas angin) 💡.',
@@ -564,11 +564,11 @@ export const SD_CURRICULUM_DATA: Record<number, { gradeName: string; fase: strin
         emoji: '🔢',
         badge: 'Luas & Keliling',
         subtitle: 'Operasi hitung campuran, luas persegi/segitiga, & pecahan senilai!',
-        cardBg: 'bg-amber-50/90',
-        cardBorder: 'border-amber-300',
-        cardHover: 'hover:border-amber-400 hover:bg-amber-100/80',
-        badgeBg: 'bg-amber-200 text-amber-900',
-        btnBg: 'bg-amber-500 hover:bg-amber-600 text-neutral-900 font-bold',
+        cardBg: 'clay-card',
+        cardBorder: 'border-[#5C3A21]',
+        cardHover: '',
+        badgeBg: 'clay-badge-secondary text-black',
+        btnBg: 'clay-btn-primary text-black',
         points: [
           'Operasi Campuran: Dahulukan perkalian & pembagian sebelum tambah/kurang 🧮.',
           'Luas Persegi: Rumusnya sisi x sisi (contoh: 5 x 5 = 25 cm²).',
@@ -589,11 +589,11 @@ export const SD_CURRICULUM_DATA: Record<number, { gradeName: string; fase: strin
         emoji: '🇮🇩',
         badge: 'Hak & Kewajiban',
         subtitle: 'Hak dan kewajiban anak di sekolah, tata tertib, & norma sopan santun!',
-        cardBg: 'bg-indigo-50/90',
-        cardBorder: 'border-indigo-300',
-        cardHover: 'hover:border-indigo-400 hover:bg-indigo-100/80',
-        badgeBg: 'bg-indigo-200 text-indigo-900',
-        btnBg: 'bg-indigo-500 hover:bg-indigo-600 text-white',
+        cardBg: 'clay-card',
+        cardBorder: 'border-[#5C3A21]',
+        cardHover: '',
+        badgeBg: 'clay-badge-secondary text-black',
+        btnBg: 'clay-btn-primary text-black',
         points: [
           'Kewajiban Siswa: Datang tepat waktu, merawat meja kursi kelas, dan hormat pada guru 📚.',
           'Hak Siswa: Mendapat nilai yang adil, pengajaran ramah, dan ruang kelas yang bersih.',
@@ -614,11 +614,11 @@ export const SD_CURRICULUM_DATA: Record<number, { gradeName: string; fase: strin
         emoji: '🦅',
         badge: 'Bhinneka Tunggal Ika',
         subtitle: 'Keragaman budaya nusantara, rumah adat, & toleransi kebangsaan!',
-        cardBg: 'bg-rose-50/90',
-        cardBorder: 'border-rose-300',
-        cardHover: 'hover:border-rose-400 hover:bg-rose-100/80',
-        badgeBg: 'bg-rose-200 text-rose-900',
-        btnBg: 'bg-rose-500 hover:bg-rose-600 text-white',
+        cardBg: 'clay-card',
+        cardBorder: 'border-[#5C3A21]',
+        cardHover: '',
+        badgeBg: 'clay-badge-secondary text-black',
+        btnBg: 'clay-btn-primary text-black',
         points: [
           'Keragaman Suku: Suku Jawa, Sunda, Batak, Minang, Dayak, Bugis, Asmat hidup rukun.',
           'Makna Bhinneka Tunggal Ika: Berbeda-beda tapi tetap satu nusa satu bangsa 🇮🇩.',
@@ -639,11 +639,11 @@ export const SD_CURRICULUM_DATA: Record<number, { gradeName: string; fase: strin
         emoji: '🌙',
         badge: 'Surat & Zakat',
         subtitle: 'Surat Al-Falaq & An-Nas, zakat fitrah, & kisah Nabi Musa AS!',
-        cardBg: 'bg-teal-50/90',
-        cardBorder: 'border-teal-300',
-        cardHover: 'hover:border-teal-400 hover:bg-teal-100/80',
-        badgeBg: 'bg-teal-200 text-teal-900',
-        btnBg: 'bg-teal-500 hover:bg-teal-600 text-white',
+        cardBg: 'clay-card',
+        cardBorder: 'border-[#5C3A21]',
+        cardHover: '',
+        badgeBg: 'clay-badge-secondary text-black',
+        btnBg: 'clay-btn-primary text-black',
         points: [
           'Surat Al-Falaq & An-Nas: Surat perlindungan dari bisikan jahat dan rasa takut 📖.',
           'Zakat Fitrah: Kewajiban berbagi beras di bulan Ramadhan untuk membantu fakir miskin 🌾.',
@@ -664,11 +664,11 @@ export const SD_CURRICULUM_DATA: Record<number, { gradeName: string; fase: strin
         emoji: '🌍',
         badge: 'Daily Routines',
         subtitle: 'Aktivitas sehari-hari di sekolah & ekspresi santun bahasa Inggris!',
-        cardBg: 'bg-sky-50/90',
-        cardBorder: 'border-sky-300',
-        cardHover: 'hover:border-sky-400 hover:bg-sky-100/80',
-        badgeBg: 'bg-sky-200 text-sky-900',
-        btnBg: 'bg-sky-500 hover:bg-sky-600 text-white',
+        cardBg: 'clay-card',
+        cardBorder: 'border-[#5C3A21]',
+        cardHover: '',
+        badgeBg: 'clay-badge-secondary text-black',
+        btnBg: 'clay-btn-primary text-black',
         points: [
           'Daily Activities: "I study at my desk", "I read a book", "I play with my friends" 📖.',
           'Polite Expressions: "Excuse me", "Please", "Thank you", "You are welcome" ✨.',
@@ -689,11 +689,11 @@ export const SD_CURRICULUM_DATA: Record<number, { gradeName: string; fase: strin
         emoji: '🕌',
         badge: 'Keluarga & Rumah',
         subtitle: 'Kosakata rumah tangga Al-Usrah, kalimat tanya, & angka 1-20!',
-        cardBg: 'bg-emerald-50/90',
-        cardBorder: 'border-emerald-300',
-        cardHover: 'hover:border-emerald-400 hover:bg-emerald-100/80',
-        badgeBg: 'bg-emerald-200 text-emerald-900',
-        btnBg: 'bg-emerald-500 hover:bg-emerald-600 text-white',
+        cardBg: 'clay-card',
+        cardBorder: 'border-[#5C3A21]',
+        cardHover: '',
+        badgeBg: 'clay-badge-secondary text-black',
+        btnBg: 'clay-btn-primary text-black',
         points: [
           'Al-Usrah (Keluarga): Abun (Ayah) 👨, Ummun (Ibu) 👩, Akhun (Saudara), Ukhtun (Saudari).',
           'Tanya Benda: "Maa haadza?" (Apa ini?) dijawab "Haadza Maktabun" (Ini meja).',
@@ -714,11 +714,11 @@ export const SD_CURRICULUM_DATA: Record<number, { gradeName: string; fase: strin
         emoji: '🎭',
         badge: 'Krama Lugu/Alus',
         subtitle: 'Basa Krama Lugu & Alus, aksara Jawa, serta tembang Padhang Bulan!',
-        cardBg: 'bg-orange-50/90',
-        cardBorder: 'border-orange-300',
-        cardHover: 'hover:border-orange-400 hover:bg-orange-100/80',
-        badgeBg: 'bg-orange-200 text-orange-900',
-        btnBg: 'bg-orange-500 hover:bg-orange-600 text-white',
+        cardBg: 'clay-card',
+        cardBorder: 'border-[#5C3A21]',
+        cardHover: '',
+        badgeBg: 'clay-badge-secondary text-black',
+        btnBg: 'clay-btn-primary text-black',
         points: [
           'Tataran Basa: "Mangan" (Ngoko) -> "Nedha" (Krama) -> "Dhahar" (Krama Alus).',
           'Tembung: "Turu" (Ngoko) -> "Tilem" (Krama) -> "Sare" (Krama Alus marang wong tuwa).',
@@ -749,11 +749,11 @@ export const SD_CURRICULUM_DATA: Record<number, { gradeName: string; fase: strin
         emoji: '🔢',
         badge: 'Desimal & Volume',
         subtitle: 'Pecahan desimal, persen, perbandingan skala, & volume kubus/balok!',
-        cardBg: 'bg-amber-50/90',
-        cardBorder: 'border-amber-300',
-        cardHover: 'hover:border-amber-400 hover:bg-amber-100/80',
-        badgeBg: 'bg-amber-200 text-amber-900',
-        btnBg: 'bg-amber-500 hover:bg-amber-600 text-neutral-900 font-bold',
+        cardBg: 'clay-card',
+        cardBorder: 'border-[#5C3A21]',
+        cardHover: '',
+        badgeBg: 'clay-badge-secondary text-black',
+        btnBg: 'clay-btn-primary text-black',
         points: [
           'Pecahan ke Desimal & Persen: 3/4 = 0,75 = 75% 📊.',
           'Volume Bangun Ruang: Volume Balok = Panjang x Lebar x Tinggi (p x l x t) 📦.',
@@ -774,11 +774,11 @@ export const SD_CURRICULUM_DATA: Record<number, { gradeName: string; fase: strin
         emoji: '🔬',
         badge: 'Organ & Ekosistem',
         subtitle: 'Organ pernapasan manusia, rantai makanan ekosistem, & sejarah RI!',
-        cardBg: 'bg-lime-50/90',
-        cardBorder: 'border-lime-300',
-        cardHover: 'hover:border-lime-400 hover:bg-lime-100/80',
-        badgeBg: 'bg-lime-200 text-lime-900',
-        btnBg: 'bg-lime-500 hover:bg-lime-600 text-neutral-900 font-bold',
+        cardBg: 'clay-card',
+        cardBorder: 'border-[#5C3A21]',
+        cardHover: '',
+        badgeBg: 'clay-badge-secondary text-black',
+        btnBg: 'clay-btn-primary text-black',
         points: [
           'Organ Pernapasan: Hidung ➔ Tenggorokan ➔ Paru-paru (pertukaran oksigen & CO2) 🫁.',
           'Rantai Makanan: Padi (produsen) ➔ Belalang ➔ Katak ➔ Ular ➔ Elang (konsumen puncak) 🦅.',
@@ -799,11 +799,11 @@ export const SD_CURRICULUM_DATA: Record<number, { gradeName: string; fase: strin
         emoji: '🇮🇩',
         badge: 'Pemerintahan Daerah',
         subtitle: 'Lembaga pemerintahan Desa/Kecamatan/Kabupaten & norma hukum!',
-        cardBg: 'bg-indigo-50/90',
-        cardBorder: 'border-indigo-300',
-        cardHover: 'hover:border-indigo-400 hover:bg-indigo-100/80',
-        badgeBg: 'bg-indigo-200 text-indigo-900',
-        btnBg: 'bg-indigo-500 hover:bg-indigo-600 text-white',
+        cardBg: 'clay-card',
+        cardBorder: 'border-[#5C3A21]',
+        cardHover: '',
+        badgeBg: 'clay-badge-secondary text-black',
+        btnBg: 'clay-btn-primary text-black',
         points: [
           'Tingkatan Daerah: Kelurahan/Desa dipimpin Lurah/Kades, Kecamatan dipimpin Camat 🏛️.',
           'Kabupaten/Kota dipimpin oleh Bupati/Walikota, dan Provinsi dipimpin Gubernur.',
@@ -824,11 +824,11 @@ export const SD_CURRICULUM_DATA: Record<number, { gradeName: string; fase: strin
         emoji: '🦅',
         badge: 'Pengamalan 5 Sila',
         subtitle: 'Nilai luhur Pancasila dalam kehidupan sosial & toleransi sejati!',
-        cardBg: 'bg-rose-50/90',
-        cardBorder: 'border-rose-300',
-        cardHover: 'hover:border-rose-400 hover:bg-rose-100/80',
-        badgeBg: 'bg-rose-200 text-rose-900',
-        btnBg: 'bg-rose-500 hover:bg-rose-600 text-white',
+        cardBg: 'clay-card',
+        cardBorder: 'border-[#5C3A21]',
+        cardHover: '',
+        badgeBg: 'clay-badge-secondary text-black',
+        btnBg: 'clay-btn-primary text-black',
         points: [
           'Pancasila sebagai Dasar Negara dan Pandangan Hidup Bangsa Indonesia.',
           'Sila ke-5: Keadilan sosial, suka menabung, dan tidak bergaya hidup boros 🌾.',
@@ -849,11 +849,11 @@ export const SD_CURRICULUM_DATA: Record<number, { gradeName: string; fase: strin
         emoji: '🌍',
         badge: 'Hobbies & Jobs',
         subtitle: 'Mendeskripsikan hobi, profesi impian, & Simple Present Tense!',
-        cardBg: 'bg-sky-50/90',
-        cardBorder: 'border-sky-300',
-        cardHover: 'hover:border-sky-400 hover:bg-sky-100/80',
-        badgeBg: 'bg-sky-200 text-sky-900',
-        btnBg: 'bg-sky-500 hover:bg-sky-600 text-white',
+        cardBg: 'clay-card',
+        cardBorder: 'border-[#5C3A21]',
+        cardHover: '',
+        badgeBg: 'clay-badge-secondary text-black',
+        btnBg: 'clay-btn-primary text-black',
         points: [
           'Professions: Doctor (Dokter) 🩺, Teacher (Guru) 👩‍🏫, Pilot (Pilot) ✈️, Scientist 🔬.',
           'Hobbies: "My hobby is playing football / reading books / painting" 🎨.',
@@ -874,11 +874,11 @@ export const SD_CURRICULUM_DATA: Record<number, { gradeName: string; fase: strin
         emoji: '🌙',
         badge: 'Ulul Azmi & Ma\'un',
         subtitle: 'Kisah 5 Rasul Ulul Azmi, surat Al-Ma\'un, & amalan peduli yatim!',
-        cardBg: 'bg-teal-50/90',
-        cardBorder: 'border-teal-300',
-        cardHover: 'hover:border-teal-400 hover:bg-teal-100/80',
-        badgeBg: 'bg-teal-200 text-teal-900',
-        btnBg: 'bg-teal-500 hover:bg-teal-600 text-white',
+        cardBg: 'clay-card',
+        cardBorder: 'border-[#5C3A21]',
+        cardHover: '',
+        badgeBg: 'clay-badge-secondary text-black',
+        btnBg: 'clay-btn-primary text-black',
         points: [
           '5 Rasul Ulul Azmi: Nabi Nuh, Ibrahim, Musa, Isa, Muhammad SAW yang memiliki keteguhan luar biasa.',
           'Surat Al-Ma\'un: Larangan menghardik anak yatim dan enggan memberi bantuan barang berguna 🤲.',
@@ -899,11 +899,11 @@ export const SD_CURRICULUM_DATA: Record<number, { gradeName: string; fase: strin
         emoji: '🕌',
         badge: 'Fi\'il & Jam',
         subtitle: 'Fi\'il (kata kerja dasar), menyatakan waktu jam, & belanja di kantin!',
-        cardBg: 'bg-emerald-50/90',
-        cardBorder: 'border-emerald-300',
-        cardHover: 'hover:border-emerald-400 hover:bg-emerald-100/80',
-        badgeBg: 'bg-emerald-200 text-emerald-900',
-        btnBg: 'bg-emerald-500 hover:bg-emerald-600 text-white',
+        cardBg: 'clay-card',
+        cardBorder: 'border-[#5C3A21]',
+        cardHover: '',
+        badgeBg: 'clay-badge-secondary text-black',
+        btnBg: 'clay-btn-primary text-black',
         points: [
           'Fi\'il (Kata Kerja): Qara-a (Membaca) 📖, Kataba (Menulis) ✍️, Jalasa (Duduk di meja).',
           'Jam Arab: As-Saa\'atus Saabi\'ah (Jam 7 tepat saat masuk sekolah) ⏰.',
@@ -924,11 +924,11 @@ export const SD_CURRICULUM_DATA: Record<number, { gradeName: string; fase: strin
         emoji: '🎭',
         badge: 'Sandhangan Swara',
         subtitle: 'Aksara Jawa kanthi sandhangan swara & pewayangan Pandhawa 5!',
-        cardBg: 'bg-orange-50/90',
-        cardBorder: 'border-orange-300',
-        cardHover: 'hover:border-orange-400 hover:bg-orange-100/80',
-        badgeBg: 'bg-orange-200 text-orange-900',
-        btnBg: 'bg-orange-500 hover:bg-orange-600 text-white',
+        cardBg: 'clay-card',
+        cardBorder: 'border-[#5C3A21]',
+        cardHover: '',
+        badgeBg: 'clay-badge-secondary text-black',
+        btnBg: 'clay-btn-primary text-black',
         points: [
           'Sandhangan Swara: Wulu (swara i), Suku (swara u), Taling (swara é), Taling Tarung (swara o), Pepet (swara e).',
           'Pandhawa Lima: Puntadewa (Yudhistira), Werkudara (Bima), Janaka (Arjuna), Nakula, Sadewa 🏹.',
@@ -959,11 +959,11 @@ export const SD_CURRICULUM_DATA: Record<number, { gradeName: string; fase: strin
         emoji: '🔢',
         badge: 'Lingkaran & Data',
         subtitle: 'Pengolahan data rata-rata (mean), lingkaran πr², & bangun prisma/tabung!',
-        cardBg: 'bg-amber-50/90',
-        cardBorder: 'border-amber-300',
-        cardHover: 'hover:border-amber-400 hover:bg-amber-100/80',
-        badgeBg: 'bg-amber-200 text-amber-900',
-        btnBg: 'bg-amber-500 hover:bg-amber-600 text-neutral-900 font-bold',
+        cardBg: 'clay-card',
+        cardBorder: 'border-[#5C3A21]',
+        cardHover: '',
+        badgeBg: 'clay-badge-secondary text-black',
+        btnBg: 'clay-btn-primary text-black',
         points: [
           'Statistika Data: Mencari Mean (nilai rata-rata), Median (nilai tengah), Modus (paling sering muncul) 📈.',
           'Luas Lingkaran: Rumus π x r² (dengan π = 22/7 atau 3,14) ⭕.',
@@ -984,11 +984,11 @@ export const SD_CURRICULUM_DATA: Record<number, { gradeName: string; fase: strin
         emoji: '🔬',
         badge: 'Tata Surya & ASEAN',
         subtitle: '8 planet tata surya, rotasi/revolusi bumi, energi terbarukan, & ASEAN!',
-        cardBg: 'bg-lime-50/90',
-        cardBorder: 'border-lime-300',
-        cardHover: 'hover:border-lime-400 hover:bg-lime-100/80',
-        badgeBg: 'bg-lime-200 text-lime-900',
-        btnBg: 'bg-lime-500 hover:bg-lime-600 text-neutral-900 font-bold',
+        cardBg: 'clay-card',
+        cardBorder: 'border-[#5C3A21]',
+        cardHover: '',
+        badgeBg: 'clay-badge-secondary text-black',
+        btnBg: 'clay-btn-primary text-black',
         points: [
           '8 Planet: Merkurius, Venus, Bumi, Mars, Yupiter (terbesar), Saturnus (cincin), Uranus, Neptunus 🪐.',
           'Rotasi Bumi (24 jam) bikin siang & malam; Revolusi Bumi (365 hari) bikin pergantian musim 🌍.',
@@ -1009,11 +1009,11 @@ export const SD_CURRICULUM_DATA: Record<number, { gradeName: string; fase: strin
         emoji: '🇮🇩',
         badge: 'Bela Negara & Pemilu',
         subtitle: 'Sumpah Pemuda 1928, pemilu demokratis, & menjaga keutuhan NKRI!',
-        cardBg: 'bg-indigo-50/90',
-        cardBorder: 'border-indigo-300',
-        cardHover: 'hover:border-indigo-400 hover:bg-indigo-100/80',
-        badgeBg: 'bg-indigo-200 text-indigo-900',
-        btnBg: 'bg-indigo-500 hover:bg-indigo-600 text-white',
+        cardBg: 'clay-card',
+        cardBorder: 'border-[#5C3A21]',
+        cardHover: '',
+        badgeBg: 'clay-badge-secondary text-black',
+        btnBg: 'clay-btn-primary text-black',
         points: [
           'Sumpah Pemuda 28 Oktober 1928: Satu Tanah Air, Satu Bangsa, dan Satu Bahasa Indonesia 🇮🇩.',
           'Asas Pemilu Luber Jurdil: Langsung, Umum, Bebas, Rahasia, Jujur, dan Adil 🗳️.',
@@ -1034,11 +1034,11 @@ export const SD_CURRICULUM_DATA: Record<number, { gradeName: string; fase: strin
         emoji: '🦅',
         badge: 'Ideologi Bangsa',
         subtitle: 'Nilai juang Proklamasi 1945, UUD NRI 1945, & karakter pemimpin masa depan!',
-        cardBg: 'bg-rose-50/90',
-        cardBorder: 'border-rose-300',
-        cardHover: 'hover:border-rose-400 hover:bg-rose-100/80',
-        badgeBg: 'bg-rose-200 text-rose-900',
-        btnBg: 'bg-rose-500 hover:bg-rose-600 text-white',
+        cardBg: 'clay-card',
+        cardBorder: 'border-[#5C3A21]',
+        cardHover: '',
+        badgeBg: 'clay-badge-secondary text-black',
+        btnBg: 'clay-btn-primary text-black',
         points: [
           'Pancasila sebagai sumber dari segala sumber hukum di Indonesia ⚖️.',
           'Meneladani semangat pantang menyerah para pahlawan kemerdekaan.',
@@ -1059,11 +1059,11 @@ export const SD_CURRICULUM_DATA: Record<number, { gradeName: string; fase: strin
         emoji: '🌍',
         badge: 'Grammar & Dreams',
         subtitle: 'Past Tense dasar, membaca cerita pendek, & menceritakan cita-cita!',
-        cardBg: 'bg-sky-50/90',
-        cardBorder: 'border-sky-300',
-        cardHover: 'hover:border-sky-400 hover:bg-sky-100/80',
-        badgeBg: 'bg-sky-200 text-sky-900',
-        btnBg: 'bg-sky-500 hover:bg-sky-600 text-white',
+        cardBg: 'clay-card',
+        cardBorder: 'border-[#5C3A21]',
+        cardHover: '',
+        badgeBg: 'clay-badge-secondary text-black',
+        btnBg: 'clay-btn-primary text-black',
         points: [
           'Past Tense: "Yesterday I went to school", "I studied hard for the test" 📚.',
           'Dream Careers: "I want to be an engineer / software developer / doctor" 🚀.',
@@ -1084,11 +1084,11 @@ export const SD_CURRICULUM_DATA: Record<number, { gradeName: string; fase: strin
         emoji: '🌙',
         badge: 'Kafirun & Takdir',
         subtitle: 'Surat Al-Kafirun (toleransi), Qadha & Qadar, serta akhlak remaja muslim!',
-        cardBg: 'bg-teal-50/90',
-        cardBorder: 'border-teal-300',
-        cardHover: 'hover:border-teal-400 hover:bg-teal-100/80',
-        badgeBg: 'bg-teal-200 text-teal-900',
-        btnBg: 'bg-teal-500 hover:bg-teal-600 text-white',
+        cardBg: 'clay-card',
+        cardBorder: 'border-[#5C3A21]',
+        cardHover: '',
+        badgeBg: 'clay-badge-secondary text-black',
+        btnBg: 'clay-btn-primary text-black',
         points: [
           'Surat Al-Kafirun: "Lakum diinukum waliyadiin" (Untukmu agamamu, dan untukku agamaku) 🕊️.',
           'Iman kepada Qadha dan Qadar: Senantiasa berikhtiar sungguh-sungguh lalu bertawakal.',
@@ -1109,11 +1109,11 @@ export const SD_CURRICULUM_DATA: Record<number, { gradeName: string; fase: strin
         emoji: '🕌',
         badge: 'Insya\' & Jam Lengkap',
         subtitle: 'Menyusun kalimat bahasa Arab lengkap & percakapan sehari-hari!',
-        cardBg: 'bg-emerald-50/90',
-        cardBorder: 'border-emerald-300',
-        cardHover: 'hover:border-emerald-400 hover:bg-emerald-100/80',
-        badgeBg: 'bg-emerald-200 text-emerald-900',
-        btnBg: 'bg-emerald-500 hover:bg-emerald-600 text-white',
+        cardBg: 'clay-card',
+        cardBorder: 'border-[#5C3A21]',
+        cardHover: '',
+        badgeBg: 'clay-badge-secondary text-black',
+        btnBg: 'clay-btn-primary text-black',
         points: [
           'Susunan Jumlah Mufidah (Kalimat Sempurna): Subjek + Kata Kerja + Objek 📝.',
           'Profesi dalam bahasa Arab: Thobiibun (Dokter), Mudarrisun (Guru), Muhandisun (Insinyur).',
@@ -1134,11 +1134,11 @@ export const SD_CURRICULUM_DATA: Record<number, { gradeName: string; fase: strin
         emoji: '🎭',
         badge: 'Paribasan & Saloka',
         subtitle: 'Paribasan Jawa adiluhung & nulis ukara aksara Jawa jangkep!',
-        cardBg: 'bg-orange-50/90',
-        cardBorder: 'border-orange-300',
-        cardHover: 'hover:border-orange-400 hover:bg-orange-100/80',
-        badgeBg: 'bg-orange-200 text-orange-900',
-        btnBg: 'bg-orange-500 hover:bg-orange-600 text-white',
+        cardBg: 'clay-card',
+        cardBorder: 'border-[#5C3A21]',
+        cardHover: '',
+        badgeBg: 'clay-badge-secondary text-black',
+        btnBg: 'clay-btn-primary text-black',
         points: [
           'Paribasan: "Becik ketitik, ala ketara" (Tumindak becik lan ala mesthi bakal konangan).',
           'Paribasan: "Jer basuki mawa beya" (Samubarang gegayuhan mbutuhake pangorbanan lan usaha).',
@@ -1259,157 +1259,151 @@ export const SdSubjectsModal: React.FC<SdSubjectsModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-2 sm:p-5 font-cute animate-in fade-in duration-150">
-      <div className="w-full max-w-5xl bg-white border-2 border-neutral-800 rounded-2xl sm:rounded-3xl shadow-2xl flex flex-col max-h-[94dvh] overflow-hidden text-neutral-800 relative">
-        
-        {/* ================================================================== */}
-        {/* HEADER MODAL: Sesuai Persis dengan Modal Pemilihan Kelas           */}
-        {/* ================================================================== */}
-        <div className="px-3.5 sm:px-6 py-2.5 sm:py-4 bg-amber-100 border-b-2 border-neutral-800 flex items-center justify-between gap-2 sm:gap-3 shrink-0">
-          <div className="flex items-center gap-3.5">
-            <div className="w-12 h-12 rounded-2xl bg-white border-2 border-neutral-800 shadow-xs flex items-center justify-center text-2xl shrink-0">
+    <div className="ui-modal-backdrop font-pixel">
+      <div className="w-full max-w-5xl clay-panel landscape-compact-modal flex flex-col max-h-[min(94dvh,calc(100dvh-1rem))] overflow-hidden text-black relative">
+        {/* HEADER MODAL */}
+        <div className="px-3.5 sm:px-5 py-2.5 sm:py-3.5 clay-header landscape-compact-header flex items-center justify-between gap-2 sm:gap-3 shrink-0">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-10 h-10 clay-card flex items-center justify-center text-xl shrink-0">
               🎒
             </div>
-            <div>
+            <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <h2 className="text-xl sm:text-2xl font-extrabold text-amber-950 tracking-wide">
+                <h2 className="text-base sm:text-xl font-bold text-black tracking-wide">
                   Mata Pelajaran {gradeData.gradeName}
                 </h2>
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-white border border-neutral-300 text-neutral-800 font-bold text-[11px] shadow-2xs">
-                  <Sparkles className="w-3 h-3 text-amber-500" />
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 clay-badge-secondary text-black font-bold text-[10px] sm:text-[11px]">
+                  <Sparkles className="w-3 h-3 text-black" />
                   <span>{gradeData.fase}</span>
                 </span>
               </div>
-              <p className="text-xs sm:text-sm text-neutral-700 font-medium mt-0.5 flex items-center gap-1.5 flex-wrap">
+              <p className="text-[11px] sm:text-xs text-black mt-0.5 flex items-center gap-1.5 flex-wrap">
                 <span>Interaksi di</span>
-                <span className="font-bold px-2 py-0.5 rounded-lg text-xs bg-white border border-neutral-300 text-neutral-800 shadow-2xs">
+                <span className="font-bold px-2 py-0.5 clay-badge-neutral text-[10px] text-black">
                   {deskType === 'guru' ? '🏛️ Meja Guru (Podium)' : '🪑 Meja Belajar Siswa'}
                 </span>
-                <span>• Sekolah Dasar (SD)</span>
               </p>
             </div>
           </div>
 
           <button
+            type="button"
             onClick={() => {
               sound.playClick();
               onClose();
             }}
-            className="w-9 h-9 rounded-xl bg-white hover:bg-neutral-100 border-2 border-neutral-800 text-neutral-700 hover:text-neutral-900 flex items-center justify-center transition-colors cursor-pointer shadow-2xs shrink-0"
+            className="w-9 h-9 clay-btn-cocoa text-white flex items-center justify-center shrink-0"
             title="Tutup (ESC)"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
-        {/* ================================================================== */}
-        {/* TABS TINGKATAN KELAS: Desain Bersih, Rapi & Elegan                 */}
-        {/* ================================================================== */}
-        <div className="px-5 sm:px-6 py-2.5 bg-neutral-50 border-b-2 border-neutral-200 flex items-center gap-2 overflow-x-auto shrink-0 school-scrollbar-amber">
-          <span className="text-xs font-bold text-neutral-700 shrink-0 flex items-center gap-1">
+        {/* TABS TINGKATAN KELAS */}
+        <div className="px-4 sm:px-5 py-2 bg-[#FFF8EA] border-b-2 border-[#5C3A21] flex items-center gap-2 overflow-x-auto no-scrollbar shrink-0">
+          <span className="text-xs font-bold text-black shrink-0 flex items-center gap-1">
             <span>🏫 Pilih Kelas:</span>
           </span>
           {[1, 2, 3, 4, 5, 6].map((gr) => (
             <button
               key={gr}
+              type="button"
               onClick={() => {
                 sound.playClick();
                 setCurrentGrade(gr);
                 setSelectedSubjectId(null);
-                try { localStorage.setItem('raden_school_sd_grade', gr.toString()); } catch (e) {}
+                try {
+                  localStorage.setItem('raden_school_sd_grade', gr.toString());
+                } catch (e) {}
                 EventBus.emit('school-grade-switched', { schoolType: 'sd', grade: gr });
               }}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 ${
+              className={`px-3 py-1 text-xs font-bold shrink-0 ${
                 currentGrade === gr
-                  ? 'bg-neutral-900 text-white border-2 border-neutral-900 shadow-xs font-black'
-                  : 'bg-white hover:bg-neutral-100 text-neutral-700 border-2 border-neutral-200 hover:border-neutral-300'
+                  ? 'clay-btn-primary text-black'
+                  : 'clay-btn-neutral text-black'
               }`}
             >
               Kelas {gr} SD
             </button>
           ))}
-          <span className="text-[11px] font-semibold text-neutral-500 ml-auto hidden sm:inline shrink-0">
+          <span className="text-[11px] font-bold text-black ml-auto hidden sm:inline shrink-0">
             {gradeData.subjects.length} Mapel Tersedia
           </span>
         </div>
 
-        {/* ======================================================== */}
-        {/* VIEW 1: DAFTAR MATA PELAJARAN UNTUK KELAS TERPILIH       */}
-        {/* ======================================================== */}
+        {/* VIEW 1: DAFTAR MATA PELAJARAN */}
         {!currentSubject ? (
-          <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 school-scrollbar-amber">
-            {/* Header Greeting Bersih & Elegan */}
-            <div className="p-3.5 rounded-2xl bg-amber-50/80 border-2 border-amber-300 flex items-center justify-between gap-3 shadow-xs">
-              <div className="flex items-center gap-2.5">
-                <span className="text-xl">✨</span>
-                <p className="text-xs sm:text-sm text-neutral-700 font-semibold leading-relaxed">
-                  Kurikulum mata pelajaran khusus <span className="text-amber-950 font-bold underline decoration-amber-400">{gradeData.gradeName}</span>. Pilih mapel untuk belajar dan latihan kuis:
+          <div className="flex-1 min-h-0 overflow-y-auto p-3.5 sm:p-5 space-y-3.5 custom-scrollbar landscape-compact-body">
+            <div className="p-3 clay-card-secondary flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <span className="text-lg">✨</span>
+                <p className="text-xs text-black font-bold leading-relaxed">
+                  Kurikulum mata pelajaran khusus <span>{gradeData.gradeName}</span>. Pilih mapel untuk belajar dan latihan kuis:
                 </p>
               </div>
-              <span className="px-3 py-1 rounded-full bg-amber-100 border border-amber-300 text-amber-900 text-xs font-bold shrink-0">
+              <span className="px-2.5 py-0.5 clay-badge-primary text-black text-xs font-bold shrink-0">
                 {gradeData.subjects.length} Mapel
               </span>
             </div>
 
-            {/* Grid Kartu Mapel (3 Kolom Luas & Proporsional Sesuai Modal Kelas) */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4.5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 landscape:grid-cols-2 gap-3.5">
               {gradeData.subjects.map((sub, idx) => (
                 <div
                   key={sub.id}
                   onClick={() => handleOpenSubject(sub.id)}
-                  className="group bg-white rounded-2xl border-2 border-neutral-300 hover:border-amber-500 hover:-translate-y-1 hover:shadow-md transition-all duration-200 flex flex-col justify-between p-4.5 sm:p-5 relative shadow-xs cursor-pointer"
+                  className="clay-card flex flex-col justify-between p-4 cursor-pointer"
                 >
-                  <div className="space-y-2.5">
-                    {/* Top Row: Nomor Mapel Badge + Topic Badge */}
+                  <div className="space-y-2">
                     <div className="flex items-center justify-between gap-1">
-                      <span className="text-xs font-black px-2.5 py-1 rounded-lg bg-amber-100 text-amber-900 border border-amber-300 tracking-wider">
+                      <span className="text-[10px] font-bold px-2 py-0.5 clay-badge-primary text-black tracking-wider">
                         MAPEL #{idx + 1}
                       </span>
-                      <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-neutral-100 text-neutral-700 border border-neutral-200 truncate max-w-[130px]">
+                      <span className="text-[10px] font-bold px-2 py-0.5 clay-badge-secondary text-black truncate max-w-[130px]">
                         {sub.badge}
                       </span>
                     </div>
 
-                    {/* Subject Header: Emoji Box + Judul Mapel */}
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-2xl bg-neutral-50 border-2 border-neutral-200 group-hover:border-neutral-400 flex items-center justify-center text-2xl shrink-0 transition-colors shadow-2xs">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-10 h-10 clay-badge-neutral flex items-center justify-center text-xl shrink-0">
                         {sub.emoji}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <h3 className="text-base sm:text-lg font-black text-neutral-900 group-hover:text-neutral-950 transition-colors leading-tight">
+                        <h3 className="text-sm sm:text-base font-bold text-black leading-tight truncate">
                           {sub.name}
                         </h3>
-                        <span className="text-xs font-semibold text-neutral-500">
+                        <span className="text-[11px] font-bold text-black">
                           {sub.shortName || sub.badge}
                         </span>
                       </div>
                     </div>
 
-                    {/* Tagline / Subtitle Deskripsi Mapel */}
-                    <p className="text-xs text-neutral-600 font-medium leading-relaxed bg-neutral-50/80 p-2.5 rounded-xl border border-neutral-200/80">
+                    <p className="text-xs text-black leading-relaxed clay-badge-neutral p-2.5">
                       {sub.subtitle}
                     </p>
 
-                    {/* Preview Cuplikan Materi Pelajaran (2 Butir Poin) */}
-                    <div className="space-y-1.5 pt-1">
+                    <div className="space-y-1 pt-0.5">
                       {sub.points.slice(0, 2).map((pt, pIdx) => (
-                        <div key={pIdx} className="flex items-start gap-1.5 text-[11px] text-neutral-700 font-medium leading-snug">
-                          <span className="text-amber-500 font-bold shrink-0">⭐</span>
-                          <span className="line-clamp-1">{pt.replace(/^[A-Za-z0-9\s]+:\s*/, '')}</span>
+                        <div
+                          key={pIdx}
+                          className="flex items-start gap-1.5 text-[11px] text-black leading-snug"
+                        >
+                          <span className="font-bold shrink-0">⭐</span>
+                          <span className="line-clamp-1">
+                            {pt.replace(/^[A-Za-z0-9\s]+:\s*/, '')}
+                          </span>
                         </div>
                       ))}
                     </div>
                   </div>
 
-                  {/* Bottom Action Pill: Buka Mapel */}
-                  <div className="pt-3 mt-3 border-t border-neutral-100 flex items-center justify-between">
-                    <span className="text-xs font-bold text-neutral-600 group-hover:text-neutral-900 transition-colors flex items-center gap-1.5">
-                      <BookOpen className="w-3.5 h-3.5 text-neutral-500" />
+                  <div className="pt-2.5 mt-2.5 border-t-2 border-[#5C3A21] flex items-center justify-between">
+                    <span className="text-xs font-bold text-black flex items-center gap-1">
+                      <BookOpen className="w-3.5 h-3.5 text-black" />
                       <span>Materi & Kuis</span>
                     </span>
                     <button
                       type="button"
-                      className="px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shadow-xs flex items-center gap-1 cursor-pointer bg-amber-500 hover:bg-amber-600 text-white border-2 border-amber-600"
+                      className="px-3 py-1 clay-btn-primary text-black text-xs font-bold flex items-center gap-1"
                     >
                       <span>Buka Mapel</span>
                       <ChevronRight className="w-3.5 h-3.5" />
@@ -1420,51 +1414,43 @@ export const SdSubjectsModal: React.FC<SdSubjectsModalProps> = ({
             </div>
           </div>
         ) : (
-          /* ======================================================== */
-          /* VIEW 2: TAMPILAN BELAJAR MAPEL TERPILIH                  */
-          /* ======================================================== */
+          /* VIEW 2: TAMPILAN BELAJAR MAPEL TERPILIH */
           <div className="flex-1 flex flex-col min-h-0">
-            {/* Top Back Action Bar */}
-            <div className="px-5 sm:px-6 py-3 bg-neutral-50 border-b-2 border-neutral-200 flex items-center justify-between gap-3 shrink-0">
+            <div className="px-4 sm:px-5 py-2.5 bg-[#FFF8EA] border-b-2 border-[#5C3A21] flex items-center justify-between gap-3 shrink-0">
               <button
+                type="button"
                 onClick={handleBackToList}
-                className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-white hover:bg-neutral-100 border-2 border-neutral-300 text-neutral-800 font-bold text-xs transition-colors cursor-pointer shadow-2xs"
+                className="flex items-center gap-1.5 px-3 py-1.5 clay-btn-secondary text-black font-bold text-xs"
               >
                 <ArrowLeft className="w-4 h-4" />
-                <span>← Kembali ke Daftar Mapel {gradeData.gradeName}</span>
+                <span>Kembali ke Daftar Mapel</span>
               </button>
 
-              <span className="text-xs font-bold px-2.5 py-1 rounded-lg bg-amber-100 text-amber-900 border border-amber-300">
+              <span className="text-xs font-bold px-2.5 py-0.5 clay-badge-primary text-black">
                 {currentSubject.badge}
               </span>
             </div>
 
-            {/* Scrollable Content Body */}
-            <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 school-scrollbar-amber">
-              
-              {/* Header Box Mapel */}
-              <div className="p-4 sm:p-5 rounded-2xl border-2 border-neutral-300 bg-white flex items-center gap-4 shadow-xs">
-                <div className="w-14 h-14 rounded-2xl bg-neutral-50 border-2 border-neutral-200 shadow-2xs flex items-center justify-center text-3xl shrink-0">
+            <div className="flex-1 min-h-0 overflow-y-auto p-3.5 sm:p-5 space-y-3.5 custom-scrollbar landscape-compact-body">
+              <div className="p-3.5 clay-card flex items-center gap-3.5">
+                <div className="w-12 h-12 clay-badge-primary flex items-center justify-center text-2xl shrink-0">
                   {currentSubject.emoji}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold text-amber-950">{gradeData.gradeName}</span>
-                    <span className="text-neutral-300">•</span>
-                    <span className="text-xs text-neutral-600 font-medium">{gradeData.fase}</span>
+                  <div className="flex items-center gap-2 text-xs font-bold text-black">
+                    <span>{gradeData.gradeName}</span>
+                    <span>•</span>
+                    <span>{gradeData.fase}</span>
                   </div>
-                  <h3 className="text-lg sm:text-xl font-black text-neutral-900 mt-0.5">
+                  <h3 className="text-base sm:text-lg font-bold text-black mt-0.5">
                     {currentSubject.name}
                   </h3>
-                  <p className="text-xs sm:text-sm text-neutral-600 font-medium mt-0.5">
-                    {currentSubject.subtitle}
-                  </p>
+                  <p className="text-xs text-black mt-0.5">{currentSubject.subtitle}</p>
                 </div>
               </div>
 
-              {/* Rangkuman 3 Poin Inti Yang Gampang & Seru */}
-              <div className="p-4 sm:p-5 rounded-2xl bg-white border-2 border-neutral-300 space-y-3 shadow-xs">
-                <div className="flex items-center gap-2 text-neutral-900 font-black text-sm">
+              <div className="p-3.5 clay-card space-y-2.5">
+                <div className="flex items-center gap-2 text-black font-bold text-xs sm:text-sm">
                   <span>📖</span>
                   <span>Materi Pelajaran di {gradeData.gradeName}:</span>
                 </div>
@@ -1472,59 +1458,60 @@ export const SdSubjectsModal: React.FC<SdSubjectsModalProps> = ({
                   {currentSubject.points.map((pt, idx) => (
                     <div
                       key={idx}
-                      className="p-3 rounded-xl bg-neutral-50 border border-neutral-200 flex items-start gap-2.5 text-xs sm:text-sm text-neutral-800 font-medium leading-relaxed"
+                      className="p-2.5 clay-badge-neutral flex items-start gap-2 text-xs text-black leading-relaxed"
                     >
-                      <span className="text-base shrink-0">⭐</span>
+                      <span className="text-sm shrink-0">⭐</span>
                       <span className="leading-snug">{pt}</span>
                     </div>
                   ))}
                 </div>
               </div>
 
-              {/* Tebak-Tebakan / Kuis Ceria 1 Soal */}
-              <div className="p-4 sm:p-5 rounded-2xl bg-white border-2 border-neutral-300 space-y-3 shadow-xs">
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2 text-neutral-900 font-black text-sm">
+              <div className="p-3.5 clay-card space-y-2.5">
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <div className="flex items-center gap-2 text-black font-bold text-xs sm:text-sm">
                     <span>🎯</span>
                     <span>Kuis Cepat Ceria ({gradeData.gradeName}):</span>
                   </div>
                   {quizAnswer !== null && (
                     <span
-                      className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${
+                      className={`text-xs font-bold px-2.5 py-0.5 ${
                         quizAnswer === currentSubject.quiz.answerIndex
-                          ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
-                          : 'bg-rose-100 text-rose-800 border border-rose-300'
+                          ? 'clay-badge-secondary text-black'
+                          : 'clay-badge-cocoa text-white'
                       }`}
                     >
-                      {quizAnswer === currentSubject.quiz.answerIndex ? '🎉 Yaaay Benar!' : '💡 Coba Lagi Yuk!'}
+                      {quizAnswer === currentSubject.quiz.answerIndex
+                        ? '🎉 Yaaay Benar!'
+                        : '💡 Coba Lagi Yuk!'}
                     </span>
                   )}
                 </div>
 
-                <p className="text-xs sm:text-sm font-bold text-neutral-900 bg-neutral-50 p-3 rounded-xl border border-neutral-200">
+                <p className="text-xs sm:text-sm font-bold text-black clay-badge-neutral p-3">
                   {currentSubject.quiz.question}
                 </p>
 
-                {/* 3 Tombol Opsi Jawaban */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                   {currentSubject.quiz.options.map((opt, optIdx) => {
-                    let optStyle = 'bg-white hover:bg-neutral-50 border-neutral-300 text-neutral-800';
+                    let optStyle = 'clay-btn-neutral text-black';
                     if (quizAnswer !== null) {
                       if (optIdx === currentSubject.quiz.answerIndex) {
-                        optStyle = 'bg-emerald-100 border-emerald-500 text-emerald-950 font-black scale-[1.02] shadow-xs';
+                        optStyle = 'clay-card-secondary text-black font-bold';
                       } else if (optIdx === quizAnswer) {
-                        optStyle = 'bg-rose-100 border-rose-400 text-rose-900 line-through opacity-80';
+                        optStyle = 'clay-badge-cocoa text-white line-through';
                       } else {
-                        optStyle = 'bg-neutral-50 border-neutral-200 text-neutral-400 opacity-60';
+                        optStyle = 'clay-card text-black opacity-50';
                       }
                     }
 
                     return (
                       <button
                         key={optIdx}
+                        type="button"
                         onClick={() => handleSelectQuizOption(optIdx)}
                         disabled={quizAnswer !== null}
-                        className={`p-3 rounded-xl border-2 text-xs sm:text-sm font-bold transition-all text-center cursor-pointer shadow-2xs ${optStyle}`}
+                        className={`p-2.5 text-xs sm:text-sm font-bold text-center ${optStyle}`}
                       >
                         {opt}
                       </button>
@@ -1532,53 +1519,48 @@ export const SdSubjectsModal: React.FC<SdSubjectsModalProps> = ({
                   })}
                 </div>
 
-                {/* Penjelasan jika sudah dijawab */}
                 {quizAnswer !== null && (
-                  <div className="p-3 rounded-xl bg-neutral-50 border border-neutral-200 text-xs text-neutral-800 font-medium flex items-center gap-2 animate-in fade-in">
+                  <div className="p-2.5 clay-card-secondary text-xs text-black font-bold flex items-center gap-2">
                     <span className="text-base">💡</span>
                     <span>{currentSubject.quiz.explanation}</span>
                   </div>
                 )}
               </div>
 
-              {/* Fakta Seru */}
-              <div className="p-3.5 rounded-2xl bg-neutral-50 border-2 border-neutral-200 flex items-center gap-3 text-xs text-neutral-800 font-medium shadow-2xs">
-                <span className="text-2xl shrink-0">🎈</span>
+              <div className="p-3 clay-card-primary flex items-center gap-2.5 text-xs text-black">
+                <span className="text-xl shrink-0">🎈</span>
                 <div>
-                  <span className="font-bold text-neutral-900 block">Tahukah Kamu?</span>
+                  <span className="font-bold text-black block">Tahukah Kamu?</span>
                   <span>{currentSubject.funFact}</span>
                 </div>
               </div>
             </div>
 
-            {/* Bottom Study Action Button */}
-            <div className="p-4 sm:p-5 bg-white border-t-2 border-neutral-200 flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0">
-              <div className="text-xs text-neutral-600 flex items-center gap-1.5 font-medium">
+            <div className="p-3.5 bg-[#FFF8EA] border-t-2 border-[#5C3A21] flex flex-col sm:flex-row items-center justify-between gap-2.5 shrink-0">
+              <div className="text-xs text-black flex items-center gap-1.5 font-bold">
                 <span>📍 Sedang duduk belajar di</span>
-                <span className="font-bold text-neutral-900">
+                <span>
                   {deskType === 'guru' ? 'Meja Guru (Podium)' : 'Meja Belajar Siswa'} ({gradeData.gradeName})
                 </span>
               </div>
 
               <button
+                type="button"
                 onClick={handleStudyAction}
                 disabled={hasStudied}
-                className={`w-full sm:w-auto px-6 py-2.5 rounded-2xl text-xs sm:text-sm font-extrabold transition-all shadow-xs flex items-center justify-center gap-2 cursor-pointer ${
-                  hasStudied
-                    ? 'bg-emerald-100 border-2 border-emerald-400 text-emerald-800'
-                    : 'bg-amber-500 hover:bg-amber-600 text-white border-2 border-amber-600 hover:scale-105 active:scale-95'
+                className={`w-full sm:w-auto px-5 py-2 text-xs font-bold flex items-center justify-center gap-2 ${
+                  hasStudied ? 'clay-badge-secondary text-black' : 'clay-btn-primary text-black'
                 }`}
               >
                 {hasStudied ? (
                   <>
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                    <CheckCircle2 className="w-4 h-4 text-black" />
                     <span>Sudah Dipelajari Hari Ini! (+35 EXP)</span>
                   </>
                 ) : (
                   <>
                     <span>✨</span>
                     <span>Selesai Belajar di Meja (+35 EXP)</span>
-                    <span>🚀</span>
                   </>
                 )}
               </button>
@@ -1587,14 +1569,9 @@ export const SdSubjectsModal: React.FC<SdSubjectsModalProps> = ({
         )}
 
         {/* Modal Footer Kecil */}
-        <div className="px-5 sm:px-6 py-3 border-t-2 border-neutral-200 bg-neutral-50 flex items-center justify-between text-xs text-neutral-700 font-medium shrink-0">
-          <div className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-            <span>Kurikulum Resmi {gradeData.gradeName} RadenWorld</span>
-          </div>
-          <span className="text-neutral-500 text-[11px] hidden sm:inline">
-            Tekan ESC untuk menutup
-          </span>
+        <div className="px-4 sm:px-5 py-2 border-t-2 border-[#5C3A21] bg-[#FFF8EA] flex items-center justify-between text-xs text-black font-bold shrink-0">
+          <span>Kurikulum Resmi {gradeData.gradeName} RadenWorld</span>
+          <span className="text-[11px] hidden sm:inline">Tekan ESC untuk menutup</span>
         </div>
       </div>
     </div>

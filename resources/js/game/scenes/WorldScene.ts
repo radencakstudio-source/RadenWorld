@@ -31,6 +31,8 @@ import { WorldProps } from './world/WorldProps';
 import { WorldNpcs } from './world/WorldNpcs';
 import { WorldInteractions, DEFAULT_WORLD_DOORS } from './world/WorldInteractions';
 import type { IWorldDoors } from './world/WorldInteractions';
+import { WorldFarming } from './world/WorldFarming';
+import { InventoryManager } from '../core/InventoryManager';
 
 
 
@@ -83,6 +85,14 @@ export class WorldScene extends Phaser.Scene {
   private clouds: IWorldCloud[] = [];
   public digTiles: Phaser.GameObjects.Image[] = [];
 
+  // Sistem Atmosfer Malam Biru Realistis & Lightmap Lampu Jalan
+  private nightCanvasTex: Phaser.Textures.CanvasTexture | null = null;
+  private nightOverlaySprite: Phaser.GameObjects.Image | null = null;
+  private lastNightLightmapTime: number = 0;
+  private lastNightCamX: number = -99999;
+  private lastNightCamY: number = -99999;
+  private lastNightZoom: number = -1;
+
   // Cache bounding box rintangan statis untuk performa tinggi
   private cachedObstacleBoxes: { minX: number; maxX: number; minY: number; maxY: number }[] | null = null;
 
@@ -132,11 +142,12 @@ export class WorldScene extends Phaser.Scene {
     // 3. Masuk ke room 'world' pada WebSocket Server
     this.networkManager.switchRoom('world');
 
-    // 4. Pastikan tekstur prosedural Canvas (Wall Checker, Animated Water, Alun-Alun & Trotoar 2) tersedia
+    // 4. Pastikan tekstur prosedural Canvas (Wall Checker, Animated Water, Alun-Alun, Trotoar 2 & Cahaya Lampu) tersedia
     WorldTextures.ensureWallTextures(this);
     WorldTextures.ensureWaterTextures(this);
     WorldTextures.ensureAlunAlunTextures(this);
     WorldTextures.ensureTrotoar2Textures(this);
+    WorldTextures.ensureLightingTextures(this);
 
     // 5. Render lingkungan Open World 1:1 mengikuti Blueprint Peta (WorldTerrain)
     const terrain = WorldTerrain.createWorldTerrain(
@@ -152,6 +163,9 @@ export class WorldScene extends Phaser.Scene {
     this.shorelineSurfs = terrain.shorelineSurfs;
     this.clouds = terrain.clouds;
     this.digTiles = terrain.digTiles;
+
+    // 5b. Inisialisasi Sistem Pertanian Kebun Tani (Menanam Biji, Menyiram & Panen)
+    WorldFarming.init(this, this.tileSize, this.digTiles);
 
     // 6. Tempatkan Lampu Jalan (44 Lampu), Kustom Props Arsitek, & Slot Gedung Baru (WorldProps)
     WorldProps.resetProps();
@@ -187,6 +201,9 @@ export class WorldScene extends Phaser.Scene {
 
     // 13. Spawn karakter lokal
     this.spawnLocalPlayer(this.pendingPlayerName || 'Petualang', this.pendingAvatar!, this.spawnNearHouseDoor);
+
+    // 13b. Siapkan atmosfer malam biru realistis & lightmap sorot lampu jalan
+    this.setupNightAtmosphere();
 
     // 14. Daftarkan cleanup saat shutdown / destroy
     this.setupSceneCleanup();
@@ -252,7 +269,25 @@ export class WorldScene extends Phaser.Scene {
    * Inisialisasi NPC dunia
    */
   private createWorldNpcs(): void {
-    this.npcs = [];
+    this.npcs = [
+      {
+        id: 'npc_petani_somad',
+        name: 'Pak Tani Somad',
+        role: 'Penyuluh Kebun Tani',
+        avatarType: 'farmer',
+        avatarUrl: '/assets/sprites/NPC/1x2%20NPC%20Petani.webp',
+        spriteKey: 'npc-petani',
+        x: 61 * 120 + 60, // gx: 61, gy: 10 (Lokasi Kebun Pertanian)
+        y: 10 * 120 + 60,
+        greeting: 'Halo Petualang! Mau belajar 5 aturan menanam di Kebun Tani?',
+        dialogues: [
+          'Halo Petualang! Selamat datang di Lahan Pertanian & Perkebunan RadenWorld! 🌱',
+          'Aturan Menanam Resmi di RadenWorld ada 5 Langkah Wajib:\n1. ⛏️ Cangkul lahan tanah terlebih dahulu\n2. 💧 Siram air sekali dengan Tong Penyiram\n3. 🌱 Tanam bibit pilihan di tanah yang sudah basah\n4. ⏳ Tunggu 24 jam hingga mekar siap panen\n5. 🌾 Panen hasilnya dengan tombol [F]!',
+          'Catatan Tong Air: Tong penyiram memiliki kapasitas 10 takaran air. Jika habis (0/10), pergilah ke bibir pantai selatan atau lautan timur lalu tekan [F] untuk mengisinya kembali sampai penuh! 🌊',
+          'Semua bibit unggul nusantara dan cangkul bisa kamu beli di Kantor Makelar & Pasar Rakyat [14, 53]. Hasil panenmu juga bisa dijual di sana dengan harga koin emas tinggi!',
+        ],
+      },
+    ];
     WorldNpcs.createWorldNpcs(this, this.npcs, (npcData) => {
       this.approachAndInteractWithNpc(npcData);
     });
@@ -731,7 +766,7 @@ export class WorldScene extends Phaser.Scene {
     }
 
     if (!this.cameraController) {
-      this.setupCameraZoomControls(0.9);
+      this.setupCameraZoomControls(this.targetZoom);
     }
     const cameraMargin = 1600;
     this.cameraController.setBounds(
@@ -742,7 +777,7 @@ export class WorldScene extends Phaser.Scene {
     );
     this.cameraController.centerOn(spawnX, spawnY);
     this.cameraController.follow(this.player, true, 1.0, 1.0);
-    this.smoothZoomTo(0.9);
+    this.smoothZoomTo(this.targetZoom);
 
     this.networkManager.connect();
     const isSuperAdmin = name.toUpperCase() === 'RADEN';
@@ -781,22 +816,25 @@ export class WorldScene extends Phaser.Scene {
     }
     this.cameraController = new CameraController(this, {
       defaultZoom,
-      minZoom: 0.45,
+      minZoom: 0.35,
       maxZoom: 1.8,
       zoomLerpSpeed: 0.12,
     });
   }
 
   public smoothZoomTo(newZoom: number): void {
-    this.targetZoom = Phaser.Math.Clamp(newZoom, 0.45, 1.8);
+    this.targetZoom = Phaser.Math.Clamp(newZoom, 0.35, 1.8);
     this.cameraController?.smoothZoomTo(newZoom);
   }
 
   private setupInitialCamera(): void {
-    let initialZoom = 0.9;
+    const isMobile = typeof window !== 'undefined' && (
+      window.innerWidth < 768 || window.innerHeight < 550 || ('ontouchstart' in window) || (navigator.maxTouchPoints > 0)
+    );
+    let initialZoom = isMobile ? 0.65 : 0.9;
     try {
       const s = JSON.parse(localStorage.getItem('raden_game_settings') || '{}');
-      if (typeof s.cameraZoom === 'number' && s.cameraZoom >= 0.45 && s.cameraZoom <= 1.8) {
+      if (typeof s.cameraZoom === 'number' && s.cameraZoom >= 0.35 && s.cameraZoom <= 1.8) {
         initialZoom = s.cameraZoom;
       }
     } catch (e) { }
@@ -1329,6 +1367,18 @@ export class WorldScene extends Phaser.Scene {
     // 2c. Efek transparansi gedung & pohon saat karakter berada di belakangnya (Occlusion Transparency)
     WorldProps.updateBuildingOcclusion(time, delta, this.player);
 
+    // 2d. Atmosfer Malam Biru Sungguhan & Nyala Lampu Jalan Dinamis
+    this.updateNightAtmosphere(time);
+
+    // 2e. Pertumbuhan Tanaman Kebun Tani Real-time
+    WorldFarming.update(time);
+
+    // 2d. Atmosfer Malam Biru Sungguhan & Nyala Lampu Jalan Dinamis
+    this.updateNightAtmosphere(time);
+
+    // 2e. Pertumbuhan Tanaman Kebun Tani Real-time
+    WorldFarming.update(time);
+
     const px = this.player.x;
     const py = this.player.y;
 
@@ -1346,9 +1396,25 @@ export class WorldScene extends Phaser.Scene {
         this.privateRoomId
       );
 
-      if (proximity.prompt !== this.activePrompt) {
-        this.activePrompt = proximity.prompt;
-        EventBus.emit('interaction-prompt', proximity.prompt);
+      let resolvedPrompt = proximity.prompt;
+      if (!resolvedPrompt && this.player) {
+        if (WorldFarming.hasRipeCropNearPlayer(this.player)) {
+          resolvedPrompt = '[F] Panen Tanaman Siap Panen 🌾';
+        } else {
+          const gxNow = Math.floor(px / this.tileSize);
+          const gyNow = Math.floor(py / this.tileSize);
+          if (WorldFarming.isFarmGrid(gxNow, gyNow)) {
+            const held = InventoryManager.getInstance().getActiveItem();
+            if (InventoryManager.isSeedItem(held)) {
+              resolvedPrompt = `[F] Tanam ${held?.name || 'Bibit'} 🌱`;
+            }
+          }
+        }
+      }
+
+      if (resolvedPrompt !== this.activePrompt) {
+        this.activePrompt = resolvedPrompt;
+        EventBus.emit('interaction-prompt', resolvedPrompt);
       }
       this.cachedProximityLocation = proximity.locationName;
     }
@@ -1398,11 +1464,280 @@ export class WorldScene extends Phaser.Scene {
     });
   }
 
+  /**
+   * Menghitung siklus waktu tropis (WIB) untuk atmosfer malam biru sungguhan
+   */
+  private computeNightCycle(): { nightFactor: number; fillRgba: string } {
+    const now = new Date();
+    const t = now.getHours() + now.getMinutes() / 60 + now.getSeconds() / 3600;
+
+    // Siang Cerah (06:15 - 17:00)
+    if (t >= 6.25 && t < 17.0) {
+      return { nightFactor: 0, fillRgba: 'rgba(10, 32, 92, 0)' };
+    }
+
+    // Sore menuju Senja Biru (17:00 - 18:30) - lembut & nyaman di mata
+    if (t >= 17.0 && t < 18.5) {
+      const p = (t - 17.0) / 1.5; // 0 -> 1
+      const alpha = +(p * 0.25).toFixed(3);
+      return {
+        nightFactor: p * 0.65,
+        fillRgba: `rgba(16, 42, 112, ${alpha})`,
+      };
+    }
+
+    // Transisi Maghrib ke Malam Biru Cerah (18:30 - 19:15)
+    if (t >= 18.5 && t < 19.25) {
+      const p = (t - 18.5) / 0.75; // 0 -> 1
+      const alpha = +(0.25 + p * 0.19).toFixed(3); // 0.25 -> 0.44
+      return {
+        nightFactor: 0.65 + p * 0.35,
+        fillRgba: `rgba(14, 38, 105, ${alpha})`,
+      };
+    }
+
+    // Malam Sungguhan Berwarna Biru Royal / Midnight Sapphire Lembut (19:15 - 04:30)
+    // Tidak terlalu gelap, pemandangan kota dan jalan tetap jelas & nyaman dilihat
+    if (t >= 19.25 || t < 4.5) {
+      return {
+        nightFactor: 1.0,
+        fillRgba: 'rgba(14, 38, 105, 0.44)',
+      };
+    }
+
+    // Fajar Biru Pagi (04:30 - 06:15)
+    const p = 1.0 - (t - 4.5) / 1.75; // 1 -> 0
+    const alpha = +(Math.max(0, p * 0.44)).toFixed(3);
+    return {
+      nightFactor: Math.max(0, p),
+      fillRgba: `rgba(14, 38, 105, ${alpha})`,
+    };
+  }
+
+  /**
+   * Menyiapkan CanvasTexture lightmap malam biru & sorot lampu jalan berkinerja tinggi
+   */
+  private setupNightAtmosphere(): void {
+    try {
+      const texKey = 'world-night-lightmap';
+      if (this.textures.exists(texKey)) {
+        this.textures.remove(texKey);
+      }
+      this.nightCanvasTex = this.textures.createCanvas(texKey, 320, 180);
+      this.nightCanvasTex?.setFilter(Phaser.Textures.FilterMode.LINEAR);
+
+      this.nightOverlaySprite = this.add.image(0, 0, texKey);
+      this.nightOverlaySprite.setDepth(125000);
+      this.nightOverlaySprite.setVisible(false);
+      this.lastNightLightmapTime = 0;
+      this.lastNightCamX = -99999;
+      this.lastNightCamY = -99999;
+      this.lastNightZoom = -1;
+    } catch (err) {
+      console.warn('[WorldScene] Gagal inisialisasi lightmap malam:', err);
+    }
+  }
+
+  /**
+   * Memperbarui nyala lampu jalan & lightmap biru malam dengan lubang cahaya hangat
+   */
+  private updateNightAtmosphere(time: number): void {
+    const cam = this.cameras?.main;
+    if (!cam) return;
+
+    const wv = cam.worldView;
+    const { nightFactor, fillRgba } = this.computeNightCycle();
+
+    WorldProps.updateStreetLampLights(time, nightFactor, {
+      left: wv.x,
+      right: wv.right,
+      top: wv.y,
+      bottom: wv.bottom,
+    });
+
+    if (!this.nightOverlaySprite || !this.nightCanvasTex) return;
+
+    if (nightFactor <= 0.01) {
+      if (this.nightOverlaySprite.visible) {
+        this.nightOverlaySprite.setVisible(false);
+      }
+      return;
+    }
+
+    if (!this.nightOverlaySprite.visible) {
+      this.nightOverlaySprite.setVisible(true);
+    }
+
+    const isMobileDevice = typeof window !== 'undefined' && (
+      window.innerWidth < 768 || window.innerHeight < 550 || ('ontouchstart' in window) || (navigator.maxTouchPoints > 0)
+    );
+    const camMovedFar =
+      Math.abs(wv.x - this.lastNightCamX) > (isMobileDevice ? 64 : 48) ||
+      Math.abs(wv.y - this.lastNightCamY) > (isMobileDevice ? 64 : 48) ||
+      Math.abs(cam.zoom - this.lastNightZoom) > 0.02;
+
+    const throttleMs = isMobileDevice ? 120 : 45;
+    if (!camMovedFar && time - this.lastNightLightmapTime < throttleMs) {
+      return;
+    }
+
+    this.lastNightLightmapTime = time;
+    this.lastNightCamX = wv.x;
+    this.lastNightCamY = wv.y;
+    this.lastNightZoom = cam.zoom;
+
+    const pad = 220;
+    const viewX = wv.x - pad;
+    const viewY = wv.y - pad;
+    const viewW = Math.max(400, wv.width + pad * 2);
+    const viewH = Math.max(300, wv.height + pad * 2);
+
+    this.nightOverlaySprite.setPosition(viewX + viewW * 0.5, viewY + viewH * 0.5);
+    this.nightOverlaySprite.setDisplaySize(viewW, viewH);
+
+    const cw = 320;
+    const ch = 180;
+    const ctx = this.nightCanvasTex.getContext();
+    if (!ctx) return;
+
+    ctx.clearRect(0, 0, cw, ch);
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.fillStyle = fillRgba;
+    ctx.fillRect(0, 0, cw, ch);
+
+    // Lubangi selimut malam biru di sekitar tiap lampu jalan & pemain
+    ctx.globalCompositeOperation = 'destination-out';
+    const sx = cw / viewW;
+    const sy = ch / viewH;
+
+    const lamps = WorldProps.lampLights;
+    for (let i = 0; i < lamps.length; i++) {
+      const l = lamps[i];
+      if (!l.lampImg || !l.lampImg.active) continue;
+      if (
+        l.lanternX < viewX - 300 ||
+        l.lanternX > viewX + viewW + 300 ||
+        l.groundY < viewY - 300 ||
+        l.lanternY > viewY + viewH + 300
+      ) {
+        continue;
+      }
+
+      // 1. Lubang cahaya elips di permukaan jalan / trotoar bawah lampu
+      const gx = (l.groundX - viewX) * sx;
+      const gy = (l.groundY - viewY) * sy;
+      const grx = Math.max(6, 255 * sx);
+      const gry = Math.max(4, 175 * sy);
+
+      ctx.save();
+      ctx.translate(gx, gy);
+      ctx.scale(1, gry / grx);
+      const gGrad = ctx.createRadialGradient(0, 0, grx * 0.08, 0, 0, grx);
+      gGrad.addColorStop(0.0, 'rgba(0, 0, 0, 0.96)');
+      gGrad.addColorStop(0.45, 'rgba(0, 0, 0, 0.65)');
+      gGrad.addColorStop(0.78, 'rgba(0, 0, 0, 0.22)');
+      gGrad.addColorStop(1.0, 'rgba(0, 0, 0, 0.0)');
+      ctx.fillStyle = gGrad;
+      ctx.beginPath();
+      ctx.arc(0, 0, grx, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+
+      // 2. Lubang cahaya di sekitar kaca lentera atas lampu jalan
+      const lx = (l.lanternX - viewX) * sx;
+      const ly = (l.lanternY - viewY) * sy;
+      const lr = Math.max(5, 145 * sx);
+      const lGrad = ctx.createRadialGradient(lx, ly, lr * 0.1, lx, ly, lr);
+      lGrad.addColorStop(0.0, 'rgba(0, 0, 0, 0.98)');
+      lGrad.addColorStop(0.55, 'rgba(0, 0, 0, 0.55)');
+      lGrad.addColorStop(1.0, 'rgba(0, 0, 0, 0.0)');
+      ctx.fillStyle = lGrad;
+      ctx.beginPath();
+      ctx.arc(lx, ly, lr, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // 2b. Lubangi selimut malam biru di sekeliling jalan & pekarangan sekitar gedung (cahaya sekeliling, tanpa bola di tengah gedung)
+    const bLights = WorldProps.buildingLights;
+    for (let i = 0; i < bLights.length; i++) {
+      const b = bLights[i];
+      if (
+        b.doorX < viewX - 450 ||
+        b.doorX > viewX + viewW + 450 ||
+        b.doorY < viewY - 450 ||
+        b.doorY > viewY + viewH + 450
+      ) {
+        continue;
+      }
+
+      for (let j = 0; j < b.surroundings.length; j++) {
+        const pool = b.surroundings[j];
+        const bx = (pool.x - viewX) * sx;
+        const by = (pool.y - viewY) * sy;
+        const brx = Math.max(8, pool.r * sx * 0.85);
+        const bry = Math.max(5, pool.r * 0.55 * sy);
+
+        ctx.save();
+        ctx.translate(bx, by);
+        ctx.scale(1, bry / brx);
+        const bGrad = ctx.createRadialGradient(0, 0, brx * 0.1, 0, 0, brx);
+        bGrad.addColorStop(0.0, 'rgba(0, 0, 0, 0.80)');
+        bGrad.addColorStop(0.50, 'rgba(0, 0, 0, 0.42)');
+        bGrad.addColorStop(0.85, 'rgba(0, 0, 0, 0.10)');
+        bGrad.addColorStop(1.0, 'rgba(0, 0, 0, 0.0)');
+        ctx.fillStyle = bGrad;
+        ctx.beginPath();
+        ctx.arc(0, 0, brx, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+    }
+
+    // 3. Cahaya terang di sekitar karakter pemain agar tubuh & pakaian tampak jelas dan terang di malam hari
+    if (this.player && this.player.active) {
+      const px = (this.player.x - viewX) * sx;
+      const py = (this.player.y - viewY) * sy;
+      const pr = Math.max(10, 250 * sx); // Radius lebih luas dan terang
+      const pGrad = ctx.createRadialGradient(px, py, pr * 0.12, px, py, pr);
+      pGrad.addColorStop(0.0, 'rgba(0, 0, 0, 0.98)'); // Terang benderang di sekitar pemain
+      pGrad.addColorStop(0.40, 'rgba(0, 0, 0, 0.76)');
+      pGrad.addColorStop(0.75, 'rgba(0, 0, 0, 0.32)');
+      pGrad.addColorStop(1.0, 'rgba(0, 0, 0, 0.0)');
+      ctx.fillStyle = pGrad;
+      ctx.beginPath();
+      ctx.arc(px, py, pr, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    ctx.globalCompositeOperation = 'source-over';
+    this.nightCanvasTex.refresh();
+  }
+
   private setupSceneCleanup(): void {
     const cleanupScene = () => {
       this.cameras?.main?.stopFollow();
       EventBus.emit('interaction-prompt', null);
       this.networkManager.clearListeners();
+      if (this.nightOverlaySprite) {
+        try { this.nightOverlaySprite.destroy(); } catch (e) {}
+        this.nightOverlaySprite = null;
+      }
+      if (this.nightCanvasTex) {
+        try { this.textures.remove('world-night-lightmap'); } catch (e) {}
+        this.nightCanvasTex = null;
+      }
+      WorldProps.resetProps();
+      WorldFarming.reset();
+      if (this.nightOverlaySprite) {
+        try { this.nightOverlaySprite.destroy(); } catch (e) {}
+        this.nightOverlaySprite = null;
+      }
+      if (this.nightCanvasTex) {
+        try { this.textures.remove('world-night-lightmap'); } catch (e) {}
+        this.nightCanvasTex = null;
+      }
+      WorldProps.resetProps();
+      WorldFarming.reset();
       if (this.player) {
         this.player.destroy();
         this.player = null as any;

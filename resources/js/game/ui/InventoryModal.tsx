@@ -2,19 +2,11 @@
  * ============================================================================
  * FILE: resources/js/game/ui/InventoryModal.tsx
  * ============================================================================
- * FUNGSI UTAMA:
- * Pop-up Tas Punggung & Quick Hotbar RadenWorld:
- * 1. Desain UI Konsisten: Flat Pure Black (#000000 / #0a0a0a) & Amber Gold (#f59e0b)
- *    selaras dengan seluruh antarmuka RadenWorld (HUD, ServerModal, SettingsModal).
- * 2. Hotbar Utama (Slot 1-6) Independen:
- *    - Hotbar SELALU tampil sebagai hotbar siap pakai [1-6], tidak pernah teredup
- *      atau terfilter ketika memilih kategori alat, ikan, makanan, atau material.
- *    - Mendukung Drag & Drop dari slot tas ke slot hotbar (dan sebaliknya).
- * 3. Penyimpanan Tas (Slot 7-30):
- *    - 24 slot petak penyimpanan dengan filter kategori khusus tas.
- *    - Drag & drop untuk menyusun isi tas atau memasang item ke hotbar.
- * 4. Panel Detail & Aksi Cepat:
- *    - Jual ikan, gunakan makanan, dan tombol pintas pasang ke Hotbar.
+ * Pop-up Tas Punggung & Quick Hotbar RadenWorld (Cozycore Clay-Pixel):
+ * 1. Hotbar Utama (Slot 1-6) Independen: selalu siap pakai [1-6], mendukung
+ *    Drag & Drop serta tombol pasang cepat untuk pengguna Mobile & PC.
+ * 2. Penyimpanan Tas (Slot 7-30): 24 slot dengan filter kategori.
+ * 3. Panel Detail & Aksi Cepat: Jual ikan, gunakan makanan, pasang ke Hotbar.
  * ============================================================================
  */
 
@@ -22,7 +14,7 @@ import React, { useState, useEffect } from 'react';
 import { InventoryManager, IInventoryItem } from '../core/InventoryManager';
 import { SoundManager } from '../core/SoundManager';
 import { EventBus } from '../core/EventBus';
-import { X, Backpack, Coins, Utensils, Filter, Info, ArrowRightLeft, Zap, Gem } from 'lucide-react';
+import { X, Backpack, Coins, Utensils, Info, ArrowRightLeft, Zap, Gem } from 'lucide-react';
 
 interface InventoryModalProps {
   isOpen: boolean;
@@ -32,33 +24,33 @@ interface InventoryModalProps {
   isAdmin?: boolean;
 }
 
-type ItemFilter = 'all' | 'tool' | 'fish' | 'consumable' | 'material';
+export type ItemFilter = 'all' | 'tool' | 'seed' | 'crop' | 'fish' | 'consumable' | 'material';
 
 export const InventoryModal: React.FC<InventoryModalProps> = ({
   isOpen,
   onClose,
   gold = 2500,
-  diamonds = 50,
   isAdmin = false,
 }) => {
   const inv = InventoryManager.getInstance();
   const sound = SoundManager.getInstance();
 
   const isUserAdmin = Boolean(
-    isAdmin || (() => {
-      try {
-        const u = JSON.parse(localStorage.getItem('raden_player_user') || '{}');
-        return (
-          u.role === 'admin' ||
-          u.role === 'super_admin' ||
-          u.is_super_admin === true ||
-          u.email === 'radencakstudio@gmail.com' ||
-          u.name?.toUpperCase() === 'RADEN'
-        );
-      } catch (e) {
-        return false;
-      }
-    })()
+    isAdmin ||
+      (() => {
+        try {
+          const u = JSON.parse(localStorage.getItem('raden_player_user') || '{}');
+          return (
+            u.role === 'admin' ||
+            u.role === 'super_admin' ||
+            u.is_super_admin === true ||
+            u.email === 'radencakstudio@gmail.com' ||
+            u.name?.toUpperCase() === 'RADEN'
+          );
+        } catch (e) {
+          return false;
+        }
+      })()
   );
 
   const [items, setItems] = useState<(IInventoryItem | null)[]>(inv.getAllItems());
@@ -72,16 +64,8 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({
     } catch (e) {}
     return gold;
   });
-  const [currentDiamonds, setCurrentDiamonds] = useState<number>(() => {
-    if (isUserAdmin) return 99999999999;
-    try {
-      const d = parseInt(localStorage.getItem('raden_player_diamonds') || '', 10);
-      if (!isNaN(d)) return d;
-    } catch (e) {}
-    return diamonds;
-  });
+  // Bebas sistem diamond / 100% koin
 
-  // Drag and drop state
   const [draggedSlot, setDraggedSlot] = useState<number | null>(null);
   const [dragOverSlot, setDragOverSlot] = useState<number | null>(null);
 
@@ -90,14 +74,13 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({
       setItems(inv.getAllItems());
       if (isUserAdmin) {
         setCurrentGold(99999999999);
-        setCurrentDiamonds(99999999999);
+        // diamonds removed
         return;
       }
       try {
         const g = parseInt(localStorage.getItem('raden_player_gold') || '0', 10);
         if (g) setCurrentGold(g);
-        const d = parseInt(localStorage.getItem('raden_player_diamonds') || '0', 10);
-        if (d) setCurrentDiamonds(d);
+        // diamond removed
       } catch (e) {}
     };
 
@@ -119,7 +102,6 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({
 
   const selectedItem = selectedSlot !== null ? items[selectedSlot] : null;
 
-  // Drag and Drop Handlers
   const handleDragStart = (e: React.DragEvent, slotIdx: number) => {
     if (!items[slotIdx]) {
       e.preventDefault();
@@ -138,7 +120,7 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({
     }
   };
 
-  const handleDragLeave = (e: React.DragEvent, slotIdx: number) => {
+  const handleDragLeave = (_e: React.DragEvent, slotIdx: number) => {
     if (dragOverSlot === slotIdx) {
       setDragOverSlot(null);
     }
@@ -147,7 +129,8 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({
   const handleDrop = (e: React.DragEvent, targetSlotIdx: number) => {
     e.preventDefault();
     const sourceSlotStr = e.dataTransfer.getData('text/plain');
-    const sourceSlot = draggedSlot ?? (sourceSlotStr !== '' ? parseInt(sourceSlotStr, 10) : null);
+    const sourceSlot =
+      draggedSlot ?? (sourceSlotStr !== '' ? parseInt(sourceSlotStr, 10) : null);
 
     setDraggedSlot(null);
     setDragOverSlot(null);
@@ -200,48 +183,43 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({
     switch (rarity) {
       case 'Legendary':
         return (
-          <span className="bg-amber-400 text-black font-mono font-black text-[9px] px-1.5 py-0.5 rounded tracking-wider">
+          <span className="clay-badge-primary font-bold text-[9px] px-1.5 py-0.5 text-black uppercase">
             LEGENDARIS
           </span>
         );
       case 'Rare':
         return (
-          <span className="bg-neutral-900 text-amber-300 border border-amber-400/40 font-mono font-bold text-[9px] px-1.5 py-0.5 rounded tracking-wider">
+          <span className="clay-badge-secondary font-bold text-[9px] px-1.5 py-0.5 text-black uppercase">
             LANGKA
           </span>
         );
       case 'Uncommon':
         return (
-          <span className="bg-neutral-900 text-neutral-200 border border-neutral-700 font-mono font-bold text-[9px] px-1.5 py-0.5 rounded tracking-wider">
+          <span className="clay-badge-cocoa font-bold text-[9px] px-1.5 py-0.5 text-white uppercase">
             UNCOMMON
           </span>
         );
       default:
         return (
-          <span className="bg-neutral-900 text-neutral-400 border border-neutral-800 font-mono font-bold text-[9px] px-1.5 py-0.5 rounded tracking-wider">
+          <span className="clay-badge-neutral font-bold text-[9px] px-1.5 py-0.5 text-black uppercase">
             BIASA
           </span>
         );
     }
   };
 
-  const getSlotBorder = (item: IInventoryItem | null, isSelected: boolean, isHotbar: boolean = false) => {
-    if (isSelected) {
-      return 'border-2 border-amber-400 bg-amber-400/15 shadow-sm shadow-amber-400/20';
-    }
-    if (!item) {
-      return isHotbar
-        ? 'border border-amber-500/30 bg-black hover:bg-neutral-900 hover:border-amber-400/60'
-        : 'border border-neutral-800/80 bg-black hover:bg-neutral-900/60 hover:border-neutral-700';
-    }
+  const handleUseItem = (_slotIdx: number) => {
+    handleConsumeItem();
+  };
 
-    if (item.rarity === 'Legendary') {
-      return 'border border-amber-400/80 bg-neutral-900 hover:border-amber-300';
+  const handleSellItem = (slotIdx: number) => {
+    if (slotIdx === null || !selectedItem) return;
+    const sold = inv.sellItem(slotIdx);
+    if (sold) {
+      sound.playCoin();
+      const nextFilled = items.findIndex((it, idx) => it !== null && idx !== slotIdx);
+      setSelectedSlot(nextFilled !== -1 ? nextFilled : null);
     }
-    if (item.rarity === 'Rare') {
-      return 'border border-amber-400/40 bg-neutral-900 hover:border-amber-400';
-    }
-    return 'border border-neutral-800 bg-neutral-900 hover:border-neutral-600';
   };
 
   const renderSlot = (idx: number, isHotbar: boolean) => {
@@ -250,12 +228,18 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({
     const isDragging = draggedSlot === idx;
     const isDragOver = dragOverSlot === idx;
 
-    // Filter Kategori: HANYA berlaku untuk slot tas penyimpanan, HOTBAR SELALU TETAP HOTBAR!
     const isDimmed =
       !isHotbar &&
       activeCategory !== 'all' &&
       item !== null &&
       item.category !== activeCategory;
+
+    let slotClass = 'clay-btn-neutral';
+    if (isSelected || isDragOver) {
+      slotClass = 'clay-btn-primary';
+    } else if (isHotbar && item) {
+      slotClass = 'clay-btn-secondary';
+    }
 
     return (
       <div
@@ -270,52 +254,38 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({
           sound.playClick();
           setSelectedSlot(idx);
         }}
-        className={`relative aspect-square rounded-md flex flex-col items-center justify-center transition-all cursor-pointer select-none ${
+        className={`relative aspect-square flex flex-col items-center justify-center select-none text-black ${slotClass} ${
           item ? 'cursor-grab active:cursor-grabbing' : ''
-        } ${
-          isDragging ? 'opacity-30 border-dashed border-amber-400 scale-95' : ''
-        } ${
-          isDragOver
-            ? 'border-2 border-amber-400 bg-amber-400/25 scale-105 shadow-md shadow-amber-400/30 z-10 ring-2 ring-amber-400'
-            : getSlotBorder(item, isSelected, isHotbar)
-        } ${isDimmed ? 'opacity-20 grayscale pointer-events-none' : ''}`}
+        } ${isDragging ? 'opacity-45 border-dashed' : ''} ${
+          isDimmed ? 'opacity-25 pointer-events-none' : ''
+        }`}
         title={
           item
-            ? `${item.name} (${isHotbar ? `Hotbar Slot ${idx + 1}` : `Tas Slot ${idx + 1}`}) - Drag untuk memindahkan`
+            ? `${item.name} (${isHotbar ? `Hotbar Slot ${idx + 1}` : `Tas Slot ${idx + 1}`})`
             : isHotbar
-            ? `Hotbar Slot ${idx + 1} (Drop item ke sini)`
+            ? `Hotbar Slot ${idx + 1}`
             : `Slot Tas ${idx + 1}`
         }
       >
-        {/* Nomor Slot Hotbar [1] - [6] */}
-        {isHotbar && (
-          <span className="absolute top-1 left-1.5 text-[9px] font-mono font-black text-amber-400 leading-none drop-shadow">
-            #{idx + 1}
-          </span>
-        )}
-
-        {/* Nomor Urut Slot Tas Biasa */}
-        {!isHotbar && (
-          <span className="absolute top-1 left-1.5 text-[8px] font-mono text-neutral-600 leading-none">
-            {idx + 1}
-          </span>
-        )}
+        {/* Nomor Slot */}
+        <span className="absolute top-0.5 left-1 text-[8px] sm:text-[9px] font-bold text-black leading-none pointer-events-none">
+          {isHotbar ? `#${idx + 1}` : idx + 1}
+        </span>
 
         {/* Icon Item */}
         {item ? (
           <>
-            <span className="text-2xl sm:text-3xl select-none transition-transform hover:scale-110 pointer-events-none">
+            <span className="text-xl sm:text-2xl select-none pointer-events-none leading-none">
               {item.icon}
             </span>
-            {/* Jumlah Tumpukan (Stack) */}
             {item.quantity > 1 && (
-              <span className="absolute bottom-1 right-1 bg-black text-amber-300 text-[9px] font-mono font-bold px-1 rounded border border-neutral-800 leading-tight pointer-events-none">
+              <span className="absolute bottom-0.5 right-0.5 bg-[#5C3A21] text-white text-[8px] sm:text-[9px] font-bold px-1 rounded leading-tight pointer-events-none">
                 {item.quantity}
               </span>
             )}
           </>
         ) : (
-          <span className="text-neutral-700 text-xs font-bold pointer-events-none">•</span>
+          <span className="text-black/30 text-xs font-bold pointer-events-none">•</span>
         )}
       </div>
     );
@@ -325,307 +295,238 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({
   const bagItemsCount = items.slice(InventoryManager.HOTBAR_SLOTS).filter(Boolean).length;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/80 font-['Chakra_Petch'] select-none animate-in fade-in duration-150">
-      <div className="relative w-full max-w-4xl bg-black border border-neutral-800 rounded-xl shadow-2xl flex flex-col max-h-[94dvh] overflow-hidden text-neutral-100">
-        
-        {/* ============================================================== */}
-        {/* HEADER MODAL: Pure Black & Amber Accents                        */}
-        {/* ============================================================== */}
-        <div className="flex items-center justify-between px-3 sm:px-5 py-2.5 sm:py-3.5 border-b border-neutral-800 bg-[#0a0a0a] shrink-0">
-          <div className="flex items-center gap-2 sm:gap-3">
-            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-md bg-neutral-900 border border-neutral-800 flex items-center justify-center text-amber-400 shrink-0">
-              <Backpack className="w-4 h-4 stroke-[2]" />
+    <div
+      className="ui-modal-backdrop select-none"
+      onKeyDown={(e) => e.stopPropagation()}
+    >
+      <div className="clay-modal-shell max-w-4xl text-black">
+        {/* SIDEBAR SEBELAH KIRI */}
+        <aside className="clay-sidebar">
+          <div className="clay-sidebar-header">
+            <div className="clay-sidebar-brand-icon">
+              <Backpack className="w-4 h-4 stroke-[2.5]" />
             </div>
-            <div>
-              <div className="flex items-center gap-1.5 sm:gap-2">
-                <h2 className="text-xs sm:text-base font-bold tracking-wider text-amber-400 uppercase truncate">
-                  Tas Petualang Raden
-                </h2>
-                <span className="text-[9px] sm:text-[10px] font-mono font-bold bg-neutral-900 text-neutral-400 px-1.5 sm:px-2 py-0.5 rounded border border-neutral-800 shrink-0">
-                  {inv.getItemCount()}/30
-                </span>
-              </div>
+            <div className="clay-sidebar-brand-text">
+              <span className="clay-sidebar-title">TAS PETUALANG</span>
+              <span className="clay-sidebar-subtitle">KAPASITAS {inv.getItemCount()}/30</span>
             </div>
           </div>
 
-          {/* Saldo Gold & Tombol Tutup */}
-          <div className="flex items-center gap-1.5 sm:gap-2">
-            <div className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-md bg-neutral-900 border border-neutral-800 text-amber-300 text-[10px] sm:text-xs font-bold font-mono">
-              <Coins className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-amber-400 fill-amber-400 shrink-0" />
-              <span>{isUserAdmin || currentGold >= 99999999999 ? '99999999999' : currentGold.toLocaleString('id-ID')} G</span>
+          <div className="clay-sidebar-nav">
+            {[
+              { id: 'all', label: 'Semua Item', icon: '📦' },
+              { id: 'tool', label: 'Alat & Senjata', icon: '⛏️' },
+              { id: 'seed', label: 'Bibit & Benih', icon: '🌱' },
+              { id: 'crop', label: 'Hasil Panen', icon: '🌾' },
+              { id: 'fish', label: 'Ikan Tangkapan', icon: '🐟' },
+              { id: 'consumable', label: 'Ramuan & Jamu', icon: '🧪' },
+              { id: 'material', label: 'Material Lain', icon: '🪨' },
+            ].map((cat) => {
+              const isActive = activeCategory === cat.id;
+              return (
+                <button
+                  key={cat.id}
+                  type="button"
+                  onClick={() => {
+                    sound.playClick();
+                    setActiveCategory(cat.id as ItemFilter);
+                  }}
+                  className={`clay-sidebar-btn ${
+                    isActive ? 'clay-sidebar-btn-active' : 'clay-sidebar-btn-inactive'
+                  }`}
+                >
+                  <span className="text-sm shrink-0">{cat.icon}</span>
+                  <span className="truncate">{cat.label}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="clay-sidebar-footer">
+            <div className="clay-badge-secondary flex items-center gap-1.5 px-2 py-1.5 text-black font-bold text-[10px] w-full justify-center">
+              <Coins className="w-3.5 h-3.5 stroke-[2.5] shrink-0" />
+              <span className="truncate">
+                {isUserAdmin || currentGold >= 99999999999 ? '99999999999' : currentGold.toLocaleString('id-ID')} G
+              </span>
             </div>
-            <div className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-md bg-neutral-900 border border-neutral-800 text-cyan-300 text-[10px] sm:text-xs font-bold font-mono">
-              <Gem className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-cyan-400 fill-cyan-400 shrink-0" />
-              <span>{isUserAdmin || currentDiamonds >= 99999999999 ? '99999999999' : currentDiamonds.toLocaleString('id-ID')} 💎</span>
+          </div>
+        </aside>
+
+        {/* MAIN PANE */}
+        <main className="clay-main-pane">
+          {/* TOPBAR */}
+          <header className="clay-main-topbar">
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <h2 className="text-xs sm:text-sm font-bold text-black uppercase">
+                  Penyimpanan & Quick Hotbar
+                </h2>
+                <span className="clay-badge-secondary text-[9px] font-bold px-1.5 py-0.5 text-black">
+                  SLOT BEBAS PINDAH
+                </span>
+                {isUserAdmin && (
+                  <span className="clay-badge-cocoa text-[9px] font-bold px-1.5 py-0.5 text-white">
+                    ADMIN
+                  </span>
+                )}
+              </div>
+              <p className="text-[10px] sm:text-[11px] text-black hidden sm:block truncate">
+                Tarik atau ketuk item untuk menggunakan, memindahkan ke Hotbar [1-6], atau menjual.
+              </p>
             </div>
+
             <button
               type="button"
               onClick={() => {
                 sound.playClick();
                 onClose();
               }}
-              className="w-8 h-8 sm:w-9 sm:h-9 rounded-md bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-neutral-400 hover:text-white flex items-center justify-center transition-colors cursor-pointer shrink-0"
+              className="clay-btn-neutral w-8 h-8 flex items-center justify-center text-black shrink-0"
               title="Tutup Tas [B]"
             >
-              <X className="w-4 h-4" />
+              <X className="w-4 h-4 stroke-[2.5]" />
             </button>
-          </div>
-        </div>
+          </header>
 
-        {/* ============================================================== */}
-        {/* KONTEN UTAMA: HOTBAR + PENYIMPANAN TAS + PANEL DETAIL ITEM      */}
-        {/* ============================================================== */}
-        <div className="flex-1 flex flex-col md:flex-row overflow-y-auto p-3 sm:p-4 gap-3 sm:gap-4 bg-black custom-scrollbar min-h-0">
-          
-          {/* SISI KIRI: HOTBAR UTAMA (SLOT 1-6) & PENYIMPANAN TAS (SLOT 7-30) */}
-          <div className="flex-1 flex flex-col gap-3 min-w-0">
-            
-            {/* 1. KOTAK DEDIKASI HOTBAR UTAMA (SLOT 1 - 6) - TIDAK TERPENGARUH FILTER */}
-            <div className="bg-[#0a0a0a] border border-amber-500/40 rounded-lg p-3 shadow-md relative">
-              <div className="flex items-center justify-between pb-2 mb-2 border-b border-neutral-800">
-                <div className="flex items-center gap-2">
-                  <div className="w-5 h-5 rounded bg-amber-400 text-black flex items-center justify-center font-black text-xs">
-                    <Zap className="w-3.5 h-3.5 fill-black stroke-black" />
-                  </div>
-                  <h3 className="text-xs font-black tracking-wider text-amber-400 uppercase">
-                    HOTBAR UTAMA (Slot 1 - 6)
-                  </h3>
-                  <span className="text-[9px] font-mono font-bold text-black bg-amber-400 px-1.5 py-0.5 rounded leading-none">
-                    SIAP PAKAI [1-6]
-                  </span>
-                </div>
-                <div className="text-[10px] text-neutral-400 flex items-center gap-1 font-mono">
-                  <ArrowRightLeft className="w-3 h-3 text-amber-400" />
-                  <span className="hidden sm:inline">Drag & drop item ke sini ({hotbarItemsCount}/6)</span>
-                </div>
-              </div>
-
-              {/* 6 Slot Hotbar */}
-              <div className="grid grid-cols-6 gap-2">
-                {Array.from({ length: InventoryManager.HOTBAR_SLOTS }).map((_, idx) =>
-                  renderSlot(idx, true)
-                )}
-              </div>
-            </div>
-
-            {/* 2. KOTAK PENYIMPANAN TAS (SLOT 7 - 30, 24 SLOT) DENGAN FILTER KATEGORI */}
-            <div className="flex-1 flex flex-col bg-[#0a0a0a] border border-neutral-800 rounded-lg p-3 gap-2.5">
-              {/* Header Tas & Filter Kategori Tas */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-2 border-b border-neutral-800 gap-2">
-                <div className="flex items-center gap-2">
-                  <Backpack className="w-4 h-4 text-neutral-400" />
-                  <h3 className="text-xs font-bold tracking-wider text-neutral-300 uppercase">
-                    PENYIMPANAN TAS (Slot 7 - 30)
-                  </h3>
-                  <span className="text-[10px] text-neutral-500 font-mono">
-                    ({bagItemsCount}/24)
-                  </span>
-                </div>
-
-                {/* Filter Kategori Khusus Tas Penyimpanan */}
-                <div className="flex items-center gap-1 overflow-x-auto no-scrollbar">
-                  {[
-                    { id: 'all', label: 'Semua' },
-                    { id: 'tool', label: 'Alat' },
-                    { id: 'fish', label: 'Ikan' },
-                    { id: 'consumable', label: 'Makanan' },
-                    { id: 'material', label: 'Material' },
-                  ].map((cat) => (
-                    <button
-                      key={cat.id}
-                      type="button"
-                      onClick={() => {
-                        sound.playClick();
-                        setActiveCategory(cat.id as ItemFilter);
-                      }}
-                      className={`px-2 py-0.5 rounded text-[10px] font-bold transition-colors cursor-pointer whitespace-nowrap ${
-                        activeCategory === cat.id
-                          ? 'bg-amber-400 text-black font-black'
-                          : 'bg-neutral-900 text-neutral-400 hover:text-neutral-200 border border-neutral-800'
-                      }`}
-                    >
-                      {cat.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Grid 24 Slot Tas */}
-              <div className="grid grid-cols-6 gap-2">
-                {Array.from({ length: InventoryManager.MAX_SLOTS - InventoryManager.HOTBAR_SLOTS }).map(
-                  (_, i) => {
-                    const idx = i + InventoryManager.HOTBAR_SLOTS;
-                    return renderSlot(idx, false);
-                  }
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* SISI KANAN: PANEL DETAIL & AKSI ITEM (Flat Black & Neutral Borders) */}
-          <div className="w-full md:w-80 bg-[#0a0a0a] border border-neutral-800 rounded-lg p-4 flex flex-col justify-between shrink-0">
-            {selectedItem ? (
-              <div className="flex flex-col h-full">
-                {/* Header Detail */}
-                <div className="flex items-center gap-3 pb-3 border-b border-neutral-800">
-                  <div className="w-14 h-14 rounded-md bg-black border border-neutral-800 flex items-center justify-center text-3xl shrink-0">
-                    {selectedItem.icon}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5 mb-1">
-                      {getRarityBadge(selectedItem.rarity)}
+          {/* BODY */}
+          <div className="clay-main-body flex flex-col lg:flex-row gap-3">
+            {/* GRID HOTBAR & TAS */}
+            <div className="flex-1 flex flex-col gap-3 min-w-0">
+              {/* 1. HOTBAR UTAMA (SLOT 1 - 6) */}
+              <div className="clay-card p-2.5 sm:p-3">
+                <div className="flex items-center justify-between pb-1.5 mb-2 border-b-2 border-[#5C3A21]/30">
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-4 h-4 rounded bg-[#FFAE6D] border border-[#5C3A21] text-black flex items-center justify-center">
+                      <Zap className="w-2.5 h-2.5 stroke-[2.5]" />
                     </div>
-                    <h3 className="text-sm font-bold text-amber-400 truncate">
-                      {selectedItem.name}
-                    </h3>
-                    <p className="text-[11px] text-neutral-400 capitalize font-mono">
-                      {selectedItem.category} • Jumlah: {selectedItem.quantity}x
-                    </p>
-                  </div>
-                </div>
-
-                {/* Deskripsi & Atribut */}
-                <div className="py-3 flex-1 space-y-2 text-xs text-neutral-300">
-                  <p className="leading-relaxed bg-black p-2.5 rounded-md border border-neutral-800 text-neutral-300">
-                    {selectedItem.description}
-                  </p>
-
-                  {/* Lokasi Slot Item Saat Ini */}
-                  <div className="bg-black p-2 rounded-md border border-neutral-800 text-[11px] flex justify-between items-center">
-                    <span className="text-neutral-400">Posisi Slot:</span>
-                    <span className="font-mono font-bold text-amber-400">
-                      {selectedSlot !== null && selectedSlot < InventoryManager.HOTBAR_SLOTS
-                        ? `Hotbar #${selectedSlot + 1} (Tombol [${selectedSlot + 1}])`
-                        : `Tas Slot #${(selectedSlot || 0) + 1}`}
+                    <h3 className="text-xs font-bold text-black uppercase">HOTBAR UTAMA (1 - 6)</h3>
+                    <span className="clay-badge-secondary text-[9px] font-bold px-1.5 py-0.5 text-black">
+                      {hotbarItemsCount}/6
                     </span>
                   </div>
-
-                  {/* Atribut Khusus Ikan */}
-                  {selectedItem.category === 'fish' && selectedItem.extraData?.weightKg && (
-                    <div className="bg-black border border-neutral-800 p-2 rounded-md text-xs flex justify-between items-center font-bold">
-                      <span className="text-neutral-400">Berat Ikan:</span>
-                      <span className="text-neutral-200 font-mono">{selectedItem.extraData.weightKg} kg</span>
-                    </div>
-                  )}
-
-                  {/* Nilai Jual */}
-                  {selectedItem.price > 0 && (
-                    <div className="bg-black border border-neutral-800 p-2 rounded-md text-xs flex justify-between items-center font-bold">
-                      <span className="text-neutral-400">Nilai Jual:</span>
-                      <span className="text-amber-400 font-mono">
-                        +{selectedItem.price * selectedItem.quantity} Gold
-                        {selectedItem.quantity > 1 ? ` (@${selectedItem.price})` : ''}
-                      </span>
-                    </div>
-                  )}
+                  <span className="text-[9px] font-bold text-black hidden sm:inline">
+                    Pencet angka 1-6 di keyboard
+                  </span>
                 </div>
 
-                {/* Tombol Aksi Item */}
-                <div className="pt-3 border-t border-neutral-800 space-y-2">
-                  {/* Jual Ikan */}
-                  {selectedItem.category === 'fish' && (
-                    <button
-                      type="button"
-                      onClick={handleSellFish}
-                      className="w-full py-2.5 rounded-md bg-amber-400 hover:bg-amber-300 text-black font-black text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-sm active:scale-98"
-                    >
-                      <Coins className="w-3.5 h-3.5 fill-black" />
-                      Jual Semua Ikan (+{selectedItem.price * selectedItem.quantity} Gold)
-                    </button>
+                <div className="grid grid-cols-6 gap-1.5 sm:gap-2">
+                  {Array.from({ length: InventoryManager.HOTBAR_SLOTS }).map((_, idx) =>
+                    renderSlot(idx, true)
                   )}
+                </div>
+              </div>
 
-                  {/* Makan / Konsumsi */}
-                  {selectedItem.usable && (
-                    <button
-                      type="button"
-                      onClick={handleConsumeItem}
-                      className="w-full py-2.5 rounded-md bg-neutral-900 hover:bg-neutral-800 text-amber-400 border border-amber-400/40 hover:border-amber-400 font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-sm active:scale-98"
-                    >
-                      <Utensils className="w-3.5 h-3.5 stroke-[2]" />
-                      Gunakan / Makan Sekarang
-                    </button>
-                  )}
+              {/* 2. PENYIMPANAN TAS (SLOT 7 - 30) */}
+              <div className="clay-card p-2.5 sm:p-3 flex flex-col gap-2">
+                <div className="flex items-center justify-between pb-1.5 border-b-2 border-[#5C3A21]/30">
+                  <div className="flex items-center gap-1.5">
+                    <Backpack className="w-4 h-4 stroke-[2.5] text-black" />
+                    <h3 className="text-xs font-bold text-black uppercase">SLOT TAS (7 - 30)</h3>
+                    <span className="text-[10px] font-bold text-black">({bagItemsCount}/24)</span>
+                  </div>
+                  <span className="text-[9px] font-bold text-black">
+                    Filter: {activeCategory.toUpperCase()}
+                  </span>
+                </div>
 
-                  {/* Pasang ke Hotbar (Jika saat ini berada di slot tas 7-30) */}
-                  {selectedSlot !== null && selectedSlot >= InventoryManager.HOTBAR_SLOTS ? (
-                    <div className="pt-1 flex flex-col gap-1.5 bg-black p-2.5 rounded-md border border-neutral-800">
-                      <div className="flex items-center justify-between text-[11px] text-amber-400 font-bold">
-                        <span className="flex items-center gap-1">
-                          <Zap className="w-3 h-3 fill-amber-400" />
-                          Pasang ke Hotbar:
-                        </span>
-                        <span className="text-[9px] text-neutral-500 font-mono">atau Drag n Drop</span>
-                      </div>
-                      <div className="grid grid-cols-6 gap-1">
-                        {[0, 1, 2, 3, 4, 5].map((slotIdx) => {
-                          const targetItem = items[slotIdx];
-                          return (
-                            <button
-                              key={slotIdx}
-                              type="button"
-                              onClick={() => handleMoveToHotbar(slotIdx)}
-                              className="h-8 rounded bg-neutral-900 hover:bg-amber-400 hover:text-black border border-neutral-800 text-neutral-300 text-xs font-mono font-bold flex items-center justify-center transition-colors cursor-pointer"
-                              title={
-                                targetItem
-                                  ? `Tukar dengan ${targetItem.name} [Slot ${slotIdx + 1}]`
-                                  : `Pasang ke Hotbar Slot ${slotIdx + 1}`
-                              }
-                            >
-                              <span>{slotIdx + 1}</span>
-                            </button>
-                          );
-                        })}
-                      </div>
+                <div className="grid grid-cols-6 gap-1.5 sm:gap-2 max-h-[260px] overflow-y-auto custom-scrollbar pr-1">
+                  {Array.from({
+                    length: InventoryManager.MAX_SLOTS - InventoryManager.HOTBAR_SLOTS,
+                  }).map((_, i) => {
+                    const idx = i + InventoryManager.HOTBAR_SLOTS;
+                    return renderSlot(idx, false);
+                  })}
+                </div>
+              </div>
+            </div>
+
+            {/* DETAIL & AKSI ITEM */}
+            <div className="w-full lg:w-64 clay-card p-3 sm:p-3.5 flex flex-col justify-between shrink-0 text-black">
+              {selectedItem ? (
+                <div className="flex flex-col h-full gap-2.5">
+                  <div className="flex items-center gap-2.5 pb-2 border-b-2 border-[#5C3A21]/30">
+                    <div className="w-10 h-10 rounded-xl bg-[#A8E6CF] border-2 border-[#5C3A21] flex items-center justify-center text-2xl shrink-0">
+                      {selectedItem.icon}
                     </div>
-                  ) : selectedSlot !== null && selectedSlot < InventoryManager.HOTBAR_SLOTS ? (
-                    <div className="pt-1 flex items-center justify-between bg-black p-2 rounded-md border border-neutral-800">
-                      <span className="text-[10px] font-bold text-amber-400 flex items-center gap-1 font-mono">
-                        <Zap className="w-3 h-3 fill-amber-400" />
-                        Terpasang di Hotbar #{selectedSlot + 1}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5 mb-0.5">
+                        {getRarityBadge(selectedItem.rarity)}
+                      </div>
+                      <h3 className="text-xs font-bold text-black truncate">
+                        {selectedItem.name}
+                      </h3>
+                      <p className="text-[10px] font-bold text-black capitalize">
+                        {selectedItem.category} • {selectedItem.quantity}x
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex-1 space-y-2 text-xs text-black">
+                    <p className="leading-snug bg-[#FFF8EA] p-2 rounded-lg border-2 border-[#5C3A21] text-[10px]">
+                      {selectedItem.description}
+                    </p>
+
+                    <div className="flex items-center justify-between text-[11px] font-bold bg-[#A8E6CF] p-2 rounded-lg border-2 border-[#5C3A21]">
+                      <span>Harga Jual Satuan:</span>
+                      <span className="flex items-center gap-1">
+                        <Coins className="w-3.5 h-3.5" />
+                        <span>{selectedItem.price || 5} G</span>
                       </span>
+                    </div>
+
+                    {selectedItem.extraData?.hpRestore && (
+                      <div className="flex items-center justify-between text-[10px] font-bold bg-[#FFAE6D] p-1.5 rounded border border-[#5C3A21]">
+                        <span>Pemulihan HP:</span>
+                        <span>+{selectedItem.extraData.hpRestore} HP</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Tombol Aksi */}
+                  <div className="flex flex-col gap-1.5 pt-2 border-t-2 border-[#5C3A21]/30">
+                    {selectedSlot !== null && selectedSlot >= InventoryManager.HOTBAR_SLOTS && (
                       <button
                         type="button"
-                        onClick={() => {
-                          // Pindahkan ke slot tas kosong pertama (6-29)
-                          const emptyBagSlot = items.findIndex(
-                            (it, idx) => idx >= InventoryManager.HOTBAR_SLOTS && it === null
-                          );
-                          if (emptyBagSlot !== -1) {
-                            inv.moveItem(selectedSlot, emptyBagSlot);
-                            sound.playClick();
-                            setSelectedSlot(emptyBagSlot);
-                          } else {
-                            sound.playClick();
-                          }
-                        }}
-                        className="px-2.5 py-1 rounded bg-neutral-900 hover:bg-neutral-800 text-[10px] font-bold text-neutral-200 border border-neutral-800 hover:border-neutral-700 transition-colors cursor-pointer"
+                        onClick={() => handleMoveToHotbar(selectedSlot)}
+                        className="clay-btn-secondary w-full py-1.5 text-xs font-bold uppercase text-black flex items-center justify-center gap-1"
                       >
-                        Pindah ke Tas
+                        <Zap className="w-3.5 h-3.5 stroke-[2.5]" />
+                        <span>PASANG KE HOTBAR</span>
                       </button>
-                    </div>
-                  ) : null}
-                </div>
-              </div>
-            ) : (
-              <div className="h-full flex flex-col items-center justify-center text-center p-4 text-neutral-500">
-                <Info className="w-8 h-8 mb-2 text-neutral-600" />
-                <p className="text-xs">
-                  Pilih salah satu slot di sebelah kiri untuk melihat detail item, atau drag & drop item dari tas ke Hotbar di atas.
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
+                    )}
 
-        {/* ============================================================== */}
-        {/* FOOTER PANDUAN                                                 */}
-        {/* ============================================================== */}
-        <div className="px-5 py-2.5 border-t border-neutral-800 bg-[#0a0a0a] text-[10px] text-neutral-400 flex justify-between items-center">
-          <div className="flex items-center gap-2">
-            <span>💡 Tarik item dari Tas dan lepas di Hotbar Slot 1-6 untuk siap digunakan dengan hotkey <b className="text-amber-400 font-mono">[1]-[6]</b>.</span>
+                    {selectedItem.usable && (
+                      <button
+                        type="button"
+                        onClick={() => handleUseItem(selectedSlot!)}
+                        className="clay-btn-primary w-full py-1.5 text-xs font-bold uppercase text-black flex items-center justify-center gap-1"
+                      >
+                        <Utensils className="w-3.5 h-3.5 stroke-[2.5]" />
+                        <span>PAKAI / GUNAKAN</span>
+                      </button>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={() => handleSellItem(selectedSlot!)}
+                      className="clay-btn-neutral w-full py-1.5 text-xs font-bold uppercase text-black flex items-center justify-center gap-1"
+                    >
+                      <Coins className="w-3.5 h-3.5 stroke-[2.5]" />
+                      <span>JUAL ({(selectedItem.price || 5) * selectedItem.quantity} G)</span>
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center h-full text-center p-4">
+                  <Info className="w-8 h-8 text-black/40 mb-2" />
+                  <p className="text-xs font-bold text-black">
+                    Pilih slot item untuk melihat rincian dan menggunakannya.
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
-          <span className="hidden sm:inline font-mono text-[9px] text-neutral-500 uppercase tracking-widest">RADENWORLD INVENTORY</span>
-        </div>
+        </main>
       </div>
     </div>
   );

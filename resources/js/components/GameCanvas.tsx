@@ -190,6 +190,6 @@ export const GameCanvas: React.FC = React.memo(() => {
     };
   }, []);
 
-  return <div id="game-container" ref={containerRef} className="absolute inset-0 z-0 bg-slate-950" />;
+  return <div id="game-container" ref={containerRef} className="absolute inset-0 z-0 bg-[#FFF8EA]" />;
 });
 GameCanvas.displayName = 'GameCanvas';

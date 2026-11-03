@@ -7,21 +7,52 @@
 @source '../**/*.ts';
 @source '../**/*.tsx';
 
+/* ============================================================================
+ * PIXEL FONTS: Kenney Pixel Square (Primary) -> m5x7 -> Press Start 2P -> monospace
+ * ============================================================================ */
+@font-face {
+    font-family: 'Kenney Pixel Square';
+    src: url('../fonts/KenneyPixelSquare.ttf') format('truetype');
+    font-weight: 400 900;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'm5x7';
+    src: url('../fonts/m5x7.ttf') format('truetype');
+    font-weight: 400 900;
+    font-style: normal;
+    font-display: swap;
+}
+
 @theme {
-    --font-sans: 'Plus Jakarta Sans', system-ui, sans-serif;
-    --font-cute: 'Fredoka', 'Quicksand', system-ui, cursive, sans-serif;
+    --font-sans: 'Kenney Pixel Square', 'm5x7', 'Press Start 2P', monospace;
+    --font-mono: 'Kenney Pixel Square', 'm5x7', 'Press Start 2P', monospace;
+    --font-cute: 'Kenney Pixel Square', 'm5x7', 'Press Start 2P', monospace;
+    --font-pixel: 'Kenney Pixel Square', 'm5x7', 'Press Start 2P', monospace;
 }
 
-.font-cute {
-    font-family: 'Fredoka', 'Quicksand', 'Nunito', cursive, sans-serif;
+.font-cute,
+.font-pixel {
+    font-family: 'Kenney Pixel Square', 'm5x7', 'Press Start 2P', monospace;
 }
 
-/* Custom Game Styles */
+/* ============================================================================
+ * COZYCORE UI & CUTE MINIMALIST CLAY-PIXEL DESIGN TOKENS
+ * ============================================================================ */
 :root {
     --sat: env(safe-area-inset-top, 0px);
     --sar: env(safe-area-inset-right, 0px);
     --sab: env(safe-area-inset-bottom, 0px);
     --sal: env(safe-area-inset-left, 0px);
+
+    --ui-primary: #FFAE6D;
+    --ui-secondary: #A8E6CF;
+    --ui-bg: #FFF8EA;
+    --ui-outline: #5C3A21;
+    --ui-text-black: #000000;
+    --ui-text-white: #FFFFFF;
 }
 
 html, body {
@@ -35,16 +66,22 @@ html, body {
     overflow: hidden;
     overscroll-behavior: none;
     -webkit-overflow-scrolling: auto;
-    background-color: #000000;
-    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    background-color: #FFF8EA;
+    color: #000000;
+    font-family: 'Kenney Pixel Square', 'm5x7', 'Press Start 2P', monospace;
+    letter-spacing: 0.01em;
     user-select: none;
     -webkit-user-select: none;
-    -webkit-touch-callout: none !important; /* Mencegah popup bawaan browser saat menahan tombol mancing / analog */
-    touch-action: none; /* Prevents mobile tap gesture delay (300ms) */
-    -webkit-font-smoothing: antialiased;
+    -webkit-touch-callout: none !important;
+    touch-action: none;
+    -webkit-font-smoothing: none;
     -moz-osx-font-smoothing: grayscale;
     position: fixed;
     inset: 0;
+}
+
+button, input, select, textarea {
+    font-family: 'Kenney Pixel Square', 'm5x7', 'Press Start 2P', monospace;
 }
 
 /* Izinkan seleksi teks hanya pada input form dan textarea */
@@ -52,6 +89,11 @@ input, textarea, [contenteditable="true"] {
     user-select: auto !important;
     -webkit-user-select: auto !important;
     -webkit-touch-callout: default !important;
+}
+
+.pixelated {
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
 }
 
 #raden-game-app {
@@ -84,31 +126,227 @@ input, textarea, [contenteditable="true"] {
     width: 100% !important;
     height: 100% !important;
     outline: none;
-    touch-action: none; /* Crucial for instant pointerdown response without INP delays */
+    touch-action: none;
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
     transform: translateZ(0);
     will-change: transform;
 }
 
-/* Custom sleek scrollbar for modals & chat */
-.custom-scrollbar {
+/* ============================================================================
+ * CHUNKY PASTEL PIXEL & CLAY-PIXEL COMPONENTS
+ * - Max 2 shading levels (top highlight + bottom biscuit bevel), noise-free
+ * - Outline 1.5px-2px #5C3A21 (NEVER pure black outline)
+ * - ZERO :hover effects, ZERO glow shadows
+ * - Tactile :active press feedback
+ * ============================================================================ */
+.ui-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(92, 58, 33, 0.45);
+    padding-top: max(0.5rem, var(--sat));
+    padding-right: max(0.5rem, var(--sar));
+    padding-bottom: max(0.5rem, var(--sab));
+    padding-left: max(0.5rem, var(--sal));
+}
+
+.clay-panel {
+    background-color: #FFF8EA;
+    border: 2px solid #5C3A21;
+    border-radius: 14px;
+    color: #000000;
+    box-shadow: inset 0 2px 0 #FFFFFF, inset 0 -3px 0 #EADBC0, 0 3px 0 #5C3A21;
+}
+
+.clay-card {
+    background-color: #FFF8EA;
+    border: 2px solid #5C3A21;
+    border-radius: 10px;
+    color: #000000;
+    box-shadow: inset 0 2px 0 #FFFFFF, inset 0 -2px 0 #EADBC0;
+}
+
+.clay-card-primary {
+    background-color: #FFAE6D;
+    border: 2px solid #5C3A21;
+    border-radius: 10px;
+    color: #000000;
+    box-shadow: inset 0 2px 0 #FFD0A6, inset 0 -2px 0 #E5924F;
+}
+
+.clay-card-secondary {
+    background-color: #A8E6CF;
+    border: 2px solid #5C3A21;
+    border-radius: 10px;
+    color: #000000;
+    box-shadow: inset 0 2px 0 #D4F5E9, inset 0 -2px 0 #84CAAF;
+}
+
+.clay-header {
+    background-color: #FFAE6D;
+    border-bottom: 2px solid #5C3A21;
+    color: #000000;
+    box-shadow: inset 0 2px 0 #FFD0A6, inset 0 -2px 0 #E5924F;
+}
+
+.clay-header-secondary {
+    background-color: #A8E6CF;
+    border-bottom: 2px solid #5C3A21;
+    color: #000000;
+    box-shadow: inset 0 2px 0 #D4F5E9, inset 0 -2px 0 #84CAAF;
+}
+
+.clay-btn-primary {
+    background-color: #FFAE6D;
+    border: 2px solid #5C3A21;
+    border-radius: 10px;
+    color: #000000;
+    box-shadow: inset 0 2px 0 #FFD0A6, inset 0 -2px 0 #E5924F, 0 3px 0 #5C3A21;
+    cursor: pointer;
+    transition: transform 60ms steps(2, end), box-shadow 60ms steps(2, end);
+}
+.clay-btn-primary:active:not(:disabled) {
+    transform: translateY(2px);
+    box-shadow: inset 0 2px 0 #E5924F, 0 1px 0 #5C3A21;
+}
+.clay-btn-primary:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.clay-btn-secondary {
+    background-color: #A8E6CF;
+    border: 2px solid #5C3A21;
+    border-radius: 10px;
+    color: #000000;
+    box-shadow: inset 0 2px 0 #D4F5E9, inset 0 -2px 0 #84CAAF, 0 3px 0 #5C3A21;
+    cursor: pointer;
+    transition: transform 60ms steps(2, end), box-shadow 60ms steps(2, end);
+}
+.clay-btn-secondary:active:not(:disabled) {
+    transform: translateY(2px);
+    box-shadow: inset 0 2px 0 #84CAAF, 0 1px 0 #5C3A21;
+}
+.clay-btn-secondary:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.clay-btn-neutral {
+    background-color: #FFF8EA;
+    border: 2px solid #5C3A21;
+    border-radius: 10px;
+    color: #000000;
+    box-shadow: inset 0 2px 0 #FFFFFF, inset 0 -2px 0 #EADBC0, 0 3px 0 #5C3A21;
+    cursor: pointer;
+    transition: transform 60ms steps(2, end), box-shadow 60ms steps(2, end);
+}
+.clay-btn-neutral:active:not(:disabled) {
+    transform: translateY(2px);
+    box-shadow: inset 0 2px 0 #EADBC0, 0 1px 0 #5C3A21;
+}
+.clay-btn-neutral:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.clay-btn-cocoa {
+    background-color: #5C3A21;
+    border: 2px solid #5C3A21;
+    border-radius: 8px;
+    color: #FFFFFF;
+    box-shadow: inset 0 2px 0 #784E2F, 0 2px 0 #3E2513;
+    cursor: pointer;
+    transition: transform 60ms steps(2, end), box-shadow 60ms steps(2, end);
+}
+.clay-btn-cocoa:active:not(:disabled) {
+    transform: translateY(2px);
+    box-shadow: inset 0 2px 0 #3E2513;
+}
+.clay-btn-cocoa:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.clay-input {
+    background-color: #FFF8EA;
+    border: 2px solid #5C3A21;
+    border-radius: 8px;
+    color: #000000;
+    box-shadow: inset 0 2px 0 #EADBC0;
+}
+.clay-input::placeholder {
+    color: #000000;
+    opacity: 0.5;
+}
+.clay-input:focus {
+    outline: none;
+    border-color: #5C3A21;
+    background-color: #FFFFFF;
+}
+
+.clay-badge-primary {
+    background-color: #FFAE6D;
+    border: 1.5px solid #5C3A21;
+    border-radius: 6px;
+    color: #000000;
+    box-shadow: inset 0 1px 0 #FFD0A6;
+}
+
+.clay-badge-secondary {
+    background-color: #A8E6CF;
+    border: 1.5px solid #5C3A21;
+    border-radius: 6px;
+    color: #000000;
+    box-shadow: inset 0 1px 0 #D4F5E9;
+}
+
+.clay-badge-neutral {
+    background-color: #FFF8EA;
+    border: 1.5px solid #5C3A21;
+    border-radius: 6px;
+    color: #000000;
+    box-shadow: inset 0 1px 0 #FFFFFF;
+}
+
+.clay-badge-cocoa {
+    background-color: #5C3A21;
+    border: 1.5px solid #5C3A21;
+    border-radius: 6px;
+    color: #FFFFFF;
+}
+
+/* Custom Cozycore scrollbars (NO hover mutations) */
+.custom-scrollbar,
+.school-scrollbar,
+.school-scrollbar-amber {
     scrollbar-width: thin;
-    scrollbar-color: #262626 #0a0a0a;
+    scrollbar-color: #FFAE6D #FFF8EA;
+    touch-action: pan-y;
 }
-.custom-scrollbar::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+.custom-scrollbar::-webkit-scrollbar,
+.school-scrollbar::-webkit-scrollbar,
+.school-scrollbar-amber::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
 }
-.custom-scrollbar::-webkit-scrollbar-track {
-    background: #0a0a0a;
-    border-radius: 4px;
+.custom-scrollbar::-webkit-scrollbar-track,
+.school-scrollbar::-webkit-scrollbar-track,
+.school-scrollbar-amber::-webkit-scrollbar-track {
+    background: #FFF8EA;
+    border-left: 1px solid #5C3A21;
+    border-radius: 6px;
 }
-.custom-scrollbar::-webkit-scrollbar-thumb {
-    background: #262626;
-    border-radius: 4px;
-    border: 1px solid #141414;
-}
-.custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: #404040;
+.custom-scrollbar::-webkit-scrollbar-thumb,
+.school-scrollbar::-webkit-scrollbar-thumb,
+.school-scrollbar-amber::-webkit-scrollbar-thumb {
+    background: #FFAE6D;
+    border-radius: 6px;
+    border: 1.5px solid #5C3A21;
 }
 
 /* Hide scrollbar utility */
@@ -122,45 +360,279 @@ input, textarea, [contenteditable="true"] {
     scrollbar-width: none;
 }
 
-/* Clean, elegant theme-matched scrollbars for light school modals */
-.school-scrollbar {
-    scrollbar-width: thin;
-    scrollbar-color: #cbd5e1 #f8fafc;
-}
-.school-scrollbar::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
-}
-.school-scrollbar::-webkit-scrollbar-track {
-    background: #f1f5f9;
-    border-radius: 9999px;
-}
-.school-scrollbar::-webkit-scrollbar-thumb {
-    background: #cbd5e1;
-    border-radius: 9999px;
-}
-.school-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: #94a3b8;
+/* Mobile Landscape Compactness Utility */
+@media (max-height: 480px) and (orientation: landscape) {
+    .landscape-compact-modal {
+        max-height: calc(100dvh - 0.75rem) !important;
+    }
+    .landscape-compact-header {
+        padding-top: 0.375rem !important;
+        padding-bottom: 0.375rem !important;
+    }
+    .landscape-compact-body {
+        padding-top: 0.5rem !important;
+        padding-bottom: 0.5rem !important;
+    }
 }
 
-.school-scrollbar-amber {
-    scrollbar-width: thin;
-    scrollbar-color: #f59e0b #fef3c7;
+/* ============================================================================
+ * UNIFIED COZYCORE LEFT-SIDEBAR MODAL ARCHITECTURE (MULTI-PLATFORM)
+ * - Replaces all horizontal sub-header tab strips with a true Left Sidebar
+ * - Works cleanly across PC Windowed/Fullscreen, Mobile Portrait & Landscape
+ * ============================================================================ */
+.clay-modal-shell {
+    display: flex;
+    flex-direction: row;
+    overflow: hidden;
 }
-.school-scrollbar-amber::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+
+.clay-sidebar {
+    width: 94px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    background-color: #FFF8EA;
+    border-right: 2px solid #5C3A21;
+    box-shadow: inset -2px 0 0 #EADBC0;
+    overflow: hidden;
 }
-.school-scrollbar-amber::-webkit-scrollbar-track {
-    background: #fef9c3;
-    border-radius: 9999px;
+
+.clay-sidebar-brand {
+    flex-shrink: 0;
+    background-color: #FFAE6D;
+    border-bottom: 2px solid #5C3A21;
+    color: #000000;
+    box-shadow: inset 0 2px 0 #FFD0A6, inset 0 -2px 0 #E5924F;
+    padding: 0.55rem 0.35rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: 0.25rem;
 }
-.school-scrollbar-amber::-webkit-scrollbar-thumb {
-    background: #f59e0b;
-    border-radius: 9999px;
+
+.clay-sidebar-brand-secondary {
+    flex-shrink: 0;
+    background-color: #A8E6CF;
+    border-bottom: 2px solid #5C3A21;
+    color: #000000;
+    box-shadow: inset 0 2px 0 #D4F5E9, inset 0 -2px 0 #84CAAF;
+    padding: 0.55rem 0.35rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: 0.25rem;
 }
-.school-scrollbar-amber::-webkit-scrollbar-thumb:hover {
-    background: #d97706;
+
+.clay-sidebar-section-label {
+    font-size: 9px;
+    line-height: 1.15;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #000000;
+    padding: 0.3rem 0.25rem 0.1rem;
+    text-align: center;
+}
+
+.clay-sidebar-nav {
+    flex: 1 1 0%;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 0.45rem 0.35rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+}
+
+.clay-sidebar-title {
+    font-size: 11px;
+    font-weight: 900;
+    text-transform: uppercase;
+    color: #000000;
+    line-height: 1.15;
+    text-align: center;
+}
+
+.clay-sidebar-subtitle {
+    font-size: 8.5px;
+    font-weight: 700;
+    color: #000000;
+    opacity: 0.75;
+    text-transform: uppercase;
+    line-height: 1;
+    text-align: center;
+}
+
+/* Sidebar button & item: LOGO/ICON ON TOP, TEXT UNDERNEATH */
+.clay-sidebar-btn,
+.clay-sidebar-item {
+    width: 100%;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+    gap: 0.3rem;
+    padding: 0.55rem 0.3rem;
+    font-size: 10px;
+    line-height: 1.15;
+    font-weight: 800;
+    text-transform: uppercase;
+    border-radius: 8px;
+    border: 2px solid #5C3A21;
+    cursor: pointer;
+    transition: transform 60ms steps(2, end), box-shadow 60ms steps(2, end);
+}
+
+.clay-sidebar-btn:active:not(:disabled),
+.clay-sidebar-item:active:not(:disabled) {
+    transform: translateY(2px);
+}
+
+.clay-sidebar-btn-active {
+    background-color: #FFAE6D;
+    color: #000000;
+    box-shadow: inset 0 2px 0 #FFD0A6, inset 0 -2px 0 #E5924F, 0 2px 0 #5C3A21;
+}
+
+.clay-sidebar-btn-inactive {
+    background-color: #FFF8EA;
+    color: #000000;
+    box-shadow: inset 0 2px 0 #FFFFFF, inset 0 -2px 0 #EADBC0, 0 2px 0 #5C3A21;
+}
+
+.clay-sidebar-footer {
+    flex-shrink: 0;
+    border-top: 2px solid #5C3A21;
+    background-color: #FFF8EA;
+    box-shadow: inset 0 2px 0 #FFFFFF;
+    padding: 0.45rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.clay-main-pane {
+    flex: 1 1 0%;
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    background-color: #FFF8EA;
+    overflow: hidden;
+}
+
+.clay-main-topbar {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding: 0.55rem 0.75rem;
+    background-color: #FFF8EA;
+    border-bottom: 2px solid #5C3A21;
+    box-shadow: inset 0 2px 0 #FFFFFF, inset 0 -2px 0 #EADBC0;
+}
+
+.clay-main-body {
+    flex: 1 1 0%;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 0.75rem;
+}
+
+.clay-main-footer {
+    flex-shrink: 0;
+    border-top: 2px solid #5C3A21;
+    background-color: #FFF8EA;
+    box-shadow: inset 0 2px 0 #FFFFFF;
+    padding: 0.55rem 0.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+}
+
+@media (min-width: 640px) {
+    .clay-sidebar {
+        width: 124px;
+    }
+    .clay-sidebar-brand,
+    .clay-sidebar-brand-secondary {
+        padding: 0.65rem 0.5rem;
+        gap: 0.35rem;
+    }
+    .clay-sidebar-section-label {
+        padding: 0.35rem 0.45rem 0.1rem;
+    }
+    .clay-sidebar-nav {
+        padding: 0.5rem 0.4rem;
+        gap: 0.45rem;
+    }
+    .clay-sidebar-btn,
+    .clay-sidebar-item {
+        padding: 0.55rem 0.35rem;
+        font-size: 10.5px;
+        line-height: 1.15;
+    }
+    .clay-sidebar-footer {
+        padding: 0.55rem;
+    }
+    .clay-main-topbar {
+        padding: 0.7rem 1.1rem;
+    }
+    .clay-main-body {
+        padding: 1rem 1.1rem;
+    }
+    .clay-main-footer {
+        padding: 0.65rem 1.1rem;
+    }
+}
+
+@media (min-width: 768px) {
+    .clay-sidebar {
+        width: 136px;
+    }
+}
+
+@media (max-width: 899px) and (orientation: landscape) {
+    .clay-sidebar {
+        width: 112px;
+    }
+    .clay-sidebar-brand,
+    .clay-sidebar-brand-secondary {
+        padding: 0.45rem 0.4rem;
+        gap: 0.25rem;
+    }
+    .clay-sidebar-section-label {
+        padding: 0.25rem 0.35rem 0.05rem;
+    }
+    .clay-sidebar-nav {
+        padding: 0.4rem 0.35rem;
+        gap: 0.35rem;
+    }
+    .clay-sidebar-btn,
+    .clay-sidebar-item {
+        padding: 0.45rem 0.25rem;
+        font-size: 9.5px;
+    }
+    .clay-sidebar-footer {
+        padding: 0.4rem 0.45rem;
+    }
+    .clay-main-topbar {
+        padding: 0.4rem 0.75rem;
+    }
+    .clay-main-body {
+        padding: 0.55rem 0.75rem;
+    }
+    .clay-main-footer {
+        padding: 0.4rem 0.75rem;
+    }
 }
 
 /* Animasi bernapas halus sorotan sinar mentari (GPU Compositor Only, Bebas Lag) */
@@ -176,4 +648,9 @@ input, textarea, [contenteditable="true"] {
     animation: sunbeamPulse 10s ease-in-out infinite alternate;
 }
 
-
+/* Optimasi device kentang & layar mobile: matikan animasi kontinu berat */
+@media (max-width: 768px), (pointer: coarse) {
+    .animate-sunbeam {
+        animation: none !important;
+    }
+}

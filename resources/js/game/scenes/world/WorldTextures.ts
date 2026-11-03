@@ -365,6 +365,88 @@ export class WorldTextures {
   public static ensureTrotoar2Textures(_scene: Phaser.Scene): void {
     // Tekstur Trotoar 2 dipasok langsung via sprite native 120px untuk kualitas & performa maksimal
   }
+
+  /**
+   * Menghasilkan tekstur pencahayaan lampu jalan (inti kaca lentera, halo hangat, & pantulan aspal)
+   * menggunakan filter LINEAR agar gradasi cahaya mulus tanpa kotak-kotak.
+   */
+  public static ensureLightingTextures(scene: Phaser.Scene): void {
+    // 1. Inti Bohlam Kaca Lentera Menyala ('lamp-bulb-core' - 96x96)
+    try {
+      if (!scene.textures.exists('lamp-bulb-core')) {
+        const canvas = document.createElement('canvas');
+        canvas.width = 96;
+        canvas.height = 96;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          const grad = ctx.createRadialGradient(48, 48, 2, 48, 48, 46);
+          grad.addColorStop(0.0, 'rgba(255, 255, 245, 1.0)');
+          grad.addColorStop(0.24, 'rgba(254, 240, 138, 0.95)');
+          grad.addColorStop(0.52, 'rgba(251, 191, 36, 0.55)');
+          grad.addColorStop(0.80, 'rgba(245, 158, 11, 0.18)');
+          grad.addColorStop(1.0, 'rgba(245, 158, 11, 0.0)');
+          ctx.fillStyle = grad;
+          ctx.fillRect(0, 0, 96, 96);
+          const tex = scene.textures.addCanvas('lamp-bulb-core', canvas);
+          tex?.setFilter(Phaser.Textures.FilterMode.LINEAR);
+        }
+      }
+    } catch (e) {
+      console.warn('[WorldTextures] Gagal membuat lamp-bulb-core:', e);
+    }
+
+    // 2. Halo Pendaran Kepala Lampu Jalan ('lamp-halo-glow' - 240x240)
+    try {
+      if (!scene.textures.exists('lamp-halo-glow')) {
+        const canvas = document.createElement('canvas');
+        canvas.width = 240;
+        canvas.height = 240;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          const grad = ctx.createRadialGradient(120, 120, 6, 120, 120, 118);
+          grad.addColorStop(0.0, 'rgba(255, 247, 205, 0.72)');
+          grad.addColorStop(0.28, 'rgba(253, 216, 93, 0.42)');
+          grad.addColorStop(0.62, 'rgba(251, 169, 44, 0.16)');
+          grad.addColorStop(1.0, 'rgba(245, 158, 11, 0.0)');
+          ctx.fillStyle = grad;
+          ctx.fillRect(0, 0, 240, 240);
+          const tex = scene.textures.addCanvas('lamp-halo-glow', canvas);
+          tex?.setFilter(Phaser.Textures.FilterMode.LINEAR);
+        }
+      }
+    } catch (e) {
+      console.warn('[WorldTextures] Gagal membuat lamp-halo-glow:', e);
+    }
+
+    // 3. Kolam Cahaya Lampu Jalan di Aspal / Trotoar ('lamp-ground-pool' - 360x240 elips perspektif 2.5D)
+    try {
+      if (!scene.textures.exists('lamp-ground-pool')) {
+        const canvas = document.createElement('canvas');
+        canvas.width = 360;
+        canvas.height = 240;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.save();
+          ctx.translate(180, 120);
+          ctx.scale(1.0, 0.66);
+          const grad = ctx.createRadialGradient(0, 0, 8, 0, 0, 175);
+          grad.addColorStop(0.0, 'rgba(255, 236, 153, 0.62)');
+          grad.addColorStop(0.35, 'rgba(253, 203, 82, 0.36)');
+          grad.addColorStop(0.70, 'rgba(251, 146, 60, 0.14)');
+          grad.addColorStop(1.0, 'rgba(251, 146, 60, 0.0)');
+          ctx.fillStyle = grad;
+          ctx.beginPath();
+          ctx.arc(0, 0, 175, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+          const tex = scene.textures.addCanvas('lamp-ground-pool', canvas);
+          tex?.setFilter(Phaser.Textures.FilterMode.LINEAR);
+        }
+      }
+    } catch (e) {
+      console.warn('[WorldTextures] Gagal membuat lamp-ground-pool:', e);
+    }
+  }
 }
 
 

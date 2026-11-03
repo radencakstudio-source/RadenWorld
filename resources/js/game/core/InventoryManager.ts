@@ -5,32 +5,34 @@
  * FUNGSI UTAMA:
  * Pengelola Sistem Inventaris (Mini Hotbar & Tas Punggung 30 Slot) RadenWorld:
  * 1. Menyimpan dan memuat data inventaris ke localStorage ('raden_player_inventory').
- * 2. Menyediakan item bawaan petualang (Joran Pancing, Umpan Cacing, Apel Segar, Jamu).
- * 3. Menampung ikan hasil tangkapan dari minigame memancing secara otomatis.
- * 4. Mendukung penjualan item (Jual Ikan -> Tambah Gold) & konsumsi (Makan Apel/Jamu -> Pulihkan HP).
- * 5. Sinkronisasi perubahan ke UI Hotbar & Modal Tas via EventBus.
+ * 2. Menyediakan item bawaan petualang (Joran Pancing, Bibit Padi, Cangkul, Penyiram, Apel, Jamu).
+ * 3. Menampung ikan tangkapan dan hasil panen kebun dengan sistem tumpukan (stack) rapi.
+ * 4. Mendukung penjualan item (Koin Emas G) & konsumsi makanan/ramuan.
+ * 5. Mendukung tombol fleksibel [F] & Mobile kontekstual sesuai item aktif di Hotbar.
  * ============================================================================
  */
 
 import { EventBus } from './EventBus';
 import { SoundManager } from './SoundManager';
-import { IFishData } from '../controllers/CharacterController';
+import type { IFishData } from '../controllers/CharacterController';
 
 export interface IInventoryItem {
   id: string;
   name: string;
-  category: 'tool' | 'fish' | 'consumable' | 'material';
+  category: 'tool' | 'fish' | 'consumable' | 'material' | 'seed' | 'crop';
   rarity: 'Common' | 'Uncommon' | 'Rare' | 'Legendary';
   icon: string;
   quantity: number;
   maxStack: number;
   description: string;
   price: number;
-  diamondPrice?: number;
   usable?: boolean;
   extraData?: {
     weightKg?: number;
     hpRestore?: number;
+    seedId?: string;
+    potionType?: string;
+    durationSec?: number;
     [key: string]: any;
   };
 }
@@ -45,7 +47,6 @@ export class InventoryManager {
 
   private constructor() {
     this.loadFromStorage();
-    this.setupEventListeners();
   }
 
   public static getInstance(): InventoryManager {
@@ -55,13 +56,33 @@ export class InventoryManager {
     return InventoryManager.instance;
   }
 
+  public static isSeedItem(item: IInventoryItem | null | undefined): boolean {
+    if (!item) return false;
+    return item.category === 'seed' || item.id.startsWith('seed_');
+  }
+
+  public static isRodItem(item: IInventoryItem | null | undefined): boolean {
+    if (!item) return false;
+    return item.id.startsWith('tool_rod') || item.id.startsWith('tool_fishing_rod');
+  }
+
+  public static isHoeItem(item: IInventoryItem | null | undefined): boolean {
+    if (!item) return false;
+    return item.id.startsWith('tool_hoe');
+  }
+
+  public static isWateringCanItem(item: IInventoryItem | null | undefined): boolean {
+    if (!item) return false;
+    return item.id.startsWith('tool_watering');
+  }
+
   /**
    * Setup default starter items jika inventaris masih baru / kosong
    */
   private getDefaultItems(): (IInventoryItem | null)[] {
     const list: (IInventoryItem | null)[] = new Array(InventoryManager.MAX_SLOTS).fill(null);
 
-    // Slot 1: Joran Pancing
+    // Slot 1 [Hotbar 1]: Joran Pancing
     list[0] = {
       id: 'tool_rod_raden',
       name: 'Joran Pancing Bambu Raden',
@@ -70,26 +91,56 @@ export class InventoryManager {
       icon: '🎣',
       quantity: 1,
       maxStack: 1,
-      description: 'Joran pancing pusaka bambu kuning fleksibel. Tekan [F] di dekat dermaga air untuk memancing!',
+      description: 'Joran pancing pusaka bambu kuning fleksibel. Pegang di Hotbar lalu tekan [F] di tepi air untuk memancing!',
       price: 150,
       usable: true,
     };
 
-    // Slot 2: Umpan Cacing
+    // Slot 2 [Hotbar 2]: Bibit Padi Pandanwangi
     list[1] = {
-      id: 'tool_bait_worm',
-      name: 'Umpan Cacing Tanah Segar',
-      category: 'material',
+      id: 'seed_padi_pandanwangi',
+      name: 'Bibit Padi Pandanwangi Cianjur',
+      category: 'seed',
       rarity: 'Common',
-      icon: '🪱',
-      quantity: 35,
+      icon: '🌾',
+      quantity: 10,
       maxStack: 99,
-      description: 'Cacing tanah gemuk berprotein tinggi untuk memancing ikan lele, mujair, dan patin.',
-      price: 5,
+      description: 'Bibit padi harum unggulan. Pegang di Hotbar lalu tekan [F] di lahan Kebun Tani untuk menanam!',
+      price: 8,
+      usable: true,
     };
 
-    // Slot 3: Apel Manis Kebun
+    // Slot 3 [Hotbar 3]: Cangkul Petani
     list[2] = {
+      id: 'tool_hoe_steel',
+      name: 'Cangkul Petani Baja Tempa',
+      category: 'tool',
+      rarity: 'Uncommon',
+      icon: '⛏️',
+      quantity: 1,
+      maxStack: 1,
+      description: 'Cangkul baja kuat untuk menggemburkan petak tanah kebun & memanen tanaman dengan tombol [F].',
+      price: 120,
+      usable: true,
+    };
+
+    // Slot 4 [Hotbar 4]: Tong Penyiram Air
+    list[3] = {
+      id: 'tool_watering_can',
+      name: 'Tong Penyiram Air',
+      category: 'tool',
+      rarity: 'Uncommon',
+      icon: '🪣',
+      quantity: 1,
+      maxStack: 1,
+      description: 'Tong penyiram tanaman (10/10 air). Syarat menanam: 1. cangkul, 2. siram air, 3. tanam bibit, 4. tunggu 24 jam, 5. panen. Tekan [F] di bibir pantai/laut untuk isi ulang.',
+      price: 90,
+      usable: true,
+      extraData: { water: 10, maxWater: 10 },
+    };
+
+    // Slot 5 [Hotbar 5]: Apel Manis Kebun
+    list[4] = {
       id: 'cons_apple',
       name: 'Apel Merah Manis Kebun',
       category: 'consumable',
@@ -103,8 +154,8 @@ export class InventoryManager {
       extraData: { hpRestore: 25 },
     };
 
-    // Slot 4: Jamu Segar Bugar
-    list[3] = {
+    // Slot 6 [Hotbar 6]: Jamu Segar Bugar
+    list[5] = {
       id: 'cons_jamu',
       name: 'Jamu Beras Kencur Segar',
       category: 'consumable',
@@ -118,24 +169,24 @@ export class InventoryManager {
       extraData: { hpRestore: 60 },
     };
 
-    // Slot 5: Koin Emas Pusaka
-    list[4] = {
-      id: 'mat_ancient_coin',
-      name: 'Keping Logam Kuno Nusantara',
+    // Slot 7: Umpan Cacing
+    list[6] = {
+      id: 'tool_bait_worm',
+      name: 'Umpan Cacing Tanah Segar',
       category: 'material',
-      rarity: 'Rare',
-      icon: '🪙',
-      quantity: 2,
-      maxStack: 50,
-      description: 'Koin kuno berkilau peninggalan kerajaan maritim. Bernilai jual tinggi di pasar!',
-      price: 120,
+      rarity: 'Common',
+      icon: '🪱',
+      quantity: 35,
+      maxStack: 99,
+      description: 'Cacing tanah gemuk berprotein tinggi untuk memancing ikan lele, mujair, dan patin.',
+      price: 5,
     };
 
     return list;
   }
 
   /**
-   * Memuat data inventaris dari localStorage
+   * Memuat data inventaris dari localStorage & menormalisasi item lama
    */
   private loadFromStorage(): void {
     try {
@@ -145,8 +196,47 @@ export class InventoryManager {
         if (Array.isArray(parsed) && parsed.length > 0) {
           this.items = new Array(InventoryManager.MAX_SLOTS).fill(null);
           for (let i = 0; i < Math.min(parsed.length, InventoryManager.MAX_SLOTS); i++) {
-            this.items[i] = parsed[i] || null;
+            const raw = parsed[i];
+            if (!raw) {
+              this.items[i] = null;
+              continue;
+            }
+            // Normalisasi ID legacy yang memiliki akhiran timestamp _17...
+            const cleanId = String(raw.id || '').replace(/_\d{10,}$/, '');
+            let cat = raw.category;
+            if (cleanId.startsWith('seed_')) cat = 'seed';
+            else if (cleanId.startsWith('crop_')) cat = 'crop';
+
+            const normalized: IInventoryItem = {
+              ...raw,
+              id: cleanId || raw.id,
+              category: cat,
+              usable: cat === 'seed' || cat === 'tool' || cat === 'consumable' ? true : raw.usable,
+            };
+            if (InventoryManager.isWateringCanItem(normalized)) {
+              if (!normalized.extraData || typeof normalized.extraData.water !== 'number') {
+                normalized.extraData = { ...(normalized.extraData || {}), water: 10, maxWater: 10 };
+              }
+            }
+            delete (normalized as any).diamondPrice;
+            this.items[i] = normalized;
           }
+
+          // Pastikan pemain lama tetap punya minimal 1 joran & 1 bibit awal jika belum pernah punya
+          const hasAnyRod = this.items.some((it) => InventoryManager.isRodItem(it));
+          if (!hasAnyRod) {
+            const emptyIdx = this.items.findIndex((it) => it === null);
+            if (emptyIdx >= 0) {
+              this.items[emptyIdx] = this.getDefaultItems()[0];
+            }
+          }
+          const defaults = this.getDefaultItems();
+          const hasSeed = this.items.some((it) => InventoryManager.isSeedItem(it));
+          const hasHoe = this.items.some((it) => InventoryManager.isHoeItem(it));
+          const hasWatering = this.items.some((it) => InventoryManager.isWateringCanItem(it));
+          if (!hasSeed && defaults[1]) this.addItem({ ...defaults[1] });
+          if (!hasHoe && defaults[2]) this.addItem({ ...defaults[2] });
+          if (!hasWatering && defaults[3]) this.addItem({ ...defaults[3] });
           return;
         }
       }
@@ -154,13 +244,11 @@ export class InventoryManager {
       console.warn('[InventoryManager] Gagal parse inventory:', e);
     }
 
+    localStorage.setItem('raden_farming_starter_v1', '1');
     this.items = this.getDefaultItems();
     this.saveToStorage();
   }
 
-  /**
-   * Menyimpan status inventaris ke localStorage
-   */
   public saveToStorage(): void {
     try {
       localStorage.setItem('raden_player_inventory', JSON.stringify(this.items));
@@ -170,16 +258,10 @@ export class InventoryManager {
     this.notifyUpdate();
   }
 
-  /**
-   * Mengambil semua item (30 slot)
-   */
   public getItems(): (IInventoryItem | null)[] {
     return [...this.items];
   }
 
-  /**
-   * Mengambil item hotbar (6 slot pertama)
-   */
   public getHotbarItems(): (IInventoryItem | null)[] {
     return this.items.slice(0, InventoryManager.HOTBAR_SLOTS);
   }
@@ -201,9 +283,38 @@ export class InventoryManager {
   }
 
   /**
+   * Memperbarui data item pada slot tertentu (misal sisa air pada tong penyiram)
+   */
+  public updateItem(slotIndex: number, item: IInventoryItem): void {
+    if (slotIndex >= 0 && slotIndex < this.items.length) {
+      this.items[slotIndex] = { ...item };
+      this.saveToStorage();
+      EventBus.emit('inventory-updated', this.getItems());
+    }
+  }
+
+  /**
+   * Mengurangi jumlah item pada slot aktif (misal saat menanam 1 biji)
+   */
+  public consumeActiveItem(qty: number = 1): IInventoryItem | null {
+    const item = this.items[this.activeSlotIndex];
+    if (!item || item.quantity < qty) return null;
+    const snapshot = { ...item };
+    item.quantity -= qty;
+    if (item.quantity <= 0) {
+      this.items[this.activeSlotIndex] = null;
+    }
+    this.saveToStorage();
+    return snapshot;
+  }
+
+  /**
    * Menambahkan item ke slot pertama yang kosong atau menumpuk (stack)
    */
-  public addItem(item: IInventoryItem): boolean {
+  public addItem(rawItem: IInventoryItem): boolean {
+    const item: IInventoryItem = { ...rawItem };
+    delete (item as any).diamondPrice;
+
     // 1. Coba stack dengan item identik jika ada dan belum penuh
     for (let i = 0; i < this.items.length; i++) {
       const existing = this.items[i];
@@ -220,34 +331,36 @@ export class InventoryManager {
     }
 
     // 2. Masukkan ke slot kosong pertama
-    for (let i = 0; i < this.items.length; i++) {
-      if (!this.items[i]) {
-        this.items[i] = { ...item };
+    while (item.quantity > 0) {
+      const emptyIdx = this.items.findIndex((it) => it === null);
+      if (emptyIdx === -1) {
         this.saveToStorage();
-        return true;
+        return false;
       }
+      const putQty = Math.min(item.maxStack, item.quantity);
+      this.items[emptyIdx] = { ...item, quantity: putQty };
+      item.quantity -= putQty;
     }
 
-    // Tas penuh!
-    return false;
+    this.saveToStorage();
+    return true;
   }
 
   /**
-   * Menambahkan ikan tangkapan dari minigame memancing ke tas
+   * Menambahkan ikan tangkapan dari minigame memancing ke tas (Stackable Rapi!)
    */
   public addCaughtFish(fish: IFishData): boolean {
-    const icon = fish.rarity === 'Legendary' ? '🌟🐟' : fish.rarity === 'Rare' ? '💎🐟' : '🐟';
+    const icon = fish.rarity === 'Legendary' ? '🌟🐟' : fish.rarity === 'Rare' ? '🐠' : '🐟';
     const fishItem: IInventoryItem = {
-      id: `fish_${fish.id}_${Date.now()}`,
+      id: `fish_${fish.id}`,
       name: fish.name,
       category: 'fish',
       rarity: fish.rarity,
       icon,
       quantity: 1,
-      maxStack: 10,
-      description: `${fish.description} (Berat: ${fish.weightKg} kg). Dapat dijual di tas untuk mendapatkan Gold!`,
+      maxStack: 20,
+      description: `${fish.description} (Berat rata-rata: ${fish.weightKg} kg). Dapat dijual di Pasar atau Tas untuk mendapatkan Koin Emas!`,
       price: fish.goldReward,
-      diamondPrice: fish.diamondReward,
       usable: false,
       extraData: {
         weightKg: fish.weightKg,
@@ -258,9 +371,9 @@ export class InventoryManager {
   }
 
   /**
-   * Menjual item dari tas dan menerima koin Gold & Diamond
+   * Menjual item dari tas dan menerima Koin Emas (Gold)
    */
-  public sellItem(slotIndex: number): { success: boolean; goldEarned: number; diamondEarned?: number } {
+  public sellItem(slotIndex: number): { success: boolean; goldEarned: number } {
     if (slotIndex < 0 || slotIndex >= this.items.length) {
       return { success: false, goldEarned: 0 };
     }
@@ -271,38 +384,26 @@ export class InventoryManager {
     }
 
     const goldEarned = item.price * item.quantity;
-    const diamondEarned = (item.diamondPrice || 0) * item.quantity;
 
-    // Tambahkan gold ke profil pemain
     try {
       const curGold = parseInt(localStorage.getItem('raden_player_gold') || '0', 10);
       const newGold = curGold + goldEarned;
       localStorage.setItem('raden_player_gold', newGold.toString());
-
-      if (diamondEarned > 0) {
-        const curDia = parseInt(localStorage.getItem('raden_player_diamonds') || '0', 10);
-        localStorage.setItem('raden_player_diamonds', (curDia + diamondEarned).toString());
-      }
-
-      EventBus.emit('player-gold-changed', { gold: newGold, diamonds: diamondEarned });
+      EventBus.emit('player-gold-changed', { gold: newGold, deltaGold: goldEarned });
     } catch (e) {}
 
-    // Hapus item dari slot
     this.items[slotIndex] = null;
     this.saveToStorage();
-
-    // Suara koin berdenting gembira
     SoundManager.getInstance().playCoin();
 
     return {
       success: true,
       goldEarned,
-      diamondEarned,
     };
   }
 
   /**
-   * Menggunakan / mengonsumsi item dari inventaris (misal Apel / Jamu)
+   * Menggunakan / memegang item dari inventaris
    */
   public useItem(slotIndex: number): { success: boolean; message: string; hpRestore?: number } {
     if (slotIndex < 0 || slotIndex >= this.items.length) {
@@ -314,19 +415,35 @@ export class InventoryManager {
       return { success: false, message: 'Slot kosong' };
     }
 
-    // Jika item adalah alat pemancing
-    if (item.category === 'tool') {
+    // Jika item berada di luar hotbar dan merupakan tool / seed, pindahkan ke slot hotbar aktif agar mudah dipakai dengan [F]
+    if (item.category === 'tool' || InventoryManager.isSeedItem(item)) {
       SoundManager.getInstance().playItemUse();
-      this.setActiveSlotIndex(slotIndex < InventoryManager.HOTBAR_SLOTS ? slotIndex : 0);
+      if (slotIndex >= InventoryManager.HOTBAR_SLOTS) {
+        this.moveItem(slotIndex, this.activeSlotIndex);
+      } else {
+        this.setActiveSlotIndex(slotIndex);
+      }
+      if (InventoryManager.isSeedItem(item)) {
+        return {
+          success: true,
+          message: `Memegang ${item.name}! Pergi ke lahan Kebun Tani lalu tekan [F] untuk menanam.`,
+        };
+      }
+      if (InventoryManager.isRodItem(item)) {
+        return {
+          success: true,
+          message: `Memegang ${item.name}! Tekan [F] di tepi air/dermaga untuk memancing.`,
+        };
+      }
       return {
         success: true,
-        message: `Memegang ${item.name}! Tekan [F] di dekat perairan untuk memancing.`,
+        message: `Memegang ${item.name}! Tekan [F] di area kebun untuk bekerja.`,
       };
     }
 
     // Jika item adalah ramuan khusus apotek
     if (item.category === 'consumable' && (item.extraData?.potionType || item.id.startsWith('pot_'))) {
-      const potionType = item.extraData?.potionType || item.id.split('_')[1];
+      const potionType = item.extraData?.potionType || item.id.replace(/^pot_/, '');
       const durationSec = item.extraData?.durationSec || 60;
       item.quantity--;
       if (item.quantity <= 0) {
@@ -343,12 +460,12 @@ export class InventoryManager {
 
       return {
         success: true,
-        message: `Teguk! Meminum ${item.name}! Efek aktif ${durationSec} detik (Nonaktif di minigame bola/basket/volly). ✨`,
+        message: `Teguk! Meminum ${item.name}! Efek aktif selama ${durationSec} detik.`,
       };
     }
 
-    // Jika item adalah makanan / konsumsi penyembuh
-    if (item.category === 'consumable' && item.extraData?.hpRestore) {
+    // Jika item adalah makanan / hasil panen yang memulihkan HP
+    if ((item.category === 'consumable' || item.category === 'crop') && item.extraData?.hpRestore) {
       const hp = item.extraData.hpRestore;
       item.quantity--;
       if (item.quantity <= 0) {
@@ -366,14 +483,11 @@ export class InventoryManager {
       };
     }
 
-    return { success: false, message: 'Item ini tidak dapat langsung digunakan.' };
+    return { success: false, message: 'Item ini dapat dijual di Pasar Rakyat [Beli/Jual].' };
   }
 
-  /**
-   * Menghitung total slot yang terisi
-   */
   public getFilledCount(): number {
-    return this.items.filter(it => it !== null).length;
+    return this.items.filter((it) => it !== null).length;
   }
 
   public getItemCount(): number {
@@ -407,7 +521,6 @@ export class InventoryManager {
     const source = this.items[fromIndex];
     const target = this.items[toIndex];
 
-    // Jika item sama dan bisa distack, gabungkan jumlahnya
     if (source && target && source.id === target.id && target.quantity < target.maxStack) {
       const spaceLeft = target.maxStack - target.quantity;
       const transferQty = Math.min(spaceLeft, source.quantity);
@@ -421,7 +534,6 @@ export class InventoryManager {
       return true;
     }
 
-    // Tukar slot (swap)
     this.items[fromIndex] = target;
     this.items[toIndex] = source;
     this.saveToStorage();
@@ -435,22 +547,6 @@ export class InventoryManager {
       activeSlot: this.activeSlotIndex,
       filledCount: this.getFilledCount(),
       maxSlots: InventoryManager.MAX_SLOTS,
-    });
-  }
-
-  private setupEventListeners(): void {
-    // Tangkap hasil memancing otomatis masuk tas
-    EventBus.on('fishing-caught', (data: { fish: IFishData }) => {
-      if (data?.fish) {
-        const added = this.addCaughtFish(data.fish);
-        if (!added) {
-          SoundManager.getInstance().playError();
-          EventBus.emit('show-notification', {
-            type: 'warning',
-            message: '⚠️ Tas Punggungmu Penuh! Kosongkan slot dengan menjual ikan.',
-          });
-        }
-      }
     });
   }
 }

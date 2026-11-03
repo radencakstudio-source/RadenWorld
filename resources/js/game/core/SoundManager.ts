@@ -14,10 +14,11 @@ export class SoundManager {
   private ctx: AudioContext | null = null;
   private masterVolume: number = 0.8;
   private sfxVolume: number = 0.8;
-  private bgmVolume: number = 0.05; // 5% sesuai permintaan pengguna
+  private bgmVolume: number = 0.35; // 35% default jelas dan seimbang
   private isMuted: boolean = false;
+  private shouldPlayBgm: boolean = true;
   private bgmAudio: HTMLAudioElement | null = null;
-  private bgmUrl: string = '/assets/audio/bgm/RadenWorld Music.mp3';
+  private bgmUrl: string = '/assets/audio/bgm/RadenWorld%20Music.mp3';
   private isBgmPlaying: boolean = false;
   private userInteracted: boolean = false;
 
@@ -28,34 +29,65 @@ export class SoundManager {
         const savedBgm = localStorage.getItem('raden_bgm_vol');
         if (savedBgm) {
           const parsed = parseFloat(savedBgm);
-          this.bgmVolume = parsed >= 0.5 ? 0.05 : parsed;
+          this.bgmVolume = (!isNaN(parsed) && parsed >= 0 && parsed <= 1) ? parsed : 0.35;
         } else {
-          this.bgmVolume = 0.05;
-          localStorage.setItem('raden_bgm_vol', '0.05');
+          this.bgmVolume = 0.35;
+          localStorage.setItem('raden_bgm_vol', '0.35');
         }
         const savedMute = localStorage.getItem('raden_is_muted');
         if (savedMute) this.isMuted = savedMute === 'true';
       } catch (e) {}
 
-      // Tangkap interaksi pengguna untuk mengaktifkan & resume AudioContext (kebijakan Autoplay Chrome/Android/iOS)
-      const unlockAudio = () => {
+      // Tangkap interaksi pengguna untuk mengaktifkan & resume AudioContext serta BGM (Autoplay Policy Chrome/Safari/Android/iOS)
+      const unlockAudioAndBgm = () => {
         this.userInteracted = true;
-        if (typeof window !== 'undefined') {
-          const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
-          if (!this.ctx && AudioCtx) {
-            try {
-              this.ctx = new AudioCtx();
-            } catch (e) {}
-          }
-          if (this.ctx && this.ctx.state === 'suspended') {
-            this.ctx.resume().catch(() => {});
+        
+        // 1. Inisialisasi & resume Web Audio API Context
+        const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+        if (!this.ctx && AudioCtx) {
+          try {
+            this.ctx = new AudioCtx();
+          } catch (e) {}
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume().catch(() => {});
+        }
+
+        // 2. Putar BGM jika aktif dan belum berbunyi (dilakukan di event stack langsung tanpa setTimeout)
+        if (this.shouldPlayBgm && !this.isMuted) {
+          this.initBgm();
+          if (this.bgmAudio && this.bgmAudio.paused) {
+            this.bgmAudio.play().then(() => {
+              this.isBgmPlaying = true;
+            }).catch(() => {});
           }
         }
       };
-      window.addEventListener('pointerdown', unlockAudio, { passive: true });
-      window.addEventListener('touchstart', unlockAudio, { passive: true });
-      window.addEventListener('keydown', unlockAudio, { passive: true });
-      window.addEventListener('click', unlockAudio, { passive: true });
+
+      window.addEventListener('pointerdown', unlockAudioAndBgm, { passive: true });
+      window.addEventListener('touchstart', unlockAudioAndBgm, { passive: true });
+      window.addEventListener('keydown', unlockAudioAndBgm, { passive: true });
+      window.addEventListener('click', unlockAudioAndBgm, { passive: true });
+
+      // Handle visibilitychange saat tab diminimalkan atau dibuka kembali di ponsel/browser
+      document.addEventListener('visibilitychange', () => {
+        if (document.hidden) {
+          // Tab disembunyikan/minimize: pause audio sementara untuk hemat daya
+          if (this.bgmAudio && !this.bgmAudio.paused) {
+            this.bgmAudio.pause();
+          }
+        } else {
+          // Tab dibuka kembali: lanjutkan lagu jika shouldPlayBgm aktif
+          if (this.ctx && this.ctx.state === 'suspended') {
+            this.ctx.resume().catch(() => {});
+          }
+          if (this.shouldPlayBgm && !this.isMuted && this.bgmAudio && this.bgmAudio.paused) {
+            this.bgmAudio.play().then(() => {
+              this.isBgmPlaying = true;
+            }).catch(() => {});
+          }
+        }
+      });
     }
   }
 
@@ -95,8 +127,28 @@ export class SoundManager {
     try {
       this.bgmAudio = new Audio(this.bgmUrl);
       this.bgmAudio.loop = true;
-      this.bgmAudio.preload = 'none'; // Jangan unduh file 3.66MB saat awal buka web, unduh hanya saat dimainkan
+      this.bgmAudio.preload = 'auto';
       this.updateBgmVolume();
+
+      // Penanganan loop aman jika loop bawaan browser terhenti di mobile
+      this.bgmAudio.addEventListener('ended', () => {
+        if (this.shouldPlayBgm && !this.isMuted) {
+          this.bgmAudio?.play().catch(() => {});
+        }
+      });
+
+      // Penanganan fallback URL jika encoding %20 ditolak web server tertentu
+      this.bgmAudio.addEventListener('error', () => {
+        if (this.bgmAudio) {
+          const currentSrc = this.bgmAudio.src;
+          if (currentSrc.includes('%20')) {
+            this.bgmAudio.src = '/assets/audio/bgm/RadenWorld Music.mp3';
+            if (this.shouldPlayBgm && !this.isMuted) {
+              this.bgmAudio.play().catch(() => {});
+            }
+          }
+        }
+      });
     } catch (e) {
       console.warn('[SoundManager] Inisialisasi BGM audio error:', e);
     }
@@ -116,6 +168,7 @@ export class SoundManager {
    */
   public playBGM(customUrl?: string): void {
     if (typeof window === 'undefined') return;
+    this.shouldPlayBgm = true;
     this.initBgm();
     if (!this.bgmAudio) return;
 
@@ -126,34 +179,23 @@ export class SoundManager {
 
     this.updateBgmVolume();
 
-    const playPromise = this.bgmAudio.play();
-    if (playPromise !== undefined) {
-      playPromise
-        .then(() => {
-          this.isBgmPlaying = true;
-        })
-        .catch(() => {
-          // Browser memblokir autoplay sebelum user gesture: pasang trigger klik pertama
-          this.isBgmPlaying = false;
-          const startOnGesture = () => {
-            if (!this.userInteracted) {
-              this.userInteracted = true;
-              setTimeout(() => {
-                this.bgmAudio?.play().then(() => {
-                  this.isBgmPlaying = true;
-                }).catch(() => {});
-              }, 0);
-            }
-            window.removeEventListener('pointerdown', startOnGesture);
-            window.removeEventListener('keydown', startOnGesture);
-          };
-          window.addEventListener('pointerdown', startOnGesture, { once: true, passive: true });
-          window.addEventListener('keydown', startOnGesture, { once: true, passive: true });
-        });
+    if (!this.isMuted) {
+      const playPromise = this.bgmAudio.play();
+      if (playPromise !== undefined) {
+        playPromise
+          .then(() => {
+            this.isBgmPlaying = true;
+          })
+          .catch(() => {
+            // Browser memblokir autoplay sebelum user gesture: unlockAudioAndBgm akan memutar saat klik pertama
+            this.isBgmPlaying = false;
+          });
+      }
     }
   }
 
   public pauseBGM(): void {
+    this.shouldPlayBgm = false;
     if (this.bgmAudio) {
       this.bgmAudio.pause();
       this.isBgmPlaying = false;

@@ -783,11 +783,7 @@ export const LibraryTopicVisualizer: React.FC<LibraryTopicVisualizerProps> = ({
     const timer = setInterval(() => {
       setProgressPercent((prev) => {
         if (prev >= 100) {
-          setActiveStep((cur) => {
-            const next = (cur + 1) % scenes.length;
-            sound.playHover();
-            return next;
-          });
+          setActiveStep((cur) => (cur + 1) % scenes.length);
           return 0;
         }
         return prev + stepIncrement;
@@ -795,9 +791,8 @@ export const LibraryTopicVisualizer: React.FC<LibraryTopicVisualizerProps> = ({
     }, intervalTime);
 
     return () => clearInterval(timer);
-  }, [isPlaying, playbackSpeed, scenes.length, sound]);
+  }, [isPlaying, playbackSpeed, scenes.length]);
 
-  // Tombol navigasi manual
   const handlePrev = () => {
     sound.playClick();
     setProgressPercent(0);
@@ -827,127 +822,106 @@ export const LibraryTopicVisualizer: React.FC<LibraryTopicVisualizerProps> = ({
   };
 
   return (
-    <div className="relative w-full rounded-3xl bg-gradient-to-b from-neutral-900 via-neutral-950 to-neutral-950 border-2 border-neutral-800 shadow-[0_0_40px_rgba(0,0,0,0.8)] overflow-hidden flex flex-col font-['Chakra_Petch']">
-      
-      {/* ============================================================== */}
-      {/* 1. TOP VIDEO PLAYER HEADER (Gaya Layar Pemutar Video Edukasi)   */}
-      {/* ============================================================== */}
-      <div className="px-3.5 sm:px-5 py-2.5 bg-neutral-950/90 border-b border-neutral-800 flex items-center justify-between gap-2 shrink-0">
-        <div className="flex items-center gap-2.5">
-          {/* Badge Live / Rec Video */}
-          <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-rose-500/15 border border-rose-500/40 text-rose-400 font-black text-[11px] tracking-wider uppercase shadow-sm">
-            <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping" />
-            <Film className="w-3.5 h-3.5 text-rose-400" />
+    <div className="relative w-full clay-panel overflow-hidden flex flex-col font-pixel text-black">
+      {/* 1. TOP VIDEO PLAYER HEADER */}
+      <div className="px-3.5 sm:px-5 py-2.5 clay-header flex items-center justify-between gap-2 shrink-0">
+        <div className="flex items-center gap-2">
+          <span className="flex items-center gap-1.5 px-2.5 py-0.5 clay-badge-secondary text-black font-bold text-[10px] tracking-wider uppercase">
+            <Film className="w-3.5 h-3.5 text-black" />
             <span>VIDEO BERGAMBAR</span>
           </span>
 
-          <span className="text-xs font-bold text-amber-300 hidden sm:inline-block">
+          <span className="text-xs font-bold text-black hidden sm:inline-block truncate">
             {title}
           </span>
         </div>
 
         <div className="flex items-center gap-2">
-          {/* Speed Toggle */}
           <button
             type="button"
             onClick={handleToggleSpeed}
-            className="px-2 py-0.5 rounded-lg bg-neutral-900 hover:bg-neutral-800 text-sky-400 border border-neutral-700 font-mono text-[11px] font-bold transition-all cursor-pointer"
+            className="px-2 py-0.5 clay-btn-neutral text-black text-[11px] font-bold"
             title="Kecepatan Video"
           >
             {playbackSpeed}x SPEED
           </button>
 
-          {/* Babak Aktif Badge */}
-          <span className="px-2.5 py-0.5 rounded-lg bg-neutral-800 text-neutral-300 font-mono font-bold text-xs border border-neutral-700">
+          <span className="px-2.5 py-0.5 clay-badge-neutral text-black font-bold text-xs">
             {currentScene.chapter} / 4
           </span>
         </div>
       </div>
 
-      {/* ============================================================== */}
-      {/* 2. AREA LAYAR UTAMA: SVG ILUSTRASI ANIMASI (16:9 Sinematik)    */}
-      {/* ============================================================== */}
-      <div className="relative w-full aspect-[16/9] max-h-[300px] flex items-center justify-center bg-gradient-to-b from-neutral-950 via-neutral-900 to-neutral-950 border-b border-neutral-800/80 overflow-hidden shadow-inner group">
-        
-        {/* Render SVG Diagram Topik */}
-        <div className="w-full h-full p-2 transition-transform duration-300">
+      {/* 2. AREA LAYAR UTAMA: SVG ILUSTRASI ANIMASI */}
+      <div className="relative w-full aspect-[16/9] max-h-[300px] flex items-center justify-center bg-[#23160C] border-b-2 border-[#5C3A21] overflow-hidden">
+        <div className="w-full h-full p-2">
           {renderDiagramSvg(type, activeStep, setActiveStep)}
         </div>
 
-        {/* Floating Chapter Pill di Pojok Layar Animasi */}
         <div className="absolute top-3 left-3 flex items-center gap-2 pointer-events-none">
-          <span className="px-2.5 py-1 rounded-xl bg-black/75 backdrop-blur-md border border-white/20 text-white font-bold text-xs flex items-center gap-1.5 shadow-lg">
+          <span className="px-2.5 py-1 clay-badge-neutral text-black font-bold text-xs flex items-center gap-1.5">
             <span>{currentScene.icon}</span>
             <span>{currentScene.title}</span>
           </span>
         </div>
 
-        {/* Floating Highlight Cue di Pojok Kanan Atas */}
         <div className="absolute top-3 right-3 hidden sm:flex items-center gap-1.5 pointer-events-none">
-          <span className="px-2.5 py-1 rounded-xl bg-amber-500/20 backdrop-blur-md border border-amber-400/40 text-amber-300 font-mono font-bold text-[11px] shadow-lg flex items-center gap-1">
-            <Sparkles className="w-3 h-3 text-amber-400" />
+          <span className="px-2.5 py-1 clay-badge-secondary text-black font-bold text-[11px] flex items-center gap-1">
+            <Sparkles className="w-3 h-3 text-black" />
             <span>{currentScene.highlightText}</span>
           </span>
         </div>
 
-        {/* Overlay Tombol Play Besar jika Sedang Dijeda */}
         {!isPlaying && (
           <button
             type="button"
             onClick={handleTogglePlay}
-            className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-[1px] cursor-pointer transition-opacity"
+            className="absolute inset-0 flex items-center justify-center bg-[#5C3A21]/45 cursor-pointer"
             title="Putar Video Bergambar"
           >
-            <div className="w-14 h-14 rounded-full bg-amber-400 text-neutral-950 flex items-center justify-center shadow-[0_0_30px_rgba(245,158,11,0.8)] transform hover:scale-110 active:scale-95 transition-transform">
-              <Play className="w-7 h-7 fill-neutral-950 ml-1" />
+            <div className="w-12 h-12 clay-btn-primary text-black flex items-center justify-center">
+              <Play className="w-6 h-6 fill-black text-black ml-0.5" />
             </div>
           </button>
         )}
       </div>
 
-      {/* Progress Ticker Bar (Indikator waktu slide berganti) */}
-      <div className="w-full h-1 bg-neutral-900 overflow-hidden">
+      {/* Progress Ticker Bar */}
+      <div className="w-full h-2 bg-[#FFF8EA] border-b-2 border-[#5C3A21] overflow-hidden">
         <div
-          className="h-full bg-gradient-to-r from-amber-400 via-orange-500 to-amber-300 transition-all duration-100 shadow-[0_0_8px_rgba(245,158,11,0.6)]"
+          className="h-full bg-[#FFAE6D]"
           style={{ width: `${isPlaying ? progressPercent : 100}%` }}
         />
       </div>
 
-      {/* ============================================================== */}
-      {/* 3. KOTAK SUBTITLE & NARASI BERGAMBAR (Prof. Raden Robot Pemandu)*/}
-      {/* ============================================================== */}
-      <div className="p-3 sm:p-4 bg-gradient-to-r from-neutral-950 via-neutral-900/90 to-neutral-950 border-b border-neutral-800 flex items-start gap-3">
-        {/* Avatar Robot Pemandu Edukasi */}
-        <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-gradient-to-br from-sky-400 to-blue-600 border-2 border-sky-300 text-white flex items-center justify-center shadow-lg shrink-0 mt-0.5 animate-pulse">
-          <Bot className="w-5 h-5 sm:w-6 sm:h-6" />
+      {/* 3. KOTAK SUBTITLE & NARASI BERGAMBAR */}
+      <div className="p-3 sm:p-4 bg-[#FFF8EA] border-b-2 border-[#5C3A21] flex items-start gap-3">
+        <div className="w-9 h-9 sm:w-10 sm:h-10 clay-badge-secondary text-black flex items-center justify-center shrink-0 mt-0.5">
+          <Bot className="w-5 h-5" />
         </div>
 
-        {/* Kotak Subtitle Teks Cerita Narasi */}
         <div className="flex-1 space-y-1">
-          <div className="flex items-center gap-2">
-            <span className="font-extrabold text-xs text-sky-400 uppercase tracking-wider">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="font-bold text-xs text-black uppercase tracking-wider">
               Prof. Raden Bot • Narator Bergambar:
             </span>
-            <span className="px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 text-[10px] font-bold border border-amber-500/30">
+            <span className="px-1.5 py-0.5 clay-badge-primary text-black text-[10px] font-bold">
               {currentScene.badge}
             </span>
           </div>
-          <p className="text-xs sm:text-sm text-neutral-100 font-sans leading-relaxed tracking-wide font-medium">
+          <p className="text-xs sm:text-sm text-black leading-relaxed">
             {currentScene.narration}
           </p>
         </div>
       </div>
 
-      {/* ============================================================== */}
-      {/* 4. PLAYER CONTROL TIMELINE BAR (Putar, Mundur, Maju, 4 Babak)   */}
-      {/* ============================================================== */}
-      <div className="px-3 sm:px-4 py-2.5 bg-neutral-950 flex flex-wrap items-center justify-between gap-2">
-        {/* Tombol Play / Pause / Prev / Next */}
+      {/* 4. PLAYER CONTROL TIMELINE BAR */}
+      <div className="px-3 sm:px-4 py-2.5 bg-[#FFF8EA] flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-1.5">
           <button
             type="button"
             onClick={handlePrev}
-            className="p-1.5 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-neutral-300 hover:text-white border border-neutral-800 cursor-pointer active:scale-95 transition-all"
+            className="p-1.5 clay-btn-neutral text-black"
             title="Adegan Sebelumnya"
           >
             <SkipBack className="w-4 h-4" />
@@ -956,21 +930,19 @@ export const LibraryTopicVisualizer: React.FC<LibraryTopicVisualizerProps> = ({
           <button
             type="button"
             onClick={handleTogglePlay}
-            className={`px-3 py-1.5 rounded-xl text-xs font-black flex items-center gap-1.5 cursor-pointer active:scale-95 transition-all shadow-sm ${
-              isPlaying
-                ? 'bg-neutral-800 hover:bg-neutral-700 text-amber-300 border border-neutral-700'
-                : 'bg-amber-400 hover:bg-amber-300 text-neutral-950 border border-amber-300 shadow-[0_0_12px_rgba(245,158,11,0.5)]'
+            className={`px-3 py-1.5 text-xs font-bold flex items-center gap-1.5 ${
+              isPlaying ? 'clay-btn-secondary text-black' : 'clay-btn-primary text-black'
             }`}
             title={isPlaying ? 'Jeda Video' : 'Putar Otomatis'}
           >
             {isPlaying ? (
               <>
-                <Pause className="w-3.5 h-3.5 fill-amber-300" />
+                <Pause className="w-3.5 h-3.5 fill-black text-black" />
                 <span>Jeda</span>
               </>
             ) : (
               <>
-                <Play className="w-3.5 h-3.5 fill-neutral-950 ml-0.5" />
+                <Play className="w-3.5 h-3.5 fill-black text-black ml-0.5" />
                 <span>Putar Cerita</span>
               </>
             )}
@@ -979,14 +951,13 @@ export const LibraryTopicVisualizer: React.FC<LibraryTopicVisualizerProps> = ({
           <button
             type="button"
             onClick={handleNext}
-            className="p-1.5 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-neutral-300 hover:text-white border border-neutral-800 cursor-pointer active:scale-95 transition-all"
+            className="p-1.5 clay-btn-neutral text-black"
             title="Adegan Berikutnya"
           >
             <SkipForward className="w-4 h-4" />
           </button>
         </div>
 
-        {/* 4 Titik Babak Cerita Video (Clickable Scrubber) */}
         <div className="flex items-center gap-1.5">
           {scenes.map((sc, sIdx) => {
             const isCur = activeStep === sIdx;
@@ -995,10 +966,8 @@ export const LibraryTopicVisualizer: React.FC<LibraryTopicVisualizerProps> = ({
                 key={sIdx}
                 type="button"
                 onClick={() => handleSelectStep(sIdx)}
-                className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1 border ${
-                  isCur
-                    ? 'bg-gradient-to-r from-amber-400 to-orange-400 text-neutral-950 border-amber-300 font-black shadow-md scale-105'
-                    : 'bg-neutral-900 hover:bg-neutral-800 text-neutral-400 hover:text-white border-neutral-800'
+                className={`px-2.5 py-1 text-xs font-bold flex items-center gap-1 ${
+                  isCur ? 'clay-btn-primary text-black' : 'clay-btn-neutral text-black'
                 }`}
               >
                 <span>{sc.icon}</span>

@@ -2,20 +2,16 @@
  * ============================================================================
  * FILE: resources/js/game/ui/ServerUsersModal.tsx
  * ============================================================================
- * FUNGSI UTAMA:
- * Modal Daftar Pemain Aktif di Server (Roblox-style Player List / Leaderboard):
+ * Modal Daftar Pemain Aktif di Server (Cozycore Clay-Pixel):
  * 1. Menampilkan jumlah pemain saat ini vs kapasitas maksimal (Max 50 orang).
  * 2. Menampilkan avatar pratinjau, nama pemain, level, dan role/tag.
- * 3. Indikator Ikon Teman (Roblox Concept):
- *    - Jika sudah berteman: Ikon Teman (UserCheck hijau zamrud) di sebelah kanan.
- *    - Jika belum berteman: Tombol Tambah Teman (UserPlus).
- *    - Diri sendiri: Tag khusus (Kamu).
+ * 3. Indikator Ikon Teman (Sudah berteman / Tambah Teman / Kamu).
  * 4. Klik pemain untuk melihat detail profil.
  * ============================================================================
  */
 
 import React, { useState, useMemo } from 'react';
-import { X, Users, UserCheck, UserPlus, Search, Crown, Shield, Sparkles } from 'lucide-react';
+import { X, Users, UserCheck, UserPlus, Search, Crown, Sparkles } from 'lucide-react';
 import { IPlayerData, IAvatarCustomization } from '../types';
 import { AvatarPreview } from './AvatarPreview';
 import { SoundManager } from '../core/SoundManager';
@@ -54,13 +50,15 @@ export const ServerUsersModal: React.FC<ServerUsersModalProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const sound = SoundManager.getInstance();
 
-  // Susun daftar gabungan: diri sendiri selalu di paling atas, diikuti pemain lain
   const allPlayers = useMemo(() => {
     const list: (IPlayerData & { isMe?: boolean })[] = [];
-    const myNameClean = (currentUserName || '').replace(/\[admin\]/i, '').replace(/👑/g, '').trim().toLowerCase();
+    const myNameClean = (currentUserName || '')
+      .replace(/\[admin\]/i, '')
+      .replace(/👑/g, '')
+      .trim()
+      .toLowerCase();
     const currentSocketId = NetworkManager.getInstance().getSocketId();
 
-    // 1. Diri sendiri selalu di paling atas
     list.push({
       id: currentSocketId || 'me',
       name: currentUserName || 'Petualang',
@@ -83,27 +81,41 @@ export const ServerUsersModal: React.FC<ServerUsersModalProps> = ({
       isMe: true,
     });
 
-    // 2. Pemain lain di server (hindari duplikasi diri sendiri baik berdasarkan ID maupun Nama)
     players.forEach((p) => {
       if (!p) return;
-      if (p.isMe) return;
+      if ((p as IPlayerData & { isMe?: boolean }).isMe) return;
       if (currentSocketId && p.id === currentSocketId) return;
       if (p.id === 'local-me' || p.id === 'me') return;
 
-      const pNameClean = (p.name || '').replace(/\[admin\]/i, '').replace(/👑/g, '').trim().toLowerCase();
+      const pNameClean = (p.name || '')
+        .replace(/\[admin\]/i, '')
+        .replace(/👑/g, '')
+        .trim()
+        .toLowerCase();
       if (myNameClean && pNameClean === myNameClean) return;
 
-      // Cegah entri duplikat ID atau nama yang sama
       if (list.some((existing) => existing.id && existing.id === p.id)) return;
-      if (list.some((existing) => (existing.name || '').trim().toLowerCase() === (p.name || '').trim().toLowerCase())) return;
+      if (
+        list.some(
+          (existing) =>
+            (existing.name || '').trim().toLowerCase() === (p.name || '').trim().toLowerCase()
+        )
+      )
+        return;
 
       list.push(p);
     });
 
     return list;
-  }, [players, currentUserName, currentUserAvatar, currentUserLevel, currentUserRole, isCurrentUserAdmin]);
+  }, [
+    players,
+    currentUserName,
+    currentUserAvatar,
+    currentUserLevel,
+    currentUserRole,
+    isCurrentUserAdmin,
+  ]);
 
-  // Filter pencarian berdasarkan nama pemain
   const filteredPlayers = useMemo(() => {
     if (!searchQuery.trim()) return allPlayers;
     const q = searchQuery.toLowerCase();
@@ -144,109 +156,105 @@ export const ServerUsersModal: React.FC<ServerUsersModalProps> = ({
     <div
       role="dialog"
       aria-modal="true"
-      className="fixed inset-0 z-[100] flex items-center justify-center p-2 sm:p-4 bg-black/85 pointer-events-auto font-['Chakra_Petch'] animate-in fade-in duration-150 select-none"
+      className="ui-modal-backdrop z-[100] pointer-events-auto select-none"
+      onKeyDown={(e) => e.stopPropagation()}
     >
-      <div className="relative w-full max-w-lg bg-black border border-neutral-800 rounded-lg shadow-2xl overflow-hidden flex flex-col max-h-[94dvh]">
+      <div className="clay-panel landscape-compact-modal relative w-full max-w-lg max-h-[min(92dvh,calc(100dvh-1rem))] overflow-hidden flex flex-col text-black">
         {/* Header Modal */}
-        <div className="flex items-center justify-between px-4 py-3 bg-[#0a0a0a] border-b border-neutral-800">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-md bg-neutral-900 border border-neutral-800 flex items-center justify-center text-amber-400">
-              <Users className="w-4 h-4" />
+        <div className="clay-header landscape-compact-header flex items-center justify-between px-4 py-3 gap-2 shrink-0">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-[#FFF8EA] border-2 border-[#5C3A21] flex items-center justify-center text-black shrink-0">
+              <Users className="w-4 h-4 stroke-[2.5]" />
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="font-bold text-xs sm:text-sm tracking-wider text-amber-400 uppercase">
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="font-bold text-xs sm:text-sm uppercase text-black">
                   DAFTAR PEMAIN SERVER
                 </span>
-                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-neutral-900 text-neutral-300 border border-neutral-800 flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                <span className="clay-badge-secondary text-[9px] font-bold px-2 py-0.5 text-black">
                   ONLINE
                 </span>
               </div>
-              <div className="text-[10px] text-neutral-400 font-mono">
-                Server: <span className="text-amber-400 font-bold">{serverCode}</span> • Max{' '}
-                <span className="text-white font-bold">{maxCapacity}</span> Pemain
+              <div className="text-[10px] sm:text-xs font-bold text-black truncate">
+                Server: {serverCode} • Maks {maxCapacity} Pemain
               </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => {
-                sound.playClick();
-                onClose();
-              }}
-              className="w-8 h-8 rounded-md bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-neutral-400 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
-              title="Tutup (Esc)"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={() => {
+              sound.playClick();
+              onClose();
+            }}
+            className="clay-btn-neutral w-8 h-8 flex items-center justify-center text-black shrink-0"
+            title="Tutup (Esc)"
+          >
+            <X className="w-4 h-4 stroke-[2.5]" />
+          </button>
         </div>
 
         {/* Bar Kapasitas & Input Pencarian */}
-        <div className="p-3 bg-[#0a0a0a] border-b border-neutral-800 flex flex-col gap-2.5">
-          {/* Progress Bar Kapasitas Server */}
+        <div className="p-3 bg-[#FFF8EA] border-b-2 border-[#5C3A21] flex flex-col gap-2 shrink-0">
           <div className="flex flex-col gap-1">
-            <div className="flex items-center justify-between text-[11px] font-mono font-bold">
-              <span className="text-neutral-400">Kapasitas Ruangan:</span>
-              <span className="text-amber-400">
+            <div className="flex items-center justify-between text-[11px] font-bold text-black">
+              <span>Kapasitas Ruangan:</span>
+              <span>
                 {currentCount} / {maxCapacity} Pemain ({capacityPercent}%)
               </span>
             </div>
-            <div className="w-full h-1.5 rounded-xs bg-neutral-900 border border-neutral-800 overflow-hidden">
+            <div className="w-full h-3 rounded-lg bg-[#FFF8EA] border-2 border-[#5C3A21] overflow-hidden p-0.5">
               <div
-                className="h-full transition-all duration-300 rounded-xs bg-amber-500"
+                className="h-full rounded bg-[#A8E6CF] transition-all duration-300"
                 style={{ width: `${Math.max(4, capacityPercent)}%` }}
               />
             </div>
           </div>
 
-          {/* Kotak Pencarian Pemain */}
           <div className="relative w-full">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-neutral-500 pointer-events-none" />
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-black pointer-events-none stroke-[2.5]" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Cari pemain di server ini..."
-              className="w-full pl-8 pr-3 py-1.5 text-xs bg-neutral-900 border border-neutral-800 rounded-md text-white placeholder-neutral-500 focus:outline-none focus:border-amber-400 transition-colors font-mono"
+              className="clay-input w-full pl-8 pr-3 py-1.5 text-xs text-black"
             />
           </div>
         </div>
 
-        {/* Daftar Pemain (Scrollable List) */}
-        <div className="flex-1 overflow-y-auto p-2.5 sm:p-3 space-y-1.5 custom-scrollbar min-h-0 bg-black">
+        {/* Daftar Pemain */}
+        <div className="flex-1 overflow-y-auto p-3 space-y-2 custom-scrollbar min-h-0 bg-[#FFF8EA]">
           {filteredPlayers.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-10 text-neutral-500 gap-1.5">
-              <Users className="w-8 h-8 opacity-40 text-neutral-600" />
-              <span className="text-xs font-mono">Tidak ada pemain dengan nama tersebut.</span>
+            <div className="clay-card flex flex-col items-center justify-center py-8 text-black gap-2">
+              <Users className="w-7 h-7 stroke-[2.5]" />
+              <span className="text-xs font-bold">Tidak ada pemain dengan nama tersebut.</span>
             </div>
           ) : (
             filteredPlayers.map((player) => {
               const isMe = !!player.isMe;
               const isFriend = !isMe && friendsList.includes(player.name);
-              const isAdmin = player.isSuperAdmin || player.role === 'super_admin' || player.name.toUpperCase() === 'RADEN';
+              const isAdmin =
+                player.isSuperAdmin ||
+                player.role === 'super_admin' ||
+                player.name.toUpperCase() === 'RADEN';
 
               return (
                 <div
                   key={player.id || player.name}
                   onClick={() => handleRowClick(player)}
-                  className={`flex items-center justify-between p-2 rounded-md border transition-colors cursor-pointer group ${
-                    isMe
-                      ? 'bg-neutral-900/90 border-amber-500/40 hover:bg-neutral-900'
-                      : 'bg-[#0e0e0e] border-neutral-800 hover:bg-neutral-900 hover:border-neutral-700'
+                  className={`flex items-center justify-between p-2.5 gap-2 cursor-pointer text-black ${
+                    isMe ? 'clay-card-secondary' : 'clay-btn-neutral'
                   }`}
                   title={isMe ? 'Profil Anda' : `Klik untuk melihat profil ${player.name}`}
                 >
                   {/* Sisi Kiri: Avatar & Info Nama */}
                   <div className="flex items-center gap-2.5 min-w-0">
-                    {/* Avatar Preview Mini */}
-                    <div className="relative w-9 h-9 rounded-md bg-black border border-neutral-800 overflow-hidden shrink-0 flex items-center justify-center p-0.5">
-                      <AvatarPreview avatar={player.avatar} size={32} />
+                    <div className="relative shrink-0">
+                      <AvatarPreview avatar={player.avatar} size={36} />
                       {isAdmin && (
                         <div
-                          className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-xs bg-amber-500 text-black flex items-center justify-center shadow-xs"
+                          className="absolute -top-1 -right-1 w-4 h-4 rounded bg-[#FFAE6D] border border-[#5C3A21] text-black flex items-center justify-center"
                           title="Admin / Kreator"
                         >
                           <Crown className="w-2.5 h-2.5 stroke-[2.5]" />
@@ -254,59 +262,57 @@ export const ServerUsersModal: React.FC<ServerUsersModalProps> = ({
                       )}
                     </div>
 
-                    {/* Nama & Level */}
                     <div className="flex flex-col min-w-0 text-left">
-                      <div className="flex items-center gap-1.5">
-                        <span className={`text-xs font-bold truncate ${isMe ? 'text-amber-400 font-bold' : 'text-neutral-200 group-hover:text-white'}`}>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="text-xs font-bold text-black truncate">
                           {player.name}
                         </span>
                         {isMe && (
-                          <span className="text-[9px] font-bold font-mono px-1.5 py-0.5 rounded bg-amber-500 text-black uppercase leading-tight shrink-0">
+                          <span className="clay-badge-primary text-[9px] font-bold px-1.5 py-0.5 text-black uppercase shrink-0">
                             Kamu
                           </span>
                         )}
                         {isAdmin && (
-                          <span className="text-[8.5px] font-bold font-mono px-1.5 py-0.5 rounded bg-neutral-900 text-amber-400 border border-amber-500/30 uppercase leading-tight shrink-0 flex items-center gap-0.5">
-                            <Sparkles className="w-2 h-2" />
+                          <span className="clay-badge-cocoa text-[9px] font-bold px-1.5 py-0.5 text-white uppercase shrink-0 flex items-center gap-0.5">
+                            <Sparkles className="w-2.5 h-2.5" />
                             Admin
                           </span>
                         )}
                       </div>
 
-                      <div className="flex items-center gap-2 text-[10px] font-mono text-neutral-400 mt-0.5">
+                      <div className="flex items-center gap-1.5 text-[10px] font-bold text-black mt-0.5">
+                        <span>Lv. {player.level || 1}</span>
+                        <span>•</span>
                         <span>
-                          Lv. <span className="text-amber-400 font-bold">{player.level || 1}</span>
+                          {player.avatar?.gender === 'female' ? 'Perempuan' : 'Laki-Laki'}
                         </span>
-                        <span className="text-neutral-600">•</span>
-                        <span className="capitalize">{player.avatar?.gender === 'female' ? 'Perempuan' : 'Laki-Laki'}</span>
                       </div>
                     </div>
                   </div>
 
-                  {/* Sisi Kanan: Status Teman Roblox Concept */}
-                  <div className="flex items-center gap-2 shrink-0 ml-2">
+                  {/* Sisi Kanan: Status Teman */}
+                  <div className="flex items-center gap-1.5 shrink-0">
                     {isMe ? (
-                      <div className="text-[10px] font-mono text-neutral-500 px-2 py-0.5 rounded bg-neutral-900 border border-neutral-800">
-                        Pemain Lokal
-                      </div>
+                      <span className="clay-badge-neutral text-[10px] font-bold px-2 py-1 text-black">
+                        Lokal
+                      </span>
                     ) : isFriend ? (
-                      /* Ikon Teman Roblox Concept: Ditandai jelas di sebelah kanan */
                       <div
-                        className="flex items-center gap-1 px-2.5 py-1 rounded-md bg-neutral-900 border border-neutral-700 text-neutral-200 text-xs font-bold shadow-xs"
+                        className="clay-badge-secondary flex items-center gap-1 px-2.5 py-1 text-black"
                         title="Sudah Menjadi Teman"
                       >
-                        <UserCheck className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                        <span className="text-[10px] font-mono tracking-wide uppercase font-bold text-neutral-300">Teman</span>
+                        <UserCheck className="w-3.5 h-3.5 stroke-[2.5] shrink-0" />
+                        <span className="text-[10px] font-bold uppercase">Teman</span>
                       </div>
                     ) : (
-                      /* Tombol Tambah Teman */
                       <button
+                        type="button"
                         onClick={(e) => handleAddFriendClick(e, player)}
-                        className="flex items-center gap-1 px-2.5 py-1 rounded-md bg-neutral-900 hover:bg-neutral-800 text-neutral-300 hover:text-white border border-neutral-700 text-xs font-bold transition-colors cursor-pointer shadow-xs active:scale-95"
+                        className="clay-btn-primary flex items-center gap-1 px-2.5 py-1 text-black"
                         title="Kirim Permintaan Pertemanan"
                       >
-                        <UserPlus className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                        <span className="text-[10px] font-mono tracking-wide uppercase">Tambah</span>
+                        <UserPlus className="w-3.5 h-3.5 stroke-[2.5] shrink-0" />
+                        <span className="text-[10px] font-bold uppercase">Tambah</span>
                       </button>
                     )}
                   </div>
@@ -317,14 +323,12 @@ export const ServerUsersModal: React.FC<ServerUsersModalProps> = ({
         </div>
 
         {/* Footer Info */}
-        <div className="flex items-center justify-between px-4 py-2 bg-[#0a0a0a] border-t border-neutral-800 text-[10px] text-neutral-400 font-mono">
+        <div className="flex items-center justify-between gap-2 px-4 py-2 bg-[#FFF8EA] border-t-2 border-[#5C3A21] text-[10px] font-bold text-black shrink-0">
           <div className="flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-            <span>Server Terhubung • Ping: 18ms</span>
+            <span className="w-2 h-2 rounded-full bg-[#A8E6CF] border border-[#5C3A21]" />
+            <span>Server Terhubung</span>
           </div>
-          <span className="text-neutral-500">
-            Klik pemain untuk info detail
-          </span>
+          <span>Klik pemain untuk lihat profil</span>
         </div>
       </div>
     </div>

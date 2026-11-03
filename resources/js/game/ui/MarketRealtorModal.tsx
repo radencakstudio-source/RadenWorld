@@ -2,13 +2,10 @@
  * ============================================================================
  * FILE: resources/js/game/ui/MarketRealtorModal.tsx
  * ============================================================================
- * FUNGSI UTAMA:
- * Modal Kantor Makelar Pasar & Agrikultur Raden:
- * 1. Pilihan Mode Utama:
- *    - [BELI]: Sub-kategori Alat & Perkakas, Beli Biji & Bibit Tanaman.
- *    - [JUAL]: Tampilan Tas/Backpack lengkap dengan pilihan item, jumlah jual,
- *              dan estimasi koin hasil penjualan.
- * 2. Transaksi real-time dengan InventoryManager & LocalStorage pemain.
+ * Modal Kantor Makelar Pasar & Agrikultur Raden (Cozycore Clay-Pixel):
+ * 1. [BELI]: Sub-kategori Alat & Perkakas, Beli Biji & Bibit Tanaman Nusantara.
+ * 2. [JUAL]: Tampilan Tas/Backpack lengkap dengan pilihan item, jumlah jual,
+ *            dan tombol jual cepat hasil panen / ikan.
  * ============================================================================
  */
 
@@ -25,10 +22,7 @@ import {
   DollarSign,
   CheckCircle2,
   Package,
-  Layers,
-  ArrowRight,
   TrendingUp,
-  AlertCircle,
   Plus,
   Minus,
 } from 'lucide-react';
@@ -78,21 +72,18 @@ export const MarketRealtorModal: React.FC<MarketRealtorModalProps> = ({
       const u = JSON.parse(localStorage.getItem('raden_player_user') || '{}');
       return Boolean(
         u.is_super_admin ||
-        u.role === 'super_admin' ||
-        u.role === 'admin' ||
-        u.email === 'radencakstudio@gmail.com' ||
-        u.name?.toUpperCase() === 'RADEN'
+          u.role === 'super_admin' ||
+          u.role === 'admin' ||
+          u.email === 'radencakstudio@gmail.com' ||
+          u.name?.toUpperCase() === 'RADEN'
       );
     } catch (e) {
       return false;
     }
   }, [propIsAdmin]);
 
-  // Mode Utama: 'buy' atau 'sell'
   const [mainMode, setMainMode] = useState<'buy' | 'sell'>('buy');
-  // Sub-tab jika Mode Beli: 'tools' atau 'seeds'
   const [buySubTab, setBuySubTab] = useState<'tools' | 'seeds'>('tools');
-  // Filter kategori jika Mode Jual: 'all' | 'crops' | 'fish' | 'other'
   const [sellFilter, setSellFilter] = useState<'all' | 'crops' | 'fish' | 'other'>('all');
 
   const [backpackItems, setBackpackItems] = useState<(IInventoryItem | null)[]>(inv.getAllItems());
@@ -119,7 +110,6 @@ export const MarketRealtorModal: React.FC<MarketRealtorModalProps> = ({
     }
   }, [isOpen, inv]);
 
-  // Katalog Alat & Perkakas Pertanian / Memancing
   const toolsCatalog: IToolMarketItem[] = [
     {
       id: 'tool_hoe_steel',
@@ -127,7 +117,8 @@ export const MarketRealtorModal: React.FC<MarketRealtorModalProps> = ({
       category: 'tool',
       icon: '⛏️',
       price: 350,
-      description: 'Cangkul baja kuat untuk menggemburkan tanah persawahan dan membuka petak tanam baru.',
+      description:
+        'Cangkul baja kuat untuk menggemburkan tanah persawahan dan membuka petak tanam baru.',
     },
     {
       id: 'tool_watering_can',
@@ -135,7 +126,8 @@ export const MarketRealtorModal: React.FC<MarketRealtorModalProps> = ({
       category: 'tool',
       icon: '💧',
       price: 250,
-      description: 'Gembor air berkapasitas 10 Liter untuk menyiram benih tanaman sawah dan sayuran.',
+      description:
+        'Gembor air berkapasitas 10 Liter untuk menyiram benih tanaman sawah dan sayuran.',
     },
     {
       id: 'tool_fishing_rod_carbon',
@@ -143,7 +135,8 @@ export const MarketRealtorModal: React.FC<MarketRealtorModalProps> = ({
       category: 'tool',
       icon: '🎣',
       price: 600,
-      description: 'Joran serat karbon elastis ultra-ringan dengan reel putar halus untuk memancing di dermaga.',
+      description:
+        'Joran serat karbon elastis ultra-ringan dengan reel putar halus untuk memancing di dermaga.',
     },
     {
       id: 'tool_axe_wood',
@@ -151,20 +144,20 @@ export const MarketRealtorModal: React.FC<MarketRealtorModalProps> = ({
       category: 'tool',
       icon: '🪓',
       price: 400,
-      description: 'Kapak baja tajam dengan gagang kayu jati solid untuk memotong kayu bakar dan ranting.',
+      description:
+        'Kapak baja tajam dengan gagang kayu jati solid untuk memotong kayu bakar dan ranting.',
     },
   ];
 
-  // Katalog Biji & Bibit Tanaman yang Cocok Ditanam di Indonesia (Iklim Tropis Nusantara)
   const seedsCatalog: ISeedMarketItem[] = [
-    // --- 1. Pangan Pokok & Palawija Tropis ---
     {
       id: 'seed_padi_pandanwangi',
       name: 'Bibit Padi Pandanwangi Cianjur',
       icon: '🌾',
       price: 80,
       quantity: 10,
-      description: 'Varietas padi aromatik unggulan Jawa Barat. Menghasilkan beras harum pandan dan pulen berkualitas tinggi.',
+      description:
+        'Varietas padi aromatik unggulan Jawa Barat. Menghasilkan beras harum pandan dan pulen.',
     },
     {
       id: 'seed_jagung_manis_madura',
@@ -172,7 +165,8 @@ export const MarketRealtorModal: React.FC<MarketRealtorModalProps> = ({
       icon: '🌽',
       price: 95,
       quantity: 10,
-      description: 'Bibit jagung kuning manis berkulit tipis kegemaran petani Madura & Jawa Timur. Cepat panen bertongkol padat.',
+      description:
+        'Bibit jagung kuning manis berkulit tipis kegemaran petani Madura & Jawa Timur.',
     },
     {
       id: 'seed_singkong_mukibat',
@@ -180,7 +174,8 @@ export const MarketRealtorModal: React.FC<MarketRealtorModalProps> = ({
       icon: '🥔',
       price: 70,
       quantity: 8,
-      description: 'Ubi kayu unggulan nusantara berumbi tebal dan empuk. Tumbuh subur di segala jenis tanah tropis Indonesia.',
+      description:
+        'Ubi kayu unggulan nusantara berumbi tebal dan empuk. Tumbuh subur di tanah tropis.',
     },
     {
       id: 'seed_ubi_cilembu',
@@ -188,7 +183,7 @@ export const MarketRealtorModal: React.FC<MarketRealtorModalProps> = ({
       icon: '🍠',
       price: 85,
       quantity: 8,
-      description: 'Ubi jalar manis legit berkaramel khas lereng Sumedang. Primadona olahan panggang nusantara.',
+      description: 'Ubi jalar manis legit berkaramel khas lereng Sumedang.',
     },
     {
       id: 'seed_kedelai_malika',
@@ -196,7 +191,7 @@ export const MarketRealtorModal: React.FC<MarketRealtorModalProps> = ({
       icon: '🌱',
       price: 75,
       quantity: 10,
-      description: 'Kedelai lokal unggul nusantara bahan baku tempe gurih dan kecap manis tradisional.',
+      description: 'Kedelai lokal unggul bahan baku tempe gurih dan kecap manis tradisional.',
     },
     {
       id: 'seed_kacang_tanah_tuban',
@@ -206,15 +201,13 @@ export const MarketRealtorModal: React.FC<MarketRealtorModalProps> = ({
       quantity: 10,
       description: 'Kacang tanah garing berisi padat favorit camilan sangrai pesisir Tuban.',
     },
-
-    // --- 2. Sayuran Tropis Pekarangan Nusantara ---
     {
       id: 'seed_cabai_rawit_domba',
       name: 'Benih Cabai Rawit Merah Domba',
       icon: '🌶️',
       price: 110,
       quantity: 10,
-      description: 'Cabai rawit oranye-merah pedas menyengat primadona aneka sambal ulek nusantara.',
+      description: 'Cabai rawit oranye-merah pedas primadona aneka sambal ulek nusantara.',
     },
     {
       id: 'seed_cabai_keriting_medan',
@@ -222,7 +215,7 @@ export const MarketRealtorModal: React.FC<MarketRealtorModalProps> = ({
       icon: '🌶️',
       price: 115,
       quantity: 10,
-      description: 'Cabai merah bergelombang renyah andalan bumbu balado, rendang, dan masakan Padang.',
+      description: 'Cabai merah bergelombang renyah andalan bumbu balado dan rendang.',
     },
     {
       id: 'seed_kangkung_lombok',
@@ -230,7 +223,7 @@ export const MarketRealtorModal: React.FC<MarketRealtorModalProps> = ({
       icon: '🥬',
       price: 50,
       quantity: 15,
-      description: 'Sayuran daun renyah berbatang lunak andalan plecing kangkung khas NTB. Panen sangat cepat!',
+      description: 'Sayuran daun renyah andalan plecing kangkung khas NTB. Panen cepat!',
     },
     {
       id: 'seed_bayam_raja',
@@ -246,7 +239,7 @@ export const MarketRealtorModal: React.FC<MarketRealtorModalProps> = ({
       icon: '🍆',
       price: 80,
       quantity: 10,
-      description: 'Terong berkulit ungu mengkilap dengan daging empuk manis untuk sambal terong balado.',
+      description: 'Terong berkulit ungu mengkilap dengan daging empuk manis.',
     },
     {
       id: 'seed_kacang_panjang',
@@ -254,7 +247,7 @@ export const MarketRealtorModal: React.FC<MarketRealtorModalProps> = ({
       icon: '🌿',
       price: 65,
       quantity: 10,
-      description: 'Tanaman rambat tropis berpolong panjang renyah untuk lalapan, pecel, dan tumisan santan.',
+      description: 'Tanaman rambat tropis berpolong panjang renyah untuk lalapan dan pecel.',
     },
     {
       id: 'seed_tomat_lumajang',
@@ -262,17 +255,15 @@ export const MarketRealtorModal: React.FC<MarketRealtorModalProps> = ({
       icon: '🍅',
       price: 90,
       quantity: 10,
-      description: 'Tomat segar berair kaya vitamin C untuk pelengkap sambal terasi dan hidangan segar.',
+      description: 'Tomat segar berair kaya vitamin C untuk pelengkap sambal terasi.',
     },
-
-    // --- 3. Bumbu Rempah & Rimpang Nusantara ---
     {
       id: 'seed_bawang_merah_brebes',
       name: 'Benih Bawang Merah Bima Brebes',
       icon: '🧅',
       price: 125,
       quantity: 10,
-      description: 'Umbi lapis wangi khas Brebes Jawa Tengah. Bumbu utama nomor satu segala masakan nusantara.',
+      description: 'Umbi lapis wangi khas Brebes Jawa Tengah bumbu utama masakan nusantara.',
     },
     {
       id: 'seed_jahe_merah_super',
@@ -280,7 +271,7 @@ export const MarketRealtorModal: React.FC<MarketRealtorModalProps> = ({
       icon: '🫚',
       price: 135,
       quantity: 6,
-      description: 'Rempah rimpang pedas berkhasiat hangat untuk wedang jahe, ronde, dan jamu tradisional nusantara.',
+      description: 'Rempah rimpang pedas berkhasiat hangat untuk wedang jahe dan jamu.',
     },
     {
       id: 'seed_kunyit_asam',
@@ -288,17 +279,15 @@ export const MarketRealtorModal: React.FC<MarketRealtorModalProps> = ({
       icon: '🫚',
       price: 115,
       quantity: 6,
-      description: 'Pewarna alami kuning emas dan rempah jamu kunyit asam berkhasiat tinggi menjaga daya tahan tubuh.',
+      description: 'Pewarna alami kuning emas dan rempah jamu kunyit asam berkhasiat.',
     },
-
-    // --- 4. Buah Tropis & Komoditas Perkebunan Nusantara ---
     {
       id: 'seed_semangka_inul',
       name: 'Biji Semangka Merah Inul',
       icon: '🍉',
       price: 140,
       quantity: 6,
-      description: 'Buah semangka lonjong berkulit hijau gelap berair manis segar penyejuk dahaga di terik khatulistiwa.',
+      description: 'Buah semangka lonjong berair manis segar penyejuk dahaga khatulistiwa.',
     },
     {
       id: 'seed_melon_golden',
@@ -306,7 +295,7 @@ export const MarketRealtorModal: React.FC<MarketRealtorModalProps> = ({
       icon: '🍈',
       price: 150,
       quantity: 6,
-      description: 'Melon berkulit kuning cerah berdaging manis wangi khas agrowisata kepulauan nusantara.',
+      description: 'Melon berkulit kuning cerah berdaging manis wangi khas kepulauan nusantara.',
     },
     {
       id: 'seed_pisang_raja',
@@ -314,7 +303,7 @@ export const MarketRealtorModal: React.FC<MarketRealtorModalProps> = ({
       icon: '🍌',
       price: 175,
       quantity: 4,
-      description: 'Pisang legendaris keraton beraroma harum manis untuk jajanan pasar dan hidangan kehormatan.',
+      description: 'Pisang legendaris keraton beraroma harum manis untuk jajanan pasar.',
     },
     {
       id: 'seed_kopi_gayo',
@@ -322,7 +311,7 @@ export const MarketRealtorModal: React.FC<MarketRealtorModalProps> = ({
       icon: '☕',
       price: 210,
       quantity: 5,
-      description: 'Biji kopi pegunungan dataran tinggi Gayo beraroma rempah harum mendunia kebanggaan Nusantara.',
+      description: 'Biji kopi pegunungan dataran tinggi Gayo beraroma rempah harum mendunia.',
     },
     {
       id: 'seed_kelapa_pandan',
@@ -330,47 +319,46 @@ export const MarketRealtorModal: React.FC<MarketRealtorModalProps> = ({
       icon: '🥥',
       price: 190,
       quantity: 3,
-      description: 'Kelapa tropis berair manis dengan aroma pandan alami penyegar pesisir pantai nusantara.',
+      description: 'Kelapa tropis berair manis dengan aroma pandan alami pesisir pantai.',
     },
   ];
 
   if (!isOpen) return null;
 
-  // Daftar item di backpack beserta slotnya
   const filledBackpackItems = backpackItems
     .map((item, idx) => ({ item, slotIndex: idx }))
     .filter((entry): entry is { item: IInventoryItem; slotIndex: number } => entry.item !== null);
 
-  // Filter kategori di tas
   const displayedBackpackItems = filledBackpackItems.filter(({ item }) => {
     if (sellFilter === 'crops') {
+      const n = item.name.toLowerCase();
       return (
         item.category === 'material' ||
         item.category === 'consumable' ||
-        item.name.toLowerCase().includes('padi') ||
-        item.name.toLowerCase().includes('jagung') ||
-        item.name.toLowerCase().includes('tomat') ||
-        item.name.toLowerCase().includes('apel') ||
-        item.name.toLowerCase().includes('semangka') ||
-        item.name.toLowerCase().includes('wortel') ||
-        item.name.toLowerCase().includes('cabai') ||
-        item.name.toLowerCase().includes('kangkung') ||
-        item.name.toLowerCase().includes('bayam') ||
-        item.name.toLowerCase().includes('singkong') ||
-        item.name.toLowerCase().includes('ubi') ||
-        item.name.toLowerCase().includes('terong') ||
-        item.name.toLowerCase().includes('kacang') ||
-        item.name.toLowerCase().includes('bawang') ||
-        item.name.toLowerCase().includes('jahe') ||
-        item.name.toLowerCase().includes('kunyit') ||
-        item.name.toLowerCase().includes('melon') ||
-        item.name.toLowerCase().includes('pisang') ||
-        item.name.toLowerCase().includes('kopi') ||
-        item.name.toLowerCase().includes('kelapa') ||
-        item.name.toLowerCase().includes('kedelai') ||
-        item.name.toLowerCase().includes('benih') ||
-        item.name.toLowerCase().includes('bibit') ||
-        item.name.toLowerCase().includes('biji')
+        n.includes('padi') ||
+        n.includes('jagung') ||
+        n.includes('tomat') ||
+        n.includes('apel') ||
+        n.includes('semangka') ||
+        n.includes('wortel') ||
+        n.includes('cabai') ||
+        n.includes('kangkung') ||
+        n.includes('bayam') ||
+        n.includes('singkong') ||
+        n.includes('ubi') ||
+        n.includes('terong') ||
+        n.includes('kacang') ||
+        n.includes('bawang') ||
+        n.includes('jahe') ||
+        n.includes('kunyit') ||
+        n.includes('melon') ||
+        n.includes('pisang') ||
+        n.includes('kopi') ||
+        n.includes('kelapa') ||
+        n.includes('kedelai') ||
+        n.includes('benih') ||
+        n.includes('bibit') ||
+        n.includes('biji')
       );
     }
     if (sellFilter === 'fish') {
@@ -387,7 +375,6 @@ export const MarketRealtorModal: React.FC<MarketRealtorModalProps> = ({
       ? { item: backpackItems[selectedSlotIndex]!, slotIndex: selectedSlotIndex }
       : null;
 
-  // Beli Alat
   const handleBuyTool = (tool: IToolMarketItem) => {
     if (!isUserAdmin && playerGold < tool.price) {
       sound.playClick();
@@ -411,7 +398,7 @@ export const MarketRealtorModal: React.FC<MarketRealtorModalProps> = ({
     const added = inv.addItem(newItem);
     if (!added) {
       sound.playClick();
-      alert('⚠️ Tas Punggungmu penuh! Kosongkan slot terlebih dahulu.');
+      alert('Tas Punggungmu penuh! Kosongkan slot terlebih dahulu.');
       return;
     }
 
@@ -422,11 +409,10 @@ export const MarketRealtorModal: React.FC<MarketRealtorModalProps> = ({
       localStorage.setItem('raden_player_gold', newGold.toString());
     } catch (e) {}
 
-    setStatusMessage(`✅ Berhasil membeli ${tool.name}!`);
+    setStatusMessage(`Berhasil membeli ${tool.name}!`);
     EventBus.emit('player-gold-changed', { gold: newGold });
   };
 
-  // Beli Biji Tanaman
   const handleBuySeed = (seed: ISeedMarketItem) => {
     if (!isUserAdmin && playerGold < seed.price) {
       sound.playClick();
@@ -435,21 +421,25 @@ export const MarketRealtorModal: React.FC<MarketRealtorModalProps> = ({
     }
 
     const newItem: IInventoryItem = {
-      id: `${seed.id}_${Date.now()}`,
+      id: seed.id,
       name: seed.name,
-      category: 'material',
+      category: 'seed',
       rarity: 'Common',
       icon: seed.icon,
       quantity: seed.quantity,
       maxStack: 99,
       description: seed.description,
       price: Math.round(seed.price / seed.quantity),
+      usable: true,
+      extraData: {
+        cropType: seed.id.replace('seed_', ''),
+      },
     };
 
     const added = inv.addItem(newItem);
     if (!added) {
       sound.playClick();
-      alert('⚠️ Tas Punggungmu penuh! Kosongkan slot terlebih dahulu.');
+      alert('Tas Punggungmu penuh! Kosongkan slot terlebih dahulu.');
       return;
     }
 
@@ -460,11 +450,10 @@ export const MarketRealtorModal: React.FC<MarketRealtorModalProps> = ({
       localStorage.setItem('raden_player_gold', newGold.toString());
     } catch (e) {}
 
-    setStatusMessage(`🌱 Berhasil membeli ${seed.name} (${seed.quantity} benih)!`);
+    setStatusMessage(`Berhasil membeli ${seed.name} (${seed.quantity} benih)!`);
     EventBus.emit('player-gold-changed', { gold: newGold });
   };
 
-  // Pilih item dari tas untuk dijual
   const handleSelectItemToSell = (slotIndex: number) => {
     sound.playClick();
     setSelectedSlotIndex(slotIndex);
@@ -474,7 +463,6 @@ export const MarketRealtorModal: React.FC<MarketRealtorModalProps> = ({
     }
   };
 
-  // Jual item terpilih berdasarkan kuantitas
   const handleConfirmSell = () => {
     if (!selectedItemEntry) return;
 
@@ -486,11 +474,9 @@ export const MarketRealtorModal: React.FC<MarketRealtorModalProps> = ({
     const totalPayout = unitPrice * qtyToSell;
 
     if (qtyToSell >= item.quantity) {
-      // Jual habis slot ini
       inv.sellItem(slotIndex);
       setSelectedSlotIndex(null);
     } else {
-      // Kurangi sebagian
       item.quantity -= qtyToSell;
       const all = inv.getAllItems();
       all[slotIndex] = item;
@@ -501,18 +487,19 @@ export const MarketRealtorModal: React.FC<MarketRealtorModalProps> = ({
     }
 
     sound.playCoin();
-    const newGold = playerGold + totalPayout;
+    const newGold = isUserAdmin ? 99999999999 : playerGold + totalPayout;
     onUpdateGold(newGold);
     try {
       localStorage.setItem('raden_player_gold', newGold.toString());
     } catch (e) {}
     EventBus.emit('player-gold-changed', { gold: newGold });
 
-    setStatusMessage(`💰 Berhasil menjual ${qtyToSell}x ${item.name} seharga +${totalPayout.toLocaleString('id-ID')} Koin!`);
+    setStatusMessage(
+      `Berhasil menjual ${qtyToSell}x ${item.name} (+${totalPayout.toLocaleString('id-ID')} Koin)!`
+    );
     setBackpackItems(inv.getAllItems());
   };
 
-  // Jual Semua Ikan
   const handleSellAllFish = () => {
     const fishList = filledBackpackItems.filter(
       (e) => e.item.category === 'fish' || e.item.name.toLowerCase().includes('ikan')
@@ -527,26 +514,19 @@ export const MarketRealtorModal: React.FC<MarketRealtorModalProps> = ({
 
     if (totalEarned > 0) {
       sound.playCoin();
-      const newGold = playerGold + totalEarned;
+      const newGold = isUserAdmin ? 99999999999 : playerGold + totalEarned;
       onUpdateGold(newGold);
-      setStatusMessage(`🎉 Berhasil menjual seluruh hasil tangkapan ikan seharga +${totalEarned.toLocaleString('id-ID')} Koin!`);
+      setStatusMessage(
+        `Berhasil menjual seluruh tangkapan ikan (+${totalEarned.toLocaleString('id-ID')} Koin)!`
+      );
       setSelectedSlotIndex(null);
       setBackpackItems(inv.getAllItems());
     }
   };
 
-  // Jual Semua Hasil Panen
   const handleSellAllCrops = () => {
     const cropList = filledBackpackItems.filter(
-      (e) =>
-        e.item.category === 'material' ||
-        e.item.category === 'consumable' ||
-        e.item.name.toLowerCase().includes('padi') ||
-        e.item.name.toLowerCase().includes('jagung') ||
-        e.item.name.toLowerCase().includes('tomat') ||
-        e.item.name.toLowerCase().includes('apel') ||
-        e.item.name.toLowerCase().includes('semangka') ||
-        e.item.name.toLowerCase().includes('wortel')
+      (e) => e.item.category === 'crop' || e.item.id.startsWith('crop_')
     );
     if (cropList.length === 0) return;
 
@@ -558,456 +538,439 @@ export const MarketRealtorModal: React.FC<MarketRealtorModalProps> = ({
 
     if (totalEarned > 0) {
       sound.playCoin();
-      const newGold = playerGold + totalEarned;
+      const newGold = isUserAdmin ? 99999999999 : playerGold + totalEarned;
       onUpdateGold(newGold);
-      setStatusMessage(`🌾 Berhasil menjual seluruh komoditas hasil panen seharga +${totalEarned.toLocaleString('id-ID')} Koin!`);
+      setStatusMessage(
+        `Berhasil menjual seluruh hasil panen (+${totalEarned.toLocaleString('id-ID')} Koin)!`
+      );
       setSelectedSlotIndex(null);
       setBackpackItems(inv.getAllItems());
     }
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/85 p-2 sm:p-4 font-sans select-none">
-      <div className="relative w-full max-w-4xl bg-neutral-950 border border-neutral-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[94dvh]">
-        
-        {/* Header Modal Makelar */}
-        <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 bg-gradient-to-r from-emerald-950/60 via-neutral-900 to-black border-b border-neutral-800 shrink-0">
-          <div className="flex items-center gap-2.5 sm:gap-3">
-            <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0">
-              <Store className="w-5 h-5 sm:w-6 sm:h-6" />
+    <div
+      className="ui-modal-backdrop z-[100] select-none"
+      onKeyDown={(e) => e.stopPropagation()}
+    >
+      <div className="clay-modal-shell max-w-4xl text-black">
+        {/* SIDEBAR SEBELAH KIRI */}
+        <aside className="clay-sidebar">
+          <div className="clay-sidebar-header">
+            <div className="clay-sidebar-brand-icon">
+              <Store className="w-4 h-4 stroke-[2.5]" />
             </div>
-            <div>
-              <h2 className="text-base sm:text-lg md:text-xl font-black tracking-wide text-white font-mono flex items-center gap-2">
-                KANTOR MAKELAR RADEN
-                <span className="text-[9px] sm:text-[10px] bg-emerald-500 text-black font-black px-1.5 sm:px-2 py-0.5 rounded">PASAR RESMI</span>
-              </h2>
-              <p className="text-[11px] sm:text-xs text-neutral-400">Pusat Jual Beli Alat, Biji Tanaman & Hasil Tas Petualang</p>
+            <div className="clay-sidebar-brand-text">
+              <span className="clay-sidebar-title">PASAR KOTA</span>
+              <span className="clay-sidebar-subtitle">RADEN AGRO</span>
             </div>
           </div>
-          <button
-            onClick={() => {
-              sound.playClick();
-              onClose();
-            }}
-            className="p-1.5 sm:p-2 rounded-xl bg-neutral-800 text-neutral-400 hover:text-white hover:bg-neutral-700 transition-all cursor-pointer"
-          >
-            <X className="w-4 h-4 sm:w-5 sm:h-5" />
-          </button>
-        </div>
 
-        {/* Bar Saldo & Tab Mode Utama [BELI] / [JUAL] */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between px-4 sm:px-6 py-2.5 sm:py-3 bg-neutral-900 border-b border-neutral-800 gap-2 sm:gap-3 shrink-0">
-          {/* Dua Tombol Mode Utama yang Menonjol */}
-          <div className="flex items-center bg-neutral-950 p-1 rounded-xl border border-neutral-800">
+          <div className="clay-sidebar-nav">
             <button
+              type="button"
               onClick={() => {
                 sound.playClick();
                 setMainMode('buy');
-                setStatusMessage(null);
-              }}
-              className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-5 py-1.5 sm:py-2 rounded-lg text-xs font-black font-mono tracking-wider transition-all cursor-pointer ${
-                mainMode === 'buy'
-                  ? 'bg-emerald-500 text-black font-bold'
-                  : 'text-neutral-400 hover:text-white'
-              }`}
-            >
-              <ShoppingCart className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              🛒 MENU BELI
-            </button>
-            <button
-              onClick={() => {
-                sound.playClick();
-                setMainMode('sell');
-                setStatusMessage(null);
-              }}
-              className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-5 py-1.5 sm:py-2 rounded-lg text-xs font-black font-mono tracking-wider transition-all cursor-pointer ${
-                mainMode === 'sell'
-                  ? 'bg-amber-500 text-black font-bold'
-                  : 'text-neutral-400 hover:text-white'
-              }`}
-            >
-              <DollarSign className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              💰 JUAL DARI TAS ({filledBackpackItems.length})
-            </button>
-          </div>
-
-          {/* Saldo Koin Pemain */}
-          <div className="flex items-center justify-end gap-2 font-mono">
-            <span className="text-xs text-neutral-400">Koin Dompet:</span>
-            <div className="flex items-center gap-2 px-3.5 py-1.5 bg-amber-950/80 border border-amber-500/50 rounded-lg text-amber-300 font-bold text-sm shadow">
-              <Coins className="w-4 h-4 text-amber-400" />
-              <span>{isUserAdmin ? '99999999999' : playerGold.toLocaleString('id-ID')} KOIN</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Sub-Header Sesuai Mode */}
-        {mainMode === 'buy' ? (
-          /* Sub-tabs untuk MODE BELI */
-          <div className="flex border-b border-neutral-800 bg-neutral-900/60 px-6 pt-2 gap-3">
-            <button
-              onClick={() => {
-                sound.playClick();
                 setBuySubTab('tools');
                 setStatusMessage(null);
               }}
-              className={`flex items-center gap-2 px-4 py-2 text-xs font-bold font-mono tracking-wider transition-colors border-b-2 ${
-                buySubTab === 'tools'
-                  ? 'border-emerald-400 text-emerald-400 bg-emerald-950/40'
-                  : 'border-transparent text-neutral-400 hover:text-neutral-200'
+              className={`clay-sidebar-btn ${
+                mainMode === 'buy' && buySubTab === 'tools'
+                  ? 'clay-sidebar-btn-active'
+                  : 'clay-sidebar-btn-inactive'
               }`}
             >
-              <Wrench className="w-4 h-4" />
-              ⛏️ ALAT & PERKAKAS ({toolsCatalog.length})
+              <Wrench className="w-4 h-4 stroke-[2.5] shrink-0" />
+              <span className="truncate">Beli Alat ({toolsCatalog.length})</span>
             </button>
+
             <button
+              type="button"
               onClick={() => {
                 sound.playClick();
+                setMainMode('buy');
                 setBuySubTab('seeds');
                 setStatusMessage(null);
               }}
-              className={`flex items-center gap-2 px-4 py-2 text-xs font-bold font-mono tracking-wider transition-colors border-b-2 ${
-                buySubTab === 'seeds'
-                  ? 'border-emerald-400 text-emerald-400 bg-emerald-950/40'
-                  : 'border-transparent text-neutral-400 hover:text-neutral-200'
+              className={`clay-sidebar-btn ${
+                mainMode === 'buy' && buySubTab === 'seeds'
+                  ? 'clay-sidebar-btn-active'
+                  : 'clay-sidebar-btn-inactive'
               }`}
             >
-              <Sprout className="w-4 h-4" />
-              🌱 BELI BIJI & BIBIT ({seedsCatalog.length})
+              <Sprout className="w-4 h-4 stroke-[2.5] shrink-0" />
+              <span className="truncate">Beli Bibit ({seedsCatalog.length})</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                sound.playClick();
+                setMainMode('sell');
+                setSellFilter('crops');
+                setStatusMessage(null);
+              }}
+              className={`clay-sidebar-btn ${
+                mainMode === 'sell' && sellFilter === 'crops'
+                  ? 'clay-sidebar-btn-active'
+                  : 'clay-sidebar-btn-inactive'
+              }`}
+            >
+              <Wheat className="w-4 h-4 stroke-[2.5] shrink-0" />
+              <span className="truncate">Jual Panen</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                sound.playClick();
+                setMainMode('sell');
+                setSellFilter('fish');
+                setStatusMessage(null);
+              }}
+              className={`clay-sidebar-btn ${
+                mainMode === 'sell' && sellFilter === 'fish'
+                  ? 'clay-sidebar-btn-active'
+                  : 'clay-sidebar-btn-inactive'
+              }`}
+            >
+              <Fish className="w-4 h-4 stroke-[2.5] shrink-0" />
+              <span className="truncate">Jual Ikan</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                sound.playClick();
+                setMainMode('sell');
+                setSellFilter('all');
+                setStatusMessage(null);
+              }}
+              className={`clay-sidebar-btn ${
+                mainMode === 'sell' && sellFilter === 'all'
+                  ? 'clay-sidebar-btn-active'
+                  : 'clay-sidebar-btn-inactive'
+              }`}
+            >
+              <Package className="w-4 h-4 stroke-[2.5] shrink-0" />
+              <span className="truncate">Isi Tas ({filledBackpackItems.length})</span>
             </button>
           </div>
-        ) : (
-          /* Filter Bar & Tombol Cepat untuk MODE JUAL */
-          <div className="flex flex-wrap items-center justify-between border-b border-neutral-800 bg-neutral-900/60 px-6 py-2.5 gap-2">
-            <div className="flex items-center gap-1.5 overflow-x-auto text-xs font-mono">
-              <span className="text-[11px] text-neutral-400 mr-1 flex items-center gap-1">
-                <Package className="w-3.5 h-3.5" /> Filter Tas:
-              </span>
-              {(['all', 'crops', 'fish', 'other'] as const).map((cat) => (
-                <button
-                  key={cat}
-                  onClick={() => {
-                    sound.playClick();
-                    setSellFilter(cat);
-                  }}
-                  className={`px-3 py-1 rounded-md text-[11px] font-bold transition-all ${
-                    sellFilter === cat
-                      ? 'bg-amber-500 text-black font-black'
-                      : 'bg-neutral-800 text-neutral-300 hover:bg-neutral-700'
-                  }`}
-                >
-                  {cat === 'all' && 'Semua'}
-                  {cat === 'crops' && '🌾 Hasil Panen'}
-                  {cat === 'fish' && '🐟 Ikan'}
-                  {cat === 'other' && '📦 Lainnya'}
-                </button>
-              ))}
-            </div>
 
-            {/* Quick Bulk Action Buttons */}
-            <div className="flex items-center gap-2">
-              <button
-                onClick={handleSellAllCrops}
-                className="px-3 py-1 bg-amber-950/70 border border-amber-600/50 hover:bg-amber-900 text-amber-300 text-[11px] font-bold font-mono rounded-lg transition-all flex items-center gap-1"
-                title="Jual semua hasil panen di tas"
-              >
-                <Wheat className="w-3.5 h-3.5" /> Jual Semua Panen
-              </button>
-              <button
-                onClick={handleSellAllFish}
-                className="px-3 py-1 bg-cyan-950/70 border border-cyan-600/50 hover:bg-cyan-900 text-cyan-300 text-[11px] font-bold font-mono rounded-lg transition-all flex items-center gap-1"
-                title="Jual semua ikan tangkapan di tas"
-              >
-                <Fish className="w-3.5 h-3.5" /> Jual Semua Ikan
-              </button>
+          <div className="clay-sidebar-footer">
+            <div className="clay-badge-secondary flex items-center gap-1.5 px-2 py-1.5 text-black font-bold text-[10px] w-full justify-center">
+              <Coins className="w-3.5 h-3.5 stroke-[2.5] shrink-0" />
+              <span className="truncate">{isUserAdmin ? '99999999999' : playerGold.toLocaleString('id-ID')} G</span>
             </div>
           </div>
-        )}
+        </aside>
 
-        {/* Content Body */}
-        <div className="p-3 sm:p-6 overflow-y-auto custom-scrollbar flex-1 min-h-0">
+        {/* MAIN PANE */}
+        <main className="clay-main-pane">
+          {/* TOPBAR */}
+          <header className="clay-main-topbar">
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <h2 className="text-xs sm:text-sm font-bold text-black uppercase">
+                  {mainMode === 'buy' && buySubTab === 'tools' && 'Toko Perkakas & Alat Pertanian'}
+                  {mainMode === 'buy' && buySubTab === 'seeds' && 'Sentra Bibit & Benih Nusantara'}
+                  {mainMode === 'sell' && sellFilter === 'crops' && 'Penampungan Hasil Panen Kebun'}
+                  {mainMode === 'sell' && sellFilter === 'fish' && 'Lelang Ikan & Bahari Nusantara'}
+                  {mainMode === 'sell' && sellFilter === 'all' && 'Penjualan Isi Tas Petualang'}
+                </h2>
+                <span className="clay-badge-secondary text-[9px] font-bold px-1.5 py-0.5 text-black">
+                  HARGA RESMI
+                </span>
+                {isUserAdmin && (
+                  <span className="clay-badge-cocoa text-[9px] font-bold px-1.5 py-0.5 text-white">
+                    ADMIN
+                  </span>
+                )}
+              </div>
+              <p className="text-[10px] sm:text-[11px] text-black hidden sm:block truncate">
+                Beli bibit & cangkul untuk bertani di petak kebun atau jual komoditasmu ke makelar.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                sound.playClick();
+                onClose();
+              }}
+              className="clay-btn-neutral w-8 h-8 flex items-center justify-center text-black shrink-0"
+              aria-label="Tutup Pasar"
+            >
+              <X className="w-4 h-4 stroke-[2.5]" />
+            </button>
+          </header>
+
+          {/* STATUS NOTIFIKASI */}
           {statusMessage && (
-            <div className="mb-4 p-3 bg-emerald-950/60 border border-emerald-500/60 rounded-xl flex items-center gap-2.5 text-emerald-300 text-xs font-mono shadow">
-              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+            <div className="px-4 py-1.5 bg-[#A8E6CF] border-b-2 border-[#5C3A21] flex items-center gap-2 text-xs font-bold text-black shrink-0">
+              <CheckCircle2 className="w-4 h-4 stroke-[2.5] shrink-0" />
               <span>{statusMessage}</span>
             </div>
           )}
 
-          {/* ============================================================= */}
-          {/* MODE BELI: ALAT ATAU BIJI */}
-          {/* ============================================================= */}
-          {mainMode === 'buy' && (
-            <>
-              {buySubTab === 'tools' && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {toolsCatalog.map((tool) => (
-                    <div
-                      key={tool.id}
-                      className="p-4 bg-neutral-900/90 border border-neutral-800 hover:border-emerald-500/50 rounded-xl flex items-center justify-between gap-4 transition-all hover:bg-neutral-900"
-                    >
-                      <div className="flex items-center gap-3">
-                        <span className="text-3xl p-3 bg-neutral-950 rounded-xl border border-neutral-800 shadow-inner">
-                          {tool.icon}
-                        </span>
-                        <div>
-                          <h3 className="text-xs font-bold font-mono text-white">{tool.name}</h3>
-                          <p className="text-[11px] text-neutral-400 line-clamp-2 mt-0.5">{tool.description}</p>
-                          <span className="text-xs font-black font-mono text-amber-400 mt-1 block">
-                            💰 {tool.price.toLocaleString('id-ID')} Koin
-                          </span>
-                        </div>
-                      </div>
-
-                      <button
-                        onClick={() => handleBuyTool(tool)}
-                        disabled={playerGold < tool.price}
-                        className={`px-4 py-2.5 rounded-xl font-bold font-mono text-xs tracking-wider transition-all flex items-center gap-1.5 whitespace-nowrap shadow ${
-                          playerGold >= tool.price
-                            ? 'bg-emerald-500 hover:bg-emerald-400 text-black hover:scale-105 active:scale-95'
-                            : 'bg-neutral-800 text-neutral-500 cursor-not-allowed'
-                        }`}
-                      >
-                        <ShoppingCart className="w-3.5 h-3.5" />
-                        BELI
-                      </button>
-                    </div>
-                  ))}
+          {/* BODY */}
+          <div className="clay-main-body">
+            {/* PANDUAN RESMI ATURAN MENANAM */}
+            <div className="clay-card-secondary p-3 mb-3 text-black space-y-1.5 border-2 border-[#5C3A21] rounded-lg">
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <span className="font-bold text-xs uppercase flex items-center gap-1.5">
+                  <span>📜</span>
+                  <span>Catatan Resmi: 5 Syarat & Aturan Menanam Kebun Tani</span>
+                </span>
+                <span className="clay-badge-primary text-[9px] font-bold px-2 py-0.5">
+                  DURASI 24 JAM
+                </span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-5 gap-2 text-[10px] font-bold pt-1">
+                <div className="p-1.5 bg-[#FFF8EA] rounded border border-[#5C3A21]">
+                  1. ⛏️ Cangkul<br />
+                  <span className="text-[9px] font-normal">Gemburkan lahan tanah di kebun tani.</span>
                 </div>
-              )}
+                <div className="p-1.5 bg-[#FFF8EA] rounded border border-[#5C3A21]">
+                  2. 💧 Siram Air Sekali<br />
+                  <span className="text-[9px] font-normal">Siram dengan tong air (isi di pantai/laut).</span>
+                </div>
+                <div className="p-1.5 bg-[#FFF8EA] rounded border border-[#5C3A21]">
+                  3. 🌱 Tanam Bibit<br />
+                  <span className="text-[9px] font-normal">Tanam pada petak yang sudah basah.</span>
+                </div>
+                <div className="p-1.5 bg-[#FFF8EA] rounded border border-[#5C3A21]">
+                  4. ⏳ Tunggu 24 Jam<br />
+                  <span className="text-[9px] font-normal">Tumbuh bertahap mekar 24 jam penuh.</span>
+                </div>
+                <div className="p-1.5 bg-[#FFF8EA] rounded border border-[#5C3A21]">
+                  5. 🌾 Panen [F]<br />
+                  <span className="text-[9px] font-normal">Panen hasil bumi & jual jadi koin emas!</span>
+                </div>
+              </div>
+            </div>
 
-              {buySubTab === 'seeds' && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {seedsCatalog.map((seed) => (
-                    <div
-                      key={seed.id}
-                      className="p-4 bg-neutral-900/90 border border-neutral-800 hover:border-emerald-500/50 rounded-xl flex items-center justify-between gap-4 transition-all hover:bg-neutral-900"
-                    >
-                      <div className="flex items-center gap-3">
-                        <span className="text-3xl p-3 bg-neutral-950 rounded-xl border border-neutral-800 shadow-inner">
-                          {seed.icon}
-                        </span>
-                        <div>
-                          <h3 className="text-xs font-bold font-mono text-white flex items-center gap-2">
-                            {seed.name}
-                            <span className="text-[10px] bg-emerald-950 text-emerald-400 border border-emerald-500/40 px-1.5 py-0.2 rounded">
-                              x{seed.quantity} benih
+            {/* MODE BELI */}
+            {mainMode === 'buy' && (
+              <>
+                {buySubTab === 'tools' && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {toolsCatalog.map((tool) => (
+                      <div
+                        key={tool.id}
+                        className="clay-card p-3 flex items-center justify-between gap-3 text-black"
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <span className="text-2xl w-10 h-10 bg-[#A8E6CF] rounded-lg border-2 border-[#5C3A21] flex items-center justify-center shrink-0">
+                            {tool.icon}
+                          </span>
+                          <div className="min-w-0">
+                            <h3 className="text-xs font-bold text-black truncate">{tool.name}</h3>
+                            <p className="text-[10px] text-black line-clamp-2 mt-0.5 leading-snug">
+                              {tool.description}
+                            </p>
+                            <span className="clay-badge-primary text-[10px] font-bold text-black px-2 py-0.5 mt-1 inline-block">
+                              {tool.price.toLocaleString('id-ID')} Koin
                             </span>
-                          </h3>
-                          <p className="text-[11px] text-neutral-400 line-clamp-2 mt-0.5">{seed.description}</p>
-                          <span className="text-xs font-black font-mono text-amber-400 mt-1 block">
-                            💰 {seed.price.toLocaleString('id-ID')} Koin
-                          </span>
-                        </div>
-                      </div>
-
-                      <button
-                        onClick={() => handleBuySeed(seed)}
-                        disabled={playerGold < seed.price}
-                        className={`px-4 py-2.5 rounded-xl font-bold font-mono text-xs tracking-wider transition-all flex items-center gap-1.5 whitespace-nowrap shadow ${
-                          playerGold >= seed.price
-                            ? 'bg-emerald-500 hover:bg-emerald-400 text-black hover:scale-105 active:scale-95'
-                            : 'bg-neutral-800 text-neutral-500 cursor-not-allowed'
-                        }`}
-                      >
-                        <ShoppingCart className="w-3.5 h-3.5" />
-                        BELI
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </>
-          )}
-
-          {/* ============================================================= */}
-          {/* MODE JUAL: TAMPILAN TAS / BACKPACK LENGKAP DENGAN PILIHAN */}
-          {/* ============================================================= */}
-          {mainMode === 'sell' && (
-            <div className="flex flex-col lg:flex-row gap-6">
-              {/* Kolom Kiri: Grid Isi Tas Pemain */}
-              <div className="flex-1">
-                <div className="flex items-center justify-between mb-3 text-xs font-mono text-neutral-400">
-                  <span className="flex items-center gap-1.5">
-                    <Package className="w-4 h-4 text-emerald-400" />
-                    Pilih Item dari Tas yang Ingin Dijual:
-                  </span>
-                  <span>{displayedBackpackItems.length} Item Tersedia</span>
-                </div>
-
-                {displayedBackpackItems.length === 0 ? (
-                  <div className="p-8 bg-neutral-900/50 border border-dashed border-neutral-800 rounded-2xl text-center text-neutral-500 font-mono text-xs">
-                    <Package className="w-10 h-10 mx-auto mb-2 opacity-30" />
-                    Tidak ada item yang sesuai di dalam tasmu.
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 max-h-[380px] overflow-y-auto pr-1">
-                    {displayedBackpackItems.map(({ item, slotIndex }) => {
-                      const isSelected = selectedSlotIndex === slotIndex;
-                      const unitPrice = item.price || 10;
-                      return (
-                        <div
-                          key={`${item.id}_${slotIndex}`}
-                          onClick={() => handleSelectItemToSell(slotIndex)}
-                          className={`relative p-3 rounded-xl border cursor-pointer transition-all flex flex-col items-center text-center ${
-                            isSelected
-                              ? 'bg-amber-950/50 border-amber-400 scale-[1.02]'
-                              : 'bg-neutral-900/80 border-neutral-800 hover:border-neutral-600 hover:bg-neutral-900'
-                          }`}
-                        >
-                          {/* Slot Tag */}
-                          <span className="absolute top-1.5 left-1.5 text-[9px] font-mono text-neutral-500 bg-neutral-950 px-1.5 py-0.5 rounded border border-neutral-800">
-                            #{slotIndex + 1}
-                          </span>
-
-                          {/* Kuantitas Badge */}
-                          <span className="absolute top-1.5 right-1.5 text-[10px] font-mono font-bold text-amber-300 bg-neutral-950 px-1.5 py-0.5 rounded border border-neutral-800">
-                            x{item.quantity}
-                          </span>
-
-                          {/* Icon */}
-                          <span className="text-3xl my-2 drop-shadow">{item.icon}</span>
-
-                          {/* Nama */}
-                          <h4 className="text-xs font-bold text-white font-mono line-clamp-1 w-full">
-                            {item.name}
-                          </h4>
-
-                          {/* Harga Jual Satuan */}
-                          <div className="mt-1 text-[11px] font-bold font-mono text-amber-400 flex items-center gap-1">
-                            <span>+{unitPrice.toLocaleString('id-ID')}</span>
-                            <span className="text-[9px] text-neutral-400">/item</span>
                           </div>
                         </div>
+
+                        <button
+                          type="button"
+                          onClick={() => handleBuyTool(tool)}
+                          disabled={!isUserAdmin && playerGold < tool.price}
+                          className="clay-btn-primary px-3 py-2 text-black font-bold text-xs flex items-center gap-1.5 shrink-0"
+                        >
+                          <ShoppingCart className="w-3.5 h-3.5 stroke-[2.5]" />
+                          <span>BELI</span>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {buySubTab === 'seeds' && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[460px] overflow-y-auto custom-scrollbar pr-1">
+                    {seedsCatalog.map((seed) => (
+                      <div
+                        key={seed.id}
+                        className="clay-card p-3 flex items-center justify-between gap-2.5 text-black"
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <span className="text-2xl w-10 h-10 bg-[#FFAE6D] rounded-lg border-2 border-[#5C3A21] flex items-center justify-center shrink-0">
+                            {seed.icon}
+                          </span>
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <h3 className="text-xs font-bold text-black">{seed.name}</h3>
+                              <span className="clay-badge-secondary text-[9px] font-bold text-black px-1.5 py-0.5">
+                                x{seed.quantity}
+                              </span>
+                            </div>
+                            <p className="text-[10px] text-black line-clamp-2 mt-0.5 leading-snug">
+                              {seed.description}
+                            </p>
+                            <span className="clay-badge-primary text-[10px] font-bold text-black px-2 py-0.5 mt-1 inline-block">
+                              {seed.price.toLocaleString('id-ID')} Koin
+                            </span>
+                          </div>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => handleBuySeed(seed)}
+                          disabled={!isUserAdmin && playerGold < seed.price}
+                          className="clay-btn-primary px-3 py-2 text-black font-bold text-xs flex items-center gap-1.5 shrink-0"
+                        >
+                          <ShoppingCart className="w-3.5 h-3.5 stroke-[2.5]" />
+                          <span>BELI</span>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* MODE JUAL */}
+            {mainMode === 'sell' && (
+              <div className="flex flex-col lg:flex-row gap-3.5">
+                {/* Grid Tas */}
+                <div className="flex-1 flex flex-col gap-2">
+                  <div className="flex items-center justify-between text-xs font-bold text-black">
+                    <span>PILIH ITEM DARI TAS</span>
+                    <div className="flex items-center gap-1.5">
+                      {sellFilter === 'crops' && (
+                        <button
+                          type="button"
+                          onClick={handleSellAllCrops}
+                          className="clay-btn-secondary px-2.5 py-1 text-[10px] font-bold text-black flex items-center gap-1"
+                        >
+                          <Wheat className="w-3 h-3 stroke-[2.5]" />
+                          <span>JUAL SEMUA PANEN</span>
+                        </button>
+                      )}
+                      {sellFilter === 'fish' && (
+                        <button
+                          type="button"
+                          onClick={handleSellAllFish}
+                          className="clay-btn-secondary px-2.5 py-1 text-[10px] font-bold text-black flex items-center gap-1"
+                        >
+                          <Fish className="w-3 h-3 stroke-[2.5]" />
+                          <span>JUAL SEMUA IKAN</span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-4 sm:grid-cols-6 gap-2 max-h-[380px] overflow-y-auto custom-scrollbar pr-1">
+                    {displayedBackpackItems.map(({ item, slotIndex }) => {
+                      const isSelected = selectedSlotIndex === slotIndex;
+                      return (
+                        <button
+                          key={`${item.id}_${slotIndex}`}
+                          type="button"
+                          onClick={() => handleSelectItemToSell(slotIndex)}
+                          className={`p-2 text-center flex flex-col items-center justify-between gap-1 aspect-square rounded-xl border-2 ${
+                            isSelected
+                              ? 'border-[#5C3A21] bg-[#FFAE6D] shadow-inner'
+                              : 'border-[#5C3A21] bg-[#FFF8EA]'
+                          }`}
+                        >
+                          <span className="text-2xl">{item.icon || '📦'}</span>
+                          <span className="text-[10px] font-bold text-black truncate w-full">
+                            {item.name}
+                          </span>
+                          <span className="clay-badge-secondary text-[9px] font-bold text-black px-1">
+                            x{item.quantity}
+                          </span>
+                        </button>
                       );
                     })}
                   </div>
-                )}
-              </div>
+                </div>
 
-              {/* Kolom Kanan: Panel Konfirmasi Penjualan Item Terpilih */}
-              <div className="w-full lg:w-72 bg-neutral-900/90 border border-neutral-800 rounded-2xl p-5 flex flex-col justify-between">
-                <div>
-                  <h3 className="text-xs font-black font-mono tracking-wider text-emerald-400 uppercase flex items-center gap-1.5 mb-3 border-b border-neutral-800 pb-2">
-                    <TrendingUp className="w-4 h-4" /> Detail Transaksi Jual
-                  </h3>
-
+                {/* Panel Detail Jual */}
+                <div className="w-full lg:w-64 clay-card p-3.5 flex flex-col justify-between gap-3 text-black">
                   {selectedItemEntry ? (
-                    <div className="space-y-4 font-mono">
-                      {/* Box Info Item */}
-                      <div className="flex items-center gap-3 p-3 bg-neutral-950 rounded-xl border border-neutral-800">
-                        <span className="text-3xl p-2 bg-neutral-900 rounded-lg">{selectedItemEntry.item.icon}</span>
-                        <div className="flex-1 min-w-0">
-                          <h4 className="text-xs font-bold text-white truncate">{selectedItemEntry.item.name}</h4>
-                          <p className="text-[10px] text-neutral-400">
-                            Dimiliki: <span className="text-white font-bold">{selectedItemEntry.item.quantity} unit</span>
-                          </p>
-                          <p className="text-[10px] text-amber-400">
-                            Harga: +{(selectedItemEntry.item.price || 10).toLocaleString('id-ID')} Koin / unit
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* Kontrol Jumlah Penjualan */}
-                      <div>
-                        <div className="flex justify-between items-center text-xs text-neutral-400 mb-1.5">
-                          <span>Jumlah Dijual:</span>
-                          <span className="text-white font-bold">{sellQuantity}x</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => {
-                              sound.playClick();
-                              setSellQuantity((q) => Math.max(1, q - 1));
-                            }}
-                            className="p-2 bg-neutral-800 hover:bg-neutral-700 text-white rounded-lg transition-colors"
-                          >
-                            <Minus className="w-3.5 h-3.5" />
-                          </button>
-                          <input
-                            type="range"
-                            min={1}
-                            max={selectedItemEntry.item.quantity}
-                            value={sellQuantity}
-                            onChange={(e) => setSellQuantity(parseInt(e.target.value, 10))}
-                            className="flex-1 accent-amber-500 cursor-pointer"
-                          />
-                          <button
-                            onClick={() => {
-                              sound.playClick();
-                              setSellQuantity((q) => Math.min(selectedItemEntry.item.quantity, q + 1));
-                            }}
-                            className="p-2 bg-neutral-800 hover:bg-neutral-700 text-white rounded-lg transition-colors"
-                          >
-                            <Plus className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-
-                        {/* Quick Presets */}
-                        <div className="grid grid-cols-3 gap-1.5 mt-2">
-                          <button
-                            onClick={() => {
-                              sound.playClick();
-                              setSellQuantity(1);
-                            }}
-                            className="py-1 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 text-[10px] rounded font-bold"
-                          >
-                            Jual 1x
-                          </button>
-                          <button
-                            onClick={() => {
-                              sound.playClick();
-                              setSellQuantity(Math.max(1, Math.floor(selectedItemEntry.item.quantity / 2)));
-                            }}
-                            className="py-1 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 text-[10px] rounded font-bold"
-                          >
-                            Setengah
-                          </button>
-                          <button
-                            onClick={() => {
-                              sound.playClick();
-                              setSellQuantity(selectedItemEntry.item.quantity);
-                            }}
-                            className="py-1 bg-neutral-800 hover:bg-neutral-700 text-amber-300 text-[10px] rounded font-bold"
-                          >
-                            Semua ({selectedItemEntry.item.quantity})
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Total Payout */}
-                      <div className="p-3 bg-amber-950/40 border border-amber-500/40 rounded-xl">
-                        <span className="text-[10px] text-amber-300/80 block">Koin yang Akan Kamu Terima:</span>
-                        <span className="text-base font-black text-amber-400 flex items-center gap-1 mt-0.5">
-                          <Coins className="w-4 h-4 text-amber-400" />+
-                          {((selectedItemEntry.item.price || 10) * sellQuantity).toLocaleString('id-ID')} KOIN
+                    <div className="flex flex-col gap-2.5">
+                      <div className="flex items-center gap-2 pb-2 border-b-2 border-[#5C3A21]/30">
+                        <span className="text-2xl w-10 h-10 bg-[#A8E6CF] rounded-lg border-2 border-[#5C3A21] flex items-center justify-center shrink-0">
+                          {selectedItemEntry.item.icon || '📦'}
                         </span>
+                        <div className="min-w-0">
+                          <h4 className="text-xs font-bold text-black truncate">
+                            {selectedItemEntry.item.name}
+                          </h4>
+                          <span className="text-[10px] font-bold text-black">
+                            Tersedia: {selectedItemEntry.item.quantity} unit
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="clay-badge-neutral flex items-center justify-between p-2 text-black">
+                        <span className="text-[11px] font-bold">Jumlah Jual:</span>
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              sound.playClick();
+                              setSellQuantity((prev) => Math.max(1, prev - 1));
+                            }}
+                            className="clay-btn-neutral w-6 h-6 text-black flex items-center justify-center"
+                          >
+                            <Minus className="w-3 h-3 stroke-[2.5]" />
+                          </button>
+                          <span className="text-xs font-bold text-black w-6 text-center">
+                            {sellQuantity}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              sound.playClick();
+                              setSellQuantity((prev) =>
+                                Math.min(selectedItemEntry.item.quantity, prev + 1)
+                              );
+                            }}
+                            className="clay-btn-neutral w-6 h-6 text-black flex items-center justify-center"
+                          >
+                            <Plus className="w-3 h-3 stroke-[2.5]" />
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="pt-2 border-t-2 border-[#5C3A21]/30 flex flex-col gap-2">
+                        <div className="flex justify-between items-center text-xs font-bold">
+                          <span>Total Diterima:</span>
+                          <span>
+                            {(
+                              (selectedItemEntry.item.price || 10) * sellQuantity
+                            ).toLocaleString('id-ID')}{' '}
+                            G
+                          </span>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={handleConfirmSell}
+                          className="clay-btn-primary w-full py-2 text-xs font-bold text-black uppercase flex items-center justify-center gap-1.5"
+                        >
+                          <DollarSign className="w-4 h-4 stroke-[2.5]" />
+                          <span>JUAL SEKARANG</span>
+                        </button>
                       </div>
                     </div>
                   ) : (
-                    <div className="py-12 text-center text-neutral-500 font-mono text-xs">
-                      <Package className="w-8 h-8 mx-auto mb-2 opacity-30" />
-                      Pilih item dari kotak di sebelah kiri untuk melihat rincian harga dan menjual.
+                    <div className="p-4 text-center text-xs font-bold text-black">
+                      Pilih item dari tas di sebelah kiri untuk melihat harga dan menjual.
                     </div>
                   )}
                 </div>
-
-                {/* Tombol Eksekusi Jual */}
-                <button
-                  onClick={handleConfirmSell}
-                  disabled={!selectedItemEntry}
-                  className={`mt-4 w-full py-3 rounded-xl font-black font-mono text-xs tracking-wider transition-all flex items-center justify-center gap-2 shadow-lg cursor-pointer ${
-                    selectedItemEntry
-                      ? 'bg-amber-500 hover:bg-amber-400 text-black active:scale-95'
-                      : 'bg-neutral-800 text-neutral-500 cursor-not-allowed'
-                  }`}
-                >
-                  <DollarSign className="w-4 h-4" />
-                  JUAL SEKARANG
-                </button>
               </div>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
+        </main>
       </div>
     </div>
   );

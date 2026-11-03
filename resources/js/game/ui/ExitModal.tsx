@@ -4,13 +4,13 @@
  * ============================================================================
  * FUNGSI UTAMA:
  * Modal Konfirmasi Keluar Game (Exit Confirmation Dialog).
- * Meminta konfirmasi pemain sebelum meninggalkan petualangan di RadenWorld.
+ * Gaya Visual: Chunky Pastel Pixel (Cozycore UI) & Cute Minimalist Clay-Pixel.
  * ============================================================================
  */
 
 import React, { useState } from 'react';
 import { SoundManager } from '../core/SoundManager';
-import { X, LogOut, AlertTriangle, RefreshCw } from 'lucide-react';
+import { LogOut, RefreshCw } from 'lucide-react';
 
 interface ExitModalProps {
   isOpen: boolean;
@@ -37,58 +37,65 @@ export const ExitModal: React.FC<ExitModalProps> = ({ isOpen, onClose, onConfirm
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-2 sm:p-4 animate-in fade-in duration-200">
-      <div className="w-full max-w-sm bg-black border border-neutral-800 rounded-2xl p-4 sm:p-6 text-neutral-100 flex flex-col gap-4 sm:gap-5 text-center relative overflow-hidden max-h-[94dvh] overflow-y-auto custom-scrollbar">
-        {!hasExited ? (
-          <>
-            <div className="mx-auto p-3.5 rounded-full bg-neutral-900 border border-neutral-800 text-rose-400 w-fit">
-              <LogOut className="w-7 h-7" />
-            </div>
+    <div className="ui-modal-backdrop font-pixel">
+      <div className="w-full max-w-sm clay-panel landscape-compact-modal overflow-hidden text-black flex flex-col max-h-[min(94dvh,calc(100dvh-1rem))]">
+        <div className="px-4 py-3 clay-header landscape-compact-header flex items-center gap-2.5 shrink-0">
+          <div className="w-8 h-8 clay-card flex items-center justify-center shrink-0">
+            <LogOut className="w-4 h-4 text-black" />
+          </div>
+          <h2 className="text-sm sm:text-base font-bold text-black">
+            {!hasExited ? 'Keluar dari Permainan?' : 'Sampai Jumpa!'}
+          </h2>
+        </div>
 
-            <div className="space-y-1">
-              <h2 className="text-lg font-bold text-white">Keluar dari Permainan?</h2>
-              <p className="text-xs text-neutral-400 leading-relaxed">
+        <div className="p-4 sm:p-5 text-center space-y-4 overflow-y-auto custom-scrollbar">
+          {!hasExited ? (
+            <>
+              <p className="text-xs text-black leading-relaxed">
                 Apakah Anda yakin ingin meninggalkan dunia RadenWorld? Posisi terakhir dan progres petualangan Anda akan tersimpan.
               </p>
-            </div>
 
-            <div className="grid grid-cols-2 gap-3 pt-2">
+              <div className="grid grid-cols-2 gap-2.5 pt-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    sound.playClick();
+                    onClose();
+                  }}
+                  className="py-2.5 px-3 clay-btn-secondary text-black text-xs font-bold"
+                >
+                  Batal (Main)
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleExit}
+                  className="py-2.5 px-3 clay-btn-cocoa text-white text-xs font-bold"
+                >
+                  Ya, Keluar
+                </button>
+              </div>
+            </>
+          ) : (
+            <div className="py-3 space-y-3">
+              <div className="text-3xl">👋</div>
+              <h3 className="text-sm sm:text-base font-bold text-black">
+                Sampai Jumpa, Petualang!
+              </h3>
+              <p className="text-xs text-black">
+                Terima kasih telah bermain di RadenWorld. Jendela dapat ditutup sekarang atau muat ulang untuk bermain kembali.
+              </p>
               <button
                 type="button"
-                onClick={() => {
-                  sound.playClick();
-                  onClose();
-                }}
-                className="py-2.5 px-4 rounded-xl text-xs font-semibold bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-neutral-300 hover:text-white transition-all cursor-pointer"
+                onClick={() => window.location.reload()}
+                className="mt-1 inline-flex items-center gap-1.5 px-4 py-2 clay-btn-primary text-black text-xs font-bold"
               >
-                Batal (Tetap Main)
-              </button>
-
-              <button
-                type="button"
-                onClick={handleExit}
-                className="py-2.5 px-4 rounded-xl text-xs font-bold bg-rose-600 hover:bg-rose-500 text-white border border-rose-500 transition-all cursor-pointer"
-              >
-                Ya, Keluar
+                <RefreshCw className="w-3.5 h-3.5" />
+                <span>Muat Ulang Halaman</span>
               </button>
             </div>
-          </>
-        ) : (
-          <div className="py-6 space-y-3">
-            <div className="text-3xl">👋</div>
-            <h3 className="text-base font-bold text-white">Sampai Jumpa, Petualang!</h3>
-            <p className="text-xs text-neutral-400">
-              Terima kasih telah menjelajahi RadenWorld. Jendela dapat Anda tutup sekarang atau muat ulang untuk bermain kembali.
-            </p>
-            <button
-              onClick={() => window.location.reload()}
-              className="mt-2 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold bg-neutral-900 hover:bg-neutral-800 text-amber-400 border border-neutral-800 cursor-pointer"
-            >
-              <RefreshCw className="w-3.5 h-3.5" />
-              <span>Muat Ulang Halaman</span>
-            </button>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );

@@ -3,26 +3,47 @@
  * FILE: resources/js/game/ui/HUD.tsx
  * ============================================================================
  * FUNGSI UTAMA:
- * Heads-Up Display (HUD) mengambang di atas canvas permainan RadenWorld.
- * 
- * ATURAN & SPESIFIKASI TERBARU:
- * 1. UI Kiri Atas:
- *    - Tombol Profile (menggantikan gender) yang saat ditekan membuka pop-up karakter.
- *    - Menampilkan Nama Karakter & Level.
- *    - Icon Chat button di sampingnya untuk membuka/menutup pop-up chat.
- * 2. UI Kiri Bawah Pojok:
- *    - Nama Tempat/Wilayah.
- *    - Koordinat Grid: "POSISI GRID: (X: ..., Y: ...)" berdasarkan petak catur (tanpa koordinat pixel).
- *    - Tombol aksi interaksi [E] dinamis.
- * 3. Kanan Atas:
- *    - Menampilkan Kode Server Aktif (SERVER: RADEN-ASIA-01) & tombol panduan.
- * 4. Skema 2 Warna Ketat: Obsidian Gelap (#0a0f1d) & Amber Emas (#f59e0b).
+ * Heads-Up Display (HUD) mengambang di atas canvas permainan RadenWorld
+ * dengan spesifikasi Cozycore Clay-Pixel:
+ * - Palet: Primary #FFAE6D, Secondary #A8E6CF, Neutral #FFF8EA, Outline 2px #5C3A21.
+ * - Teks: #000000 / #FFFFFF kontras tinggi, tanpa hover & tanpa glow.
+ * - Responsif penuh untuk PC Desktop & Mobile (Portrait maupun Landscape).
  * ============================================================================
  */
 
 import React from 'react';
 import { IAvatarCustomization, Direction, IPlayerData } from '../types';
-import { Server, MessageSquare, Zap, User, Users, Info, Mic, MicOff, Settings, Globe, ArrowRightLeft, Coins, Gem, Plus, Sun, Moon, Sunset, Map, MapPin, Compass, Maximize2, Minimize2, ChevronDown, ChevronUp, X, Navigation, Building2, ZoomIn, ZoomOut, RotateCcw, Grid, Trash2, BookOpen } from 'lucide-react';
+import {
+  MessageSquare,
+  Zap,
+  User,
+  Users,
+  Mic,
+  MicOff,
+  Settings,
+  Globe,
+  ArrowRightLeft,
+  Coins,
+  Sun,
+  Moon,
+  Sunset,
+  Map,
+  MapPin,
+  Maximize2,
+  Minimize2,
+  ChevronDown,
+  ChevronUp,
+  X,
+  ZoomIn,
+  ZoomOut,
+  RotateCcw,
+  Grid,
+  Trash2,
+  BookOpen,
+  HelpCircle,
+  Crosshair,
+  Navigation,
+} from 'lucide-react';
 import { EventBus } from '../core/EventBus';
 import { SoundManager } from '../core/SoundManager';
 import { VoiceManager } from '../core/VoiceManager';
@@ -78,6 +99,7 @@ export const HUD: React.FC<HUDProps> = React.memo(({
   playerStats,
   serverCode = 'Asia 1',
   onToggleChat,
+  onToggleGuide,
   onOpenProfile,
   onOpenSettings,
   onOpenServerModal,
@@ -86,8 +108,6 @@ export const HUD: React.FC<HUDProps> = React.memo(({
   onTriggerInteraction,
   controlMode = 'pc',
   gold = 2500,
-  diamonds = 50,
-  onOpenTopUp,
   friendsList = [],
   onInspectPlayer,
   onAddFriend,
@@ -131,10 +151,14 @@ export const HUD: React.FC<HUDProps> = React.memo(({
   const isUserAdmin = Boolean(stats.role === 'admin' || stats.role === 'super_admin' || stats.isSuperAdmin || stats.name?.toUpperCase() === 'RADEN');
 
   const [isMicActive, setIsMicActive] = React.useState(false);
-  const [isMinimapOpen, setIsMinimapOpen] = React.useState(true);
+  const [isMinimapOpen, setIsMinimapOpen] = React.useState(() => {
+    if (typeof window !== 'undefined' && window.innerHeight < 450 && window.innerWidth > window.innerHeight) {
+      return false;
+    }
+    return true;
+  });
   const [isFullMapOpen, setIsFullMapOpen] = React.useState(false);
 
-  // Status Jumlah Pemain & Modal List User di Server (Max 50)
   const [serverPlayerCount, setServerPlayerCount] = React.useState<number>(1);
   const [serverPlayers, setServerPlayers] = React.useState<IPlayerData[]>([]);
   const [isServerUsersModalOpen, setIsServerUsersModalOpen] = React.useState<boolean>(false);
@@ -144,9 +168,7 @@ export const HUD: React.FC<HUDProps> = React.memo(({
   }, [isFullMapOpen]);
 
   React.useEffect(() => {
-    const handleCount = (count: number) => {
-      setServerPlayerCount(count);
-    };
+    const handleCount = (count: number) => setServerPlayerCount(count);
     const handlePlayers = (list: IPlayerData[]) => {
       setServerPlayers(list);
       if (list && list.length > 0) {
@@ -172,7 +194,6 @@ export const HUD: React.FC<HUDProps> = React.memo(({
     };
   }, []);
 
-  // Custom Waypoint Marker State (Disimpan di localStorage)
   const [customMarker, setCustomMarker] = React.useState<IMapMarker | null>(() => {
     try {
       const saved = localStorage.getItem('raden_custom_waypoint');
@@ -181,7 +202,7 @@ export const HUD: React.FC<HUDProps> = React.memo(({
     return null;
   });
 
-  // Atlas Full Map Zoom & Pan State
+  // Atlas Full Map Zoom & Pan State (Mouse + Touch)
   const [mapZoom, setMapZoom] = React.useState<number>(1);
   const [mapPan, setMapPan] = React.useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [isDraggingMap, setIsDraggingMap] = React.useState<boolean>(false);
@@ -211,12 +232,12 @@ export const HUD: React.FC<HUDProps> = React.memo(({
 
   const handleZoomIn = () => {
     sound.playClick();
-    setMapZoom(z => Math.min(4, Number((z + 0.5).toFixed(1))));
+    setMapZoom((z) => Math.min(4, Number((z + 0.5).toFixed(1))));
   };
 
   const handleZoomOut = () => {
     sound.playClick();
-    setMapZoom(z => {
+    setMapZoom((z) => {
       const next = Math.max(1, Number((z - 0.5).toFixed(1)));
       if (next === 1) setMapPan({ x: 0, y: 0 });
       return next;
@@ -229,39 +250,106 @@ export const HUD: React.FC<HUDProps> = React.memo(({
     setMapPan({ x: 0, y: 0 });
   };
 
-  const handleMapMouseDown = (e: React.MouseEvent) => {
-    if (e.button !== 0) return;
-    setDragStartPos({ x: e.clientX, y: e.clientY });
+  const handleCenterPlayer = () => {
+    sound.playClick();
+    setMapZoom(2);
+    // Posisi relatif terhadap titik pusat (gx: 40, gy: 40)
+    const offsetX = (40 - gridX) * 3.5;
+    const offsetY = (40 - gridY) * 3.5;
+    setMapPan({ x: Math.max(-120, Math.min(120, offsetX)), y: Math.max(-120, Math.min(120, offsetY)) });
+  };
+
+  const handleSelectPoi = (poi: { name: string; x: number; y: number; icon: string }) => {
+    sound.playClick();
+    const marker: IMapMarker = { x: poi.x, y: poi.y, label: poi.name };
+    setCustomMarker(marker);
+    try {
+      localStorage.setItem('raden_custom_waypoint', JSON.stringify(marker));
+    } catch (e) {}
+    setMapZoom(2);
+    const offsetX = (40 - poi.x) * 3.5;
+    const offsetY = (40 - poi.y) * 3.5;
+    setMapPan({ x: Math.max(-120, Math.min(120, offsetX)), y: Math.max(-120, Math.min(120, offsetY)) });
+  };
+
+  const WORLD_POIS = [
+    { name: 'Rumah Pemain', x: 11, y: 4, icon: '🏠' },
+    { name: 'Sekolah SD', x: 27, y: 8, icon: '🎒' },
+    { name: 'Sekolah SMP', x: 33, y: 8, icon: '📚' },
+    { name: 'Sekolah SMA', x: 39, y: 8, icon: '🎓' },
+    { name: 'Kebun Tani', x: 68, y: 5, icon: '🌾' },
+    { name: 'Pak Tani Somad', x: 61, y: 10, icon: '👨‍🌾' },
+    { name: 'Alun-Alun', x: 38, y: 36, icon: '🌳' },
+    { name: 'Cafe Santai', x: 3, y: 21, icon: '☕' },
+    { name: 'Perpustakaan', x: 14, y: 21, icon: '📖' },
+    { name: 'Kantor Polisi', x: 3, y: 37, icon: '👮' },
+    { name: 'Bank Sentral', x: 14, y: 37, icon: '🏦' },
+    { name: 'Apotek Farma', x: 3, y: 53, icon: '💊' },
+    { name: 'Pasar Makelar', x: 14, y: 53, icon: '🏪' },
+    { name: 'Lapangan Bola', x: 29, y: 55, icon: '⚽' },
+    { name: 'Lapangan Basket', x: 51, y: 55, icon: '🏀' },
+    { name: 'Dermaga Mancing', x: 68, y: 38, icon: '🎣' },
+    { name: 'Pantai Pasir', x: 40, y: 74, icon: '🏖️' },
+  ];
+
+  const startPanAt = (clientX: number, clientY: number) => {
+    setDragStartPos({ x: clientX, y: clientY });
     setInitialPanPos({ ...mapPan });
     setHasMovedDuringDrag(false);
     setIsDraggingMap(true);
   };
 
-  const handleMapMouseMove = (e: React.MouseEvent) => {
+  const movePanAt = (clientX: number, clientY: number) => {
     if (!isDraggingMap) return;
-    const dx = e.clientX - dragStartPos.x;
-    const dy = e.clientY - dragStartPos.y;
+    const dx = clientX - dragStartPos.x;
+    const dy = clientY - dragStartPos.y;
     if (!hasMovedDuringDrag && Math.hypot(dx, dy) > 4) {
       setHasMovedDuringDrag(true);
     }
     if (mapZoom > 1) {
-      const maxPan = ((mapZoom - 1) * 220) + 40;
+      const maxPan = (mapZoom - 1) * 200 + 40;
       const newX = Math.max(-maxPan, Math.min(maxPan, initialPanPos.x + dx));
       const newY = Math.max(-maxPan, Math.min(maxPan, initialPanPos.y + dy));
       setMapPan({ x: newX, y: newY });
     }
   };
 
+  const handleMapMouseDown = (e: React.MouseEvent) => {
+    if (e.button !== 0) return;
+    startPanAt(e.clientX, e.clientY);
+  };
+
+  const handleMapMouseMove = (e: React.MouseEvent) => {
+    movePanAt(e.clientX, e.clientY);
+  };
+
   const handleMapMouseUp = () => {
+    setIsDraggingMap(false);
+  };
+
+  const handleMapTouchStart = (e: React.TouchEvent) => {
+    if (e.touches.length === 1) {
+      startPanAt(e.touches[0].clientX, e.touches[0].clientY);
+    }
+  };
+
+  const handleMapTouchMove = (e: React.TouchEvent) => {
+    if (e.touches.length === 1 && isDraggingMap) {
+      if (mapZoom > 1) e.preventDefault();
+      movePanAt(e.touches[0].clientX, e.touches[0].clientY);
+    }
+  };
+
+  const handleMapTouchEnd = () => {
     setIsDraggingMap(false);
   };
 
   const handleMapWheel = (e: React.WheelEvent) => {
     e.stopPropagation();
     if (e.deltaY < 0) {
-      setMapZoom(z => Math.min(4, Number((z + 0.25).toFixed(2))));
+      setMapZoom((z) => Math.min(4, Number((z + 0.25).toFixed(2))));
     } else {
-      setMapZoom(z => {
+      setMapZoom((z) => {
         const next = Math.max(1, Number((z - 0.25).toFixed(2)));
         if (next === 1) setMapPan({ x: 0, y: 0 });
         return next;
@@ -285,35 +373,19 @@ export const HUD: React.FC<HUDProps> = React.memo(({
   const pad = (n: number) => n.toString().padStart(2, '0');
   const timeString = `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
 
-  // Menentukan siklus waktu (Pagi, Siang, Sore, Malam)
   let timePeriod = 'Malam';
   let PeriodIcon = Moon;
-  let periodColor = 'text-sky-300';
-  let periodBg = 'bg-sky-500/10 border-sky-500/30';
-
   if (hours >= 5 && hours < 11) {
     timePeriod = 'Pagi';
     PeriodIcon = Sun;
-    periodColor = 'text-amber-400';
-    periodBg = 'bg-amber-500/10 border-amber-500/30';
   } else if (hours >= 11 && hours < 15) {
     timePeriod = 'Siang';
     PeriodIcon = Sun;
-    periodColor = 'text-yellow-400';
-    periodBg = 'bg-yellow-500/10 border-yellow-500/30';
   } else if (hours >= 15 && hours < 18) {
     timePeriod = 'Sore';
     PeriodIcon = Sunset;
-    periodColor = 'text-orange-400';
-    periodBg = 'bg-orange-500/10 border-orange-500/30';
-  } else {
-    timePeriod = 'Malam';
-    PeriodIcon = Moon;
-    periodColor = 'text-sky-300';
-    periodBg = 'bg-sky-500/10 border-sky-500/30';
   }
 
-  // Nama hari dan tanggal Indonesia
   const days = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
   const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Ags', 'Sep', 'Okt', 'Nov', 'Des'];
   const dateString = `${days[currentTime.getDay()]}, ${currentTime.getDate()} ${months[currentTime.getMonth()]}`;
@@ -375,9 +447,16 @@ export const HUD: React.FC<HUDProps> = React.memo(({
     setIsMicActive(state);
   };
 
+  const formattedGold =
+    isUserAdmin || gold >= 99999999999
+      ? '999M+'
+      : gold.toLocaleString('id-ID');
+
+  const formattedLevel = isUserAdmin ? 'MAX' : String(playerLevel);
+
   return (
     <div
-      className="pointer-events-none fixed inset-0 z-40 flex flex-col justify-between font-['Chakra_Petch']"
+      className="pointer-events-none fixed inset-0 z-40 flex flex-col justify-between text-black"
       style={{
         paddingTop: 'max(0.5rem, env(safe-area-inset-top, 0.5rem))',
         paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom, 0.5rem))',
@@ -386,138 +465,141 @@ export const HUD: React.FC<HUDProps> = React.memo(({
       }}
     >
       {/* ==================================================================== */}
-      {/* 1. TOP BAR: KIRI (PROFIL & CHAT) | TENGAH (UI JAM) | KANAN (SERVER) */}
+      {/* 1. TOP BAR: KIRI (PROFIL & CHAT) | KANAN (KOIN, SERVER, PETA)        */}
       {/* ==================================================================== */}
-      <div className="flex items-start justify-between gap-1 sm:gap-2 md:gap-4 w-full">
-        {/* KIRI ATAS: Group Profile, Quick Action & UI Jam Tanpa Background di Bawahnya */}
-        <div className="flex flex-col items-start gap-1 sm:gap-1.5 shrink-0">
-          <div className="pointer-events-auto flex items-center gap-1 sm:gap-1.5 shrink-0">
-            {/* Tombol Profil Karakter */}
-            <button
-              type="button"
-              tabIndex={-1}
-              onClick={onOpenProfile}
-              onPointerDown={(e) => (e.currentTarget as HTMLElement).blur()}
-              className={`h-7 sm:h-9 md:h-10 flex items-center gap-1 sm:gap-2 px-1.5 sm:px-3 rounded-md bg-black border ${
-                isSuperAdmin ? 'border-amber-400' : 'border-neutral-800'
-              } hover:border-amber-400 transition-colors cursor-pointer group text-left shrink-0`}
-              title={isSuperAdmin ? '👑 Profil Super Admin (RADEN)' : 'Klik untuk membuka Profil Karakter'}
-            >
-              <div className={`w-4 h-4 sm:w-6 sm:h-6 rounded flex items-center justify-center shrink-0 ${
-                isSuperAdmin ? 'bg-amber-400 text-black' : 'bg-neutral-900 text-amber-400'
-              }`}>
-                <User className="w-2.5 sm:w-3.5 h-2.5 sm:h-3.5" />
-              </div>
-              <div className="flex flex-col leading-none">
-                <div className="flex items-center gap-1">
-                  <span className="font-bold text-[10px] sm:text-xs text-neutral-100 group-hover:text-amber-400 transition-colors uppercase tracking-wider truncate max-w-[65px] sm:max-w-[120px]">
-                    {stats.name}
+      <div className="flex items-start justify-between gap-1.5 sm:gap-2.5 w-full">
+        {/* KIRI ATAS */}
+        <div className="pointer-events-auto flex items-center gap-1 sm:gap-1.5 shrink-0">
+          {/* Tombol Profil Karakter */}
+          <button
+            type="button"
+            tabIndex={-1}
+            onClick={onOpenProfile}
+            onPointerDown={(e) => (e.currentTarget as HTMLElement).blur()}
+            className="clay-btn-neutral h-8 sm:h-10 flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 text-left shrink-0 text-black"
+            title={isSuperAdmin ? '👑 Profil Super Admin (RADEN)' : 'Klik untuk membuka Profil Karakter'}
+          >
+            <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-md bg-[#FFAE6D] border border-[#5C3A21] flex items-center justify-center shrink-0 text-black">
+              <User className="w-3 sm:w-3.5 h-3 sm:h-3.5 stroke-[2.5]" />
+            </div>
+            <div className="flex flex-col leading-none">
+              <div className="flex items-center gap-1">
+                <span className="font-bold text-[10px] sm:text-xs text-black uppercase truncate max-w-[68px] sm:max-w-[120px]">
+                  {stats.name}
+                </span>
+                {isSuperAdmin && (
+                  <span className="clay-badge-secondary text-[8px] font-bold text-black px-1 py-0.5 leading-none">
+                    ADMIN
                   </span>
-                  {isSuperAdmin && (
-                    <span className="text-[7px] sm:text-[9px] font-black tracking-wider text-black bg-amber-400 px-1 py-0.5 rounded leading-none">
-                      ADMIN
-                    </span>
-                  )}
-                </div>
-                <div className="flex items-center gap-1 mt-0.5">
-                  <span className="text-[7.5px] sm:text-[9px] font-bold tracking-widest text-neutral-400">
-                    LV. {isUserAdmin ? '99999999999' : playerLevel}
-                  </span>
-                </div>
+                )}
               </div>
-            </button>
+              <span className="text-[8px] sm:text-[9px] font-bold text-black mt-0.5">
+                LV. {formattedLevel}
+              </span>
+            </div>
+          </button>
 
-            {/* Icon Chat Button */}
-            <button
-              type="button"
-              tabIndex={-1}
-              onClick={onToggleChat}
-              onPointerDown={(e) => (e.currentTarget as HTMLElement).blur()}
-              className={`h-7 w-7 sm:h-9 sm:w-9 md:h-10 md:w-10 rounded-md border flex items-center justify-center transition-colors cursor-pointer shrink-0 ${
-                isChatOpen
-                  ? 'bg-amber-400 text-black border-amber-400 font-bold'
-                  : 'bg-black text-neutral-300 border-neutral-800 hover:border-amber-400 hover:text-amber-400'
-              }`}
-              title={isChatOpen ? 'Tutup Obrolan' : 'Buka Obrolan (atau tekan tombol "/")'}
-            >
-              <MessageSquare className="w-3 sm:w-4 h-3 sm:h-4" />
-            </button>
+          {/* Tombol Chat */}
+          <button
+            type="button"
+            tabIndex={-1}
+            onClick={onToggleChat}
+            onPointerDown={(e) => (e.currentTarget as HTMLElement).blur()}
+            className={`h-8 w-8 sm:h-10 sm:w-10 flex items-center justify-center shrink-0 text-black ${
+              isChatOpen ? 'clay-btn-primary' : 'clay-btn-neutral'
+            }`}
+            title={isChatOpen ? 'Tutup Obrolan' : 'Buka Obrolan (/)'}
+          >
+            <MessageSquare className="w-3.5 sm:w-4 h-3.5 sm:h-4 stroke-[2.5]" />
+          </button>
 
-            {/* Tombol Mikrofon Proximity Voice Chat */}
-            <button
-              type="button"
-              tabIndex={-1}
-              onClick={handleToggleMic}
-              onPointerDown={(e) => (e.currentTarget as HTMLElement).blur()}
-              className={`h-7 w-7 sm:h-9 sm:w-9 md:h-10 md:w-10 rounded-md border flex items-center justify-center relative transition-colors cursor-pointer shrink-0 ${
-                isMicActive
-                  ? 'bg-emerald-600 text-white border-emerald-500 font-semibold'
-                  : 'bg-black text-neutral-300 border-neutral-800 hover:border-neutral-700 hover:text-white'
-              }`}
-              title={
-                isMicActive
-                  ? 'Mikrofon Aktif (Klik untuk Mematikan) - Jangkauan Suara ±5 Petak'
-                  : 'Nyalakan Mikrofon (Proximity Voice Chat Radius ±5 Petak X & Y)'
+          {/* Tombol Mikrofon Proximity Voice Chat */}
+          <button
+            type="button"
+            tabIndex={-1}
+            onClick={handleToggleMic}
+            onPointerDown={(e) => (e.currentTarget as HTMLElement).blur()}
+            className={`h-8 w-8 sm:h-10 sm:w-10 flex items-center justify-center relative shrink-0 text-black ${
+              isMicActive ? 'clay-btn-secondary' : 'clay-btn-neutral'
+            }`}
+            title={
+              isMicActive
+                ? 'Mikrofon Aktif (Klik untuk Mematikan) - Jangkauan ±5 Petak'
+                : 'Nyalakan Mikrofon (Proximity Voice Chat)'
+            }
+          >
+            {isMicActive ? (
+              <Mic className="w-3.5 sm:w-4 h-3.5 sm:h-4 stroke-[2.5]" />
+            ) : (
+              <MicOff className="w-3.5 sm:w-4 h-3.5 sm:h-4 stroke-[2.5]" />
+            )}
+          </button>
+
+          {/* Tombol Fullscreen */}
+          <button
+            type="button"
+            tabIndex={-1}
+            onClick={(e) => {
+              (e.currentTarget as HTMLElement).blur();
+              handleToggleFullscreen();
+            }}
+            onPointerDown={(e) => (e.currentTarget as HTMLElement).blur()}
+            onKeyDown={(e) => {
+              if (e.key === ' ' || e.key === 'Spacebar' || e.key === 'Enter') {
+                e.preventDefault();
+                e.stopPropagation();
+                (e.currentTarget as HTMLElement).blur();
               }
-            >
-              {isMicActive ? <Mic className="w-3 sm:w-4 h-3 sm:h-4 text-white" /> : <MicOff className="w-3 sm:w-4 h-3 sm:h-4" />}
-              {isMicActive && (
-                <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-emerald-400" />
-              )}
-            </button>
+            }}
+            className={`h-8 w-8 sm:h-10 sm:w-10 flex items-center justify-center shrink-0 text-black ${
+              isFullscreen ? 'clay-btn-primary' : 'clay-btn-neutral'
+            }`}
+            title={isFullscreen ? 'Keluar Layar Penuh' : 'Layar Penuh (Fullscreen)'}
+          >
+            {isFullscreen ? (
+              <Minimize2 className="w-3.5 sm:w-4 h-3.5 sm:h-4 stroke-[2.5]" />
+            ) : (
+              <Maximize2 className="w-3.5 sm:w-4 h-3.5 sm:h-4 stroke-[2.5]" />
+            )}
+          </button>
 
-            {/* Tombol Maximize / Layar Penuh (Fullscreen) di sebelah Microphone */}
+          {/* Tombol Panduan Kontrol (Opsional Cepat) */}
+          {onToggleGuide && (
             <button
               type="button"
               tabIndex={-1}
-              onClick={(e) => {
-                (e.currentTarget as HTMLElement).blur();
-                handleToggleFullscreen();
+              onClick={() => {
+                sound.playClick();
+                onToggleGuide();
               }}
-              onPointerDown={(e) => {
-                (e.currentTarget as HTMLElement).blur();
-              }}
-              onKeyDown={(e) => {
-                if (e.key === ' ' || e.key === 'Spacebar' || e.key === 'Enter') {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  (e.currentTarget as HTMLElement).blur();
-                }
-              }}
-              className={`h-7 w-7 sm:h-9 sm:w-9 md:h-10 md:w-10 rounded-md border flex items-center justify-center transition-colors cursor-pointer shrink-0 focus:outline-none ${
-                isFullscreen
-                  ? 'bg-amber-400 text-black border-amber-400 font-bold'
-                  : 'bg-black text-neutral-300 border-neutral-800 hover:border-amber-400 hover:text-amber-400'
-              }`}
-              title={isFullscreen ? 'Keluar Layar Penuh' : 'Layar Penuh (Fullscreen)'}
+              onPointerDown={(e) => (e.currentTarget as HTMLElement).blur()}
+              className="clay-btn-neutral hidden md:flex h-10 w-10 items-center justify-center shrink-0 text-black"
+              title="Petunjuk Kontrol"
             >
-              {isFullscreen ? (
-                <Minimize2 className="w-3 sm:w-4 h-3 sm:h-4" />
-              ) : (
-                <Maximize2 className="w-3 sm:w-4 h-3 sm:h-4" />
-              )}
+              <HelpCircle className="w-4 h-4 stroke-[2.5]" />
             </button>
-          </div>
+          )}
         </div>
 
-        {/* KANAN ATAS: CONTAINER UANG, SERVER, SETTINGS, & PETA DUNIA */}
-        <div className="pointer-events-none flex items-start gap-1 sm:gap-1.5 flex-wrap justify-end select-none max-w-[calc(100vw-130px)] sm:max-w-none">
+        {/* KANAN ATAS */}
+        <div className="pointer-events-none flex items-start gap-1 sm:gap-1.5 flex-wrap justify-end select-none max-w-[calc(100dvw-155px)] sm:max-w-none">
           {/* KOIN EMAS */}
           <div
-            className="pointer-events-auto h-7 sm:h-9 md:h-10 flex items-center gap-1 sm:gap-1.5 px-1.5 sm:px-3 rounded-md bg-black border border-neutral-800 text-amber-400 select-none shadow-sm shrink-0"
-            title="Koin Emas"
+            className="pointer-events-auto clay-card h-8 sm:h-10 flex items-center gap-1.5 px-2 sm:px-2.5 text-black shrink-0"
+            title={`Koin Emas: ${gold.toLocaleString('id-ID')}`}
           >
-            <Coins className="w-3 sm:w-4 h-3 sm:h-4 text-amber-400 shrink-0" />
+            <div className="w-5 h-5 rounded-md bg-[#FFAE6D] border border-[#5C3A21] flex items-center justify-center shrink-0">
+              <Coins className="w-3 h-3 text-black stroke-[2.5]" />
+            </div>
             <div className="flex flex-col text-left leading-none">
-              <span className="text-[6.5px] sm:text-[8px] text-neutral-400 uppercase font-semibold">KOIN</span>
-              <span className="text-[9px] sm:text-xs font-black font-mono tracking-wider text-amber-300 mt-0.5">
-                {isUserAdmin || gold >= 99999999999 ? '99999999999' : gold.toLocaleString('id-ID')}
+              <span className="text-[7px] sm:text-[8px] text-black uppercase font-bold">KOIN</span>
+              <span className="text-[9px] sm:text-xs font-bold text-black mt-0.5">
+                {formattedGold}
               </span>
             </div>
           </div>
 
-
-          {/* Tombol Status Server Flat & Bersih */}
+          {/* Tombol Status Server */}
           <button
             type="button"
             tabIndex={-1}
@@ -526,21 +608,18 @@ export const HUD: React.FC<HUDProps> = React.memo(({
               onOpenServerModal?.();
             }}
             onPointerDown={(e) => (e.currentTarget as HTMLElement).blur()}
-            className="pointer-events-auto h-7 sm:h-9 md:h-10 flex items-center gap-1 sm:gap-2 px-1.5 sm:px-3 rounded-md bg-black border border-neutral-800 hover:border-amber-400 text-neutral-200 transition-colors cursor-pointer group shrink-0"
+            className="pointer-events-auto clay-btn-neutral h-8 sm:h-10 flex items-center gap-1.5 px-2 sm:px-2.5 text-black shrink-0"
             title="Klik untuk Melihat Daftar Server & Pindah Realm"
           >
-            <span className="w-1.5 sm:w-2 h-1.5 sm:h-2 rounded-full bg-emerald-500 shrink-0" />
-            <Globe className="w-2.5 sm:w-3.5 h-2.5 sm:h-3.5 text-neutral-400 group-hover:text-amber-400 transition-colors" />
+            <Globe className="w-3.5 h-3.5 text-black shrink-0 stroke-[2.5]" />
             <div className="flex flex-col text-left leading-none">
-              <span className="text-[6.5px] sm:text-[9px] text-neutral-400 uppercase tracking-widest font-semibold">
-                SERVER
-              </span>
-              <span className="text-[9px] sm:text-xs font-black text-amber-300 uppercase tracking-wider font-mono mt-0.5">
+              <span className="text-[7px] sm:text-[8px] text-black uppercase font-bold">SERVER</span>
+              <span className="text-[9px] sm:text-xs font-bold text-black uppercase mt-0.5">
                 {displayServerCode}
               </span>
             </div>
-            <div className="hidden sm:flex items-center gap-1 text-[8px] sm:text-[9px] font-bold tracking-wider text-black bg-amber-400 group-hover:bg-amber-300 px-1 sm:px-1.5 py-0.5 rounded transition-colors ml-1">
-              <ArrowRightLeft className="w-2.5 h-2.5" />
+            <div className="hidden lg:flex items-center gap-1 clay-badge-secondary text-[8.5px] font-bold text-black px-1.5 py-0.5 ml-1">
+              <ArrowRightLeft className="w-2.5 h-2.5 stroke-[2.5]" />
               <span>PINDAH</span>
             </div>
           </button>
@@ -557,23 +636,21 @@ export const HUD: React.FC<HUDProps> = React.memo(({
               setIsServerUsersModalOpen(true);
             }}
             onPointerDown={(e) => (e.currentTarget as HTMLElement).blur()}
-            className="pointer-events-auto h-7 sm:h-9 md:h-10 flex items-center gap-1 sm:gap-2 px-1.5 sm:px-2.5 rounded-md bg-black border border-neutral-800 hover:border-amber-400 text-neutral-200 transition-colors cursor-pointer group shrink-0"
+            className="pointer-events-auto clay-btn-neutral h-8 sm:h-10 flex items-center gap-1.5 px-2 sm:px-2.5 text-black shrink-0"
             title="Lihat Daftar Pemain di Server"
           >
-            <div className="w-4 h-4 sm:w-6 sm:h-6 rounded bg-neutral-900 border border-neutral-800 flex items-center justify-center text-amber-400 group-hover:text-amber-300 shrink-0">
-              <Users className="w-2.5 sm:w-3.5 h-2.5 sm:h-3.5" />
+            <div className="w-5 h-5 rounded-md bg-[#A8E6CF] border border-[#5C3A21] flex items-center justify-center text-black shrink-0">
+              <Users className="w-3 h-3 stroke-[2.5]" />
             </div>
             <div className="flex flex-col text-left leading-none">
-              <span className="text-[6.5px] sm:text-[8px] text-neutral-400 uppercase tracking-wider font-semibold">PEMAIN</span>
-              <div className="flex items-center gap-0.5 text-[9px] sm:text-xs font-black font-mono tracking-wider text-white mt-0.5">
-                <span className="text-amber-300">{serverPlayerCount}</span>
-                <span className="text-neutral-500 font-normal">/</span>
-                <span className="text-neutral-400">50</span>
-              </div>
+              <span className="text-[7px] sm:text-[8px] text-black uppercase font-bold">PEMAIN</span>
+              <span className="text-[9px] sm:text-xs font-bold text-black mt-0.5">
+                {serverPlayerCount}/50
+              </span>
             </div>
           </button>
 
-          {/* Tombol Cepat Buka Kurikulum Pelajaran jika berada di Ruang Sekolah SD / SMP / SMA */}
+          {/* Tombol Cepat Teks Quiz jika berada di Sekolah */}
           {(rawLoc.includes('SD') || rawLoc.includes('SMP') || rawLoc.includes('SMA') || rawLoc.includes('Sekolah')) && (
             <button
               type="button"
@@ -584,11 +661,11 @@ export const HUD: React.FC<HUDProps> = React.memo(({
                 EventBus.emit('open-school-subjects', { schoolType: sType });
               }}
               onPointerDown={(e) => (e.currentTarget as HTMLElement).blur()}
-              className="pointer-events-auto h-7 sm:h-9 md:h-10 flex items-center gap-1 px-1.5 sm:px-2.5 rounded-md bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-400 text-amber-300 hover:text-white font-bold text-xs uppercase tracking-wider transition-all shadow-md shrink-0 cursor-pointer"
+              className="pointer-events-auto clay-btn-primary h-8 sm:h-10 flex items-center gap-1.5 px-2 sm:px-2.5 text-black font-bold text-xs uppercase shrink-0"
               title="Buka Teks Quiz Sekolah"
             >
-              <BookOpen className="w-3 sm:w-3.5 h-3 sm:h-3.5 text-amber-400 shrink-0" />
-              <span className="text-[8px] sm:text-[10px] font-black tracking-wider">TEKS QUIZ</span>
+              <BookOpen className="w-3.5 h-3.5 stroke-[2.5] shrink-0" />
+              <span className="text-[9px] sm:text-[10px] font-bold">QUIZ</span>
             </button>
           )}
 
@@ -602,107 +679,93 @@ export const HUD: React.FC<HUDProps> = React.memo(({
                 onOpenSettings();
               }}
               onPointerDown={(e) => (e.currentTarget as HTMLElement).blur()}
-              className="pointer-events-auto h-7 w-7 sm:h-9 sm:w-9 md:h-10 md:w-10 rounded-md bg-black border border-neutral-800 text-neutral-300 hover:text-amber-400 hover:border-amber-400 flex items-center justify-center transition-colors cursor-pointer shrink-0"
-              title="Pengaturan Game & Konfigurasi IP Server"
+              className="pointer-events-auto clay-btn-neutral h-8 w-8 sm:h-10 sm:w-10 flex items-center justify-center text-black shrink-0"
+              title="Pengaturan Game & Konfigurasi Server"
             >
-              <Settings className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <Settings className="w-3.5 sm:w-4 h-3.5 sm:h-4 stroke-[2.5]" />
             </button>
           )}
 
-          {/* UI PETA / MINIMAP: RESPONSIF & RINGKAS KHUSUS MOBILE */}
+          {/* UI PETA / MINIMAP CLAY-PIXEL */}
           {!stats.inHouse && (
-            <div className="pointer-events-auto flex flex-col items-end shrink-0">
-              {/* Header Peta Mini (Sejajar 1 Baris dengan Pengaturan) */}
-              <div className="h-6 sm:h-8 flex items-center justify-between w-[84px] sm:w-[110px] md:w-[132px] px-1 sm:px-2 bg-black border-x border-t border-b border-neutral-800 rounded-t-md text-[8px] sm:text-[9px] font-bold text-neutral-300 shadow-sm">
-                <div className="flex items-center gap-1 text-amber-400">
-                  <Map className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-amber-400" />
-                  <span className="font-mono tracking-wider font-bold text-[8px] sm:text-[10px] text-amber-300">PETA</span>
+            <div className="pointer-events-auto flex flex-col items-end gap-1 shrink-0">
+              <div className="clay-panel w-[92px] sm:w-[118px] md:w-[138px] overflow-hidden flex flex-col">
+                {/* Header Peta Mini */}
+                <div className="clay-header h-6 sm:h-7 flex items-center justify-between px-1.5 sm:px-2 text-black">
+                  <div className="flex items-center gap-1">
+                    <Map className="w-2.5 h-2.5 sm:w-3 sm:h-3 stroke-[2.5]" />
+                    <span className="font-bold text-[8.5px] sm:text-[10px]">PETA</span>
+                  </div>
+                  <div className="flex items-center gap-0.5">
+                    <button
+                      type="button"
+                      tabIndex={-1}
+                      onClick={() => {
+                        sound.playClick();
+                        setIsMinimapOpen(!isMinimapOpen);
+                      }}
+                      onPointerDown={(e) => (e.currentTarget as HTMLElement).blur()}
+                      className="p-0.5 text-black active:translate-y-[1px] cursor-pointer"
+                      title={isMinimapOpen ? 'Sembunyikan Peta' : 'Tampilkan Peta'}
+                    >
+                      {isMinimapOpen ? (
+                        <ChevronUp className="w-3 h-3 stroke-[2.5]" />
+                      ) : (
+                        <ChevronDown className="w-3 h-3 stroke-[2.5]" />
+                      )}
+                    </button>
+                    <button
+                      type="button"
+                      tabIndex={-1}
+                      onClick={() => {
+                        sound.playClick();
+                        setIsFullMapOpen(true);
+                      }}
+                      onPointerDown={(e) => (e.currentTarget as HTMLElement).blur()}
+                      className="p-0.5 text-black active:translate-y-[1px] cursor-pointer"
+                      title="Perbesar Peta Penuh"
+                    >
+                      <Maximize2 className="w-2.5 h-2.5 stroke-[2.5]" />
+                    </button>
+                  </div>
                 </div>
-                <div className="flex items-center gap-0.5">
-                  <button
-                    type="button"
-                    tabIndex={-1}
-                    onClick={() => {
-                      sound.playClick();
-                      setIsMinimapOpen(!isMinimapOpen);
-                    }}
-                    onPointerDown={(e) => (e.currentTarget as HTMLElement).blur()}
-                    className="p-0.5 text-neutral-400 hover:text-amber-300 transition-colors cursor-pointer"
-                    title={isMinimapOpen ? "Sembunyikan Peta" : "Tampilkan Peta"}
-                  >
-                    {isMinimapOpen ? <ChevronUp className="w-2.5 h-2.5 sm:w-3 sm:h-3" /> : <ChevronDown className="w-2.5 h-2.5 sm:w-3 sm:h-3" />}
-                  </button>
-                  <button
-                    type="button"
-                    tabIndex={-1}
-                    onClick={() => {
-                      sound.playClick();
-                      setIsFullMapOpen(true);
-                    }}
-                    onPointerDown={(e) => (e.currentTarget as HTMLElement).blur()}
-                    className="p-0.5 text-neutral-400 hover:text-amber-300 transition-colors cursor-pointer"
-                    title="Perbesar Peta Penuh"
-                  >
-                    <Maximize2 className="w-2 h-2 sm:w-2.5 sm:h-2.5" />
-                  </button>
-                </div>
-              </div>
 
-              {/* Kotak Bodi Peta: Kanvas Peta (Jika Buka) + Posisi Grid & Jam (Selalu Tampil) */}
-              <div className="w-[84px] sm:w-[110px] md:w-[132px] flex flex-col bg-black border-x border-b border-neutral-800 rounded-b-md overflow-hidden shadow-2xl">
-                {/* Kanvas Peta Mini (Hanya muncul jika tidak di-minimize) */}
+                {/* Kanvas Peta Mini */}
                 {isMinimapOpen && (
                   <div
                     onClick={() => {
                       sound.playClick();
                       setIsFullMapOpen(true);
                     }}
-                    className="w-[84px] h-[70px] sm:w-[110px] sm:h-[105px] md:w-[132px] md:h-[128px] bg-[#001026] p-0.5 relative overflow-hidden cursor-pointer group hover:opacity-95 transition-opacity border-b border-neutral-800"
-                    title="Klik untuk membuka Peta Penuh & Panduan Wilayah"
+                    className="w-full h-[68px] sm:h-[98px] md:h-[120px] landscape:max-md:h-[60px] bg-[#001026] p-0.5 relative overflow-hidden cursor-pointer border-b-2 border-[#5C3A21]"
+                    title="Klik untuk membuka Peta Penuh"
                   >
-                    {/* Peta Mini WorldMapSvg Presisi & Kaya Visual Mirip Dunia Asli */}
                     <WorldMapSvg
                       playerGridX={gridX}
                       playerGridY={gridY}
                       playerDirection={stats?.direction || 'down'}
                       isMini={true}
                       customMarker={customMarker}
-                      className="w-full h-full rounded"
+                      className="w-full h-full rounded-sm"
                     />
-
-                    {/* Petunjuk Kompas Mata Angin (U, T, S, B) */}
-                    <div className="absolute top-0.5 left-1/2 -translate-x-1/2 text-[7px] font-black font-mono text-amber-300/90 pointer-events-none drop-shadow">
+                    <div className="absolute top-0.5 left-1/2 -translate-x-1/2 px-1 bg-[#FFF8EA] border border-[#5C3A21] rounded text-[6.5px] font-bold text-black pointer-events-none leading-none">
                       U
                     </div>
-                    <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2 text-[7px] font-black font-mono text-neutral-400 pointer-events-none drop-shadow">
-                      S
-                    </div>
-                    <div className="absolute left-0.5 top-1/2 -translate-y-1/2 text-[7px] font-black font-mono text-neutral-400 pointer-events-none drop-shadow">
-                      B
-                    </div>
-                    <div className="absolute right-0.5 top-1/2 -translate-y-1/2 text-[7px] font-black font-mono text-neutral-400 pointer-events-none drop-shadow">
-                      T
-                    </div>
-
-                    {/* Efek Garis Radar Scanline */}
-                    <div className="absolute inset-0 bg-gradient-to-b from-transparent via-amber-400/5 to-transparent pointer-events-none animate-pulse" />
                   </div>
                 )}
 
-                {/* BAGIAN DI DALAM KOTAK PETA DI BAWAH PETA: POSISI GRID & JAM (Ringkas Khusus Mobile) */}
-                <div className="w-full px-1 py-1 sm:px-2 sm:py-1.5 bg-neutral-950/95 flex flex-col gap-0.5 sm:gap-1 select-none">
-                  {/* 1. Posisi Grid */}
-                  <div className="w-full flex items-center justify-between text-[7.5px] sm:text-[9px] font-mono font-bold bg-black px-1 py-0.5 rounded border border-neutral-800">
-                    <span className="text-neutral-400 text-[6.5px] sm:text-[8px] uppercase tracking-wider font-semibold">GRID</span>
-                    <span className="text-amber-300 font-bold text-[7.5px] sm:text-[9px]">{gridX}, {gridY}</span>
+                {/* Info Grid & Jam Digital */}
+                <div className="w-full px-1.5 py-1 bg-[#FFF8EA] flex flex-col gap-1 text-black select-none">
+                  <div className="w-full flex items-center justify-between text-[8px] sm:text-[9px] font-bold bg-[#A8E6CF] px-1.5 py-0.5 rounded border border-[#5C3A21]">
+                    <span>GRID</span>
+                    <span>{gridX},{gridY}</span>
                   </div>
 
-                  {/* Waypoint Tanda Kustom Jika Ada */}
                   {customMarker && (
-                    <div className="w-full flex items-center justify-between text-[7px] sm:text-[8px] font-mono bg-red-950/80 border border-red-800/80 px-1 py-0.5 rounded text-red-200">
-                      <span className="flex items-center gap-0.5 font-bold truncate">
-                        <MapPin className="w-2 h-2 text-red-400 shrink-0 animate-pulse" />
-                        {customMarker.x}, {customMarker.y}
+                    <div className="w-full flex items-center justify-between text-[7.5px] sm:text-[8.5px] font-bold bg-[#FFAE6D] border border-[#5C3A21] px-1.5 py-0.5 rounded text-black">
+                      <span className="flex items-center gap-0.5 truncate">
+                        <MapPin className="w-2.5 h-2.5 shrink-0 stroke-[2.5]" />
+                        {customMarker.x},{customMarker.y}
                       </span>
                       <button
                         type="button"
@@ -712,7 +775,7 @@ export const HUD: React.FC<HUDProps> = React.memo(({
                           handleClearMarker();
                         }}
                         onPointerDown={(e) => (e.currentTarget as HTMLElement).blur()}
-                        className="text-neutral-400 hover:text-white px-0.5 font-bold hover:bg-red-800/50 rounded cursor-pointer leading-none ml-1"
+                        className="text-black px-0.5 font-bold cursor-pointer leading-none ml-1"
                         title="Hapus Tanda Waypoint"
                       >
                         ×
@@ -720,31 +783,24 @@ export const HUD: React.FC<HUDProps> = React.memo(({
                     </div>
                   )}
 
-                  {/* 2. Jam Digital Realtime di Dalam Kotak Peta di Bawah Grid */}
                   <div
-                    className="w-full flex items-center justify-between gap-0.5 sm:gap-1 pt-0.5 text-left text-[7.5px] sm:text-[9px]"
+                    className="w-full flex items-center justify-between gap-1 text-[7.5px] sm:text-[8.5px] font-bold text-black"
                     title={`Waktu RadenWorld: ${timePeriod} (${dateString}) - ${timeString} WIB`}
                   >
-                    <div className="flex items-center gap-0.5">
-                      <div className={`flex items-center justify-center ${periodColor}`}>
-                        <PeriodIcon className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
-                      </div>
-                      <div className="flex items-baseline gap-0.5 font-mono font-black text-[8px] sm:text-[10px] tracking-wider text-white">
-                        <span>{timeString}</span>
-                        <span className="text-[6.5px] sm:text-[7.5px] text-amber-400 font-bold">WIB</span>
-                      </div>
-                    </div>
-
-                    <span className={`text-[6.5px] sm:text-[7px] font-black tracking-wider uppercase px-0.5 sm:px-1 py-0.5 rounded ${periodBg} ${periodColor}`}>
+                    <span className="flex items-center gap-0.5 truncate">
+                      <PeriodIcon className="w-2.5 h-2.5 shrink-0 stroke-[2.5]" />
+                      <span>{timeString}</span>
+                    </span>
+                    <span className="clay-badge-primary px-1 py-0 text-[6.5px] sm:text-[7.5px] leading-tight shrink-0">
                       {timePeriod}
                     </span>
                   </div>
                 </div>
               </div>
 
-              {/* Teks Nama Wilayah / Lokasi di Bawah Minimap */}
-              <div className="w-[84px] sm:w-[110px] md:w-[132px] text-right pointer-events-none text-[7.5px] sm:text-[8.5px] font-black text-amber-300 uppercase tracking-wider truncate pt-0.5 sm:pt-1 drop-shadow-[0_1px_2px_rgba(0,0,0,1)]">
-                <span>{displayLocation}</span>
+              {/* Nama Wilayah di Bawah Minimap */}
+              <div className="clay-badge-neutral px-2 py-0.5 max-w-[138px] text-[7.5px] sm:text-[8.5px] font-bold text-black uppercase truncate pointer-events-none">
+                {displayLocation}
               </div>
             </div>
           )}
@@ -752,255 +808,308 @@ export const HUD: React.FC<HUDProps> = React.memo(({
       </div>
 
       {/* ==================================================================== */}
-      {/* 2. BOTTOM BAR: KIRI BAWAH (KONTROL PC) & KANAN BAWAH (WORLD & KOORDINAT) */}
+      {/* 2. BOTTOM BAR (KHUSUS PC)                                            */}
       {/* ==================================================================== */}
       <div className="flex items-end justify-between w-full pointer-events-none">
-        {/* KIRI BAWAH: Tombol Aksi & Keterangan Shortcut PC (Disembunyikan jika Mobile) */}
         <div className="pointer-events-auto flex flex-col items-start gap-2 select-none">
-          {/* Tombol Interaksi Cepat (HANYA MUNCUL DI MODE PC) */}
           {!isMobile && interactionPrompt && (
             <button
+              type="button"
               onClick={onTriggerInteraction}
-              className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-amber-500 text-black border border-amber-400 font-bold text-xs uppercase tracking-wider hover:bg-amber-400 active:scale-95 cursor-pointer transition-all shadow-md shadow-amber-500/25"
+              className="clay-btn-primary flex items-center gap-2 px-3.5 py-2 text-black font-bold text-xs uppercase"
             >
-              <Zap className="w-3.5 h-3.5 fill-current" />
+              <Zap className="w-3.5 h-3.5 fill-black text-black" />
               <span>{interactionPrompt}</span>
             </button>
           )}
 
-          {/* Keterangan Kontrol PC / Laptop: 2 Kolom, Ringkas, Kecil & 100% Transparan Tanpa Background/Border */}
           {!isMobile && (
-            <div className="grid grid-cols-2 gap-x-3.5 gap-y-0.5 text-[9px] font-bold text-neutral-200 tracking-wider drop-shadow-[0_1px_3px_rgba(0,0,0,1)] pointer-events-none">
-              <div className="flex items-center gap-1.5">
-                <span className="text-amber-300 font-mono font-black">[WASD]</span>
+            <div className="clay-panel px-2.5 py-2 grid grid-cols-2 gap-x-3 gap-y-1 text-[9px] font-bold text-black pointer-events-none">
+              <div className="flex items-center gap-1">
+                <span className="clay-badge-secondary px-1 py-0 text-[8px]">WASD</span>
                 <span>Jalan</span>
               </div>
-              <div className="flex items-center gap-1.5">
-                <span className="text-amber-300 font-mono font-black">[F]</span>
+              <div className="flex items-center gap-1">
+                <span className="clay-badge-secondary px-1 py-0 text-[8px]">F</span>
                 <span>Mancing</span>
               </div>
-              <div className="flex items-center gap-1.5">
-                <span className="text-amber-300 font-mono font-black">[E]</span>
+              <div className="flex items-center gap-1">
+                <span className="clay-badge-secondary px-1 py-0 text-[8px]">E</span>
                 <span>Interaksi</span>
               </div>
-              <div className="flex items-center gap-1.5">
-                <span className="text-amber-300 font-mono font-black">[B]</span>
-                <span>Buka Tas</span>
+              <div className="flex items-center gap-1">
+                <span className="clay-badge-secondary px-1 py-0 text-[8px]">B</span>
+                <span>Tas</span>
               </div>
-              <div className="flex items-center gap-1.5">
-                <span className="text-amber-300 font-mono font-black">[SPASI]</span>
+              <div className="flex items-center gap-1">
+                <span className="clay-badge-secondary px-1 py-0 text-[8px]">SPASI</span>
                 <span>Lompat</span>
               </div>
-              <div className="flex items-center gap-1.5">
-                <span className="text-amber-300 font-mono font-black">[1-6]</span>
+              <div className="flex items-center gap-1">
+                <span className="clay-badge-secondary px-1 py-0 text-[8px]">1-6</span>
                 <span>Hotbar</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="text-amber-300 font-mono font-black">[/]</span>
-                <span>Obrolan</span>
               </div>
             </div>
           )}
         </div>
-
-        {/* KANAN BAWAH: Teks Nama Wilayah (Khusus Mode PC; pada Mobile sudah tampil rapi di bawah Minimap agar tidak tertimpa kontrol) */}
-        {!isMobile && (
-          <div className="flex flex-col items-end gap-1 text-right select-none pointer-events-none">
-            <div className="text-[10px] font-black text-amber-300 uppercase tracking-wider drop-shadow-[0_1px_3px_rgba(0,0,0,1)] pr-0.5">
-              <span>{displayLocation}</span>
-            </div>
-          </div>
-        )}
       </div>
 
       {/* ==================================================================== */}
-      {/* 3. MODAL ATLAS DUNIA LENGKAP (FULL MAP MODAL 80x80 DENGAN ZOOM & TANDA) */}
+      {/* 3. MODAL PETA RADEN WORLD (DENGAN SIDEBAR NAVIGASI, ZOOM & PIN)       */}
       {/* ==================================================================== */}
       {isFullMapOpen && !stats.inHouse && (
-        <div className="fixed inset-0 z-[95] flex items-center justify-center p-2 sm:p-4 bg-black/85 pointer-events-auto animate-in fade-in duration-200">
-          <div className="relative w-full max-w-xl bg-neutral-950 border border-neutral-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[min(90dvh,88vh)] my-auto">
-            {/* Header Modal */}
-            <div className="flex items-center justify-between px-3 sm:px-4 py-2 sm:py-2.5 bg-neutral-900/90 border-b border-neutral-800 shrink-0">
-              <div className="flex items-center gap-2">
-                <Map className="w-4 h-4 text-amber-400" />
-                <span className="font-bold text-xs sm:text-sm tracking-wider text-white">ATLAS DUNIA RADENWORLD</span>
-                <span className="text-[9px] sm:text-[10px] font-mono font-bold px-1.5 sm:px-2 py-0.5 rounded bg-amber-400/10 text-amber-400 border border-amber-400/30">
-                  80 × 80 PETAK
-                </span>
+        <div className="ui-modal-backdrop z-[95] pointer-events-auto">
+          <div className="clay-panel landscape-compact-modal w-full max-w-4xl max-h-[94dvh] flex flex-col overflow-hidden text-black">
+            {/* Header Modal Peta */}
+            <div className="clay-header landscape-compact-header flex items-center justify-between px-3.5 sm:px-5 py-2.5 gap-2 shrink-0">
+              <div className="flex items-center gap-2 min-w-0">
+                <div className="w-8 h-8 rounded-lg bg-[#FFF8EA] border-2 border-[#5C3A21] flex items-center justify-center shrink-0">
+                  <Map className="w-4 h-4 text-black stroke-[2.5]" />
+                </div>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="font-bold text-xs sm:text-sm text-black truncate uppercase">
+                      PETA RADEN WORLD
+                    </span>
+                    <span className="clay-badge-secondary text-[9px] font-bold px-1.5 py-0.5 text-black shrink-0">
+                      80 × 80 PETAK
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-black hidden sm:block truncate">
+                    Peta kartografi wilayah resmi • Ketuk petak untuk pasang target navigasi
+                  </p>
+                </div>
               </div>
-              <div className="flex items-center gap-1.5 sm:gap-2">
+
+              <div className="flex items-center gap-1.5 shrink-0">
+                <span className="clay-badge-primary text-[10px] font-bold text-black px-2 py-1">
+                  Posisi: ({gridX}, {gridY})
+                </span>
                 {customMarker && (
-                  <span className="text-[10px] sm:text-xs font-mono font-bold text-red-300 bg-red-950/80 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded border border-red-800 flex items-center gap-1">
-                    <MapPin className="w-3 h-3 text-red-400" />
-                    ({customMarker.x}, {customMarker.y})
+                  <span className="clay-badge-secondary hidden sm:inline-block text-[10px] font-bold text-black px-2 py-1">
+                    Pin: ({customMarker.x}, {customMarker.y}) • {Math.round(Math.hypot(customMarker.x - gridX, customMarker.y - gridY))} langkah
                   </span>
                 )}
-                <span className="text-[10px] sm:text-xs font-mono font-bold text-amber-300 bg-black/60 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded border border-neutral-800">
-                  ({gridX}, {gridY})
-                </span>
                 <button
+                  type="button"
                   onClick={() => {
                     sound.playClick();
                     setIsFullMapOpen(false);
                   }}
-                  className="p-1 sm:p-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-300 hover:text-white transition-colors cursor-pointer"
+                  className="clay-btn-neutral w-8 h-8 flex items-center justify-center text-black"
                   title="Tutup Peta"
                 >
-                  <X className="w-4 h-4" />
+                  <X className="w-4 h-4 stroke-[2.5]" />
                 </button>
               </div>
             </div>
 
-            {/* Konten Peta Besar */}
-            <div className="p-2.5 sm:p-4 flex flex-col items-center gap-2 sm:gap-2.5 flex-1 min-h-0 overflow-y-auto custom-scrollbar">
-              {/* Toolbar Zoom & Tanda */}
-              <div className="flex flex-wrap items-center justify-between gap-2 w-full max-w-[440px] px-2.5 py-1.5 bg-neutral-900/90 border border-neutral-800 rounded-lg text-xs shrink-0">
-                {/* Kontrol Zoom In / Out / Reset */}
-                <div className="flex items-center gap-1.5">
-                  <span className="text-[11px] font-semibold text-neutral-400">Zoom:</span>
+            {/* Layout Dual-Pane: Sidebar Lokasi Penting + Viewport Peta */}
+            <div className="clay-modal-shell flex-1 min-h-0 flex flex-col md:flex-row overflow-hidden">
+              {/* SIDEBAR KIRI: DAFTAR LOKASI PENTING (LOGO DI ATAS, TEKS DI BAWAH) */}
+              <aside className="clay-sidebar w-full md:w-[135px] max-h-[110px] md:max-h-none flex-row md:flex-col border-b-2 md:border-b-0 md:border-r-2 border-[#5C3A21] shrink-0 overflow-x-auto md:overflow-x-hidden">
+                <div className="clay-sidebar-brand hidden md:flex">
+                  <Navigation className="w-4 h-4 text-black stroke-[2.5]" />
+                  <span className="clay-sidebar-title">NAVIGASI</span>
+                  <span className="clay-sidebar-subtitle">LOKASI CEPAT</span>
+                </div>
+
+                <div className="clay-sidebar-nav flex-row md:flex-col custom-scrollbar overflow-x-auto md:overflow-y-auto flex-1 p-1.5 md:p-2 gap-1.5">
                   <button
-                    onClick={handleZoomOut}
-                    disabled={mapZoom <= 1}
-                    className="p-1 rounded bg-neutral-800 hover:bg-neutral-700 disabled:opacity-40 disabled:hover:bg-neutral-800 text-white transition-colors cursor-pointer"
-                    title="Zoom Out (-)"
+                    type="button"
+                    onClick={handleCenterPlayer}
+                    className="clay-sidebar-btn clay-sidebar-btn-active min-w-[72px] md:min-w-0"
+                    title="Pusatkan kamera ke posisi karakter kamu"
                   >
-                    <ZoomOut className="w-3.5 h-3.5" />
+                    <Crosshair className="w-5 h-5 stroke-[2.5] shrink-0" />
+                    <span className="text-[9px] md:text-[10px]">Posisi Saya</span>
                   </button>
-                  <span className="font-mono font-bold text-amber-300 text-xs px-2 py-0.5 bg-black/60 rounded border border-neutral-800 min-w-[48px] text-center">
-                    {Math.round(mapZoom * 100)}%
+
+                  {WORLD_POIS.map((poi) => {
+                    const isSelected = customMarker && customMarker.x === poi.x && customMarker.y === poi.y;
+                    return (
+                      <button
+                        key={poi.name}
+                        type="button"
+                        onClick={() => handleSelectPoi(poi)}
+                        className={`clay-sidebar-btn min-w-[72px] md:min-w-0 ${
+                          isSelected ? 'clay-sidebar-btn-active' : 'clay-sidebar-btn-inactive'
+                        }`}
+                        title={`Bidik ke ${poi.name} (${poi.x}, ${poi.y})`}
+                      >
+                        <span className="text-lg leading-none">{poi.icon}</span>
+                        <span className="text-[9px] md:text-[10px] leading-tight truncate max-w-[80px]">
+                          {poi.name}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div className="clay-sidebar-footer hidden md:flex">
+                  <span className="clay-badge-neutral text-[9px] font-bold text-center py-0.5">
+                    RADEN MAP
                   </span>
-                  <button
-                    onClick={handleZoomIn}
-                    disabled={mapZoom >= 4}
-                    className="p-1 rounded bg-neutral-800 hover:bg-neutral-700 disabled:opacity-40 disabled:hover:bg-neutral-800 text-white transition-colors cursor-pointer"
-                    title="Zoom In (+)"
-                  >
-                    <ZoomIn className="w-3.5 h-3.5" />
-                  </button>
-                  <button
-                    onClick={handleResetZoom}
-                    className="px-2 py-1 text-[10px] font-bold rounded bg-neutral-800 hover:bg-neutral-700 text-neutral-300 hover:text-white transition-colors cursor-pointer ml-1 flex items-center gap-1"
-                    title="Reset Zoom (100%)"
-                  >
-                    <RotateCcw className="w-2.5 h-2.5" />
-                    Reset
-                  </button>
                 </div>
+              </aside>
 
-                {/* Kontrol Toggle Grid & Hapus Tanda */}
-                <div className="flex items-center gap-1.5">
-                  <button
-                    onClick={() => setShowGridOverlay(!showGridOverlay)}
-                    className={`px-2 py-1 text-[10px] font-bold rounded border transition-colors cursor-pointer flex items-center gap-1 ${
-                      showGridOverlay
-                        ? 'bg-amber-400/20 text-amber-300 border-amber-400/40'
-                        : 'bg-neutral-800 text-neutral-400 border-neutral-700'
-                    }`}
-                    title="Toggle Garis Petak Grid 1x1"
-                  >
-                    <Grid className="w-3 h-3" />
-                    Grid
-                  </button>
-
-                  {customMarker && (
+              {/* MAIN AREA PETA & TOOLBAR */}
+              <div className="clay-main-pane flex-1 min-w-0 flex flex-col p-2.5 sm:p-3.5 gap-2 overflow-y-auto custom-scrollbar">
+                {/* Toolbar Navigasi & Zoom */}
+                <div className="clay-card flex flex-wrap items-center justify-between gap-2 w-full px-2.5 py-1.5 text-xs shrink-0">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[10px] font-bold text-black">Skala:</span>
                     <button
-                      onClick={handleClearMarker}
-                      className="px-2 py-1 text-[10px] font-bold rounded bg-red-950/80 border border-red-800 text-red-300 hover:bg-red-900 transition-colors cursor-pointer flex items-center gap-1"
-                      title="Hapus Tanda Waypoint"
+                      type="button"
+                      onClick={handleZoomOut}
+                      disabled={mapZoom <= 1}
+                      className="clay-btn-neutral p-1 text-black"
+                      style={{ borderRadius: '6px' }}
+                      title="Zoom Out (-)"
                     >
-                      <Trash2 className="w-3 h-3" />
-                      Hapus Tanda
+                      <ZoomOut className="w-3.5 h-3.5 stroke-[2.5]" />
                     </button>
-                  )}
-                </div>
-              </div>
+                    <span className="clay-badge-primary font-bold text-black text-[10px] px-2 py-0.5 min-w-[46px] text-center">
+                      {Math.round(mapZoom * 100)}%
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handleZoomIn}
+                      disabled={mapZoom >= 4}
+                      className="clay-btn-neutral p-1 text-black"
+                      style={{ borderRadius: '6px' }}
+                      title="Zoom In (+)"
+                    >
+                      <ZoomIn className="w-3.5 h-3.5 stroke-[2.5]" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleResetZoom}
+                      className="clay-btn-secondary px-2 py-1 text-[10px] font-bold text-black flex items-center gap-1"
+                      style={{ borderRadius: '6px' }}
+                      title="Reset Zoom"
+                    >
+                      <RotateCcw className="w-3 h-3 stroke-[2.5]" />
+                      <span>Reset</span>
+                    </button>
+                  </div>
 
-              {/* Viewport Peta dengan Pan & Zoom */}
-              <div
-                className={`w-full max-w-[340px] xs:max-w-[400px] sm:max-w-[440px] h-[150px] xs:h-[180px] sm:h-[300px] md:h-[380px] bg-[#001026] border border-neutral-800 rounded-xl relative overflow-hidden shadow-2xl select-none shrink-0 ${
-                  mapZoom > 1 ? (isDraggingMap ? 'cursor-grabbing' : 'cursor-grab') : 'cursor-crosshair'
-                }`}
-                onMouseDown={handleMapMouseDown}
-                onMouseMove={handleMapMouseMove}
-                onMouseUp={handleMapMouseUp}
-                onMouseLeave={handleMapMouseUp}
-                onWheel={handleMapWheel}
-              >
-                {/* Container Yang Ditransformasikan (Zoom & Pan) */}
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => setShowGridOverlay(!showGridOverlay)}
+                      className={`px-2 py-1 text-[10px] font-bold flex items-center gap-1 text-black ${
+                        showGridOverlay ? 'clay-btn-primary' : 'clay-btn-neutral'
+                      }`}
+                      style={{ borderRadius: '6px' }}
+                    >
+                      <Grid className="w-3 h-3 stroke-[2.5]" />
+                      <span>Grid</span>
+                    </button>
+
+                    {customMarker && (
+                      <button
+                        type="button"
+                        onClick={handleClearMarker}
+                        className="clay-btn-secondary px-2 py-1 text-[10px] font-bold text-black flex items-center gap-1"
+                        style={{ borderRadius: '6px' }}
+                        title="Hapus Tanda Waypoint"
+                      >
+                        <Trash2 className="w-3 h-3 stroke-[2.5]" />
+                        <span>Hapus Pin</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Viewport Peta dengan Pan Mouse + Touch & Zoom */}
                 <div
-                  className="w-full h-full"
-                  style={{
-                    transform: `translate(${mapPan.x}px, ${mapPan.y}px) scale(${mapZoom})`,
-                    transformOrigin: 'center center',
-                    transition: isDraggingMap ? 'none' : 'transform 0.12s ease-out',
-                  }}
+                  className={`w-full aspect-[4/3] sm:aspect-[16/10] max-h-[52dvh] bg-[#001026] border-2 border-[#5C3A21] rounded-xl relative overflow-hidden select-none shrink-0 ${
+                    mapZoom > 1 ? (isDraggingMap ? 'cursor-grabbing' : 'cursor-grab') : 'cursor-crosshair'
+                  }`}
+                  onMouseDown={handleMapMouseDown}
+                  onMouseMove={handleMapMouseMove}
+                  onMouseUp={handleMapMouseUp}
+                  onMouseLeave={handleMapMouseUp}
+                  onTouchStart={handleMapTouchStart}
+                  onTouchMove={handleMapTouchMove}
+                  onTouchEnd={handleMapTouchEnd}
+                  onWheel={handleMapWheel}
                 >
-                  <WorldMapSvg
-                    playerGridX={gridX}
-                    playerGridY={gridY}
-                    playerDirection={stats?.direction || 'down'}
-                    isMini={false}
-                    customMarker={customMarker}
-                    onMapClick={handleSetMarker}
-                    showGridLines={showGridOverlay}
-                    className="w-full h-full rounded"
-                  />
+                  <div
+                    className="w-full h-full"
+                    style={{
+                      transform: `translate(${mapPan.x}px, ${mapPan.y}px) scale(${mapZoom})`,
+                      transformOrigin: 'center center',
+                      transition: isDraggingMap ? 'none' : 'transform 0.12s ease-out',
+                    }}
+                  >
+                    <WorldMapSvg
+                      playerGridX={gridX}
+                      playerGridY={gridY}
+                      playerDirection={stats?.direction || 'down'}
+                      isMini={false}
+                      customMarker={customMarker}
+                      onMapClick={handleSetMarker}
+                      showGridLines={showGridOverlay}
+                      className="w-full h-full"
+                    />
+                  </div>
+
+                  {/* Kompas Mata Angin */}
+                  <div className="absolute top-2 left-1/2 -translate-x-1/2 clay-badge-neutral px-2 py-0 text-[10px] font-bold text-black pointer-events-none">
+                    U
+                  </div>
+                  <div className="absolute bottom-2 left-1/2 -translate-x-1/2 clay-badge-neutral px-2 py-0 text-[10px] font-bold text-black pointer-events-none">
+                    S
+                  </div>
+                  <div className="absolute left-2 top-1/2 -translate-y-1/2 clay-badge-neutral px-2 py-0 text-[10px] font-bold text-black pointer-events-none">
+                    B
+                  </div>
+                  <div className="absolute right-2 top-1/2 -translate-y-1/2 clay-badge-neutral px-2 py-0 text-[10px] font-bold text-black pointer-events-none">
+                    T
+                  </div>
                 </div>
 
-                {/* Kompas Mata Angin */}
-                <div className="absolute top-2 left-1/2 -translate-x-1/2 text-[10px] font-black font-mono text-amber-300 pointer-events-none drop-shadow">
-                  U (UTARA)
+                <div className="w-full flex flex-wrap items-center justify-between gap-1 text-[10px] font-bold text-black px-1">
+                  <span>📍 Ketuk langsung pada peta atau pilih dari sidebar untuk memasang pin tujuan</span>
+                  <span>🖐️ Geser saat diperbesar (zoom) untuk menjelajahi peta</span>
                 </div>
-                <div className="absolute bottom-2 left-1/2 -translate-x-1/2 text-[10px] font-black font-mono text-neutral-400 pointer-events-none drop-shadow">
-                  S (SELATAN)
-                </div>
-                <div className="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] font-black font-mono text-neutral-400 pointer-events-none drop-shadow">
-                  B
-                </div>
-                <div className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-black font-mono text-neutral-400 pointer-events-none drop-shadow">
-                  T
-                </div>
-              </div>
 
-              {/* Petunjuk Interaksi Peta */}
-              <div className="w-full max-w-[440px] flex items-center justify-between text-[10px] font-mono text-neutral-400 px-1">
-                <span>📍 Klik di peta untuk pasang / hapus tanda</span>
-                <span>🖱️ Scroll untuk zoom • Geser untuk pan</span>
-              </div>
-
-              {/* Legenda Peta 100% Sesuai Dunia */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 w-full max-w-[440px] text-[11px] text-neutral-300 font-semibold px-1 pt-1 border-t border-neutral-800/80">
-                <div className="flex items-center gap-1.5">
-                  <span className="w-3 h-3 rounded-sm bg-[#01ae01] border border-[#008e00]" />
-                  <span>Rumput Catur</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="w-3 h-3 rounded-sm bg-[#1e293b] border border-amber-400" />
-                  <span>Jalan Protokol</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="w-3 h-3 rounded-sm bg-[#94a3b8] border border-neutral-600" />
-                  <span>Trotoar Paving</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="w-3 h-3 rounded-sm bg-[#00a2f3]" />
-                  <span>Lautan Timur</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="w-3 h-3 rounded-sm bg-[#cbd5e1] border border-neutral-500" />
-                  <span>Dermaga 1 - 3</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="w-3 h-3 rounded-sm bg-[#b39962] border border-[#8c733e]" />
-                  <span>Pantai Pasir</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="w-3 h-3 rounded-full bg-red-500 ring-2 ring-red-400/50" />
-                  <span className="text-red-300 font-bold">Tanda Waypoint</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="w-3 h-3 rounded-full bg-amber-400 ring-2 ring-amber-400/50" />
-                  <span className="text-amber-300 font-bold">Posisi Kamu</span>
+                {/* Legenda Peta */}
+                <div className="clay-card grid grid-cols-2 sm:grid-cols-4 md:grid-cols-8 gap-1.5 w-full text-[10px] text-black font-bold p-2 shrink-0">
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-3 h-3 rounded-xs bg-[#01ae01] border border-[#5C3A21] shrink-0" />
+                    <span>Rumput</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-3 h-3 rounded-xs bg-[#1e293b] border border-[#5C3A21] shrink-0" />
+                    <span>Jalan Raya</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-3 h-3 rounded-xs bg-[#94a3b8] border border-[#5C3A21] shrink-0" />
+                    <span>Trotoar</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-3 h-3 rounded-xs bg-[#00a2f3] border border-[#5C3A21] shrink-0" />
+                    <span>Lautan</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-3 h-3 rounded-xs bg-[#cbd5e1] border border-[#5C3A21] shrink-0" />
+                    <span>Dermaga</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-3 h-3 rounded-xs bg-[#b39962] border border-[#5C3A21] shrink-0" />
+                    <span>Pantai</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-3 h-3 rounded-full bg-red-500 border border-[#5C3A21] shrink-0" />
+                    <span>Pin Tujuan</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-3 h-3 rounded-full bg-[#FFAE6D] border border-[#5C3A21] shrink-0" />
+                    <span>Posisi Kamu</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1008,7 +1117,7 @@ export const HUD: React.FC<HUDProps> = React.memo(({
         </div>
       )}
 
-      {/* 4. MODAL DAFTAR PEMAIN DI SERVER (ROBLOX-STYLE PLAYER LIST) */}
+      {/* 4. MODAL DAFTAR PEMAIN DI SERVER */}
       <ServerUsersModal
         isOpen={isServerUsersModalOpen}
         onClose={() => setIsServerUsersModalOpen(false)}

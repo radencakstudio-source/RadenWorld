@@ -31,6 +31,7 @@ import {
   SMA2_QUESTIONS,
   SMA3_QUESTIONS,
 } from './quizzes/SmaQuizData';
+import { getExtraUniqueQuestionsForGrade } from './quizzes/ExtraUniqueQuizBank';
 
 export interface ISchoolQuizQuestion {
   id: string;
@@ -42,26 +43,63 @@ export interface ISchoolQuizQuestion {
   explanation: string;
 }
 
+function normalizeQuizText(text: string): string {
+  return (text || '').trim().toLowerCase().replace(/\s+/g, ' ');
+}
+
+function deduplicateQuestionList(items: ISchoolQuizQuestion[]): ISchoolQuizQuestion[] {
+  const seenQuestions = new Set<string>();
+  const result: ISchoolQuizQuestion[] = [];
+  for (const item of items) {
+    if (!item || !item.question) continue;
+    const key = normalizeQuizText(item.question);
+    if (!key || seenQuestions.has(key)) continue;
+    seenQuestions.add(key);
+
+    // Pastikan 3 wrongAnswers unik dan tidak sama dengan correctAnswer
+    const correctNorm = normalizeQuizText(item.correctAnswer);
+    const distinctWrong: string[] = [];
+    const seenOpt = new Set<string>([correctNorm]);
+    for (const w of item.wrongAnswers || []) {
+      const wn = normalizeQuizText(w);
+      if (wn && !seenOpt.has(wn)) {
+        seenOpt.add(wn);
+        distinctWrong.push(w);
+      }
+    }
+    let padIdx = 1;
+    while (distinctWrong.length < 3) {
+      const candidate = `Pilihan Alternatif ${padIdx++}`;
+      if (!seenOpt.has(normalizeQuizText(candidate))) {
+        seenOpt.add(normalizeQuizText(candidate));
+        distinctWrong.push(candidate);
+      }
+    }
+
+    result.push({
+      ...item,
+      wrongAnswers: [distinctWrong[0], distinctWrong[1], distinctWrong[2]],
+    });
+  }
+  return result;
+}
+
 /**
- * Pemetaan Lengkap Bank Soal Sesuai Jenjang & Kelas:
- * SD 1-6 (100 soal/kelas = 600 soal)
- * SMP 1-3 (100 soal/kelas = 300 soal)
- * SMA 1-3 (100 soal/kelas = 300 soal)
- * Total: 1.200 Soal Kurikulum Resmi Komprehensif
+ * Pemetaan Lengkap Bank Soal Sesuai Jenjang & Kelas (100% Deduplicated + Extra Unik):
  */
 export const GRADE_QUIZ_MAP: Record<string, ISchoolQuizQuestion[]> = {
-  'sd-1': SD1_QUESTIONS,
-  'sd-2': SD2_QUESTIONS,
-  'sd-3': SD3_QUESTIONS,
-  'sd-4': SD4_QUESTIONS,
-  'sd-5': SD5_QUESTIONS,
-  'sd-6': SD6_QUESTIONS,
-  'smp-1': SMP1_QUESTIONS,
-  'smp-2': SMP2_QUESTIONS,
-  'smp-3': SMP3_QUESTIONS,
-  'sma-1': SMA1_QUESTIONS,
-  'sma-2': SMA2_QUESTIONS,
-  'sma-3': SMA3_QUESTIONS,
+  'sd-1': deduplicateQuestionList([...SD1_QUESTIONS, ...getExtraUniqueQuestionsForGrade('sd-1')]),
+  'sd-2': deduplicateQuestionList([...SD2_QUESTIONS, ...getExtraUniqueQuestionsForGrade('sd-2')]),
+  'sd-3': deduplicateQuestionList([...SD3_QUESTIONS, ...getExtraUniqueQuestionsForGrade('sd-3')]),
+  'sd-4': deduplicateQuestionList([...SD4_QUESTIONS, ...getExtraUniqueQuestionsForGrade('sd-4')]),
+  'sd-5': deduplicateQuestionList([...SD5_QUESTIONS, ...getExtraUniqueQuestionsForGrade('sd-5')]),
+  'sd-6': deduplicateQuestionList([...SD6_QUESTIONS, ...getExtraUniqueQuestionsForGrade('sd-6')]),
+  'smp-1': deduplicateQuestionList([...SMP1_QUESTIONS, ...getExtraUniqueQuestionsForGrade('smp-1')]),
+  'smp-2': deduplicateQuestionList([...SMP2_QUESTIONS, ...getExtraUniqueQuestionsForGrade('smp-2')]),
+  'smp-3': deduplicateQuestionList([...SMP3_QUESTIONS, ...getExtraUniqueQuestionsForGrade('smp-3')]),
+  'sma-1': deduplicateQuestionList([...SMA1_QUESTIONS, ...getExtraUniqueQuestionsForGrade('sma-1')]),
+  'sma-2': deduplicateQuestionList([...SMA2_QUESTIONS, ...getExtraUniqueQuestionsForGrade('sma-2')]),
+  'sma-3': deduplicateQuestionList([...SMA3_QUESTIONS, ...getExtraUniqueQuestionsForGrade('sma-3')]),
 };
 
 export {
@@ -1001,8 +1039,175 @@ export const SCHOOL_QUIZ_BANK: ISchoolQuizQuestion[] = [
   },
 ];
 
+const SEEN_QUIZ_STORAGE_KEY = 'raden_seen_quiz_v2';
+const LAST_BATCH_STORAGE_KEY = 'raden_last_quiz_batch_v2';
+
+export interface IQuizSubjectCardMeta {
+  name: string;
+  emoji: string;
+  desc: string;
+}
+
+export function getQuizSubjectsForSchool(schoolType: 'sd' | 'smp' | 'sma'): IQuizSubjectCardMeta[] {
+  if (schoolType === 'sd') {
+    return [
+      { name: 'Semua Mapel', emoji: '🌟', desc: 'Campuran Soal Kurikulum SD' },
+      { name: 'Matematika', emoji: '🔢', desc: 'Berhitung, Bangun Datar & Ruang' },
+      { name: 'IPAS', emoji: '🔬', desc: 'Ilmu Pengetahuan Alam & Sosial' },
+      { name: 'Bahasa Indonesia', emoji: '🇮🇩', desc: 'Membaca, Kosakata & Pantun' },
+      { name: 'Pendidikan Pancasila', emoji: '⚖️', desc: 'Sila Pancasila & Budaya Bangsa' },
+    ];
+  }
+  if (schoolType === 'smp') {
+    return [
+      { name: 'Semua Mapel', emoji: '🌟', desc: 'Campuran Soal Kurikulum SMP' },
+      { name: 'Matematika', emoji: '🔢', desc: 'Aljabar, Geometri & Pythagoras' },
+      { name: 'IPA', emoji: '🔬', desc: 'Fisika, Biologi & Kimia Dasar' },
+      { name: 'IPS', emoji: '🌍', desc: 'Geografi, Sejarah & Ekonomi' },
+      { name: 'Bahasa Indonesia', emoji: '🇮🇩', desc: 'Teks, Majas & Kebahasaan' },
+      { name: 'Bahasa Inggris', emoji: '🇬🇧', desc: 'Grammar, Tenses & Vocabulary' },
+      { name: 'PPKn', emoji: '⚖️', desc: 'Konstitusi UUD 1945 & Norma' },
+    ];
+  }
+  return [
+    { name: 'Semua Mapel', emoji: '🌟', desc: 'Campuran Soal UTBK & SMA' },
+    { name: 'Matematika', emoji: '🔢', desc: 'Aljabar Lanjut, Barisan & Kalkulus' },
+    { name: 'Fisika', emoji: '⚡', desc: 'Mekanika, Listrik & Gelombang' },
+    { name: 'Kimia', emoji: '🧪', desc: 'Struktur Atom, Ikatan & Stoikiometri' },
+    { name: 'Biologi', emoji: '🧬', desc: 'Sel, Genetika, Organ & Ekosistem' },
+    { name: 'Ekonomi', emoji: '📈', desc: 'Pasar, Akuntansi, Moneter & Fiskal' },
+    { name: 'Sosiologi', emoji: '🤝', desc: 'Interaksi, Struktur & Budaya Sosial' },
+    { name: 'Bahasa Indonesia', emoji: '🇮🇩', desc: 'Literasi Teks, Ejaan & Sastra' },
+    { name: 'Bahasa Inggris', emoji: '🇬🇧', desc: 'Reading Comprehension & Grammar' },
+  ];
+}
+
+function matchesQuizSubject(qSubject: string, selectedKeyword?: string): boolean {
+  if (!selectedKeyword || !selectedKeyword.trim() || selectedKeyword === 'Semua Mapel') {
+    return true;
+  }
+  const qNorm = normalizeQuizText(qSubject);
+  const kw = normalizeQuizText(selectedKeyword);
+  if (qNorm === kw || qNorm.includes(kw) || kw.includes(qNorm)) {
+    return true;
+  }
+  if (kw === 'ipa' || kw === 'sains') {
+    return ['ipa', 'ipas', 'ipa (sains)', 'fisika', 'kimia', 'biologi'].includes(qNorm);
+  }
+  if (kw === 'ips' || kw === 'sosial') {
+    return ['ips', 'ipas', 'ips (sosial)', 'ekonomi', 'sosiologi', 'sejarah', 'geografi'].includes(qNorm);
+  }
+  if (kw.includes('pancasila') || kw === 'ppkn' || kw === 'pkn') {
+    return qNorm.includes('pancasila') || qNorm.includes('ppkn') || qNorm.includes('pkn');
+  }
+  return false;
+}
+
+function shuffleArrayInPlace<T>(arr: T[]): T[] {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function selectUniqueUnseenQuestions(
+  rawPool: ISchoolQuizQuestion[],
+  count: number,
+  gradeKey?: string,
+  subjectKeyword?: string
+): ISchoolQuizQuestion[] {
+  const uniqueBase = deduplicateQuestionList(rawPool);
+  let candidates = uniqueBase.filter((q) => matchesQuizSubject(q.subject, subjectKeyword));
+
+  if (candidates.length < count) {
+    const extraGlobal = deduplicateQuestionList(SCHOOL_QUIZ_BANK).filter((q) =>
+      matchesQuizSubject(q.subject, subjectKeyword)
+    );
+    candidates = deduplicateQuestionList([...candidates, ...extraGlobal]);
+  }
+  if (candidates.length < Math.min(5, count)) {
+    candidates = uniqueBase;
+  }
+
+  const bucketId = `${(gradeKey || 'global').toLowerCase()}::${normalizeQuizText(subjectKeyword || 'all')}`;
+  let seenStore: Record<string, string[]> = {};
+  let lastBatchStore: Record<string, string[]> = {};
+
+  if (typeof window !== 'undefined') {
+    try {
+      seenStore = JSON.parse(localStorage.getItem(SEEN_QUIZ_STORAGE_KEY) || '{}') || {};
+      lastBatchStore = JSON.parse(localStorage.getItem(LAST_BATCH_STORAGE_KEY) || '{}') || {};
+    } catch {
+      seenStore = {};
+      lastBatchStore = {};
+    }
+  }
+
+  const seenSet = new Set<string>(Array.isArray(seenStore[bucketId]) ? seenStore[bucketId] : []);
+  const lastBatchSet = new Set<string>(Array.isArray(lastBatchStore[bucketId]) ? lastBatchStore[bucketId] : []);
+
+  const unseen: ISchoolQuizQuestion[] = [];
+  const seenNotRecent: ISchoolQuizQuestion[] = [];
+  const seenRecent: ISchoolQuizQuestion[] = [];
+
+  for (const q of candidates) {
+    const qKey = normalizeQuizText(q.question);
+    if (!seenSet.has(qKey)) {
+      unseen.push(q);
+    } else if (!lastBatchSet.has(qKey)) {
+      seenNotRecent.push(q);
+    } else {
+      seenRecent.push(q);
+    }
+  }
+
+  shuffleArrayInPlace(unseen);
+  shuffleArrayInPlace(seenNotRecent);
+  shuffleArrayInPlace(seenRecent);
+
+  const targetCount = Math.min(count, candidates.length);
+  const picked: ISchoolQuizQuestion[] = [];
+
+  for (const q of unseen) {
+    if (picked.length >= targetCount) break;
+    picked.push(q);
+  }
+
+  let didCycle = false;
+  if (picked.length < targetCount) {
+    didCycle = true;
+    for (const q of seenNotRecent) {
+      if (picked.length >= targetCount) break;
+      picked.push(q);
+    }
+    for (const q of seenRecent) {
+      if (picked.length >= targetCount) break;
+      picked.push(q);
+    }
+  }
+
+  if (typeof window !== 'undefined') {
+    try {
+      const pickedKeys = picked.map((q) => normalizeQuizText(q.question));
+      if (didCycle) {
+        seenStore[bucketId] = pickedKeys;
+      } else {
+        seenStore[bucketId] = Array.from(new Set([...seenSet, ...pickedKeys]));
+      }
+      lastBatchStore[bucketId] = pickedKeys;
+      localStorage.setItem(SEEN_QUIZ_STORAGE_KEY, JSON.stringify(seenStore));
+      localStorage.setItem(LAST_BATCH_STORAGE_KEY, JSON.stringify(lastBatchStore));
+    } catch {
+      // Ignore storage quota errors
+    }
+  }
+
+  return picked;
+}
+
 /**
- * Mengambil 20 soal kuis acak dari 100 soal bank,
+ * Mengambil 20 soal kuis acak tanpa duplikasi,
  * sekaligus mengacak urutan 4 opsi jawaban (A, B, C, D) di setiap soal.
  */
 export function generateRandomQuizSession(count: number = 20, gradeKey?: string): Array<{
@@ -1014,29 +1219,13 @@ export function generateRandomQuizSession(count: number = 20, gradeKey?: string)
   correctIndex: number;
   explanation: string;
 }> {
-  // 1. Acak seluruh soal pool kelas/default menggunakan Fisher-Yates
   const basePool = (gradeKey && GRADE_QUIZ_MAP[gradeKey.toLowerCase()])
     ? GRADE_QUIZ_MAP[gradeKey.toLowerCase()]
     : SCHOOL_QUIZ_BANK;
-  const pool = [...basePool];
-  for (let i = pool.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [pool[i], pool[j]] = [pool[j], pool[i]];
-  }
+  const selected = selectUniqueUnseenQuestions(basePool, count, gradeKey, 'Semua Mapel');
 
-  // 2. Ambil 20 soal pertama yang sudah teracak
-  const selected = pool.slice(0, Math.min(count, pool.length));
-
-  // 3. Acak posisi 4 pilihan jawaban untuk setiap soal
   return selected.map((q) => {
-    const rawOptions = [q.correctAnswer, ...q.wrongAnswers];
-
-    // Acak urutan opsi jawaban
-    for (let i = rawOptions.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [rawOptions[i], rawOptions[j]] = [rawOptions[j], rawOptions[i]];
-    }
-
+    const rawOptions = shuffleArrayInPlace([q.correctAnswer, ...q.wrongAnswers]);
     const correctIndex = rawOptions.indexOf(q.correctAnswer);
 
     return {
@@ -1071,8 +1260,7 @@ export interface IArcadeMinigameWave {
 }
 
 /**
- * Generator Sesi Minigame Edukasi Interaktif (Non-Pilgan):
- * Menghasilkan 10 Ronde Balon Tangkas & Refleks Kilat yang Seru, Cepat & Ringan.
+ * Generator Sesi Minigame Edukasi Interaktif (Non-Pilgan) - Anti Duplikat
  */
 export function generateArcadeMinigameSession(
   subjectKeyword?: string,
@@ -1082,41 +1270,16 @@ export function generateArcadeMinigameSession(
   const basePool = (gradeKey && GRADE_QUIZ_MAP[gradeKey.toLowerCase()])
     ? GRADE_QUIZ_MAP[gradeKey.toLowerCase()]
     : SCHOOL_QUIZ_BANK;
-  let pool = [...basePool];
-
-  if (subjectKeyword && subjectKeyword.trim()) {
-    const kw = subjectKeyword.toLowerCase().trim();
-    const filtered = pool.filter((q) =>
-      q.subject.toLowerCase().includes(kw) || kw.includes(q.subject.toLowerCase())
-    );
-    if (filtered.length >= 5) {
-      pool = filtered;
-    }
-  }
-
-  // Acak pool menggunakan Fisher-Yates
-  for (let i = pool.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [pool[i], pool[j]] = [pool[j], pool[i]];
-  }
-
-  const selectedQuestions = pool.slice(0, Math.min(count, pool.length));
+  const selectedQuestions = selectUniqueUnseenQuestions(basePool, count, gradeKey, subjectKeyword);
   const colors: Array<'rose' | 'sky' | 'amber' | 'emerald'> = ['rose', 'sky', 'amber', 'emerald'];
 
   return selectedQuestions.map((q, qIdx) => {
-    // 4 Balon Interaktif (1 Benar, 3 Pengecoh)
-    const rawAnswers = [
+    const rawAnswers = shuffleArrayInPlace([
       { text: q.correctAnswer, isCorrect: true },
       { text: q.wrongAnswers[0], isCorrect: false },
       { text: q.wrongAnswers[1], isCorrect: false },
       { text: q.wrongAnswers[2], isCorrect: false },
-    ];
-
-    // Acak posisi balon
-    for (let i = rawAnswers.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [rawAnswers[i], rawAnswers[j]] = [rawAnswers[j], rawAnswers[i]];
-    }
+    ]);
 
     const balloons = rawAnswers.map((item, bIdx) => ({
       id: `balloon_${qIdx}_${bIdx}`,
@@ -1125,7 +1288,6 @@ export function generateArcadeMinigameSession(
       color: colors[bIdx % colors.length],
     }));
 
-    // Generate Pernyataan Refleks Kilat (50% Peluang Benar / Salah)
     const isTrueStatement = Math.random() > 0.45;
     const chosenAnswer = isTrueStatement
       ? q.correctAnswer
@@ -1174,51 +1336,27 @@ export interface ITextQuizQuestion {
 }
 
 /**
- * Generator Sesi Teks Quiz Ringan & Cepat:
- * Menghasilkan 10 soal acak terstruktur dengan 4 opsi acak (A, B, C, D).
+ * Generator Sesi Teks Quiz Anti-Duplikat:
+ * Memprioritaskan soal yang belum pernah dikerjakan pemain & menjamin 0 soal kembar.
  */
 export function generateTextQuizSession(
   subjectKeyword?: string,
-  count: number = 10,
+  count: number = 20,
   gradeKey?: string
 ): ITextQuizQuestion[] {
   const basePool = (gradeKey && GRADE_QUIZ_MAP[gradeKey.toLowerCase()])
     ? GRADE_QUIZ_MAP[gradeKey.toLowerCase()]
     : SCHOOL_QUIZ_BANK;
-  let pool = [...basePool];
-
-  if (subjectKeyword && subjectKeyword.trim() && subjectKeyword !== 'Semua Mapel') {
-    const kw = subjectKeyword.toLowerCase().trim();
-    const filtered = pool.filter((q) =>
-      q.subject.toLowerCase().includes(kw) || kw.includes(q.subject.toLowerCase())
-    );
-    if (filtered.length >= 3) {
-      pool = filtered;
-    }
-  }
-
-  // Acak pool dengan Fisher-Yates shuffle
-  for (let i = pool.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [pool[i], pool[j]] = [pool[j], pool[i]];
-  }
-
-  const selected = pool.slice(0, Math.min(count, pool.length));
+  const selected = selectUniqueUnseenQuestions(basePool, count, gradeKey, subjectKeyword);
   const keys: Array<'A' | 'B' | 'C' | 'D'> = ['A', 'B', 'C', 'D'];
 
   return selected.map((q) => {
-    const rawOptions = [
+    const rawOptions = shuffleArrayInPlace([
       { text: q.correctAnswer, isCorrect: true },
       { text: q.wrongAnswers[0], isCorrect: false },
       { text: q.wrongAnswers[1], isCorrect: false },
       { text: q.wrongAnswers[2], isCorrect: false },
-    ];
-
-    // Acak urutan jawaban agar letak A/B/C/D selalu dinamis
-    for (let i = rawOptions.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [rawOptions[i], rawOptions[j]] = [rawOptions[j], rawOptions[i]];
-    }
+    ]);
 
     const options: ITextQuizOption[] = rawOptions.map((item, idx) => ({
       key: keys[idx],

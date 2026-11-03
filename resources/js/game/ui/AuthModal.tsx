@@ -2,22 +2,20 @@
  * ============================================================================
  * FILE: resources/js/game/ui/AuthModal.tsx
  * ============================================================================
- * FUNGSI UTAMA:
- * Modal Autentikasi Modern, Bersih, dan Flat Pure Black:
+ * Modal Autentikasi RadenWorld (Cozycore Clay-Pixel):
+ * Layout: Standard Left Sidebar (Logo di atas, teks di bawah)
  * 1. TAB MASUK:
  *    - Login via Email / Username & Password
  *    - Opsi "Lupa kata sandi?" terintegrasi
  *    - Masuk cepat via Google & Facebook
- * 
  * 2. TAB DAFTAR:
- *    - Step 1: Input Data Akun + TANGGAL LAHIR (Otomatis hitung umur)
- *    - Step 2: Pemilihan Avatar SIMPEL (Khusus MALE atau FEMALE saja,
- *              tanpa pilihan warna kulit, rambut, atasan, dan bawahan)
+ *    - Step 1: Input Data Akun + Tanggal Lahir + VERIFIKASI EMAIL OTP 6 DIGIT
+ *    - Step 2: Pemilihan Avatar SIMPEL (MALE atau FEMALE)
  *    - Selesaikan pendaftaran dan langsung terhubung ke Open World
  * ============================================================================
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { IAvatarCustomization, Gender } from '../types';
 import { AvatarPreview } from './AvatarPreview';
 import { SoundManager } from '../core/SoundManager';
@@ -37,6 +35,8 @@ import {
   UserPlus,
   Sparkles,
   ShieldCheck,
+  KeyRound,
+  Send,
 } from 'lucide-react';
 import { SocialAccountChooserModal, ISocialAccount } from './SocialAccountChooserModal';
 
@@ -81,6 +81,15 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
   const [showRegisterPassword, setShowRegisterPassword] = useState(false);
   const [showRegisterConfirmPassword, setShowRegisterConfirmPassword] = useState(false);
 
+  // Email OTP State
+  const [otpInputCode, setOtpInputCode] = useState('');
+  const [isOtpSent, setIsOtpSent] = useState(false);
+  const [isOtpVerified, setIsOtpVerified] = useState(false);
+  const [otpCooldown, setOtpCooldown] = useState(0);
+  const [otpFeedback, setOtpFeedback] = useState<{ message: string; isError: boolean } | null>(null);
+  const [isSendingOtp, setIsSendingOtp] = useState(false);
+  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
+
   // Register Wizard Step: 1 = Form Akun & Tanggal Lahir, 2 = Pilih Gender Avatar (Male / Female)
   const [registerStep, setRegisterStep] = useState<1 | 2>(1);
 
@@ -118,13 +127,19 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
 
   const sound = SoundManager.getInstance();
 
+  useEffect(() => {
+    if (otpCooldown <= 0) return;
+    const timer = setInterval(() => {
+      setOtpCooldown((prev) => Math.max(0, prev - 1));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [otpCooldown]);
+
   if (!isOpen) return null;
 
-  // Tanggal hari ini untuk batasan input max tanggal lahir
   const todayDate = new Date().toISOString().split('T')[0];
   const calculatedAge = calculateAgeFromBirthDate(registerBirthDate);
 
-  // Template Avatar Sesuai Gender Pilihan
   const getAvatarForGender = (gender: Gender): IAvatarCustomization => {
     return {
       gender,
@@ -145,7 +160,78 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
     setRegisterStep(1);
   };
 
-  // Submit Tab Masuk (Database SQLite)
+  const handleSendEmailOtp = async () => {
+    sound.playClick();
+    const cleanEmail = registerEmail.trim().toLowerCase();
+    if (!cleanEmail || !cleanEmail.includes('@') || !cleanEmail.includes('.')) {
+      setOtpFeedback({ message: 'Masukkan alamat email yang valid terlebih dahulu.', isError: true });
+      return;
+    }
+
+    setIsSendingOtp(true);
+    setOtpFeedback(null);
+
+    try {
+      const res = await fetch('/api/auth/send-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({ email: cleanEmail, purpose: 'register' }),
+      });
+      const data = await res.json();
+      if (res.ok && data.status === 'success') {
+        sound.playSuccess();
+        setIsOtpSent(true);
+        setOtpCooldown(60);
+        setOtpFeedback({ message: data.message || 'Kode OTP 6-digit berhasil dikirim!', isError: false });
+        if (data.debug_otp) {
+          setOtpInputCode(data.debug_otp);
+        }
+      } else {
+        sound.playError();
+        setOtpFeedback({ message: data.message || 'Gagal mengirim kode OTP.', isError: true });
+      }
+    } catch (e) {
+      sound.playError();
+      setOtpFeedback({ message: 'Koneksi ke server gagal saat mengirim kode OTP.', isError: true });
+    } finally {
+      setIsSendingOtp(false);
+    }
+  };
+
+  const handleVerifyEmailOtp = async () => {
+    sound.playClick();
+    const cleanCode = otpInputCode.trim();
+    if (cleanCode.length !== 6) {
+      setOtpFeedback({ message: 'Masukkan 6 digit kode OTP secara lengkap.', isError: true });
+      return;
+    }
+
+    setIsVerifyingOtp(true);
+    setOtpFeedback(null);
+
+    try {
+      const res = await fetch('/api/auth/verify-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({ email: registerEmail.trim().toLowerCase(), code: cleanCode }),
+      });
+      const data = await res.json();
+      if (res.ok && data.status === 'success') {
+        sound.playSuccess();
+        setIsOtpVerified(true);
+        setOtpFeedback({ message: '✓ Email berhasil diverifikasi dengan OTP!', isError: false });
+      } else {
+        sound.playError();
+        setOtpFeedback({ message: data.message || 'Kode OTP salah atau telah kadaluarsa.', isError: true });
+      }
+    } catch (e) {
+      sound.playError();
+      setOtpFeedback({ message: 'Koneksi server gagal saat verifikasi OTP.', isError: true });
+    } finally {
+      setIsVerifyingOtp(false);
+    }
+  };
+
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!loginIdentifier.trim() || !loginPassword.trim()) {
@@ -203,7 +289,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
     }
   };
 
-  // Submit Step 1 Daftar: Validasi Akun & Tanggal Lahir -> Lanjut ke Pilih Avatar Male/Female
   const handleRegisterStep1Submit = (e: React.FormEvent) => {
     e.preventDefault();
     setAuthError(null);
@@ -223,11 +308,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
       return;
     }
 
+    if (!isOtpVerified) {
+      sound.playError();
+      setAuthError('Harap verifikasi email Anda dengan kode OTP 6-digit terlebih dahulu!');
+      return;
+    }
+
     sound.playClick();
-    setRegisterStep(2); // Pindah ke Step 2: Pilih Avatar Male / Female
+    setRegisterStep(2);
   };
 
-  // Submit Step 2 Daftar: Simpan ke Database SQLite & Masuk ke Game
   const handleRegisterFinalSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setAuthError(null);
@@ -275,7 +365,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
     }
   };
 
-  // Submit Lupa Password Terverifikasi Keamanan
   const handleForgotSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!forgotEmail.trim()) {
@@ -319,7 +408,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
     }
   };
 
-  // Penanganan Sukses Login Akun Sosial
   const handleSocialSuccess = (user: any) => {
     sound.playSuccess();
     let loadedAvatar = user?.avatar;
@@ -328,6 +416,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
         loadedAvatar = JSON.parse(loadedAvatar);
       } catch (e) {}
     }
+
     if (!loadedAvatar || typeof loadedAvatar !== 'object' || !loadedAvatar.gender) {
       loadedAvatar = getAvatarForGender(user?.avatar?.gender || 'male');
     }
@@ -342,7 +431,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
     onClose();
   };
 
-  // Autentikasi Akun Sosial Otentik Browser (Google & Facebook Account Chooser)
   const handleSocialLogin = (provider: 'google' | 'facebook') => {
     sound.playClick();
     setSocialLoading(null);
@@ -352,12 +440,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
     setIsSocialChooserOpen(true);
   };
 
-  // Handler saat akun Google / Facebook dipilih dari dialog peramban
   const handleSocialAccountChosen = (account: ISocialAccount) => {
     sound.playSuccess();
     setSelectedSocialAccount(account);
     setSocialEmail(account.email);
-    // Berikan saran nama panggilan awal yang rapi, pemain bebas menggantinya ke nama apapun
     const cleanNick = account.name
       ? account.name.replace(/[^a-zA-Z0-9_]/g, '')
       : account.email.split('@')[0];
@@ -365,7 +451,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
     setIsSocialChooserOpen(false);
   };
 
-  // Submit Formulir Masuk Sosial Langsung (Tersimpan Permanen di MySQL)
   const handleSocialVerifySubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!socialModalProvider) return;
@@ -399,829 +484,864 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
       setSocialModalProvider(null);
       handleSocialSuccess(data.user);
     } catch (err) {
-      setAuthError('Gagal terhubung ke server database MySQL.');
+      setAuthError('Gagal terhubung ke server database.');
     } finally {
       setIsLoading(false);
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/80 font-['Chakra_Petch'] select-none animate-in fade-in duration-200">
-      <div className="relative w-full max-w-xl bg-black border border-neutral-800 rounded-xl flex flex-col overflow-hidden max-h-[94dvh]">
+  const stopKeyBubble = (e: React.KeyboardEvent) => {
+    e.stopPropagation();
+  };
 
-        {/* ==================================================================== */}
-        {/* HEADER MODAL: Flat Pure Black                                        */}
-        {/* ==================================================================== */}
-        <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-neutral-800 bg-[#0a0a0a] shrink-0">
-          <div className="flex items-center gap-2.5 sm:gap-3">
-            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-md bg-neutral-900 border border-neutral-800 flex items-center justify-center text-amber-400 shrink-0">
-              {activeTab === 'login' ? <LogIn className="w-4 h-4" /> : <UserPlus className="w-4 h-4" />}
+  return (
+    <div className="ui-modal-backdrop select-none" onKeyDown={stopKeyBubble}>
+      <div className="clay-panel landscape-compact-modal relative w-full max-w-2xl max-h-[min(94dvh,calc(100dvh-1rem))] flex flex-col overflow-hidden text-black">
+        <div className="clay-modal-shell flex-1 min-h-0">
+          {/* SIDEBAR KIRI: LOGO DI ATAS, TEKS DI BAWAH */}
+          <aside className="clay-sidebar">
+            <div className="clay-sidebar-brand">
+              <ShieldCheck className="w-5 h-5 text-black stroke-[2.5]" />
+              <span className="clay-sidebar-title">PORTAL ID</span>
+              <span className="clay-sidebar-subtitle">RADENWORLD</span>
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-sm sm:text-base font-bold text-amber-400 tracking-wider uppercase">
-                  {activeTab === 'login' ? 'Masuk ke Game' : 'Daftar Akun Baru'}
-                </h2>
-                <span className="text-[9px] sm:text-[10px] font-mono font-bold bg-amber-500 text-black px-1.5 py-0.5 rounded">
-                  PORTAL
+
+            <div className="clay-sidebar-nav custom-scrollbar">
+              <button
+                type="button"
+                onClick={() => handleTabChange('login')}
+                className={`clay-sidebar-btn ${
+                  activeTab === 'login' ? 'clay-sidebar-btn-active' : 'clay-sidebar-btn-inactive'
+                }`}
+              >
+                <LogIn className="w-5 h-5 stroke-[2.5] shrink-0" />
+                <span>Masuk</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleTabChange('register')}
+                className={`clay-sidebar-btn ${
+                  activeTab === 'register' ? 'clay-sidebar-btn-active' : 'clay-sidebar-btn-inactive'
+                }`}
+              >
+                <UserPlus className="w-5 h-5 stroke-[2.5] shrink-0" />
+                <span>Daftar</span>
+              </button>
+            </div>
+
+            <div className="clay-sidebar-footer">
+              <span className="clay-badge-neutral text-[9px] font-bold text-center py-0.5">
+                RADEN ID
+              </span>
+            </div>
+          </aside>
+
+          {/* MAIN CONTENT PANE */}
+          <div className="clay-main-pane flex-1 min-w-0 flex flex-col">
+            <div className="clay-main-topbar flex items-center justify-between px-3.5 sm:px-4 py-2 border-b-2 border-[#5C3A21] bg-[#FFF8EA] shrink-0">
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="text-xs sm:text-sm font-bold uppercase text-black truncate">
+                  {activeTab === 'login' ? 'AKSES MASUK AKUN' : 'PENDAFTARAN AKUN BARU'}
+                </span>
+                <span className="clay-badge-secondary hidden sm:inline-block text-[9px] font-bold px-1.5 py-0.5 text-black">
+                  ONLINE
                 </span>
               </div>
-              <p className="text-[11px] sm:text-xs text-neutral-400 mt-0.5 hidden sm:block">
-                {activeTab === 'login'
-                  ? 'Akses akun petualangan open world Anda yang telah terdaftar.'
-                  : 'Buat identitas karakter baru dan mulai petualangan di RadenWorld.'}
-              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  sound.playClick();
+                  onClose();
+                }}
+                className="clay-btn-neutral w-7 h-7 flex items-center justify-center text-black shrink-0"
+                title="Tutup"
+              >
+                <X className="w-4 h-4 stroke-[2.5]" />
+              </button>
             </div>
-          </div>
 
-          <button
-            onClick={() => {
-              sound.playClick();
-              onClose();
-            }}
-            className="p-1.5 rounded-md text-neutral-400 hover:text-amber-400 hover:bg-neutral-800 transition-colors cursor-pointer shrink-0"
-            title="Tutup"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
+            {/* MODAL CONTENT BODY */}
+            <div className="landscape-compact-body p-3.5 sm:p-5 overflow-y-auto space-y-3.5 custom-scrollbar flex-1 min-h-0">
+              {/* Banner Error */}
+              {authError && (
+                <div className="clay-card-primary flex items-center gap-2.5 p-3 text-black text-xs font-bold">
+                  <AlertCircle className="w-4 h-4 text-black shrink-0 stroke-[2.5]" />
+                  <span>{authError}</span>
+                </div>
+              )}
 
-        {/* ==================================================================== */}
-        {/* TAB NAVIGATION BAR (MASUK vs DAFTAR)                                 */}
-        {/* ==================================================================== */}
-        <div className="flex items-center gap-1.5 px-4 sm:px-6 pt-2.5 pb-2 border-b border-neutral-800 bg-[#0a0a0a] shrink-0">
-          <button
-            type="button"
-            onClick={() => handleTabChange('login')}
-            className={`flex-1 py-1.5 sm:py-2 px-2.5 sm:px-3 rounded-md text-[11px] sm:text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 sm:gap-2 transition-colors cursor-pointer ${
-              activeTab === 'login'
-                ? 'bg-amber-500 text-black font-black'
-                : 'text-neutral-400 hover:text-amber-300 hover:bg-neutral-800'
-            }`}
-          >
-            <LogIn className="w-3.5 h-3.5" />
-            <span>1. MASUK KE GAME</span>
-          </button>
+              {/* 1. KONTEN TAB MASUK */}
+              {activeTab === 'login' && (
+                <div className="space-y-3.5">
+                  {socialModalProvider ? (
+                    <div className="space-y-3.5">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            sound.playClick();
+                            setSocialModalProvider(null);
+                            setSelectedSocialAccount(null);
+                            setAuthError(null);
+                          }}
+                          className="clay-btn-neutral px-2.5 py-1 text-xs font-bold text-black flex items-center gap-1.5"
+                        >
+                          <ArrowLeft className="w-3.5 h-3.5 stroke-[2.5]" />
+                          <span>Kembali</span>
+                        </button>
 
-          <button
-            type="button"
-            onClick={() => handleTabChange('register')}
-            className={`flex-1 py-1.5 sm:py-2 px-2.5 sm:px-3 rounded-md text-[11px] sm:text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 sm:gap-2 transition-colors cursor-pointer ${
-              activeTab === 'register'
-                ? 'bg-amber-500 text-black font-black'
-                : 'text-neutral-400 hover:text-amber-300 hover:bg-neutral-800'
-            }`}
-          >
-            <UserPlus className="w-3.5 h-3.5" />
-            <span>2. DAFTAR AKUN BARU</span>
-          </button>
-        </div>
-
-        {/* ==================================================================== */}
-        {/* MODAL CONTENT BODY                                                   */}
-        {/* ==================================================================== */}
-        <div className="p-3.5 sm:p-6 overflow-y-auto space-y-4 custom-scrollbar flex-1 min-h-0">
-
-          {/* Banner Error jika ada */}
-          {authError && (
-            <div className="flex items-center gap-2.5 p-3.5 bg-neutral-900 border border-amber-500/50 rounded-md text-amber-300 text-xs font-semibold animate-in fade-in">
-              <AlertCircle className="w-4 h-4 text-amber-400 shrink-0" />
-              <span>{authError}</span>
-            </div>
-          )}
-
-          {/* ================================================================== */}
-          {/* 1. KONTEN TAB MASUK                                                */}
-          {/* ================================================================== */}
-          {activeTab === 'login' && (
-            <div className="space-y-4 animate-in fade-in duration-150">
-              {socialModalProvider ? (
-                /* Sub-view: Langkah 2 - Konfirmasi Akun Sosial & Pilih Nama Karakter Game */
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        sound.playClick();
-                        setSocialModalProvider(null);
-                        setSelectedSocialAccount(null);
-                        setAuthError(null);
-                      }}
-                      className="flex items-center gap-1.5 text-xs text-neutral-400 hover:text-amber-400 transition-colors cursor-pointer"
-                    >
-                      <ArrowLeft className="w-3.5 h-3.5" />
-                      <span>Batal / Pilih Akun Lain</span>
-                    </button>
-
-                    <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center gap-1">
-                      <Check className="w-3 h-3 text-emerald-400" />
-                      <span>AKUN {socialModalProvider === 'google' ? 'GOOGLE' : 'FACEBOOK'} TERVERIFIKASI</span>
-                    </span>
-                  </div>
-
-                  {/* Banner Akun Sosial Terpilih */}
-                  <div className="p-3.5 rounded-xl border border-neutral-800 bg-[#121214] flex items-center justify-between shadow-inner">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 shadow-md ${socialModalProvider === 'google' ? 'bg-white' : 'bg-[#1877F2]'}`}>
-                        {socialModalProvider === 'google' ? (
-                          <svg className="w-6 h-6" viewBox="0 0 24 24">
-                            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-                            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-                            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
-                            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
-                          </svg>
-                        ) : (
-                          <svg className="w-6 h-6 fill-white" viewBox="0 0 24 24">
-                            <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
-                          </svg>
-                        )}
-                      </div>
-                      <div className="min-w-0">
-                        <div className="text-xs font-bold text-white truncate">
-                          {socialEmail || 'Akun Terhubung'}
-                        </div>
-                        <div className="text-[10px] text-neutral-400 mt-0.5 truncate">
-                          Terhubung via {socialModalProvider === 'google' ? 'Google Account' : 'Facebook Login'}
-                        </div>
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        sound.playClick();
-                        setIsSocialChooserOpen(true);
-                      }}
-                      className="px-2.5 py-1 rounded bg-neutral-800 hover:bg-neutral-700 text-amber-400 hover:text-amber-300 text-[11px] font-bold transition-colors cursor-pointer shrink-0"
-                    >
-                      Ganti Akun
-                    </button>
-                  </div>
-
-                  <form onSubmit={handleSocialVerifySubmit} className="space-y-3.5">
-                    {/* Input Nama Karakter Bebas (Nickname Game) */}
-                    <div className="space-y-1.5">
-                      <div className="flex items-center justify-between">
-                        <label className="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
-                          <User className="w-3.5 h-3.5" />
-                          <span>Nama Karakter di Game (Nickname):</span>
-                        </label>
-                        <span className="text-[10px] text-neutral-400">Bebas & Unik</span>
-                      </div>
-                      <input
-                        type="text"
-                        required
-                        value={socialDisplayName}
-                        onChange={(e) => setSocialDisplayName(e.target.value)}
-                        placeholder="Contoh: RadenSatria, ShadowNinja..."
-                        className="w-full px-3.5 py-2.5 bg-black border border-amber-500/70 rounded-md text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-amber-400 font-mono transition-colors"
-                        autoFocus
-                      />
-                      <p className="text-[10px] text-neutral-400 leading-tight">
-                        💡 Tentukan nama petualangmu di sini! Nama ini yang akan dilihat pemain lain di open world, sekolah, chat, dan papan peringkat (tidak harus sama dengan nama asli atau email Anda).
-                      </p>
-                    </div>
-
-                    {/* Model Karakter */}
-                    <div className="space-y-1.5 p-3 bg-[#0e0e0e] border border-neutral-800 rounded-md">
-                      <div className="flex items-center justify-between mb-1">
-                        <label className="text-[11px] font-bold text-neutral-300 uppercase tracking-wider">
-                          Pilih Model Karakter Baru:
-                        </label>
-                        <span className="text-[10px] text-neutral-400 font-mono font-bold text-amber-400">
-                          {socialGender === 'male' ? 'LAKI-LAKI' : 'PEREMPUAN'}
+                        <span className="clay-badge-secondary text-[10px] font-bold px-2 py-0.5 text-black flex items-center gap-1">
+                          <Check className="w-3 h-3 stroke-[2.5]" />
+                          <span>
+                            AKUN {socialModalProvider === 'google' ? 'GOOGLE' : 'FACEBOOK'} TERVERIFIKASI
+                          </span>
                         </span>
                       </div>
-                      <div className="grid grid-cols-2 gap-2">
+
+                      <div className="clay-card p-3 text-xs space-y-1.5 text-black">
+                        <div className="font-bold uppercase text-[11px] text-black">
+                          Detail Akun Terhubung:
+                        </div>
+                        <div className="flex justify-between gap-2">
+                          <span>Email Terhubung:</span>
+                          <span className="font-bold truncate">{socialEmail}</span>
+                        </div>
+                        {selectedSocialAccount?.name && (
+                          <div className="flex justify-between gap-2">
+                            <span>Nama Terdaftar:</span>
+                            <span className="font-bold truncate">{selectedSocialAccount.name}</span>
+                          </div>
+                        )}
+                      </div>
+
+                      <form onSubmit={handleSocialVerifySubmit} className="space-y-3">
+                        <div className="space-y-1">
+                          <label className="text-xs font-bold text-black uppercase flex items-center gap-1.5">
+                            <User className="w-3.5 h-3.5 stroke-[2.5]" />
+                            <span>Nama Karakter di Game:</span>
+                          </label>
+                          <input
+                            type="text"
+                            required
+                            value={socialDisplayName}
+                            onChange={(e) => setSocialDisplayName(e.target.value)}
+                            placeholder="KarakterRaden"
+                            className="clay-input w-full px-3 py-2 text-xs text-black"
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="text-xs font-bold text-black uppercase flex items-center gap-1.5">
+                            <Sparkles className="w-3.5 h-3.5 stroke-[2.5]" />
+                            <span>Gender Karakter:</span>
+                          </label>
+                          <div className="grid grid-cols-2 gap-2">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                sound.playClick();
+                                setSocialGender('male');
+                              }}
+                              className={`py-2 px-3 text-xs font-bold uppercase text-black ${
+                                socialGender === 'male' ? 'clay-btn-primary' : 'clay-btn-neutral'
+                              }`}
+                            >
+                              LAKI-LAKI
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                sound.playClick();
+                                setSocialGender('female');
+                              }}
+                              className={`py-2 px-3 text-xs font-bold uppercase text-black ${
+                                socialGender === 'female' ? 'clay-btn-primary' : 'clay-btn-neutral'
+                              }`}
+                            >
+                              PEREMPUAN
+                            </button>
+                          </div>
+                        </div>
+
                         <button
-                          type="button"
-                          onClick={() => {
-                            sound.playClick();
-                            setSocialGender('male');
-                          }}
-                          className={`py-2 px-3 rounded border text-xs font-bold uppercase transition-all flex items-center justify-center gap-2 cursor-pointer ${socialGender === 'male' ? 'bg-amber-500 text-black border-amber-400 font-black' : 'bg-neutral-900 text-neutral-400 border-neutral-800 hover:text-white'}`}
+                          type="submit"
+                          disabled={isLoading || !socialDisplayName.trim()}
+                          className="clay-btn-primary w-full py-2.5 text-xs font-bold uppercase text-black flex items-center justify-center gap-2"
                         >
-                          <span>LAKI-LAKI</span>
+                          <span>
+                            {isLoading ? 'Menghubungkan ke Database...' : 'MASUK KE RADENWORLD'}
+                          </span>
+                          {!isLoading && <ArrowRight className="w-4 h-4 stroke-[2.5]" />}
                         </button>
+                      </form>
+                    </div>
+                  ) : !isForgotView ? (
+                    <form onSubmit={handleLoginSubmit} className="space-y-3.5">
+                      {/* Quick Social Buttons */}
+                      <div className="grid grid-cols-2 gap-2.5">
                         <button
                           type="button"
-                          onClick={() => {
-                            sound.playClick();
-                            setSocialGender('female');
-                          }}
-                          className={`py-2 px-3 rounded border text-xs font-bold uppercase transition-all flex items-center justify-center gap-2 cursor-pointer ${socialGender === 'female' ? 'bg-amber-500 text-black border-amber-400 font-black' : 'bg-neutral-900 text-neutral-400 border-neutral-800 hover:text-white'}`}
+                          onClick={() => handleSocialLogin('google')}
+                          disabled={!!socialLoading}
+                          className="clay-btn-neutral py-2 px-3 text-xs font-bold text-black uppercase flex items-center justify-center gap-2"
                         >
-                          <span>PEREMPUAN</span>
+                          <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
+                            <path
+                              fill="#4285F4"
+                              d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                            />
+                            <path
+                              fill="#34A853"
+                              d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                            />
+                            <path
+                              fill="#FBBC05"
+                              d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
+                            />
+                            <path
+                              fill="#EA4335"
+                              d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
+                            />
+                          </svg>
+                          <span>{socialLoading === 'google' ? 'Proses...' : 'Google'}</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handleSocialLogin('facebook')}
+                          disabled={!!socialLoading}
+                          className="clay-btn-neutral py-2 px-3 text-xs font-bold text-black uppercase flex items-center justify-center gap-2"
+                        >
+                          <svg className="w-4 h-4 fill-[#1877F2] shrink-0" viewBox="0 0 24 24">
+                            <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+                          </svg>
+                          <span>{socialLoading === 'facebook' ? 'Proses...' : 'Facebook'}</span>
                         </button>
                       </div>
-                    </div>
 
-                    <button
-                      type="submit"
-                      disabled={isLoading || !socialDisplayName.trim()}
-                      className="w-full py-3 rounded-md text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer shadow-lg bg-amber-500 hover:bg-amber-400 text-black shadow-amber-950/50 disabled:opacity-50"
-                    >
-                      {isLoading ? (
-                        <span>Menghubungkan ke Database...</span>
-                      ) : (
-                        <>
-                          <span>MASUK KE RADENWORLD</span>
-                          <ArrowRight className="w-4 h-4" />
-                        </>
+                      <div className="flex items-center gap-3 py-0.5 text-[10px] font-bold text-black uppercase">
+                        <div className="flex-1 h-[2px] bg-[#5C3A21]/30" />
+                        <span>ATAU AKUN TERDAFTAR</span>
+                        <div className="flex-1 h-[2px] bg-[#5C3A21]/30" />
+                      </div>
+
+                      {/* Input Username / Email */}
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-black uppercase flex items-center gap-1.5">
+                          <User className="w-3.5 h-3.5 stroke-[2.5]" />
+                          <span>Nama Karakter atau Email:</span>
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={loginIdentifier}
+                          onChange={(e) => setLoginIdentifier(e.target.value)}
+                          placeholder="Masukkan nama pengguna atau email..."
+                          className="clay-input w-full px-3.5 py-2.5 text-xs text-black"
+                        />
+                      </div>
+
+                      {/* Input Password & Lupa Password */}
+                      <div className="space-y-1.5">
+                        <div className="flex items-center justify-between gap-2">
+                          <label className="text-xs font-bold text-black uppercase flex items-center gap-1.5">
+                            <Lock className="w-3.5 h-3.5 stroke-[2.5]" />
+                            <span>Kata Sandi:</span>
+                          </label>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              sound.playClick();
+                              setIsForgotView(true);
+                            }}
+                            className="clay-badge-secondary px-2 py-0.5 text-[10px] font-bold text-black uppercase cursor-pointer"
+                          >
+                            Lupa Sandi?
+                          </button>
+                        </div>
+                        <div className="relative flex items-center">
+                          <input
+                            type={showLoginPassword ? 'text' : 'password'}
+                            required
+                            value={loginPassword}
+                            onChange={(e) => setLoginPassword(e.target.value)}
+                            placeholder="••••••••"
+                            className="clay-input w-full pl-3.5 pr-10 py-2.5 text-xs text-black"
+                          />
+                          <button
+                            type="button"
+                            tabIndex={-1}
+                            onClick={() => {
+                              sound.playClick();
+                              setShowLoginPassword((prev) => !prev);
+                            }}
+                            className="absolute right-2 p-1 rounded text-black cursor-pointer flex items-center justify-center"
+                            title={showLoginPassword ? 'Sembunyikan Kata Sandi' : 'Lihat Kata Sandi'}
+                          >
+                            {showLoginPassword ? (
+                              <EyeOff className="w-4 h-4 stroke-[2.5]" />
+                            ) : (
+                              <Eye className="w-4 h-4 stroke-[2.5]" />
+                            )}
+                          </button>
+                        </div>
+                      </div>
+
+                      <button
+                        type="submit"
+                        disabled={isLoading}
+                        className="clay-btn-primary w-full py-2.5 sm:py-3 px-4 font-bold text-xs text-black uppercase flex items-center justify-center gap-2"
+                      >
+                        <span>{isLoading ? 'MEMVERIFIKASI...' : 'MASUK KE DUNIA SEKARANG'}</span>
+                        <ArrowRight className="w-4 h-4 stroke-[2.5]" />
+                      </button>
+                    </form>
+                  ) : (
+                    /* Form Lupa Sandi */
+                    <form onSubmit={handleForgotSubmit} className="space-y-3.5">
+                      <div className="clay-card-secondary p-3 text-xs text-black space-y-1">
+                        <div className="font-bold uppercase flex items-center gap-1.5">
+                          <KeyRound className="w-3.5 h-3.5 stroke-[2.5]" />
+                          <span>Reset Kata Sandi Akun</span>
+                        </div>
+                        <p className="text-[11px]">
+                          Masukkan email terdaftar dan tanggal lahir untuk verifikasi identitas pemilik.
+                        </p>
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-black uppercase flex items-center gap-1.5">
+                          <Mail className="w-3.5 h-3.5 stroke-[2.5]" />
+                          <span>Email Terdaftar:</span>
+                        </label>
+                        <input
+                          type="email"
+                          required
+                          value={forgotEmail}
+                          onChange={(e) => setForgotEmail(e.target.value)}
+                          placeholder="nama@email.com"
+                          className="clay-input w-full px-3.5 py-2 text-xs text-black"
+                        />
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-black uppercase flex items-center gap-1.5">
+                          <Calendar className="w-3.5 h-3.5 stroke-[2.5]" />
+                          <span>Tanggal Lahir Terdaftar:</span>
+                        </label>
+                        <input
+                          type="date"
+                          required
+                          value={forgotBirthDate}
+                          onChange={(e) => setForgotBirthDate(e.target.value)}
+                          className="clay-input w-full px-3.5 py-2 text-xs text-black"
+                        />
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-black uppercase flex items-center gap-1.5">
+                          <Lock className="w-3.5 h-3.5 stroke-[2.5]" />
+                          <span>Kata Sandi Baru:</span>
+                        </label>
+                        <div className="relative flex items-center">
+                          <input
+                            type={showForgotNewPassword ? 'text' : 'password'}
+                            required
+                            value={forgotNewPassword}
+                            onChange={(e) => setForgotNewPassword(e.target.value)}
+                            placeholder="Minimal 4 karakter"
+                            className="clay-input w-full pl-3.5 pr-10 py-2 text-xs text-black"
+                          />
+                          <button
+                            type="button"
+                            tabIndex={-1}
+                            onClick={() => {
+                              sound.playClick();
+                              setShowForgotNewPassword((prev) => !prev);
+                            }}
+                            className="absolute right-2 p-1 rounded text-black cursor-pointer flex items-center justify-center"
+                          >
+                            {showForgotNewPassword ? (
+                              <EyeOff className="w-4 h-4 stroke-[2.5]" />
+                            ) : (
+                              <Eye className="w-4 h-4 stroke-[2.5]" />
+                            )}
+                          </button>
+                        </div>
+                      </div>
+
+                      {forgotSent && (
+                        <div className="clay-card-secondary p-3 text-black text-xs font-bold flex items-center gap-2">
+                          <Check className="w-4 h-4 stroke-[2.5] shrink-0" />
+                          <span>Kata sandi berhasil diperbarui! Silakan kembali ke form masuk.</span>
+                        </div>
                       )}
-                    </button>
-                  </form>
-                </div>
-              ) : !isForgotView ? (
-                <form onSubmit={handleLoginSubmit} className="space-y-4">
-                  {/* Quick Social Buttons */}
-                  <div className="grid grid-cols-2 gap-2.5">
-                    <button
-                      type="button"
-                      onClick={() => handleSocialLogin('google')}
-                      disabled={!!socialLoading}
-                      className="py-2.5 px-3 rounded-md bg-[#0e0e0e] hover:bg-neutral-900 border border-neutral-800 hover:border-rose-500/70 text-xs font-bold text-neutral-200 transition-all cursor-pointer uppercase tracking-wider flex items-center justify-center gap-2 group shadow-sm"
-                    >
-                      <svg className="w-3.5 h-3.5 shrink-0 group-hover:scale-110 transition-transform" viewBox="0 0 24 24">
-                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-                        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
-                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
-                      </svg>
-                      <span>{socialLoading === 'google' ? 'Menghubungkan...' : 'Google'}</span>
-                    </button>
 
-                    <button
-                      type="button"
-                      onClick={() => handleSocialLogin('facebook')}
-                      disabled={!!socialLoading}
-                      className="py-2.5 px-3 rounded-md bg-[#0e0e0e] hover:bg-neutral-900 border border-neutral-800 hover:border-blue-500/70 text-xs font-bold text-neutral-200 transition-all cursor-pointer uppercase tracking-wider flex items-center justify-center gap-2 group shadow-sm"
-                    >
-                      <svg className="w-3.5 h-3.5 fill-[#1877F2] shrink-0 group-hover:scale-110 transition-transform" viewBox="0 0 24 24">
-                        <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
-                      </svg>
-                      <span>{socialLoading === 'facebook' ? 'Menghubungkan...' : 'Facebook'}</span>
-                    </button>
-                  </div>
+                      <div className="flex gap-2.5 pt-1">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            sound.playClick();
+                            setIsForgotView(false);
+                          }}
+                          className="clay-btn-neutral flex-1 py-2.5 text-xs font-bold text-black uppercase"
+                        >
+                          KEMBALI
+                        </button>
 
-                  <div className="flex items-center gap-3 my-1 text-[10px] text-neutral-400 uppercase tracking-widest font-mono">
-                    <div className="flex-1 h-px bg-neutral-800" />
-                    <span>ATAU DENGAN AKUN TERDAFTAR</span>
-                    <div className="flex-1 h-px bg-neutral-800" />
-                  </div>
-
-                  {/* Input Username / Email */}
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
-                      <User className="w-3.5 h-3.5" />
-                      <span>Nama Karakter atau Email:</span>
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={loginIdentifier}
-                      onChange={(e) => setLoginIdentifier(e.target.value)}
-                      placeholder="Masukkan nama pengguna atau email..."
-                      className="w-full px-3.5 py-2.5 bg-black border border-neutral-800 rounded-md text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-amber-400 font-mono transition-colors"
-                    />
-                  </div>
-
-                  {/* Input Password & Lupa Password */}
-                  <div className="space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <label className="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
-                        <Lock className="w-3.5 h-3.5" />
-                        <span>Kata Sandi:</span>
-                      </label>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          sound.playClick();
-                          setIsForgotView(true);
-                        }}
-                        className="text-[11px] font-bold text-neutral-400 hover:text-amber-400 transition-colors cursor-pointer uppercase"
-                      >
-                        Lupa Kata Sandi?
-                      </button>
-                    </div>
-                    <div className="relative flex items-center">
-                      <input
-                        type={showLoginPassword ? 'text' : 'password'}
-                        required
-                        value={loginPassword}
-                        onChange={(e) => setLoginPassword(e.target.value)}
-                        placeholder="••••••••"
-                        className="w-full pl-3.5 pr-10 py-2.5 bg-black border border-neutral-800 rounded-md text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-amber-400 font-mono transition-colors"
-                      />
-                      <button
-                        type="button"
-                        tabIndex={-1}
-                        onClick={() => {
-                          sound.playClick();
-                          setShowLoginPassword((prev) => !prev);
-                        }}
-                        className="absolute right-2.5 p-1 rounded text-neutral-400 hover:text-amber-400 transition-colors cursor-pointer flex items-center justify-center"
-                        title={showLoginPassword ? 'Sembunyikan Kata Sandi' : 'Lihat Kata Sandi'}
-                        aria-label="Toggle Password Visibility"
-                      >
-                        {showLoginPassword ? (
-                          <EyeOff className="w-4 h-4" />
-                        ) : (
-                          <Eye className="w-4 h-4" />
-                        )}
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Tombol Submit Masuk */}
-                  <button
-                    type="submit"
-                    disabled={isLoading}
-                    className="w-full mt-2 py-3 px-4 rounded-md font-black text-xs text-black bg-amber-500 hover:bg-amber-400 border border-amber-400 active:scale-[0.98] transition-colors cursor-pointer uppercase tracking-wider flex items-center justify-center gap-2"
-                  >
-                    <span>{isLoading ? 'MEMVERIFIKASI...' : 'MASUK KE DUNIA SEKARANG'}</span>
-                    <ArrowRight className="w-4 h-4 stroke-[3]" />
-                  </button>
-                </form>
-              ) : (
-                /* Form Lupa Sandi */
-                <form onSubmit={handleForgotSubmit} className="space-y-4 animate-in fade-in duration-150">
-                  <div className="p-4 rounded-md bg-[#0e0e0e] border border-neutral-800 text-xs text-neutral-300 space-y-1">
-                    <div className="font-bold text-amber-400 uppercase tracking-wide flex items-center gap-1.5">
-                      <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />
-                      <span>Pemulihan Sandi Terproteksi RadenShield</span>
-                    </div>
-                    <p className="text-neutral-400 text-[11px]">
-                      Masukkan email dan tanggal lahir terdaftar untuk memverifikasi identitas asli sebelum memperbarui kata sandi.
-                    </p>
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
-                      <Mail className="w-3.5 h-3.5" />
-                      <span>Alamat Email Terdaftar:</span>
-                    </label>
-                    <input
-                      type="email"
-                      required
-                      value={forgotEmail}
-                      onChange={(e) => setForgotEmail(e.target.value)}
-                      placeholder="nama@email.com"
-                      className="w-full px-3.5 py-2.5 bg-black border border-neutral-800 rounded-md text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-amber-400 font-mono transition-colors"
-                    />
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
-                      <Calendar className="w-3.5 h-3.5" />
-                      <span>Tanggal Lahir Terdaftar (Verifikasi Keamanan):</span>
-                    </label>
-                    <input
-                      type="date"
-                      required
-                      value={forgotBirthDate}
-                      onChange={(e) => setForgotBirthDate(e.target.value)}
-                      max={todayDate}
-                      className="w-full px-3.5 py-2.5 bg-black border border-neutral-800 rounded-md text-xs text-white focus:outline-none focus:border-amber-400 font-mono transition-colors"
-                    />
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
-                      <Lock className="w-3.5 h-3.5" />
-                      <span>Kata Sandi Baru:</span>
-                    </label>
-                    <div className="relative flex items-center">
-                      <input
-                        type={showForgotNewPassword ? 'text' : 'password'}
-                        required
-                        value={forgotNewPassword}
-                        onChange={(e) => setForgotNewPassword(e.target.value)}
-                        placeholder="Minimal 4 karakter"
-                        className="w-full pl-3.5 pr-10 py-2.5 bg-black border border-neutral-800 rounded-md text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-amber-400 font-mono transition-colors"
-                      />
-                      <button
-                        type="button"
-                        tabIndex={-1}
-                        onClick={() => {
-                          sound.playClick();
-                          setShowForgotNewPassword((prev) => !prev);
-                        }}
-                        className="absolute right-2.5 p-1 rounded text-neutral-400 hover:text-amber-400 transition-colors cursor-pointer flex items-center justify-center"
-                        title={showForgotNewPassword ? 'Sembunyikan Kata Sandi' : 'Lihat Kata Sandi'}
-                        aria-label="Toggle Password Visibility"
-                      >
-                        {showForgotNewPassword ? (
-                          <EyeOff className="w-4 h-4" />
-                        ) : (
-                          <Eye className="w-4 h-4" />
-                        )}
-                      </button>
-                    </div>
-                  </div>
-
-                  {forgotSent && (
-                    <div className="p-3.5 rounded-md bg-neutral-900 border border-emerald-500/50 text-emerald-300 text-xs font-semibold flex items-center gap-2">
-                      <Check className="w-4 h-4 text-emerald-400" />
-                      <span>Kata sandi berhasil diperbarui! Silakan kembali ke form masuk.</span>
-                    </div>
+                        <button
+                          type="submit"
+                          disabled={isLoading}
+                          className="clay-btn-primary flex-1 py-2.5 text-xs font-bold text-black uppercase"
+                        >
+                          {isLoading ? 'PROSES...' : 'RESET SANDI'}
+                        </button>
+                      </div>
+                    </form>
                   )}
-
-                  <div className="flex gap-2.5 pt-2">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        sound.playClick();
-                        setIsForgotView(false);
-                      }}
-                      className="flex-1 py-2.5 rounded-md border border-neutral-800 bg-neutral-900 text-xs font-bold text-neutral-300 hover:text-white uppercase tracking-wider transition-colors cursor-pointer"
-                    >
-                      ← KEMBALI
-                    </button>
-
-                    <button
-                      type="submit"
-                      disabled={isLoading}
-                      className="flex-1 py-2.5 rounded-md bg-amber-500 hover:bg-amber-400 text-black text-xs font-bold uppercase tracking-wider border border-amber-400 transition-colors cursor-pointer"
-                    >
-                      {isLoading ? 'MEMVERIFIKASI...' : 'RESET SANDI SEKARANG'}
-                    </button>
-                  </div>
-                </form>
+                </div>
               )}
-            </div>
-          )}
 
-          {/* ================================================================== */}
-          {/* 2. KONTEN TAB DAFTAR (Step 1: Data Akun, Step 2: Pilih Avatar)     */}
-          {/* ================================================================== */}
-          {activeTab === 'register' && (
-            <div className="space-y-4 animate-in fade-in duration-150">
-
-              {/* Step Wizard Breadcrumb */}
-              <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider px-1">
-                <div className={`flex items-center gap-1.5 ${registerStep === 1 ? 'text-amber-400' : 'text-neutral-400'}`}>
-                  <span className={`w-5 h-5 rounded-md flex items-center justify-center text-[10px] ${registerStep === 1 ? 'bg-amber-500 text-black font-black' : 'bg-neutral-800 text-neutral-400'}`}>
-                    1
-                  </span>
-                  <span>DATA AKUN & TANGGAL LAHIR</span>
-                </div>
-
-                <span className="text-neutral-400">➔</span>
-
-                <div className={`flex items-center gap-1.5 ${registerStep === 2 ? 'text-amber-400' : 'text-neutral-400'}`}>
-                  <span className={`w-5 h-5 rounded-md flex items-center justify-center text-[10px] ${registerStep === 2 ? 'bg-amber-500 text-black font-black' : 'bg-neutral-800 text-neutral-400'}`}>
-                    2
-                  </span>
-                  <span>PILIH AVATAR (MALE / FEMALE)</span>
-                </div>
-              </div>
-
-              {registerStep === 1 ? (
-                /* --- STEP 1: FORM PENDAFTARAN & TANGGAL LAHIR --- */
-                <div className="space-y-4">
-                  {/* Quick Social Register Buttons */}
-                  <div className="grid grid-cols-2 gap-2.5">
-                    <button
-                      type="button"
-                      onClick={() => handleSocialLogin('google')}
-                      disabled={!!socialLoading}
-                      className="py-2.5 px-3 rounded-md bg-[#0e0e0e] hover:bg-neutral-900 border border-neutral-800 hover:border-rose-500/70 text-xs font-bold text-neutral-200 transition-all cursor-pointer uppercase tracking-wider flex items-center justify-center gap-2 group shadow-sm"
-                    >
-                      <svg className="w-3.5 h-3.5 shrink-0 group-hover:scale-110 transition-transform" viewBox="0 0 24 24">
-                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-                        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
-                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
-                      </svg>
-                      <span>Google</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => handleSocialLogin('facebook')}
-                      disabled={!!socialLoading}
-                      className="py-2.5 px-3 rounded-md bg-[#0e0e0e] hover:bg-neutral-900 border border-neutral-800 hover:border-blue-500/70 text-xs font-bold text-neutral-200 transition-all cursor-pointer uppercase tracking-wider flex items-center justify-center gap-2 group shadow-sm"
-                    >
-                      <svg className="w-3.5 h-3.5 fill-[#1877F2] shrink-0 group-hover:scale-110 transition-transform" viewBox="0 0 24 24">
-                        <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
-                      </svg>
-                      <span>Facebook</span>
-                    </button>
-                  </div>
-
-                  <div className="flex items-center gap-3 my-1 text-[10px] text-neutral-400 uppercase tracking-widest font-mono">
-                    <div className="flex-1 h-px bg-neutral-800" />
-                    <span>ATAU DAFTAR MANUAL</span>
-                    <div className="flex-1 h-px bg-neutral-800" />
-                  </div>
-
-                  <form onSubmit={handleRegisterStep1Submit} className="space-y-3.5">
-                    {/* Nama Karakter */}
-                    <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
-                      <User className="w-3.5 h-3.5" />
-                      <span>Nama Karakter:</span>
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={registerUsername}
-                      onChange={(e) => setRegisterUsername(e.target.value)}
-                      placeholder="Contoh: RadenSatria..."
-                      className="w-full px-3.5 py-2.5 bg-black border border-neutral-800 rounded-md text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-amber-400 font-mono transition-colors"
-                    />
-                  </div>
-
-                  {/* Alamat Email */}
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
-                      <Mail className="w-3.5 h-3.5" />
-                      <span>Alamat Email:</span>
-                    </label>
-                    <input
-                      type="email"
-                      required
-                      value={registerEmail}
-                      onChange={(e) => setRegisterEmail(e.target.value)}
-                      placeholder="nama@email.com"
-                      className="w-full px-3.5 py-2.5 bg-black border border-neutral-800 rounded-md text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-amber-400 font-mono transition-colors"
-                    />
-                  </div>
-
-                  {/* TANGGAL LAHIR (Otomatis Menampilkan Umur di Profil) */}
-                  <div className="space-y-1.5 p-3.5 bg-[#0e0e0e] border border-neutral-800 rounded-md">
-                    <div className="flex items-center justify-between">
-                      <label className="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
-                        <Calendar className="w-3.5 h-3.5" />
-                        <span>Tanggal Lahir:</span>
-                      </label>
-                      <span className="text-xs font-mono font-bold text-amber-300 bg-neutral-900 border border-neutral-800 px-2 py-0.5 rounded">
-                        Umur: {calculatedAge} Tahun
+              {/* 2. KONTEN TAB DAFTAR */}
+              {activeTab === 'register' && (
+                <div className="space-y-3.5">
+                  {/* Step Wizard Breadcrumb */}
+                  <div className="clay-card p-2.5 flex flex-wrap items-center justify-between gap-2 text-[10px] sm:text-xs font-bold uppercase text-black">
+                    <div className="flex items-center gap-1.5">
+                      <span
+                        className={`w-5 h-5 rounded flex items-center justify-center text-[10px] border border-[#5C3A21] ${
+                          registerStep === 1 ? 'bg-[#FFAE6D] text-black font-bold' : 'bg-[#FFF8EA] text-black'
+                        }`}
+                      >
+                        1
                       </span>
+                      <span>DATA & OTP</span>
                     </div>
 
-                    <input
-                      type="date"
-                      required
-                      max={todayDate}
-                      value={registerBirthDate}
-                      onChange={(e) => setRegisterBirthDate(e.target.value)}
-                      className="w-full px-3.5 py-2 bg-black border border-neutral-800 rounded-md text-xs text-white focus:outline-none focus:border-amber-400 font-mono transition-colors"
-                    />
+                    <span>→</span>
 
-                    <p className="text-[11px] text-neutral-400 leading-relaxed">
-                      Umur karakter akan otomatis dihitung berdasarkan tanggal lahir dan ditampilkan di profil publik Anda.
-                    </p>
+                    <div className="flex items-center gap-1.5">
+                      <span
+                        className={`w-5 h-5 rounded flex items-center justify-center text-[10px] border border-[#5C3A21] ${
+                          registerStep === 2 ? 'bg-[#FFAE6D] text-black font-bold' : 'bg-[#FFF8EA] text-black'
+                        }`}
+                      >
+                        2
+                      </span>
+                      <span>PILIH AVATAR</span>
+                    </div>
                   </div>
 
-                  {/* Kata Sandi & Konfirmasi */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
-                        <Lock className="w-3.5 h-3.5" />
-                        <span>Kata Sandi:</span>
-                      </label>
-                      <div className="relative flex items-center">
-                        <input
-                          type={showRegisterPassword ? 'text' : 'password'}
-                          required
-                          value={registerPassword}
-                          onChange={(e) => setRegisterPassword(e.target.value)}
-                          placeholder="••••••••"
-                          className="w-full pl-3.5 pr-10 py-2.5 bg-black border border-neutral-800 rounded-md text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-amber-400 font-mono transition-colors"
-                        />
+                  {registerStep === 1 ? (
+                    <div className="space-y-3.5">
+                      {/* Quick Social Register Buttons */}
+                      <div className="grid grid-cols-2 gap-2.5">
                         <button
                           type="button"
-                          tabIndex={-1}
-                          onClick={() => {
-                            sound.playClick();
-                            setShowRegisterPassword((prev) => !prev);
-                          }}
-                          className="absolute right-2.5 p-1 rounded text-neutral-400 hover:text-amber-400 transition-colors cursor-pointer flex items-center justify-center"
-                          title={showRegisterPassword ? 'Sembunyikan Kata Sandi' : 'Lihat Kata Sandi'}
-                          aria-label="Toggle Password Visibility"
+                          onClick={() => handleSocialLogin('google')}
+                          disabled={!!socialLoading}
+                          className="clay-btn-neutral py-2 px-3 text-xs font-bold text-black uppercase flex items-center justify-center gap-2"
                         >
-                          {showRegisterPassword ? (
-                            <EyeOff className="w-4 h-4" />
-                          ) : (
-                            <Eye className="w-4 h-4" />
-                          )}
+                          <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
+                            <path
+                              fill="#4285F4"
+                              d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                            />
+                            <path
+                              fill="#34A853"
+                              d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                            />
+                            <path
+                              fill="#FBBC05"
+                              d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
+                            />
+                            <path
+                              fill="#EA4335"
+                              d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
+                            />
+                          </svg>
+                          <span>Google</span>
                         </button>
-                      </div>
-                    </div>
 
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
-                        <Lock className="w-3.5 h-3.5" />
-                        <span>Konfirmasi Sandi:</span>
-                      </label>
-                      <div className="relative flex items-center">
-                        <input
-                          type={showRegisterConfirmPassword ? 'text' : 'password'}
-                          required
-                          value={registerConfirmPassword}
-                          onChange={(e) => setRegisterConfirmPassword(e.target.value)}
-                          placeholder="••••••••"
-                          className="w-full pl-3.5 pr-10 py-2.5 bg-black border border-neutral-800 rounded-md text-xs text-white placeholder-neutral-600 focus:outline-none focus:border-amber-400 font-mono transition-colors"
-                        />
                         <button
                           type="button"
-                          tabIndex={-1}
-                          onClick={() => {
-                            sound.playClick();
-                            setShowRegisterConfirmPassword((prev) => !prev);
-                          }}
-                          className="absolute right-2.5 p-1 rounded text-neutral-400 hover:text-amber-400 transition-colors cursor-pointer flex items-center justify-center"
-                          title={showRegisterConfirmPassword ? 'Sembunyikan Kata Sandi' : 'Lihat Kata Sandi'}
-                          aria-label="Toggle Confirm Password Visibility"
+                          onClick={() => handleSocialLogin('facebook')}
+                          disabled={!!socialLoading}
+                          className="clay-btn-neutral py-2 px-3 text-xs font-bold text-black uppercase flex items-center justify-center gap-2"
                         >
-                          {showRegisterConfirmPassword ? (
-                            <EyeOff className="w-4 h-4" />
-                          ) : (
-                            <Eye className="w-4 h-4" />
-                          )}
+                          <svg className="w-4 h-4 fill-[#1877F2] shrink-0" viewBox="0 0 24 24">
+                            <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+                          </svg>
+                          <span>Facebook</span>
                         </button>
                       </div>
-                    </div>
-                  </div>
 
-                  <button
-                    type="submit"
-                    className="w-full mt-3 py-3 px-4 rounded-md font-black text-xs text-black bg-amber-500 hover:bg-amber-400 border border-amber-400 active:scale-[0.98] transition-colors cursor-pointer uppercase tracking-wider flex items-center justify-center gap-2"
-                  >
-                    <span>LANJUT KE PEMILIHAN AVATAR</span>
-                    <ArrowRight className="w-4 h-4 stroke-[3]" />
-                  </button>
-                  </form>
+                      <div className="flex items-center gap-3 py-0.5 text-[10px] font-bold text-black uppercase">
+                        <div className="flex-1 h-[2px] bg-[#5C3A21]/30" />
+                        <span>ATAU DAFTAR MANUAL + OTP</span>
+                        <div className="flex-1 h-[2px] bg-[#5C3A21]/30" />
+                      </div>
+
+                      <form onSubmit={handleRegisterStep1Submit} className="space-y-3">
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-bold text-black uppercase flex items-center gap-1.5">
+                            <User className="w-3.5 h-3.5 stroke-[2.5]" />
+                            <span>Nama Karakter:</span>
+                          </label>
+                          <input
+                            type="text"
+                            required
+                            value={registerUsername}
+                            onChange={(e) => setRegisterUsername(e.target.value)}
+                            placeholder="Contoh: RadenSatria..."
+                            className="clay-input w-full px-3.5 py-2 text-xs text-black"
+                          />
+                        </div>
+
+                        {/* Input Email + Tombol Kirim OTP */}
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-bold text-black uppercase flex items-center gap-1.5">
+                            <Mail className="w-3.5 h-3.5 stroke-[2.5]" />
+                            <span>Alamat Email & Verifikasi OTP:</span>
+                          </label>
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="email"
+                              required
+                              disabled={isOtpVerified}
+                              value={registerEmail}
+                              onChange={(e) => {
+                                setRegisterEmail(e.target.value);
+                                setIsOtpVerified(false);
+                                setIsOtpSent(false);
+                                setOtpFeedback(null);
+                              }}
+                              placeholder="nama@email.com"
+                              className="clay-input flex-1 px-3.5 py-2 text-xs text-black"
+                            />
+                            <button
+                              type="button"
+                              onClick={handleSendEmailOtp}
+                              disabled={isSendingOtp || otpCooldown > 0 || isOtpVerified}
+                              className={`px-3 py-2 text-xs font-bold uppercase shrink-0 flex items-center gap-1.5 ${
+                                isOtpVerified
+                                  ? 'clay-btn-secondary opacity-80 cursor-default'
+                                  : otpCooldown > 0
+                                  ? 'clay-btn-neutral opacity-60 cursor-not-allowed'
+                                  : 'clay-btn-primary'
+                              }`}
+                            >
+                              <Send className="w-3.5 h-3.5 stroke-[2.5]" />
+                              <span>
+                                {isOtpVerified
+                                  ? 'TERVERIFIKASI ✓'
+                                  : isSendingOtp
+                                  ? 'Kirim...'
+                                  : otpCooldown > 0
+                                  ? `${otpCooldown}s`
+                                  : isOtpSent
+                                  ? 'Kirim Ulang'
+                                  : 'Kirim OTP'}
+                              </span>
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Input Kode OTP 6 Digit jika sudah terkirim */}
+                        {(isOtpSent || isOtpVerified) && (
+                          <div className="clay-card-secondary p-2.5 space-y-2">
+                            <div className="flex items-center justify-between gap-2">
+                              <label className="text-xs font-bold text-black uppercase flex items-center gap-1.5">
+                                <KeyRound className="w-3.5 h-3.5 stroke-[2.5]" />
+                                <span>Masukkan 6-Digit OTP:</span>
+                              </label>
+                              {isOtpVerified && (
+                                <span className="clay-badge-secondary px-2 py-0.5 text-[10px] font-bold text-black flex items-center gap-1">
+                                  <Check className="w-3 h-3 stroke-[3]" />
+                                  <span>TERVERIFIKASI</span>
+                                </span>
+                              )}
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="text"
+                                maxLength={6}
+                                disabled={isOtpVerified}
+                                value={otpInputCode}
+                                onChange={(e) => setOtpInputCode(e.target.value.replace(/\D/g, ''))}
+                                placeholder="123456"
+                                className="clay-input flex-1 px-3.5 py-1.5 text-center tracking-widest text-sm font-bold text-black"
+                              />
+                              {!isOtpVerified && (
+                                <button
+                                  type="button"
+                                  onClick={handleVerifyEmailOtp}
+                                  disabled={isVerifyingOtp || otpInputCode.trim().length !== 6}
+                                  className="clay-btn-primary px-3 py-1.5 text-xs font-bold uppercase shrink-0"
+                                >
+                                  {isVerifyingOtp ? 'Cek...' : 'Verifikasi'}
+                                </button>
+                              )}
+                            </div>
+
+                            {otpFeedback && (
+                              <p
+                                className={`text-[11px] font-bold ${
+                                  otpFeedback.isError ? 'text-red-700' : 'text-green-800'
+                                }`}
+                              >
+                                {otpFeedback.message}
+                              </p>
+                            )}
+                          </div>
+                        )}
+
+                        <div className="clay-card p-3 space-y-1.5">
+                          <div className="flex items-center justify-between gap-2">
+                            <label className="text-xs font-bold text-black uppercase flex items-center gap-1.5">
+                              <Calendar className="w-3.5 h-3.5 stroke-[2.5]" />
+                              <span>Tanggal Lahir:</span>
+                            </label>
+                            <span className="clay-badge-secondary px-2 py-0.5 text-[11px] font-bold text-black">
+                              Umur: {calculatedAge} Tahun
+                            </span>
+                          </div>
+
+                          <input
+                            type="date"
+                            required
+                            max={todayDate}
+                            value={registerBirthDate}
+                            onChange={(e) => setRegisterBirthDate(e.target.value)}
+                            className="clay-input w-full px-3 py-2 text-xs text-black"
+                          />
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                          <div className="space-y-1.5">
+                            <label className="text-xs font-bold text-black uppercase flex items-center gap-1.5">
+                              <Lock className="w-3.5 h-3.5 stroke-[2.5]" />
+                              <span>Kata Sandi:</span>
+                            </label>
+                            <div className="relative flex items-center">
+                              <input
+                                type={showRegisterPassword ? 'text' : 'password'}
+                                required
+                                value={registerPassword}
+                                onChange={(e) => setRegisterPassword(e.target.value)}
+                                placeholder="••••••••"
+                                className="clay-input w-full pl-3 pr-9 py-2 text-xs text-black"
+                              />
+                              <button
+                                type="button"
+                                tabIndex={-1}
+                                onClick={() => {
+                                  sound.playClick();
+                                  setShowRegisterPassword((prev) => !prev);
+                                }}
+                                className="absolute right-2 p-1 text-black cursor-pointer"
+                              >
+                                {showRegisterPassword ? (
+                                  <EyeOff className="w-4 h-4 stroke-[2.5]" />
+                                ) : (
+                                  <Eye className="w-4 h-4 stroke-[2.5]" />
+                                )}
+                              </button>
+                            </div>
+                          </div>
+
+                          <div className="space-y-1.5">
+                            <label className="text-xs font-bold text-black uppercase flex items-center gap-1.5">
+                              <Lock className="w-3.5 h-3.5 stroke-[2.5]" />
+                              <span>Konfirmasi Sandi:</span>
+                            </label>
+                            <div className="relative flex items-center">
+                              <input
+                                type={showRegisterConfirmPassword ? 'text' : 'password'}
+                                required
+                                value={registerConfirmPassword}
+                                onChange={(e) => setRegisterConfirmPassword(e.target.value)}
+                                placeholder="••••••••"
+                                className="clay-input w-full pl-3 pr-9 py-2 text-xs text-black"
+                              />
+                              <button
+                                type="button"
+                                tabIndex={-1}
+                                onClick={() => {
+                                  sound.playClick();
+                                  setShowRegisterConfirmPassword((prev) => !prev);
+                                }}
+                                className="absolute right-2 p-1 text-black cursor-pointer"
+                              >
+                                {showRegisterConfirmPassword ? (
+                                  <EyeOff className="w-4 h-4 stroke-[2.5]" />
+                                ) : (
+                                  <Eye className="w-4 h-4 stroke-[2.5]" />
+                                )}
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+
+                        <button
+                          type="submit"
+                          disabled={!isOtpVerified}
+                          className={`w-full py-2.5 sm:py-3 px-4 font-bold text-xs text-black uppercase flex items-center justify-center gap-2 ${
+                            isOtpVerified ? 'clay-btn-primary' : 'clay-btn-neutral opacity-60 cursor-not-allowed'
+                          }`}
+                        >
+                          <span>
+                            {isOtpVerified
+                              ? 'LANJUT KE PEMILIHAN AVATAR'
+                              : 'VERIFIKASI EMAIL OTP UNTUK LANJUT'}
+                          </span>
+                          <ArrowRight className="w-4 h-4 stroke-[2.5]" />
+                        </button>
+                      </form>
+                    </div>
+                  ) : (
+                    /* STEP 2: PILIH AVATAR (MALE / FEMALE) */
+                    <form onSubmit={handleRegisterFinalSubmit} className="space-y-3.5">
+                      <div className="text-center space-y-0.5">
+                        <div className="text-xs font-bold text-black uppercase flex items-center justify-center gap-1.5">
+                          <Sparkles className="w-3.5 h-3.5 stroke-[2.5]" />
+                          <span>Pilih Gender Karakter Utama:</span>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        {/* 1. MALE */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            sound.playClick();
+                            setSelectedGender('male');
+                          }}
+                          className={`p-3 text-center flex flex-col items-center gap-2 relative text-black ${
+                            selectedGender === 'male' ? 'clay-btn-secondary' : 'clay-btn-neutral'
+                          }`}
+                        >
+                          {selectedGender === 'male' && (
+                            <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-[#FFAE6D] border-2 border-[#5C3A21] text-black flex items-center justify-center">
+                              <Check className="w-3 h-3 stroke-[3]" />
+                            </div>
+                          )}
+
+                          <AvatarPreview avatar={getAvatarForGender('male')} size={88} />
+
+                          <div>
+                            <div className="text-xs font-bold uppercase text-black">
+                              Laki-Laki (Male)
+                            </div>
+                            <div className="text-[10px] text-black">Petualang Tangguh</div>
+                          </div>
+
+                          <div
+                            className={`w-full py-1 rounded-md text-[10px] font-bold uppercase border border-[#5C3A21] ${
+                              selectedGender === 'male'
+                                ? 'bg-[#FFAE6D] text-black'
+                                : 'bg-[#FFF8EA] text-black'
+                            }`}
+                          >
+                            {selectedGender === 'male' ? 'TERPILIH' : 'PILIH MALE'}
+                          </div>
+                        </button>
+
+                        {/* 2. FEMALE */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            sound.playClick();
+                            setSelectedGender('female');
+                          }}
+                          className={`p-3 text-center flex flex-col items-center gap-2 relative text-black ${
+                            selectedGender === 'female' ? 'clay-btn-secondary' : 'clay-btn-neutral'
+                          }`}
+                        >
+                          {selectedGender === 'female' && (
+                            <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-[#FFAE6D] border-2 border-[#5C3A21] text-black flex items-center justify-center">
+                              <Check className="w-3 h-3 stroke-[3]" />
+                            </div>
+                          )}
+
+                          <AvatarPreview avatar={getAvatarForGender('female')} size={88} />
+
+                          <div>
+                            <div className="text-xs font-bold uppercase text-black">
+                              Perempuan (Female)
+                            </div>
+                            <div className="text-[10px] text-black">Petualang Anggun</div>
+                          </div>
+
+                          <div
+                            className={`w-full py-1 rounded-md text-[10px] font-bold uppercase border border-[#5C3A21] ${
+                              selectedGender === 'female'
+                                ? 'bg-[#FFAE6D] text-black'
+                                : 'bg-[#FFF8EA] text-black'
+                            }`}
+                          >
+                            {selectedGender === 'female' ? 'TERPILIH' : 'PILIH FEMALE'}
+                          </div>
+                        </button>
+                      </div>
+
+                      {/* Ringkasan Akun */}
+                      <div className="clay-card p-3 text-xs space-y-1 text-black">
+                        <div className="flex justify-between gap-2">
+                          <span>Nama Karakter:</span>
+                          <span className="font-bold truncate">{registerUsername}</span>
+                        </div>
+                        <div className="flex justify-between gap-2">
+                          <span>Email Terverifikasi:</span>
+                          <span className="font-bold truncate text-green-700">{registerEmail} (OTP ✓)</span>
+                        </div>
+                        <div className="flex justify-between gap-2">
+                          <span>Tanggal Lahir:</span>
+                          <span className="font-bold">
+                            {registerBirthDate} ({calculatedAge} Tahun)
+                          </span>
+                        </div>
+                        <div className="flex justify-between gap-2">
+                          <span>Model Avatar:</span>
+                          <span className="font-bold uppercase">
+                            {selectedGender === 'male' ? 'Male (Laki-laki)' : 'Female (Perempuan)'}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2.5">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            sound.playClick();
+                            setRegisterStep(1);
+                          }}
+                          className="clay-btn-neutral px-3.5 py-2.5 text-black text-xs font-bold uppercase flex items-center gap-1.5"
+                        >
+                          <ArrowLeft className="w-4 h-4 stroke-[2.5]" />
+                          <span>Kembali</span>
+                        </button>
+
+                        <button
+                          type="submit"
+                          disabled={isLoading}
+                          className="clay-btn-primary flex-1 py-2.5 px-4 font-bold text-xs text-black uppercase flex items-center justify-center gap-2"
+                        >
+                          <span>{isLoading ? 'MENDAFTARKAN...' : 'SELESAIKAN & MASUK'}</span>
+                          <ArrowRight className="w-4 h-4 stroke-[2.5]" />
+                        </button>
+                      </div>
+                    </form>
+                  )}
                 </div>
-              ) : (
-                /* --- STEP 2: PILIH AVATAR (KHUSUS MALE DAN FEMALE SAJA) --- */
-                <form onSubmit={handleRegisterFinalSubmit} className="space-y-4 animate-in fade-in duration-150">
-                  <div className="text-center space-y-1 pb-1">
-                    <div className="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center justify-center gap-1.5">
-                      <Sparkles className="w-3.5 h-3.5" />
-                      <span>Pilih Gender Karakter Utama:</span>
-                    </div>
-                    <p className="text-[11px] text-neutral-400">
-                      Pilih model avatar petualang Anda (Laki-laki atau Perempuan).
-                    </p>
-                  </div>
-
-                  {/* 2 KARTU BESAR PILIHAN: MALE VS FEMALE */}
-                  <div className="grid grid-cols-2 gap-3.5">
-                    {/* 1. MALE (LAKI-LAKI) */}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        sound.playClick();
-                        setSelectedGender('male');
-                      }}
-                      className={`p-4 rounded-md border text-center flex flex-col items-center gap-3 transition-colors cursor-pointer relative ${
-                        selectedGender === 'male'
-                          ? 'bg-neutral-900 border-amber-400'
-                          : 'bg-[#0e0e0e] border-neutral-800 hover:border-neutral-700 hover:bg-neutral-900'
-                      }`}
-                    >
-                      {selectedGender === 'male' && (
-                        <div className="absolute top-2.5 right-2.5 w-5 h-5 rounded-full bg-amber-400 text-black flex items-center justify-center">
-                          <Check className="w-3 h-3 stroke-[3]" />
-                        </div>
-                      )}
-
-                      <div className="w-28 h-28 flex items-center justify-center">
-                        <AvatarPreview avatar={getAvatarForGender('male')} size={110} />
-                      </div>
-
-                      <div>
-                        <div className={`text-xs font-black uppercase tracking-wider ${selectedGender === 'male' ? 'text-amber-400' : 'text-white'}`}>
-                          Laki-Laki (Male)
-                        </div>
-                        <div className="text-[10px] text-neutral-400 mt-0.5">
-                          Petualang Tangguh
-                        </div>
-                      </div>
-
-                      <div className={`w-full py-1.5 rounded-md text-[10px] font-bold uppercase tracking-wider transition-colors ${
-                        selectedGender === 'male'
-                          ? 'bg-amber-500 text-black font-black'
-                          : 'bg-neutral-800 text-neutral-400'
-                      }`}>
-                        {selectedGender === 'male' ? 'TERPILIH ✓' : 'PILIH MALE'}
-                      </div>
-                    </button>
-
-                    {/* 2. FEMALE (PEREMPUAN) */}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        sound.playClick();
-                        setSelectedGender('female');
-                      }}
-                      className={`p-4 rounded-md border text-center flex flex-col items-center gap-3 transition-colors cursor-pointer relative ${
-                        selectedGender === 'female'
-                          ? 'bg-neutral-900 border-amber-400'
-                          : 'bg-[#0e0e0e] border-neutral-800 hover:border-neutral-700 hover:bg-neutral-900'
-                      }`}
-                    >
-                      {selectedGender === 'female' && (
-                        <div className="absolute top-2.5 right-2.5 w-5 h-5 rounded-full bg-amber-400 text-black flex items-center justify-center">
-                          <Check className="w-3 h-3 stroke-[3]" />
-                        </div>
-                      )}
-
-                      <div className="w-28 h-28 flex items-center justify-center">
-                        <AvatarPreview avatar={getAvatarForGender('female')} size={110} />
-                      </div>
-
-                      <div>
-                        <div className={`text-xs font-black uppercase tracking-wider ${selectedGender === 'female' ? 'text-amber-400' : 'text-white'}`}>
-                          Perempuan (Female)
-                        </div>
-                        <div className="text-[10px] text-neutral-400 mt-0.5">
-                          Petualang Anggun
-                        </div>
-                      </div>
-
-                      <div className={`w-full py-1.5 rounded-md text-[10px] font-bold uppercase tracking-wider transition-colors ${
-                        selectedGender === 'female'
-                          ? 'bg-amber-500 text-black font-black'
-                          : 'bg-neutral-800 text-neutral-400'
-                      }`}>
-                        {selectedGender === 'female' ? 'TERPILIH ✓' : 'PILIH FEMALE'}
-                      </div>
-                    </button>
-                  </div>
-
-                  {/* Ringkasan Akun Sebelum Masuk */}
-                  <div className="p-3.5 bg-[#0e0e0e] border border-neutral-800 rounded-md text-xs space-y-1">
-                    <div className="flex justify-between">
-                      <span className="text-neutral-400">Nama Karakter:</span>
-                      <span className="font-bold text-white font-mono">{registerUsername}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-neutral-400">Tanggal Lahir:</span>
-                      <span className="font-bold text-amber-400 font-mono">
-                        {registerBirthDate} ({calculatedAge} Tahun)
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-neutral-400">Model Avatar:</span>
-                      <span className="font-bold text-amber-300 uppercase">
-                        {selectedGender === 'male' ? 'Male (Laki-laki)' : 'Female (Perempuan)'}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Tombol Aksi Step 2 */}
-                  <div className="flex items-center gap-2.5 pt-1">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        sound.playClick();
-                        setRegisterStep(1);
-                      }}
-                      className="px-4 py-3 rounded-md border border-neutral-800 bg-neutral-900 text-neutral-300 hover:text-white text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer flex items-center gap-1.5"
-                    >
-                      <ArrowLeft className="w-4 h-4" />
-                      <span>Kembali</span>
-                    </button>
-
-                    <button
-                      type="submit"
-                      disabled={isLoading}
-                      className="flex-1 py-3 px-4 rounded-md font-black text-xs text-black bg-amber-500 hover:bg-amber-400 border border-amber-400 active:scale-[0.98] transition-colors cursor-pointer uppercase tracking-wider flex items-center justify-center gap-2"
-                    >
-                      <span>{isLoading ? 'MENDAFTARKAN...' : 'SELESAIKAN & MASUK KE GAME'}</span>
-                      <ArrowRight className="w-4 h-4 stroke-[3]" />
-                    </button>
-                  </div>
-                </form>
               )}
             </div>
-          )}
-
-        </div>
-
-        {/* ==================================================================== */}
-        {/* FOOTER ACTIONS                                                       */}
-        {/* ==================================================================== */}
-        <div className="px-6 py-3.5 border-t border-neutral-800 bg-[#0a0a0a] flex items-center justify-between text-xs">
-          <div className="text-[11px] text-neutral-400 font-mono">
-            RadenWorld Identity • Multi-Server Safe
           </div>
-
-          <button
-            onClick={() => {
-              sound.playClick();
-              onClose();
-            }}
-            className="px-4 py-1.5 rounded-md border border-neutral-700 text-neutral-300 hover:text-white hover:border-amber-400 transition-colors font-bold text-xs cursor-pointer"
-          >
-            Tutup
-          </button>
         </div>
 
-        {/* Dialog Otentik Pemilih Akun Google / Facebook */}
+        {/* Dialog Pemilih Akun Google / Facebook */}
         <SocialAccountChooserModal
           isOpen={isSocialChooserOpen && !!socialModalProvider}
           provider={socialModalProvider || 'google'}
@@ -1234,7 +1354,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
           }}
           onSelectAccount={handleSocialAccountChosen}
         />
-
       </div>
     </div>
   );

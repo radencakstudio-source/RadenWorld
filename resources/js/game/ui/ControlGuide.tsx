@@ -1,5 +1,6 @@
 import React from 'react';
-import { X, Keyboard, MousePointer, MessageSquare, Box, Code2, ArrowUp, Fish, Backpack, Zap } from 'lucide-react';
+import { X, Keyboard, MousePointer, MessageSquare, Code2, ArrowUp, Fish, Backpack, Zap } from 'lucide-react';
+import { SoundManager } from '../core/SoundManager';
 
 interface ControlGuideProps {
   isOpen: boolean;
@@ -11,157 +12,172 @@ export const ControlGuide: React.FC<ControlGuideProps> = ({ isOpen, onClose, con
   if (!isOpen) return null;
 
   const isMobile = controlMode === 'mobile';
+  const sound = SoundManager.getInstance();
+
+  const kbdClass = 'clay-badge-secondary px-1.5 py-0.5 text-[10px] font-bold text-black inline-block mx-0.5';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-2 sm:p-4 pointer-events-auto">
-      <div className="w-full max-w-md bg-black border border-neutral-800 rounded-2xl p-4 sm:p-6 text-neutral-100 flex flex-col gap-3 sm:gap-4 max-h-[94dvh] overflow-hidden">
+    <div className="ui-modal-backdrop pointer-events-auto">
+      <div className="clay-panel landscape-compact-modal w-full max-w-md max-h-[92dvh] flex flex-col overflow-hidden text-black">
         {/* Header */}
-        <div className="flex items-center justify-between pb-3 border-b border-neutral-800 shrink-0">
-          <div className="flex items-center gap-2 text-amber-400 font-bold text-base">
-            <Keyboard className="w-5 h-5" />
-            <span>Petunjuk Kontrol ({isMobile ? 'Mode Mobile' : 'Mode PC'})</span>
+        <div className="clay-header landscape-compact-header px-4 py-3 flex items-center justify-between gap-2 shrink-0">
+          <div className="flex items-center gap-2 text-black font-bold text-sm sm:text-base min-w-0">
+            <div className="w-8 h-8 rounded-lg bg-[#FFF8EA] border-2 border-[#5C3A21] flex items-center justify-center shrink-0">
+              <Keyboard className="w-4 h-4 stroke-[2.5]" />
+            </div>
+            <span className="truncate">Petunjuk Kontrol ({isMobile ? 'Mobile' : 'PC'})</span>
           </div>
           <button
-            onClick={onClose}
-            className="p-1 rounded-lg text-neutral-400 hover:text-white hover:bg-neutral-900 transition-colors cursor-pointer"
+            type="button"
+            onClick={() => {
+              sound.playClick();
+              onClose();
+            }}
+            className="clay-btn-neutral w-8 h-8 flex items-center justify-center shrink-0 text-black"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4 stroke-[2.5]" />
           </button>
         </div>
 
         {/* Content */}
-        <div className="space-y-3 text-xs text-neutral-300 overflow-y-auto flex-1 min-h-0 custom-scrollbar pr-1">
-          <div className="flex items-start gap-3 bg-[#0e0e0e] p-3 rounded-xl border border-neutral-800">
-            <div className="p-2 rounded-lg bg-neutral-900 text-amber-400 shrink-0">
-              <Keyboard className="w-4 h-4" />
+        <div className="landscape-compact-body p-4 space-y-2.5 text-xs text-black overflow-y-auto flex-1 min-h-0 custom-scrollbar">
+          <div className="clay-card flex items-start gap-3 p-3">
+            <div className="p-2 rounded-lg bg-[#FFAE6D] border-2 border-[#5C3A21] text-black shrink-0">
+              <Keyboard className="w-4 h-4 stroke-[2.5]" />
             </div>
             <div>
-              <div className="font-bold text-white mb-0.5">Navigasi / Pergerakan Karakter</div>
-              <p className="text-neutral-400 leading-relaxed">
+              <div className="font-bold text-black mb-0.5">Navigasi / Pergerakan Karakter</div>
+              <p className="text-black leading-relaxed text-[11px]">
                 {isMobile ? (
-                  <>Gunakan <strong>Analog Joystick Sentuh 360°</strong> di kiri bawah atau tap lantai langsung untuk berjalan ke titik tujuan.</>
+                  <>Gunakan <strong>Analog Joystick Sentuh 360°</strong> di kiri bawah atau ketuk lantai langsung untuk berjalan ke titik tujuan.</>
                 ) : (
-                  <>Gunakan tombol <kbd className="px-1.5 py-0.5 bg-neutral-800 rounded text-neutral-200 font-mono">W</kbd> <kbd className="px-1.5 py-0.5 bg-neutral-800 rounded text-neutral-200 font-mono">A</kbd> <kbd className="px-1.5 py-0.5 bg-neutral-800 rounded text-neutral-200 font-mono">S</kbd> <kbd className="px-1.5 py-0.5 bg-neutral-800 rounded text-neutral-200 font-mono">D</kbd> atau tombol <kbd className="px-1.5 py-0.5 bg-neutral-800 rounded text-neutral-200 font-mono">Panah</kbd> untuk berjalan.</>
+                  <>Gunakan tombol <kbd className={kbdClass}>W</kbd><kbd className={kbdClass}>A</kbd><kbd className={kbdClass}>S</kbd><kbd className={kbdClass}>D</kbd> atau tombol <kbd className={kbdClass}>Panah</kbd> untuk berjalan.</>
                 )}
               </p>
             </div>
           </div>
 
-          <div className="flex items-start gap-3 bg-[#0e0e0e] p-3 rounded-xl border border-neutral-800">
-            <div className="p-2 rounded-lg bg-neutral-900 text-amber-400 shrink-0">
-              <Zap className="w-4 h-4" />
+          <div className="clay-card flex items-start gap-3 p-3">
+            <div className="p-2 rounded-lg bg-[#A8E6CF] border-2 border-[#5C3A21] text-black shrink-0">
+              <Zap className="w-4 h-4 stroke-[2.5]" />
             </div>
             <div>
-              <div className="font-bold text-white mb-0.5">Lari Cepat (Sprint)</div>
-              <p className="text-neutral-400 leading-relaxed">
+              <div className="font-bold text-black mb-0.5">Lari Cepat (Sprint)</div>
+              <p className="text-black leading-relaxed text-[11px]">
                 {isMobile ? (
-                  <>Sentuh tombol <strong>[LARI]</strong> (ikon kilat) di kanan bawah untuk mengaktifkan sprint cepat (1.6x kecepatan jalan normal).</>
+                  <>Sentuh tombol <strong>[LARI]</strong> di kanan bawah untuk mengaktifkan sprint cepat (1.6x kecepatan jalan normal).</>
                 ) : (
-                  <>Tahan tombol <kbd className="px-1.5 py-0.5 bg-neutral-800 rounded text-neutral-200 font-mono">Shift</kbd> sambil menekan tombol arah untuk berlari kencang!</>
+                  <>Tahan tombol <kbd className={kbdClass}>Shift</kbd> sambil menekan tombol arah untuk berlari kencang!</>
                 )}
               </p>
             </div>
           </div>
 
-          <div className="flex items-start gap-3 bg-[#0e0e0e] p-3 rounded-xl border border-neutral-800">
-            <div className="p-2 rounded-lg bg-neutral-900 text-amber-400 shrink-0">
-              <MousePointer className="w-4 h-4" />
+          <div className="clay-card flex items-start gap-3 p-3">
+            <div className="p-2 rounded-lg bg-[#FFAE6D] border-2 border-[#5C3A21] text-black shrink-0">
+              <MousePointer className="w-4 h-4 stroke-[2.5]" />
             </div>
             <div>
-              <div className="font-bold text-white mb-0.5">Interaksi Objek & NPC</div>
-              <p className="text-neutral-400 leading-relaxed">
+              <div className="font-bold text-black mb-0.5">Interaksi Objek & NPC</div>
+              <p className="text-black leading-relaxed text-[11px]">
                 {isMobile ? (
-                  <>Dekati objek/NPC lalu sentuh tombol bulat <strong>[AKSI]</strong> di kanan bawah layar untuk berdialog atau masuk ruangan.</>
+                  <>Dekati objek/NPC lalu sentuh tombol <strong>[AKSI]</strong> di kanan bawah layar untuk berdialog atau masuk ruangan.</>
                 ) : (
-                  <>Dekati objek/NPC lalu tekan tombol <kbd className="px-1.5 py-0.5 bg-neutral-800 rounded text-neutral-200 font-mono">E</kbd> atau klik mouse pada objek.</>
+                  <>Dekati objek/NPC lalu tekan tombol <kbd className={kbdClass}>E</kbd> atau klik objek secara langsung.</>
                 )}
               </p>
             </div>
           </div>
 
-          <div className="flex items-start gap-3 bg-[#0e0e0e] p-3 rounded-xl border border-neutral-800">
-            <div className="p-2 rounded-lg bg-neutral-900 text-sky-400 shrink-0">
-              <Fish className="w-4 h-4" />
+          <div className="clay-card flex items-start gap-3 p-3">
+            <div className="p-2 rounded-lg bg-[#A8E6CF] border-2 border-[#5C3A21] text-black shrink-0">
+              <Fish className="w-4 h-4 stroke-[2.5]" />
             </div>
             <div>
-              <div className="font-bold text-white mb-0.5">Memancing (Hanya di Perairan)</div>
-              <p className="text-neutral-400 leading-relaxed">
+              <div className="font-bold text-black mb-0.5">Memancing (Hanya di Perairan)</div>
+              <p className="text-black leading-relaxed text-[11px]">
                 {isMobile ? (
-                  <>Hadapkan karakter ke arah perairan (Dermaga, Tepi Laut, atau Pantai Selatan), lalu sentuh tombol <strong>[MANCING]</strong>. Sentuh lagi saat tanda seru <strong className="text-amber-400">(!)</strong> muncul untuk strike.</>
+                  <>Hadapkan karakter ke arah air (Dermaga, Tepi Laut, atau Pantai Selatan), lalu sentuh tombol <strong>[MANCING]</strong>. Ketuk banner saat <strong>(!)</strong> muncul untuk strike.</>
                 ) : (
-                  <>Hadapkan karakter ke arah air lalu tekan tombol <kbd className="px-1.5 py-0.5 bg-neutral-800 rounded text-neutral-200 font-mono">F</kbd>. Hanya bisa memancing di perairan sah (Dermaga, Tepi Laut Timur, atau Ombak Pantai Selatan). Dilarang memancing di daratan kering atau dalam gedung.</>
+                  <>Hadapkan karakter ke arah perairan lalu tekan <kbd className={kbdClass}>F</kbd>. Hanya tersedia di Dermaga, Tepi Laut Timur, atau Pantai Selatan.</>
                 )}
               </p>
             </div>
           </div>
 
-          <div className="flex items-start gap-3 bg-[#0e0e0e] p-3 rounded-xl border border-neutral-800">
-            <div className="p-2 rounded-lg bg-neutral-900 text-amber-400 shrink-0">
-              <ArrowUp className="w-4 h-4" />
+          <div className="clay-card flex items-start gap-3 p-3">
+            <div className="p-2 rounded-lg bg-[#FFAE6D] border-2 border-[#5C3A21] text-black shrink-0">
+              <ArrowUp className="w-4 h-4 stroke-[2.5]" />
             </div>
             <div>
-              <div className="font-bold text-white mb-0.5">Lompat 2.5D & Indikator Titik Jatuh</div>
-              <p className="text-neutral-400 leading-relaxed">
+              <div className="font-bold text-black mb-0.5">Lompat 2.5D</div>
+              <p className="text-black leading-relaxed text-[11px]">
                 {isMobile ? (
-                  <>Sentuh tombol <strong>[LOMPAT]</strong> untuk melompat ke udara. Garis bidik lingkaran putus-putus dan garis panduan vertikal akan mengikuti posisi karakter secara langsung.</>
+                  <>Sentuh tombol <strong>[LOMPAT]</strong> di kanan bawah untuk melompat melewati rintangan kecil.</>
                 ) : (
-                  <>Tekan tombol <kbd className="px-1.5 py-0.5 bg-neutral-800 rounded text-neutral-200 font-mono">Spasi</kbd> untuk melompat. Garis indikator titik pendaratan di lantai akan mengikuti gerakan karakter secara realtime baik saat diam maupun sambil berjalan.</>
+                  <>Tekan tombol <kbd className={kbdClass}>Spasi</kbd> untuk melompat dengan indikator titik pendaratan realtime.</>
                 )}
               </p>
             </div>
           </div>
 
-          <div className="flex items-start gap-3 bg-[#0e0e0e] p-3 rounded-xl border border-neutral-800">
-            <div className="p-2 rounded-lg bg-neutral-900 text-amber-400 shrink-0">
-              <Backpack className="w-4 h-4" />
+          <div className="clay-card flex items-start gap-3 p-3">
+            <div className="p-2 rounded-lg bg-[#A8E6CF] border-2 border-[#5C3A21] text-black shrink-0">
+              <Backpack className="w-4 h-4 stroke-[2.5]" />
             </div>
             <div>
-              <div className="font-bold text-white mb-0.5">Tas Inventaris & Mini Hotbar</div>
-              <p className="text-neutral-400 leading-relaxed">
+              <div className="font-bold text-black mb-0.5">Tas Inventaris & Mini Hotbar</div>
+              <p className="text-black leading-relaxed text-[11px]">
                 {isMobile ? (
-                  <>Sentuh tombol <strong>[TAS]</strong> di samping analog atau di mini hotbar bawah untuk melihat tas 30 slot, menjual ikan, dan mengonsumsi makanan.</>
+                  <>Sentuh tombol <strong>[Tas]</strong> pada Mini Hotbar di tengah bawah layar untuk membuka tas 30 slot, memakai item, dan memindah slot.</>
                 ) : (
-                  <>Tekan tombol <kbd className="px-1.5 py-0.5 bg-neutral-800 rounded text-neutral-200 font-mono">B</kbd> untuk membuka Tas 30 Slot. Gunakan angka <kbd className="px-1.5 py-0.5 bg-neutral-800 rounded text-neutral-200 font-mono">1</kbd> s/d <kbd className="px-1.5 py-0.5 bg-neutral-800 rounded text-neutral-200 font-mono">6</kbd> untuk memilih slot di Mini Hotbar.</>
+                  <>Tekan <kbd className={kbdClass}>B</kbd> untuk membuka Tas 30 Slot. Gunakan angka <kbd className={kbdClass}>1</kbd>–<kbd className={kbdClass}>6</kbd> untuk memilih slot di Mini Hotbar.</>
                 )}
               </p>
             </div>
           </div>
 
-          <div className="flex items-start gap-3 bg-[#0e0e0e] p-3 rounded-xl border border-neutral-800">
-            <div className="p-2 rounded-lg bg-neutral-900 text-amber-400 shrink-0">
-              <MessageSquare className="w-4 h-4" />
+          <div className="clay-card flex items-start gap-3 p-3">
+            <div className="p-2 rounded-lg bg-[#FFAE6D] border-2 border-[#5C3A21] text-black shrink-0">
+              <MessageSquare className="w-4 h-4 stroke-[2.5]" />
             </div>
             <div>
-              <div className="font-bold text-white mb-0.5">Multiplayer Real-Time Chat</div>
-              <p className="text-neutral-400 leading-relaxed">
+              <div className="font-bold text-black mb-0.5">Multiplayer Real-Time Chat</div>
+              <p className="text-black leading-relaxed text-[11px]">
                 {isMobile ? (
-                  <>Sentuh ikon <strong>Chat</strong> di sebelah avatar profil untuk membuka pesan obrolan global.</>
+                  <>Sentuh tombol <strong>Chat</strong> di kiri atas layar untuk membuka pesan obrolan global & bisikan pribadi.</>
                 ) : (
-                  <>Tekan <kbd className="px-1.5 py-0.5 bg-neutral-800 rounded text-neutral-200 font-mono">Enter</kbd> atau tombol Chat di atas untuk membuka input obrolan.</>
+                  <>Tekan <kbd className={kbdClass}>Enter</kbd> atau tombol Chat di kiri atas untuk membuka input obrolan.</>
                 )}
               </p>
             </div>
           </div>
 
-          <div className="flex items-start gap-3 bg-[#0e0e0e] p-3 rounded-xl border border-neutral-800">
-            <div className="p-2 rounded-lg bg-neutral-900 text-amber-400 shrink-0">
-              <Code2 className="w-4 h-4" />
+          <div className="clay-card flex items-start gap-3 p-3">
+            <div className="p-2 rounded-lg bg-[#A8E6CF] border-2 border-[#5C3A21] text-black shrink-0">
+              <Code2 className="w-4 h-4 stroke-[2.5]" />
             </div>
             <div>
-              <div className="font-bold text-white mb-0.5">Arsitektur Game OOP</div>
-              <p className="text-neutral-400 leading-relaxed">
-                Dibangun dengan <strong>TypeScript OOP</strong>: Base class <code className="text-amber-300">Entity</code>, diwarisi oleh <code className="text-amber-300">Player</code>, <code className="text-amber-300">RemotePlayer</code>, dan <code className="text-amber-300">Monster</code>. Real-time network dikelola oleh <code className="text-amber-300">NetworkManager</code>.
+              <div className="font-bold text-black mb-0.5">Arsitektur Game OOP</div>
+              <p className="text-black leading-relaxed text-[11px]">
+                Dibangun dengan TypeScript OOP: Base class <span className={kbdClass}>Entity</span>, <span className={kbdClass}>Player</span>, <span className={kbdClass}>RemotePlayer</span>, dan <span className={kbdClass}>NetworkManager</span>.
               </p>
             </div>
           </div>
         </div>
 
-        <button
-          onClick={onClose}
-          className="w-full py-2.5 bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-white font-semibold rounded-xl text-xs transition-colors cursor-pointer shrink-0"
-        >
-          Mengerti, Lanjutkan Game
-        </button>
+        <div className="px-4 py-3 border-t-2 border-[#5C3A21] bg-[#FFF8EA] shrink-0">
+          <button
+            type="button"
+            onClick={() => {
+              sound.playClick();
+              onClose();
+            }}
+            className="clay-btn-primary w-full py-2.5 text-black font-bold text-xs uppercase"
+          >
+            Mengerti, Lanjutkan Game
+          </button>
+        </div>
       </div>
     </div>
   );

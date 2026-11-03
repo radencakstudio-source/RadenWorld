@@ -67,17 +67,17 @@ export class CameraController {
     const isPortrait = height > width;
 
     if (isPortrait) {
-      // Mobile vertikal (portrait): layar sangat sempit secara horizontal
-      if (width <= 440) return Math.min(baseZoom, 0.72);
-      if (width <= 640) return Math.min(baseZoom, 0.78);
-      if (width <= 768) return Math.min(baseZoom, 0.85);
-      return Math.min(baseZoom, 0.90);
+      // Mobile vertikal (portrait): layar sangat sempit secara horizontal, berikan pandangan luas
+      if (width <= 440) return Math.min(baseZoom, 0.60);
+      if (width <= 640) return Math.min(baseZoom, 0.68);
+      if (width <= 768) return Math.min(baseZoom, 0.74);
+      return Math.min(baseZoom, 0.85);
     } else {
       // Horizontal (landscape)
-      // Jika tinggi layar pendek (misal HP horizontal dengan address bar browser aktif, height <= 440px)
-      if (height <= 440) return Math.min(baseZoom, 0.76);
-      if (height <= 540) return Math.min(baseZoom, 0.84);
-      if (height <= 720) return Math.min(baseZoom, 0.92);
+      // Jika layar HP horizontal atau viewport pendek
+      if (height <= 440) return Math.min(baseZoom, 0.65);
+      if (height <= 540) return Math.min(baseZoom, 0.72);
+      if (height <= 720) return Math.min(baseZoom, 0.80);
       return baseZoom;
     }
   }
@@ -92,7 +92,7 @@ export class CameraController {
     this.baseUserZoom = options.defaultZoom ?? 1.0;
     this.defaultZoom = CameraController.calculateAdaptiveZoom(sceneWidth, sceneHeight, this.baseUserZoom);
     this.currentTargetZoom = this.defaultZoom;
-    this.minZoom = options.minZoom ?? 0.40;
+    this.minZoom = options.minZoom ?? 0.35;
     this.maxZoom = options.maxZoom ?? 2.0;
     this.zoomLerpSpeed = options.zoomLerpSpeed ?? 0.12;
 

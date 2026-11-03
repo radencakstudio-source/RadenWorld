@@ -387,13 +387,13 @@ export class BootScene extends Phaser.Scene {
     if (!this.textures.exists('world-checker-tile')) {
       const g = this.make.graphics({ x: 0, y: 0 });
       // Kotak Catur Alam 240x240 (2x2 kotak @ 120px)
-      g.fillStyle(0x01ae01, 1); // Dark (#01AE01)
+      g.fillStyle(0x3a9d4a, 1); // Lush Meadow Dark (#3A9D4A)
       g.fillRect(0, 0, 120, 120);
       g.fillRect(120, 120, 120, 120);
-      g.fillStyle(0x89ffa5, 1); // Light (#89FFA5)
+      g.fillStyle(0x52b663, 1); // Lush Meadow Light (#52B663)
       g.fillRect(120, 0, 120, 120);
       g.fillRect(0, 120, 120, 120);
-      g.lineStyle(1.5, 0x008e00, 0.4);
+      g.lineStyle(1.5, 0x2d843c, 0.32);
       g.strokeRect(0, 0, 120, 120);
       g.strokeRect(120, 0, 120, 120);
       g.strokeRect(0, 120, 120, 120);

@@ -29,40 +29,28 @@ class ErrorBoundary extends Component<Props, State> {
   public render() {
     if (this.state.hasError) {
       return (
-        <div style={{
-          position: 'fixed',
-          inset: 0,
-          background: '#0a0f1d',
-          color: '#f59e0b',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontFamily: '"Chakra Petch", sans-serif',
-          padding: '24px',
-          textAlign: 'center',
-          zIndex: 99999,
-        }}>
-          <h2 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '12px' }}>
-            ⚠️ Terjadi Kesalahan Tampilan Game
-          </h2>
-          <p style={{ color: '#94a3b8', fontSize: '14px', maxWidth: '480px', marginBottom: '20px' }}>
-            {this.state.error?.message || 'Terjadi kesalahan sistem saat memuat antarmuka.'}
-          </p>
-          <button
-            onClick={() => window.location.reload()}
-            style={{
-              padding: '10px 24px',
-              backgroundColor: '#f59e0b',
-              color: '#0a0f1d',
-              border: 'none',
-              borderRadius: '8px',
-              fontWeight: 'bold',
-              cursor: 'pointer',
-            }}
-          >
-            Muat Ulang Halaman
-          </button>
+        <div
+          className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-[#FFF8EA] text-black"
+          style={{ fontFamily: "'Kenney Pixel Square', 'm5x7', 'Press Start 2P', monospace" }}
+        >
+          <div className="clay-panel w-full max-w-md p-6 text-center flex flex-col items-center gap-4">
+            <div className="clay-badge-primary px-3 py-1 text-xs font-bold uppercase">
+              Peringatan Sistem
+            </div>
+            <h2 className="text-lg sm:text-xl font-bold text-black">
+              Terjadi Kesalahan Tampilan Game
+            </h2>
+            <p className="text-xs sm:text-sm text-black leading-relaxed break-words max-w-full">
+              {this.state.error?.message || 'Terjadi kesalahan sistem saat memuat antarmuka.'}
+            </p>
+            <button
+              type="button"
+              onClick={() => window.location.reload()}
+              className="clay-btn-primary px-5 py-2.5 text-xs sm:text-sm font-bold text-black"
+            >
+              Muat Ulang Halaman
+            </button>
+          </div>
         </div>
       );
     }
@@ -91,7 +79,6 @@ if (typeof window !== 'undefined' && 'serviceWorker' in navigator && window.loca
     navigator.serviceWorker
       .register('/sw.js')
       .then((reg) => {
-        // SW aktif dan memantau aset untuk caching super cepat
         if (reg.installing) {
           console.log('[RadenWorld] Service Worker sedang menginstal cache aset game...');
         } else if (reg.active) {
@@ -99,7 +86,6 @@ if (typeof window !== 'undefined' && 'serviceWorker' in navigator && window.loca
         }
       })
       .catch((err) => {
-        // Fallback aman jika browser dalam mode incognito/private tanpa SW support
         console.warn('[RadenWorld] Service Worker tidak dapat didaftarkan (mode direct aktif):', err);
       });
   });

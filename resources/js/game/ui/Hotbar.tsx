@@ -63,10 +63,17 @@ export const Hotbar: React.FC<HotbarProps> = React.memo(({ onOpenBackpack, isBac
 
   const formatTime = (sec: number) => {
     if (sec <= 0) return '0s';
-    const m = Math.floor(sec / 60);
-    const s = sec % 60;
-    if (m > 0) return `${m}m ${s}s`;
-    return `${s}s`;
+    const hours = Math.floor(sec / 3600);
+    const minutes = Math.floor((sec % 3600) / 60);
+    const seconds = sec % 60;
+
+    if (hours > 0) {
+      return `${hours}j ${minutes}m`;
+    }
+    if (minutes > 0) {
+      return `${minutes}m ${seconds}s`;
+    }
+    return `${seconds}s`;
   };
 
   useEffect(() => {
@@ -188,15 +195,24 @@ export const Hotbar: React.FC<HotbarProps> = React.memo(({ onOpenBackpack, isBac
           {activeBuffs.map((buff) => {
             const now = Date.now();
             const remaining = Math.max(0, Math.ceil((buff.expiresAt - now) / 1000));
-            const total = buff.durationSec || 60;
+            const total = buff.durationSec || 86400;
             const percent = Math.min(100, Math.max(0, (remaining / total) * 100));
+            const isEnabled = buff.enabled !== false;
 
             return (
               <div
                 key={buff.potionType}
-                className="flex items-center gap-1.5 px-2 py-1 bg-[#FFF8EA] border-2 border-[#5C3A21] rounded-lg shadow-[inset_0_-2px_0_rgba(92,58,33,0.18)]"
+                onClick={() => {
+                  sound.playClick();
+                  PotionManager.getInstance().toggleBuff(buff.potionType);
+                }}
+                className={`flex items-center gap-1.5 px-2 py-1 border-2 border-[#5C3A21] rounded-lg cursor-pointer transition-all active:translate-y-[1px] ${
+                  isEnabled
+                    ? 'bg-[#FFF8EA] shadow-[inset_0_-2px_0_rgba(92,58,33,0.18)]'
+                    : 'bg-[#FFF8EA]/70 opacity-60 grayscale-[40%]'
+                }`}
                 style={{ borderRadius: '8px' }}
-                title={`${buff.potionName} • Sisa: ${formatTime(remaining)}`}
+                title={`${buff.potionName} • Status: ${isEnabled ? 'AKTIF (ON)' : 'NONAKTIF (OFF)'} • Klik untuk toggle ON/OFF • Sisa: ${formatTime(remaining)}`}
               >
                 {/* Icon Emoji Ramuan */}
                 <span className="text-sm sm:text-base leading-none select-none">
@@ -205,16 +221,30 @@ export const Hotbar: React.FC<HotbarProps> = React.memo(({ onOpenBackpack, isBac
 
                 {/* Nama & Countdown */}
                 <div className="flex flex-col min-w-0">
-                  <span className="text-[8.5px] sm:text-[9.5px] font-bold text-black truncate max-w-[75px] sm:max-w-[100px] leading-tight">
-                    {buff.potionName}
-                  </span>
+                  <div className="flex items-center gap-1">
+                    <span className="text-[8.5px] sm:text-[9.5px] font-bold text-black truncate max-w-[75px] sm:max-w-[100px] leading-tight">
+                      {buff.potionName}
+                    </span>
+                    <span
+                      className={`px-1 py-0 text-[7px] sm:text-[7.5px] font-bold leading-tight ${
+                        isEnabled
+                          ? 'clay-badge-secondary text-black'
+                          : 'clay-badge-neutral text-black/60'
+                      }`}
+                    >
+                      {isEnabled ? 'ON' : 'OFF'}
+                    </span>
+                  </div>
+
                   <div className="flex items-center gap-1 mt-0.5">
-                    <span className="clay-badge-secondary px-1 py-0 text-[7.5px] sm:text-[8px] font-bold text-black leading-tight">
+                    <span className="text-[7.5px] sm:text-[8px] font-bold text-black leading-tight">
                       {formatTime(remaining)}
                     </span>
-                    <div className="w-6 sm:w-8 h-1 bg-[#5C3A21]/20 rounded-full overflow-hidden border border-[#5C3A21]/30">
+                    <div className="w-6 sm:w-10 h-1 bg-[#5C3A21]/20 rounded-full overflow-hidden border border-[#5C3A21]/30">
                       <div
-                        className="h-full bg-[#FFAE6D] rounded-full transition-all duration-300"
+                        className={`h-full rounded-full transition-all duration-300 ${
+                          isEnabled ? 'bg-[#FFAE6D]' : 'bg-[#5C3A21]/40'
+                        }`}
                         style={{ width: `${percent}%` }}
                       />
                     </div>
@@ -230,7 +260,7 @@ export const Hotbar: React.FC<HotbarProps> = React.memo(({ onOpenBackpack, isBac
                     PotionManager.getInstance().removeBuff(buff.potionType);
                   }}
                   className="w-4 h-4 rounded flex items-center justify-center text-black active:translate-y-[1px] ml-0.5"
-                  title={`Hentikan efek ${buff.potionName}`}
+                  title={`Hapus permanen efek ${buff.potionName}`}
                 >
                   <X className="w-2.5 h-2.5 stroke-[2.5]" />
                 </button>

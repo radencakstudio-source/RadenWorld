@@ -444,7 +444,7 @@ export class InventoryManager {
     // Jika item adalah ramuan khusus apotek
     if (item.category === 'consumable' && (item.extraData?.potionType || item.id.startsWith('pot_'))) {
       const potionType = item.extraData?.potionType || item.id.replace(/^pot_/, '');
-      const durationSec = item.extraData?.durationSec || 60;
+      const durationSec = item.extraData?.durationSec || 86400;
       item.quantity--;
       if (item.quantity <= 0) {
         this.items[slotIndex] = null;
@@ -461,7 +461,7 @@ export class InventoryManager {
 
       return {
         success: true,
-        message: `Teguk! Meminum ${item.name}! Efek aktif selama ${durationSec} detik.`,
+        message: `Teguk! Meminum ${item.name}! Efek aktif selama 24 jam (Bisa On/Off di atas Hotbar).`,
       };
     }
 

@@ -68,10 +68,10 @@ export const PHARMACY_POTIONS: IPotionCatalogItem[] = [
     name: 'Ramuan Lari Cepat',
     icon: '⚡',
     priceGold: 250,
-    durationSec: 60,
-    effect: 'Kecepatan Lari +60% Lincah (Durasi 60 Detik)',
+    durationSec: 86400,
+    effect: 'Kecepatan Lari +60% Lincah (Durasi 24 Jam - Bisa On/Off)',
     description:
-      'Fermentasi akar ginseng kilat nusantara. Memberikan dorongan langkah lincah menjelajahi seluruh peta kota.',
+      'Fermentasi akar ginseng kilat nusantara. Memberikan dorongan langkah lincah menjelajahi seluruh peta kota selama 1 hari penuh. Efek dapat dinyalakan/dimatikan kapan saja.',
     rarity: 'Rare',
   },
   {
@@ -81,10 +81,10 @@ export const PHARMACY_POTIONS: IPotionCatalogItem[] = [
     name: 'Ramuan Lompat Tinggi',
     icon: '🦘',
     priceGold: 250,
-    durationSec: 60,
-    effect: 'Lompatan Vertikal Super 1.8x Tinggi (Durasi 60 Detik)',
+    durationSec: 86400,
+    effect: 'Lompatan Vertikal Super 1.8x Tinggi (Durasi 24 Jam - Bisa On/Off)',
     description:
-      'Ekstrak pegas tanaman hutan tropis yang meringankan bobot tubuh untuk melompat tinggi melintasi rintangan.',
+      'Ekstrak pegas tanaman hutan tropis yang meringankan bobot tubuh untuk melompat tinggi melintasi rintangan selama 1 hari penuh. Efek dapat dinyalakan/dimatikan kapan saja.',
     rarity: 'Rare',
   },
   {
@@ -94,10 +94,10 @@ export const PHARMACY_POTIONS: IPotionCatalogItem[] = [
     name: 'Ramuan Tiga Kali Lompat',
     icon: '🪶',
     priceGold: 300,
-    durationSec: 60,
-    effect: 'Bisa 3x Melompat Beruntun di Udara (Durasi 60 Detik)',
+    durationSec: 86400,
+    effect: 'Bisa 3x Melompat Beruntun di Udara (Durasi 24 Jam - Bisa On/Off)',
     description:
-      'Ramuan kepakan sayap burung elang surgawi. Karakter dapat melompat hingga 3 kali di udara sebelum mendarat.',
+      'Ramuan kepakan sayap burung elang surgawi. Karakter dapat melompat hingga 3 kali di udara sebelum mendarat selama 1 hari penuh. Efek dapat dinyalakan/dimatikan kapan saja.',
     rarity: 'Rare',
   },
   {
@@ -107,10 +107,10 @@ export const PHARMACY_POTIONS: IPotionCatalogItem[] = [
     name: 'Ramuan Hoki Mancing Lv 1',
     icon: '🎣',
     priceGold: 300,
-    durationSec: 180,
-    effect: 'Tarikan Ikan +30% Lebih Cepat & Peluang Strike (180 Detik)',
+    durationSec: 86400,
+    effect: 'Tarikan Ikan +30% Lebih Cepat & Peluang Strike (Durasi 24 Jam - Bisa On/Off)',
     description:
-      'Aroma pemikat alami yang merangsang selera ikan kolam dan teluk untuk segera menyambar joran.',
+      'Aroma pemikat alami yang merangsang selera ikan kolam dan teluk untuk segera menyambar joran selama 1 hari penuh. Efek dapat dinyalakan/dimatikan kapan saja.',
     rarity: 'Uncommon',
   },
   {
@@ -120,10 +120,10 @@ export const PHARMACY_POTIONS: IPotionCatalogItem[] = [
     name: 'Ramuan Hoki Mancing Lv 2',
     icon: '🌊',
     priceGold: 550,
-    durationSec: 180,
-    effect: 'Tarikan +60% Cepat & Peluang Ikan Langka +40% (180 Detik)',
+    durationSec: 86400,
+    effect: 'Tarikan +60% Cepat & Peluang Ikan Langka +40% (Durasi 24 Jam - Bisa On/Off)',
     description:
-      'Minyak lumut bahari berkilau yang disukai ikan patin dan gurame berbobot besar di dermaga perairan.',
+      'Minyak lumut bahari berkilau yang disukai ikan patin dan gurame berbobot besar di dermaga perairan selama 1 hari penuh. Efek dapat dinyalakan/dimatikan kapan saja.',
     rarity: 'Rare',
   },
   {
@@ -133,10 +133,10 @@ export const PHARMACY_POTIONS: IPotionCatalogItem[] = [
     name: 'Ramuan Hoki Mancing Lv 3 (Pusaka)',
     icon: '🌟',
     priceGold: 850,
-    durationSec: 180,
-    effect: 'Ikan Menyambar Kilat & Peluang Pusaka/Legendary +80% (180 Detik)',
+    durationSec: 86400,
+    effect: 'Ikan Menyambar Kilat & Peluang Pusaka/Legendary +80% (Durasi 24 Jam - Bisa On/Off)',
     description:
-      'Tetesan mutiara naga pusaka samudra. Ikan legendaris seperti Arwana Emas langsung terpikat menyambar kail!',
+      'Tetesan mutiara naga pusaka samudra. Ikan legendaris seperti Arwana Emas langsung terpikat menyambar kail selama 1 hari penuh. Efek dapat dinyalakan/dimatikan kapan saja.',
     rarity: 'Legendary',
   },
   {
@@ -146,10 +146,10 @@ export const PHARMACY_POTIONS: IPotionCatalogItem[] = [
     name: 'Ramuan Halimun Invisible',
     icon: '👻',
     priceGold: 1500,
-    durationSec: 60,
-    effect: 'Tubuh Menghilang / Tembus Pandang Gaib (Durasi 60 Detik)',
+    durationSec: 86400,
+    effect: 'Tubuh Menghilang / Tembus Pandang Gaib (Durasi 24 Jam - Bisa On/Off)',
     description:
-      'Elixir misterius kabut malam yang membuat tubuhmu tembus pandang (transparan) di hadapan pemain lain.',
+      'Elixir misterius kabut malam yang membuat tubuhmu tembus pandang (transparan) di hadapan pemain lain selama 1 hari penuh. Efek dapat dinyalakan/dimatikan kapan saja.',
     rarity: 'Legendary',
   },
 ];

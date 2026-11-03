@@ -5,9 +5,12 @@
  * Manager Singleton Efek Ramuan Apotek Farma Raden (Potion & Buff System)
  * 
  * FITUR:
+ * - Durasi 24 Jam Penuh (86.400 detik) untuk seluruh ramuan apotek.
+ * - Fitur ON / OFF: Dapat diaktifkan atau dinonaktifkan kapan saja oleh pemain,
+ *   sementara durasi 1 hari tetap berjalan tanpa terhenti.
  * - Sinkronisasi durasi real-time lintas scene (tidak hilang saat ganti gedung/scene).
  * - Penyimpanan aman di localStorage (tahan reload / switch tab).
- * - Notifikasi EventBus ('potion-buffs-updated', 'potion-expired') untuk UI Hotbar & Phaser.
+ * - Notifikasi EventBus ('potion-buffs-updated', 'potion-expired', 'potion-toggle-changed').
  * ============================================================================
  */
 
@@ -20,18 +23,20 @@ export interface IActivePotionBuff {
   durationSec: number;
   startedAt: number;
   expiresAt: number; // Epoch timestamp (ms)
+  enabled: boolean;  // Status Aktif (ON) atau Nonaktif (OFF)
 }
 
 const STORAGE_KEY = 'raden_active_potion_buffs';
+export const POTION_DURATION_24H_SEC = 86400; // 24 Jam = 86.400 Detik (1 Hari)
 
 const DEFAULT_POTION_META: Record<string, { name: string; icon: string; defaultSec: number }> = {
-  speed: { name: 'Lari Cepat +60%', icon: '⚡', defaultSec: 60 },
-  high_jump: { name: 'Lompat Tinggi 1.8x', icon: '🦘', defaultSec: 60 },
-  triple_jump: { name: 'Triple Jump', icon: '🪶', defaultSec: 60 },
-  luck_1: { name: 'Hoki Mancing Lv 1', icon: '🎣', defaultSec: 180 },
-  luck_2: { name: 'Hoki Mancing Lv 2', icon: '🌊', defaultSec: 180 },
-  luck_3: { name: 'Hoki Pusaka Lv 3', icon: '🌟', defaultSec: 180 },
-  invisible: { name: 'Halimun Invisible', icon: '👻', defaultSec: 60 },
+  speed: { name: 'Lari Cepat +60%', icon: '⚡', defaultSec: POTION_DURATION_24H_SEC },
+  high_jump: { name: 'Lompat Tinggi 1.8x', icon: '🦘', defaultSec: POTION_DURATION_24H_SEC },
+  triple_jump: { name: 'Triple Jump', icon: '🪶', defaultSec: POTION_DURATION_24H_SEC },
+  luck_1: { name: 'Hoki Mancing Lv 1', icon: '🎣', defaultSec: POTION_DURATION_24H_SEC },
+  luck_2: { name: 'Hoki Mancing Lv 2', icon: '🌊', defaultSec: POTION_DURATION_24H_SEC },
+  luck_3: { name: 'Hoki Pusaka Lv 3', icon: '🌟', defaultSec: POTION_DURATION_24H_SEC },
+  invisible: { name: 'Halimun Invisible', icon: '👻', defaultSec: POTION_DURATION_24H_SEC },
 };
 
 export class PotionManager {
@@ -57,7 +62,7 @@ export class PotionManager {
           data.potionType,
           data.potionName,
           data.icon,
-          data.durationSec
+          data.durationSec || POTION_DURATION_24H_SEC
         );
       }
     );
@@ -85,6 +90,10 @@ export class PotionManager {
       if (Array.isArray(parsed)) {
         for (const buff of parsed) {
           if (buff && buff.potionType && buff.expiresAt > now) {
+            // Pastikan properti enabled ada (default true)
+            if (typeof buff.enabled !== 'boolean') {
+              buff.enabled = true;
+            }
             this.activeBuffs.set(buff.potionType, buff);
           }
         }
@@ -139,7 +148,7 @@ export class PotionManager {
   }
 
   /**
-   * Terapkan buff ramuan baru atau perpanjang durasi
+   * Terapkan buff ramuan baru (Aktif 24 Jam Penuh)
    */
   public applyBuff(
     potionType: string,
@@ -153,14 +162,16 @@ export class PotionManager {
     const meta = DEFAULT_POTION_META[cleanType] || {
       name: potionName || `Ramuan ${cleanType}`,
       icon: icon || '🧪',
-      defaultSec: 60,
+      defaultSec: POTION_DURATION_24H_SEC,
     };
 
     const effectiveName = potionName || meta.name;
     const effectiveIcon = icon || meta.icon;
-    const effectiveDuration = durationSec && durationSec > 0 ? durationSec : meta.defaultSec;
+    // Seluruh ramuan bertahan selama 1 hari (86.400 detik)
+    const effectiveDuration = durationSec && durationSec >= POTION_DURATION_24H_SEC ? durationSec : POTION_DURATION_24H_SEC;
     const now = Date.now();
 
+    const existing = this.activeBuffs.get(cleanType);
     const buff: IActivePotionBuff = {
       potionType: cleanType,
       potionName: effectiveName,
@@ -168,6 +179,7 @@ export class PotionManager {
       durationSec: effectiveDuration,
       startedAt: now,
       expiresAt: now + effectiveDuration * 1000,
+      enabled: existing ? existing.enabled : true,
     };
 
     this.activeBuffs.set(cleanType, buff);
@@ -178,7 +190,49 @@ export class PotionManager {
   }
 
   /**
-   * Hapus efek ramuan secara manual (Batal/Expired)
+   * Toggle ON/OFF efek ramuan.
+   * Efek dapat dimatikan sementara tanpa menghentikan atau mereset durasi 24 jam!
+   */
+  public toggleBuff(potionType: string): boolean {
+    const cleanType = (potionType || '').trim().toLowerCase();
+    const buff = this.activeBuffs.get(cleanType);
+    if (!buff) return false;
+
+    buff.enabled = !buff.enabled;
+    this.saveToStorage();
+    this.emitUpdate();
+
+    EventBus.emit('potion-toggle-changed', {
+      potionType: cleanType,
+      potionName: buff.potionName,
+      enabled: buff.enabled,
+    });
+
+    return buff.enabled;
+  }
+
+  /**
+   * Set status aktif (ON) atau nonaktif (OFF) secara eksplisit
+   */
+  public setBuffEnabled(potionType: string, enabled: boolean): void {
+    const cleanType = (potionType || '').trim().toLowerCase();
+    const buff = this.activeBuffs.get(cleanType);
+    if (!buff) return;
+
+    if (buff.enabled !== enabled) {
+      buff.enabled = enabled;
+      this.saveToStorage();
+      this.emitUpdate();
+      EventBus.emit('potion-toggle-changed', {
+        potionType: cleanType,
+        potionName: buff.potionName,
+        enabled: buff.enabled,
+      });
+    }
+  }
+
+  /**
+   * Hapus efek ramuan secara permanen (Dibuang oleh pemain)
    */
   public removeBuff(potionType: string): void {
     const cleanType = (potionType || '').trim().toLowerCase();
@@ -198,7 +252,8 @@ export class PotionManager {
   }
 
   /**
-   * Cek apakah efek ramuan tertentu sedang aktif
+   * Cek apakah efek ramuan tertentu sedang aktif secara fungsional.
+   * Mengembalikan TRUE hanya jika ramuan belum kadaluarsa DAN sedang diaktifkan (enabled === true).
    */
   public isBuffActive(potionType: string): boolean {
     const cleanType = (potionType || '').trim().toLowerCase();
@@ -212,11 +267,12 @@ export class PotionManager {
       return false;
     }
 
-    return true;
+    // Jika sedang di-OFF-kan, gameplay fisika tidak menerapkannya, namun waktu 1 hari tetap berjalan
+    return buff.enabled !== false;
   }
 
   /**
-   * Dapatkan sisa waktu dalam detik
+   * Dapatkan sisa waktu dalam detik dari durasi 24 jam
    */
   public getRemainingSec(potionType: string): number {
     const cleanType = (potionType || '').trim().toLowerCase();
@@ -227,7 +283,7 @@ export class PotionManager {
   }
 
   /**
-   * Dapatkan seluruh daftar buff ramuan yang sedang aktif
+   * Dapatkan seluruh daftar buff ramuan yang ada
    */
   public getActiveBuffs(): IActivePotionBuff[] {
     const now = Date.now();
@@ -249,4 +305,3 @@ export class PotionManager {
     EventBus.emit('potion-buffs-updated', this.getActiveBuffs());
   }
 }
-

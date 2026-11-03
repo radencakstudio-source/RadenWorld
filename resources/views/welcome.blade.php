@@ -76,6 +76,7 @@
             window.addEventListener('load', function() {
                 navigator.serviceWorker.register('/sw.js').then(function(reg) {
                     console.log('[RadenWorld] PWA Cache Aktif:', reg.scope);
+                    reg.update();
                 }).catch(function(err) {
                     console.warn('[RadenWorld] Service Worker gagal didaftarkan:', err);
                 });

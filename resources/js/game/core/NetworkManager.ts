@@ -221,8 +221,20 @@ export class NetworkManager {
     });
 
     if (this.socket.io) {
+      let isRecoveringSession = false;
       this.socket.io.on('error', (err: any) => {
         console.warn('[NetworkManager] Socket manager notice:', err?.message || err);
+        const errMsg = String(err?.message || err || '').toLowerCase();
+        // Jika sesi terputus (Session ID unknown / xhr post error / 400 Bad Request),
+        // segera pulihkan sesi dengan reconnect bersih agar tidak looping request 400
+        if ((errMsg.includes('xhr post error') || errMsg.includes('xhr poll error') || errMsg.includes('400') || errMsg.includes('unknown')) && !isRecoveringSession) {
+          isRecoveringSession = true;
+          console.log('[NetworkManager] Sesi multiplayer kadaluarsa / terputus, memperbarui sesi...');
+          setTimeout(() => {
+            isRecoveringSession = false;
+            this.reconnect();
+          }, 400);
+        }
       });
       const setupEngineUpgradeHandler = () => {
         const engine = (this.socket?.io as any)?.engine;

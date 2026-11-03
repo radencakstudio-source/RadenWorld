@@ -645,9 +645,9 @@ export class Player extends Entity {
     const canSync = this.scene.scene.key === 'WorldScene' || this.scene.scene.key === 'SchoolScene';
     if (!canSync) return;
 
-    // Sinkronisasi data posisi ke server setiap 50ms saat bergerak
+    // Sinkronisasi data posisi ke server setiap 85ms saat bergerak (stabil & ramah kuota polling)
     const moved = Math.abs(this.x - this.lastX) > 1 || Math.abs(this.y - this.lastY) > 1;
-    if (nowMoving && moved && time - this.lastSentTime > 50) {
+    if (nowMoving && moved && time - this.lastSentTime > 85) {
       this.lastSentTime = time;
       this.lastX = this.x;
       this.lastY = this.y;

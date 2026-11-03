@@ -361,6 +361,7 @@ export class CharacterController {
   /** Objek Graphics & array untuk efek bola-bola bulat saat berlari (Sprint Dust Balls) */
   private runDustGraphics: Phaser.GameObjects.Graphics;
   private runPuffBalls: IRunPuffBall[] = [];
+  private runStepFoot: boolean = false;
 
   /** Objek Graphics untuk Tanda Kristal Melayang pada Klik/Tap Navigasi */
   private crystalGraphics: Phaser.GameObjects.Graphics;
@@ -1133,50 +1134,75 @@ export class CharacterController {
 
   /**
    * Memicu efek partikel bola-bola imut saat karakter berlari kencang (Sprint)
-   * Menggantikan efek riak datar dengan bola-bola debu bulat (puff balls) bergaya kartun RPG.
+   * Bergaya kartun RPG: bola-bola debu bulat (puff balls) yang menggelinding di lantai
+   * tepat di bawah telapak kaki (bergantian kaki kiri dan kanan), BUKAN melayang ke atas (bukan lompat).
    */
   private triggerRunDustBall(time: number, vx: number, vy: number): void {
     const dirLen = Math.hypot(vx, vy) || 1;
     const normX = vx / dirLen;
     const normY = vy / dirLen;
 
-    // Titik pijak di bawah kedua telapak kaki karakter
-    const footX = this.player.x - normX * 14;
-    const footY = this.player.y + 18 - normY * 8;
+    // Vektor tegak lurus (perpendicular) untuk membedakan langkah kaki kiri dan kanan
+    const perpX = -normY;
+    const perpY = normX;
 
-    // Spawn 2-3 butir bola debu imut bulat di belakang langkah kaki
-    const ballCount = 2 + Math.floor(Math.random() * 2);
-    const baseColors = [0xfff8ea, 0xfcecd4, 0xf7deb9, 0xffeed9];
+    // Bergantian kaki kiri (-1) dan kaki kanan (+1)
+    this.runStepFoot = !this.runStepFoot;
+    const footSide = this.runStepFoot ? 1 : -1;
 
-    for (let i = 0; i < ballCount; i++) {
-      const angleJitter = (Math.random() - 0.5) * 1.2;
-      const speedJitter = 18 + Math.random() * 32;
-      const bVx = -normX * speedJitter + Math.cos(angleJitter) * (Math.random() - 0.5) * 16;
-      const bVy = -normY * speedJitter * 0.6 - 12 - Math.random() * 16; // Melayang lembut ke atas
-      const radius = 6 + Math.random() * 5.5; // Radius 6 - 11px
-      const color = baseColors[Math.floor(Math.random() * baseColors.length)];
+    // Posisi kontak telapak kaki persis di permukaan lantai (player.y + 52)
+    const footX = this.player.x - normX * 10 + perpX * (footSide * 8);
+    const footY = this.player.y + 52 - normY * 5 + perpY * (footSide * 3);
 
-      this.runPuffBalls.push({
-        x: footX + (Math.random() - 0.5) * 10,
-        y: footY + (Math.random() - 0.5) * 6,
-        vx: bVx,
-        vy: bVy,
-        baseRadius: radius,
-        birthTime: time,
-        duration: 320 + Math.random() * 120, // 320 - 440ms
-        color,
-        strokeColor: 0x5c3a21,
-      });
-    }
+    // Buat 1 kluster kartun berisi 3 bola bulat imut bertumpuk (1 bola utama, 1 bola samping, 1 bola kecil mengekor)
+    // 1. Bola Utama di titik hentakan kaki
+    this.runPuffBalls.push({
+      x: footX + (Math.random() - 0.5) * 3,
+      y: footY + (Math.random() - 0.5) * 2,
+      vx: -normX * (15 + Math.random() * 10),
+      vy: -normY * (6 + Math.random() * 6), // Menggelinding di lantai, tidak melayang ke atas
+      baseRadius: 9.5 + Math.random() * 2.2, // Radius ~9.5 - 11.7px
+      birthTime: time,
+      duration: 280 + Math.random() * 50,
+      color: 0xffffff,
+      strokeColor: 0x5c3a21,
+    });
 
-    // Batasi maksimum bola aktif untuk performa tinggi
-    if (this.runPuffBalls.length > 30) {
-      this.runPuffBalls.splice(0, this.runPuffBalls.length - 30);
+    // 2. Bola Samping sekunder (sedikit lebih kecil di samping hentakan)
+    this.runPuffBalls.push({
+      x: footX - normX * 6 + perpX * (footSide * 4) + (Math.random() - 0.5) * 2,
+      y: footY - normY * 3 + perpY * (footSide * 2) + (Math.random() - 0.5) * 2,
+      vx: -normX * (19 + Math.random() * 8),
+      vy: -normY * (7 + Math.random() * 5),
+      baseRadius: 6.8 + Math.random() * 1.6, // Radius ~6.8 - 8.4px
+      birthTime: time,
+      duration: 250 + Math.random() * 40,
+      color: 0xfff8ea,
+      strokeColor: 0x5c3a21,
+    });
+
+    // 3. Bola Kecil mengekor di belakang
+    this.runPuffBalls.push({
+      x: footX - normX * 12 + (Math.random() - 0.5) * 3,
+      y: footY - normY * 6 + (Math.random() - 0.5) * 2,
+      vx: -normX * (23 + Math.random() * 8),
+      vy: -normY * (8 + Math.random() * 5),
+      baseRadius: 4.4 + Math.random() * 1.2, // Radius ~4.4 - 5.6px
+      birthTime: time,
+      duration: 210 + Math.random() * 40,
+      color: 0xffeed9,
+      strokeColor: 0x5c3a21,
+    });
+
+    // Batasi maksimum bola aktif untuk performa tinggi (60fps)
+    if (this.runPuffBalls.length > 36) {
+      this.runPuffBalls.splice(0, this.runPuffBalls.length - 36);
     }
   }
 
   /**
    * Update visual dan pergerakan bola-bola debu lari (Sprint Dust Balls)
+   * Menggambar bola-bola kartun bulat sempurna dengan garis tepi biskuit dan pantulan 3D.
    */
   private updateRunDust(time: number, delta: number): void {
     if (this.runPuffBalls.length === 0) {
@@ -1185,7 +1211,10 @@ export class CharacterController {
 
     const dt = delta / 1000;
     this.runDustGraphics.clear();
-    this.runDustGraphics.setDepth(this.player.y - 1);
+
+    // Sesuaikan kedalaman: jika lari ke atas (utara), debu di depan kaki; jika ke bawah, di belakang kaki
+    const isMovingUp = this.player.body && (this.player.body as Phaser.Physics.Arcade.Body).velocity.y < -10;
+    this.runDustGraphics.setDepth(isMovingUp ? this.player.y + 62 : this.player.y + 50);
 
     const activeBalls: IRunPuffBall[] = [];
 
@@ -1196,33 +1225,36 @@ export class CharacterController {
         continue;
       }
 
-      // Fisika melayang: perlambatan horizontal dan melayang ke atas
+      // Fisika menggelinding di lantai: perlambatan gesekan tanah (ground friction)
       ball.x += ball.vx * dt;
       ball.y += ball.vy * dt;
-      ball.vx *= 0.92;
-      ball.vy *= 0.90;
+      ball.vx *= 0.88;
+      ball.vy *= 0.88;
 
       const progress = elapsed / ball.duration;
-      // Membesar sejenak (puff out) lalu menyusut & pudar
-      const scale = progress < 0.35 ? 0.75 + progress * 0.8 : 1.03 - (progress - 0.35) * 0.6;
-      const currentRadius = Math.max(1.5, ball.baseRadius * scale);
-      const alpha = Math.max(0, (1 - progress) * 0.92);
+      // Animasi pop-and-shrink: Meletup membesar sejenak (0 - 25% durasi) lalu mengecil lembut
+      const scale = progress < 0.25
+        ? 0.55 + (progress / 0.25) * 0.55
+        : 1.10 - ((progress - 0.25) / 0.75) * 0.65;
+      const currentRadius = Math.max(1.0, ball.baseRadius * scale);
+      const alpha = Math.max(0, 1 - Math.pow(progress, 1.4));
 
-      // 1. Bola utama terisi (Warna Krim Pastel)
+      // 1. Isi Bola Bulat Kartun (Solid Pastel Cream / White)
       this.runDustGraphics.fillStyle(ball.color, alpha);
       this.runDustGraphics.fillCircle(ball.x, ball.y, currentRadius);
 
-      // 2. Garis tepi biskuit kokoa yang renyah (Outlined Round Ball)
-      this.runDustGraphics.lineStyle(1.4, ball.strokeColor, alpha * 0.85);
+      // 2. Garis Tepi Biskuit Kokoa Tegas (1.5px Outline #5C3A21)
+      this.runDustGraphics.lineStyle(1.5, ball.strokeColor, alpha * 0.9);
       this.runDustGraphics.strokeCircle(ball.x, ball.y, currentRadius);
 
-      // 3. Highlight pantulan cahaya bulat 3D di sudut atas-kiri bola
-      if (currentRadius > 3.5) {
-        const hlRad = Math.max(1, currentRadius * 0.32);
-        this.runDustGraphics.fillStyle(0xffffff, alpha * 0.85);
+      // 3. Highlight Pantulan Kilau Bulat 3D di sudut kiri-atas bola
+      if (currentRadius > 3.0) {
+        const hlRad = Math.max(1.0, currentRadius * 0.28);
+        const hlOffset = currentRadius * 0.30;
+        this.runDustGraphics.fillStyle(0xffffff, alpha * 0.95);
         this.runDustGraphics.fillCircle(
-          ball.x - currentRadius * 0.28,
-          ball.y - currentRadius * 0.28,
+          ball.x - hlOffset,
+          ball.y - hlOffset,
           hlRad
         );
       }
@@ -2132,7 +2164,7 @@ export class CharacterController {
       this.syncFacingDirection(vx, vy);
 
       // Spawn bola-bola debu bulat imut saat berlari di atas tanah (Sprint)
-      if (isPlayerRunning && !this.isJumping && time - this.lastRunDustTime > 95) {
+      if (isPlayerRunning && !this.isJumping && time - this.lastRunDustTime > 120) {
         this.lastRunDustTime = time;
         this.triggerRunDustBall(time, vx, vy);
       }

@@ -149,8 +149,8 @@ export class NetworkManager {
         return 'http://127.0.0.1:3001';
       }
 
-      // Deteksi otomatis jika game diakses via Wasmer Edge (radenworld.wasmer.app)
-      if (window.location.hostname.includes('radenworld.wasmer.app')) {
+      // Deteksi otomatis jika game diakses via Wasmer Edge (radenworld.wasmer.app atau subdomain wasmer lainnya)
+      if (window.location.hostname.includes('wasmer.app')) {
         return 'https://radenworld-server.wasmer.app';
       }
 
@@ -202,18 +202,40 @@ export class NetworkManager {
 
     this.serverUrl = targetUrl;
 
+    const isWasmer = Boolean(
+      this.serverUrl.includes('wasmer.app') ||
+      (typeof window !== 'undefined' && window.location.hostname.includes('wasmer.app'))
+    );
+
     this.socket = io(this.serverUrl, {
-      transports: ['polling', 'websocket'],
+      transports: isWasmer ? ['polling'] : ['polling', 'websocket'],
+      upgrade: !isWasmer,
       extraHeaders: {
         'ngrok-skip-browser-warning': '1',
       },
-      upgrade: true,
       reconnection: true,
       reconnectionAttempts: Infinity,
       reconnectionDelay: 1000,
       reconnectionDelayMax: 5000,
       timeout: 10000,
     });
+
+    if (this.socket.io) {
+      this.socket.io.on('error', (err: any) => {
+        console.warn('[NetworkManager] Socket manager notice:', err?.message || err);
+      });
+      const setupEngineUpgradeHandler = () => {
+        const engine = (this.socket?.io as any)?.engine;
+        if (engine && !engine._hasUpgradeErrorHandler) {
+          engine._hasUpgradeErrorHandler = true;
+          engine.on('upgradeError', (err: any) => {
+            console.warn('[NetworkManager] Transport upgrade failed, staying on polling fallback:', err?.message || err);
+          });
+        }
+      };
+      setupEngineUpgradeHandler();
+      this.socket.io.on('open', setupEngineUpgradeHandler);
+    }
 
     let hasLoggedOffline = false;
 

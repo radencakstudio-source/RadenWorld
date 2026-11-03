@@ -202,14 +202,8 @@ export class NetworkManager {
 
     this.serverUrl = targetUrl;
 
-    const isWasmer = Boolean(
-      this.serverUrl.includes('wasmer.app') ||
-      (typeof window !== 'undefined' && window.location.hostname.includes('wasmer.app'))
-    );
-
     this.socket = io(this.serverUrl, {
-      transports: isWasmer ? ['polling'] : ['polling', 'websocket'],
-      upgrade: !isWasmer,
+      transports: ['websocket', 'polling'],
       extraHeaders: {
         'ngrok-skip-browser-warning': '1',
       },

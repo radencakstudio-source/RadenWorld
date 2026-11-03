@@ -1709,6 +1709,61 @@ export class WorldScene extends Phaser.Scene {
       ctx.fill();
     }
 
+    // 3b. Cahaya terang di sekitar seluruh pemain lain (Multiplayer Remote Players)
+    if (this.remotePlayers && this.remotePlayers.size > 0) {
+      this.remotePlayers.forEach((rp) => {
+        if (!rp || !rp.active) return;
+        if (
+          rp.x < viewX - 250 ||
+          rp.x > viewX + viewW + 250 ||
+          rp.y < viewY - 250 ||
+          rp.y > viewY + viewH + 250
+        ) {
+          return;
+        }
+
+        const rpx = (rp.x - viewX) * sx;
+        const rpy = (rp.y - viewY) * sy;
+        const rpr = Math.max(10, 240 * sx);
+        const rpGrad = ctx.createRadialGradient(rpx, rpy, rpr * 0.12, rpx, rpy, rpr);
+        rpGrad.addColorStop(0.0, 'rgba(0, 0, 0, 0.98)');
+        rpGrad.addColorStop(0.40, 'rgba(0, 0, 0, 0.76)');
+        rpGrad.addColorStop(0.75, 'rgba(0, 0, 0, 0.32)');
+        rpGrad.addColorStop(1.0, 'rgba(0, 0, 0, 0.0)');
+        ctx.fillStyle = rpGrad;
+        ctx.beginPath();
+        ctx.arc(rpx, rpy, rpr, 0, Math.PI * 2);
+        ctx.fill();
+      });
+    }
+
+    // 3c. Cahaya terang di sekitar seluruh NPC dunia (Pak Tani Somad, Polisi, dll.)
+    if (this.npcs && this.npcs.length > 0) {
+      for (let n = 0; n < this.npcs.length; n++) {
+        const npc = this.npcs[n];
+        if (
+          npc.x < viewX - 250 ||
+          npc.x > viewX + viewW + 250 ||
+          npc.y < viewY - 250 ||
+          npc.y > viewY + viewH + 250
+        ) {
+          continue;
+        }
+        const nx = (npc.x - viewX) * sx;
+        const ny = (npc.y - viewY) * sy;
+        const nr = Math.max(10, 230 * sx);
+        const nGrad = ctx.createRadialGradient(nx, ny, nr * 0.12, nx, ny, nr);
+        nGrad.addColorStop(0.0, 'rgba(0, 0, 0, 0.96)');
+        nGrad.addColorStop(0.40, 'rgba(0, 0, 0, 0.72)');
+        nGrad.addColorStop(0.75, 'rgba(0, 0, 0, 0.30)');
+        nGrad.addColorStop(1.0, 'rgba(0, 0, 0, 0.0)');
+        ctx.fillStyle = nGrad;
+        ctx.beginPath();
+        ctx.arc(nx, ny, nr, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
     ctx.globalCompositeOperation = 'source-over';
     this.nightCanvasTex.refresh();
   }

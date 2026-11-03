@@ -46,6 +46,18 @@ export type CharacterActionState = 'grounded' | 'jumping' | 'fishing';
 
 export type FishingState = 'none' | 'charging' | 'casting' | 'waiting' | 'bite' | 'minigame' | 'reeling' | 'caught';
 
+export interface IRunPuffBall {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  baseRadius: number;
+  birthTime: number;
+  duration: number;
+  color: number;
+  strokeColor: number;
+}
+
 export interface IFishData {
   id: string;
   name: string;
@@ -346,6 +358,10 @@ export class CharacterController {
   private landingDustTime: number = 0;
   private landingDustPos: { x: number; y: number } = { x: 0, y: 0 };
 
+  /** Objek Graphics & array untuk efek bola-bola bulat saat berlari (Sprint Dust Balls) */
+  private runDustGraphics: Phaser.GameObjects.Graphics;
+  private runPuffBalls: IRunPuffBall[] = [];
+
   /** Objek Graphics untuk Tanda Kristal Melayang pada Klik/Tap Navigasi */
   private crystalGraphics: Phaser.GameObjects.Graphics;
 
@@ -396,6 +412,9 @@ export class CharacterController {
 
     this.landingDustGraphics = scene.add.graphics();
     this.landingDustGraphics.setDepth(player.y - 1);
+
+    this.runDustGraphics = scene.add.graphics();
+    this.runDustGraphics.setDepth(player.y - 1);
 
     // Buat lapisan grafis untuk Tanda Kristal Melayang titik tujuan navigasi
     this.crystalGraphics = scene.add.graphics();
@@ -698,6 +717,7 @@ export class CharacterController {
       EventBus.off('player-consumed-potion', onPotionConsumed);
       this.landingGraphics?.destroy();
       this.landingDustGraphics?.destroy();
+      this.runDustGraphics?.destroy();
       this.crystalGraphics?.destroy();
       this.fishingGraphics?.destroy();
       if (this.chargeTimer) this.chargeTimer.remove();
@@ -1109,6 +1129,108 @@ export class CharacterController {
     // Riak dalam
     this.landingDustGraphics.lineStyle(1.5, 0xffffff, alpha * 0.8);
     this.landingDustGraphics.strokeEllipse(this.landingDustPos.x, this.landingDustPos.y, (rOuter - 10) * 2, rOuter - 10);
+  }
+
+  /**
+   * Memicu efek partikel bola-bola imut saat karakter berlari kencang (Sprint)
+   * Menggantikan efek riak datar dengan bola-bola debu bulat (puff balls) bergaya kartun RPG.
+   */
+  private triggerRunDustBall(time: number, vx: number, vy: number): void {
+    const dirLen = Math.hypot(vx, vy) || 1;
+    const normX = vx / dirLen;
+    const normY = vy / dirLen;
+
+    // Titik pijak di bawah kedua telapak kaki karakter
+    const footX = this.player.x - normX * 14;
+    const footY = this.player.y + 18 - normY * 8;
+
+    // Spawn 2-3 butir bola debu imut bulat di belakang langkah kaki
+    const ballCount = 2 + Math.floor(Math.random() * 2);
+    const baseColors = [0xfff8ea, 0xfcecd4, 0xf7deb9, 0xffeed9];
+
+    for (let i = 0; i < ballCount; i++) {
+      const angleJitter = (Math.random() - 0.5) * 1.2;
+      const speedJitter = 18 + Math.random() * 32;
+      const bVx = -normX * speedJitter + Math.cos(angleJitter) * (Math.random() - 0.5) * 16;
+      const bVy = -normY * speedJitter * 0.6 - 12 - Math.random() * 16; // Melayang lembut ke atas
+      const radius = 6 + Math.random() * 5.5; // Radius 6 - 11px
+      const color = baseColors[Math.floor(Math.random() * baseColors.length)];
+
+      this.runPuffBalls.push({
+        x: footX + (Math.random() - 0.5) * 10,
+        y: footY + (Math.random() - 0.5) * 6,
+        vx: bVx,
+        vy: bVy,
+        baseRadius: radius,
+        birthTime: time,
+        duration: 320 + Math.random() * 120, // 320 - 440ms
+        color,
+        strokeColor: 0x5c3a21,
+      });
+    }
+
+    // Batasi maksimum bola aktif untuk performa tinggi
+    if (this.runPuffBalls.length > 30) {
+      this.runPuffBalls.splice(0, this.runPuffBalls.length - 30);
+    }
+  }
+
+  /**
+   * Update visual dan pergerakan bola-bola debu lari (Sprint Dust Balls)
+   */
+  private updateRunDust(time: number, delta: number): void {
+    if (this.runPuffBalls.length === 0) {
+      return;
+    }
+
+    const dt = delta / 1000;
+    this.runDustGraphics.clear();
+    this.runDustGraphics.setDepth(this.player.y - 1);
+
+    const activeBalls: IRunPuffBall[] = [];
+
+    for (let i = 0; i < this.runPuffBalls.length; i++) {
+      const ball = this.runPuffBalls[i];
+      const elapsed = time - ball.birthTime;
+      if (elapsed > ball.duration) {
+        continue;
+      }
+
+      // Fisika melayang: perlambatan horizontal dan melayang ke atas
+      ball.x += ball.vx * dt;
+      ball.y += ball.vy * dt;
+      ball.vx *= 0.92;
+      ball.vy *= 0.90;
+
+      const progress = elapsed / ball.duration;
+      // Membesar sejenak (puff out) lalu menyusut & pudar
+      const scale = progress < 0.35 ? 0.75 + progress * 0.8 : 1.03 - (progress - 0.35) * 0.6;
+      const currentRadius = Math.max(1.5, ball.baseRadius * scale);
+      const alpha = Math.max(0, (1 - progress) * 0.92);
+
+      // 1. Bola utama terisi (Warna Krim Pastel)
+      this.runDustGraphics.fillStyle(ball.color, alpha);
+      this.runDustGraphics.fillCircle(ball.x, ball.y, currentRadius);
+
+      // 2. Garis tepi biskuit kokoa yang renyah (Outlined Round Ball)
+      this.runDustGraphics.lineStyle(1.4, ball.strokeColor, alpha * 0.85);
+      this.runDustGraphics.strokeCircle(ball.x, ball.y, currentRadius);
+
+      // 3. Highlight pantulan cahaya bulat 3D di sudut atas-kiri bola
+      if (currentRadius > 3.5) {
+        const hlRad = Math.max(1, currentRadius * 0.32);
+        this.runDustGraphics.fillStyle(0xffffff, alpha * 0.85);
+        this.runDustGraphics.fillCircle(
+          ball.x - currentRadius * 0.28,
+          ball.y - currentRadius * 0.28,
+          hlRad
+        );
+      }
+
+      activeBalls.push(ball);
+    }
+
+    this.runPuffBalls = activeBalls;
   }
 
   // ==========================================================================
@@ -1842,6 +1964,7 @@ export class CharacterController {
     // Update siklus melompat dan pendaratan
     this.updateJump(time, delta);
     this.updateLandingDust(time);
+    this.updateRunDust(time, delta);
 
     // Update siklus memancing
     this.updateFishing(time, delta);
@@ -2008,10 +2131,10 @@ export class CharacterController {
     if (vx !== 0 || vy !== 0) {
       this.syncFacingDirection(vx, vy);
 
-      // Spawn hembusan debu langkah kaki saat berlari di atas tanah
-      if (isPlayerRunning && !this.isJumping && time - this.lastRunDustTime > 200) {
+      // Spawn bola-bola debu bulat imut saat berlari di atas tanah (Sprint)
+      if (isPlayerRunning && !this.isJumping && time - this.lastRunDustTime > 95) {
         this.lastRunDustTime = time;
-        this.triggerLandingDust(this.player.x, this.player.y + 12);
+        this.triggerRunDustBall(time, vx, vy);
       }
     }
 

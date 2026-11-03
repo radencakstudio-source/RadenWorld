@@ -251,13 +251,18 @@ export class VoiceManager {
       EventBus.emit('mic-state-changed', { isEnabled: true });
       return true;
     } catch (err: any) {
-      console.warn('[VoiceManager] Gagal mengakses mikrofon (kebijakan browser/permissions policy):', err?.message || err);
+      const isPolicyViolation = err?.name === 'NotAllowedError' || err?.name === 'SecurityError' || String(err?.message || '').toLowerCase().includes('permission') || String(err?.message || '').toLowerCase().includes('policy');
+      const errorMsg = isPolicyViolation
+        ? 'Akses mikrofon diblokir oleh browser. Silakan klik ikon gembok/izin pada bilah alamat browser untuk mengizinkan mikrofon.'
+        : `Gagal mengaktifkan mikrofon: ${err?.message || 'Izin ditolak'}.`;
+
+      console.warn('[VoiceManager] Info akses mikrofon:', errorMsg);
       this.isMicEnabled = false;
       EventBus.emit('mic-state-changed', { isEnabled: false });
       EventBus.emit('new-chat-message', {
         id: `mic_notice_${Date.now()}`,
         sender: 'SISTEM SUARA',
-        text: 'Akses mikrofon tidak diizinkan di dokumen ini. Izinkan mikrofon di pengaturan browser untuk voice chat.',
+        text: errorMsg,
         timestamp: Date.now(),
         isSystem: true,
       });

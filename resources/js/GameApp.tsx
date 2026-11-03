@@ -1202,21 +1202,27 @@ export const GameApp: React.FC = () => {
   const handleFollowToggle = (targetName: string, targetId?: string | number) => {
     sound.playClick();
     const myName = (playerStats?.name || '').trim();
-    const isCurrentlyFollowing = followingList.includes(targetName);
+    const targetClean = (targetName || '').trim();
+    if (!targetClean) return;
+
+    const isInspectedTarget = inspectedPlayer && (inspectedPlayer.name || '').trim().toLowerCase() === targetClean.toLowerCase();
+    
+    // Cek status mengikuti secara case-insensitive & sinkron dengan inspectedPlayer
+    const isCurrentlyFollowing = followingList.some((n) => n.trim().toLowerCase() === targetClean.toLowerCase()) || Boolean(isInspectedTarget && inspectedPlayer?.is_following);
 
     if (isCurrentlyFollowing) {
-      // Unfollow
-      const nextFollowing = followingList.filter((n) => n !== targetName);
+      // 1. UNFOLLOW (BATAL MENGIKUTI)
+      const nextFollowing = followingList.filter((n) => n.trim().toLowerCase() !== targetClean.toLowerCase());
       setFollowingList(nextFollowing);
       try { localStorage.setItem('raden_following_list', JSON.stringify(nextFollowing)); } catch (e) {}
 
       // Jika sebelumnya mutual friends, maka status berteman gugur
-      const nextFriends = friendsList.filter((n) => n !== targetName);
+      const nextFriends = friendsList.filter((n) => n.trim().toLowerCase() !== targetClean.toLowerCase());
       setFriendsList(nextFriends);
       try { localStorage.setItem('raden_friends_list', JSON.stringify(nextFriends)); } catch (e) {}
 
       setInspectedPlayer((prev) => {
-        if (!prev || prev.name?.toLowerCase() !== targetName.toLowerCase()) return prev;
+        if (!prev || prev.name?.trim().toLowerCase() !== targetClean.toLowerCase()) return prev;
         const curFollowers = typeof prev.followers_count === 'number' ? prev.followers_count : (typeof prev.followersCount === 'number' ? prev.followersCount : 1);
         const curFriends = typeof prev.friends_count === 'number' ? prev.friends_count : (typeof prev.friendsCount === 'number' ? prev.friendsCount : 1);
         return {
@@ -1234,44 +1240,48 @@ export const GameApp: React.FC = () => {
         fetch('/api/social/unfollow', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-          body: JSON.stringify({ sender_name: myName, target_name: targetName }),
+          body: JSON.stringify({ sender_name: myName, target_name: targetClean }),
         })
           .then((res) => (res.ok ? res.json() : null))
           .then((data) => {
             if (data?.sender_counts) {
-              setFollowingList(data.sender_counts.following || []);
-              setFriendsList(data.sender_counts.friends || []);
+              const fList = data.sender_counts.following || [];
+              const frList = data.sender_counts.friends || [];
+              setFollowingList(fList);
+              setFriendsList(frList);
+              try { localStorage.setItem('raden_following_list', JSON.stringify(fList)); } catch (e) {}
+              try { localStorage.setItem('raden_friends_list', JSON.stringify(frList)); } catch (e) {}
             }
           })
           .catch(() => {});
       }
 
-      NetworkManager.getInstance().sendUnfollow(targetId ? String(targetId) : undefined, targetName);
+      NetworkManager.getInstance().sendUnfollow(targetId ? String(targetId) : undefined, targetClean);
 
       EventBus.emit('new-chat-message', {
         id: `unfollow_${Date.now()}`,
         sender: 'SISTEM',
-        text: `Kamu telah berhenti mengikuti ${targetName}.`,
+        text: `Kamu telah berhenti mengikuti ${targetClean}.`,
         timestamp: Date.now(),
         isSystem: true,
       });
     } else {
-      // Follow
-      const nextFollowing = Array.from(new Set([...followingList, targetName]));
+      // 2. FOLLOW (MULAI MENGIKUTI)
+      const nextFollowing = Array.from(new Set([...followingList.filter(n => n.trim().toLowerCase() !== targetClean.toLowerCase()), targetClean]));
       setFollowingList(nextFollowing);
       try { localStorage.setItem('raden_following_list', JSON.stringify(nextFollowing)); } catch (e) {}
 
       // Cek apakah target sudah mengikuti kita (Mutual Follow = TEMAN!)
-      const isMutual = followersList.includes(targetName);
+      const isMutual = followersList.some((n) => n.trim().toLowerCase() === targetClean.toLowerCase());
       if (isMutual) {
         sound.playSuccess();
-        const nextFriends = Array.from(new Set([...friendsList, targetName]));
+        const nextFriends = Array.from(new Set([...friendsList.filter(n => n.trim().toLowerCase() !== targetClean.toLowerCase()), targetClean]));
         setFriendsList(nextFriends);
         try { localStorage.setItem('raden_friends_list', JSON.stringify(nextFriends)); } catch (e) {}
       }
 
       setInspectedPlayer((prev) => {
-        if (!prev || prev.name?.toLowerCase() !== targetName.toLowerCase()) return prev;
+        if (!prev || prev.name?.trim().toLowerCase() !== targetClean.toLowerCase()) return prev;
         const curFollowers = typeof prev.followers_count === 'number' ? prev.followers_count : (typeof prev.followersCount === 'number' ? prev.followersCount : 0);
         const curFriends = typeof prev.friends_count === 'number' ? prev.friends_count : (typeof prev.friendsCount === 'number' ? prev.friendsCount : 0);
         return {
@@ -1289,25 +1299,29 @@ export const GameApp: React.FC = () => {
         fetch('/api/social/follow', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-          body: JSON.stringify({ sender_name: myName, target_name: targetName }),
+          body: JSON.stringify({ sender_name: myName, target_name: targetClean }),
         })
           .then((res) => (res.ok ? res.json() : null))
           .then((data) => {
             if (data?.sender_counts) {
-              setFollowingList(data.sender_counts.following || []);
-              setFriendsList(data.sender_counts.friends || []);
+              const fList = data.sender_counts.following || [];
+              const frList = data.sender_counts.friends || [];
+              setFollowingList(fList);
+              setFriendsList(frList);
+              try { localStorage.setItem('raden_following_list', JSON.stringify(fList)); } catch (e) {}
+              try { localStorage.setItem('raden_friends_list', JSON.stringify(frList)); } catch (e) {}
             }
           })
           .catch(() => {});
       }
 
-      NetworkManager.getInstance().sendFollow(targetId ? String(targetId) : undefined, targetName);
+      NetworkManager.getInstance().sendFollow(targetId ? String(targetId) : undefined, targetClean);
 
       if (isMutual) {
         EventBus.emit('new-chat-message', {
           id: `mutual_${Date.now()}`,
           sender: 'SISTEM',
-          text: `🎉 Luar biasa! Kamu dan ${targetName} saling mengikuti dan kini resmi menjadi TEMAN!`,
+          text: `🎉 Luar biasa! Kamu dan ${targetClean} saling mengikuti dan kini resmi menjadi TEMAN!`,
           timestamp: Date.now(),
           isSystem: true,
         });
@@ -1315,7 +1329,7 @@ export const GameApp: React.FC = () => {
         EventBus.emit('new-chat-message', {
           id: `follow_${Date.now()}`,
           sender: 'SISTEM',
-          text: `👀 Kamu sekarang mengikuti ${targetName}. Jika dia mengikutimu balik, kalian otomatis menjadi Teman!`,
+          text: `👀 Kamu sekarang mengikuti ${targetClean}. Jika dia mengikutimu balik, kalian otomatis menjadi Teman!`,
           timestamp: Date.now(),
           isSystem: true,
         });
@@ -1730,9 +1744,9 @@ export const GameApp: React.FC = () => {
                     localStorage.setItem('raden_player_bio', d);
                   } catch (e) {}
                 }}
-                friendsList={inspectedPlayer ? [] : friendsList}
-                followingList={inspectedPlayer ? [] : followingList}
-                followersList={inspectedPlayer ? [] : followersList}
+                friendsList={friendsList}
+                followingList={followingList}
+                followersList={followersList}
                 friendsCount={
                   inspectedPlayer
                     ? (typeof inspectedPlayer.friends_count === 'number'
@@ -1769,17 +1783,27 @@ export const GameApp: React.FC = () => {
                 }}
                 isFriend={
                   inspectedPlayer
-                    ? Boolean(inspectedPlayer.is_friend || (friendsList.includes(inspectedPlayer.name) && followingList.includes(inspectedPlayer.name)))
+                    ? Boolean(
+                        inspectedPlayer.is_friend ||
+                        (friendsList.some((n) => n.trim().toLowerCase() === inspectedPlayer.name.trim().toLowerCase()) &&
+                         followingList.some((n) => n.trim().toLowerCase() === inspectedPlayer.name.trim().toLowerCase()))
+                      )
                     : false
                 }
                 isFollowing={
                   inspectedPlayer
-                    ? Boolean(inspectedPlayer.is_following || followingList.includes(inspectedPlayer.name))
+                    ? Boolean(
+                        inspectedPlayer.is_following ||
+                        followingList.some((n) => n.trim().toLowerCase() === inspectedPlayer.name.trim().toLowerCase())
+                      )
                     : false
                 }
                 isFollower={
                   inspectedPlayer
-                    ? Boolean(inspectedPlayer.is_follower || followersList.includes(inspectedPlayer.name))
+                    ? Boolean(
+                        inspectedPlayer.is_follower ||
+                        followersList.some((n) => n.trim().toLowerCase() === inspectedPlayer.name.trim().toLowerCase())
+                      )
                     : false
                 }
                 isFriendRequested={inspectedPlayer ? sentFriendRequests.includes(String(inspectedPlayer.id || '')) : false}

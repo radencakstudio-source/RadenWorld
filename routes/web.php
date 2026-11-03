@@ -2,38 +2,26 @@
 
 use Illuminate\Support\Facades\Route;
 
-// View Utama Aplikasi Game (Multi-Route SPA: Lobby, Safe House, Open World)
-Route::get('/', function () {
-    return view('welcome');
-});
+// Helper Response SPA Game dengan Header Izin Mikrofon & Media Modern
+$renderSpa = function () {
+    return response()
+        ->view('welcome')
+        ->header('Permissions-Policy', 'microphone=*');
+};
 
-Route::get('/home/{privateId?}', function ($privateId = null) {
-    return view('welcome');
-});
+// View Utama Aplikasi Game (Multi-Route SPA: Lobby, Safe House, Open World)
+Route::get('/', $renderSpa);
+Route::get('/home/{privateId?}', $renderSpa);
 
 Route::get('/world/popup', function () {
     return redirect('/world');
 });
 
-Route::get('/world/{school?}', function ($school = null) {
-    return view('welcome');
-});
-
-Route::get('/school/{type?}', function ($type = null) {
-    return view('welcome');
-});
-
-Route::get('/cafe', function () {
-    return view('welcome');
-});
-
-Route::get('/perpustakaan', function () {
-    return view('welcome');
-});
-
-Route::get('/library', function () {
-    return view('welcome');
-});
+Route::get('/world/{school?}', $renderSpa);
+Route::get('/school/{type?}', $renderSpa);
+Route::get('/cafe', $renderSpa);
+Route::get('/perpustakaan', $renderSpa);
+Route::get('/library', $renderSpa);
 
 
 // Route Portal Admin Dialihkan ke World

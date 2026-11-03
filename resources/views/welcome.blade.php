@@ -10,7 +10,6 @@
     <meta name="format-detection" content="telephone=no">
     <meta name="HandheldFriendly" content="true">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <meta http-equiv="Permissions-Policy" content="microphone=(self)">
 
     <title>RadenWorld - 2D Open World Multiplayer Simulasi</title>
 

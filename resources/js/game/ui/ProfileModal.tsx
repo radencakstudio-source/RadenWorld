@@ -715,9 +715,10 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
 
   const getCurrentList = () => {
     let rawList: string[] = [];
-    if ((activeSocialTab as string) === 'friends') rawList = effectiveFriendsList;
-    else if ((activeSocialTab as string) === 'following') rawList = effectiveFollowingList;
-    else if ((activeSocialTab as string) === 'followers') rawList = effectiveFollowersList;
+    const cat = activeSocialTab !== 'none' ? activeSocialTab : profileCategory;
+    if (cat === 'friends') rawList = effectiveFriendsList;
+    else if (cat === 'following') rawList = effectiveFollowingList;
+    else if (cat === 'followers') rawList = effectiveFollowersList;
 
     if (!socialSearch.trim()) return rawList;
     return rawList.filter((item) =>
@@ -1438,16 +1439,141 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                         <div className="text-xs font-bold">Daftar pemain masih kosong</div>
                       </div>
                     ) : (
-                      getCurrentList().map((pName) => (
-                        <div key={pName} className="clay-card p-2.5 flex items-center justify-between gap-2 text-black">
-                          <div className="flex items-center gap-2 min-w-0">
-                            <div className="w-8 h-8 rounded-lg bg-[#FFAE6D] border-2 border-[#5C3A21] flex items-center justify-center text-black font-bold text-xs shrink-0">
-                              {pName.charAt(0).toUpperCase()}
+                      getCurrentList().map((pName) => {
+                        const isMutual =
+                          effectiveFriendsList.some((n) => n.trim().toLowerCase() === pName.trim().toLowerCase()) ||
+                          (effectiveFollowingList.some((n) => n.trim().toLowerCase() === pName.trim().toLowerCase()) &&
+                            effectiveFollowersList.some((n) => n.trim().toLowerCase() === pName.trim().toLowerCase()));
+                        const isIFollow = effectiveFollowingList.some((n) => n.trim().toLowerCase() === pName.trim().toLowerCase());
+                        const isFollowsMe = effectiveFollowersList.some((n) => n.trim().toLowerCase() === pName.trim().toLowerCase());
+                        const isTargetRaden = pName.toUpperCase() === 'RADEN';
+
+                        const handleOpenPlayer = () => {
+                          sound.playClick();
+                          const isTargetAdmin = pName.trim().toUpperCase() === 'RADEN';
+                          const targetData = {
+                            name: pName,
+                            id: pName,
+                            role: isTargetAdmin ? 'super_admin' : 'player',
+                            isSuperAdmin: isTargetAdmin,
+                            level: isTargetAdmin ? 99999999999 : 1,
+                            title: isTargetAdmin ? 'KREATOR & SUPER ADMIN' : 'Petualang',
+                            likes: isTargetAdmin ? 99999999999 : 0,
+                            friendsCount: 0,
+                            followingCount: 0,
+                            followersCount: 0,
+                          };
+                          if (onInspectOtherPlayer) {
+                            onInspectOtherPlayer(targetData);
+                          } else {
+                            EventBus.emit('inspect-player-profile', targetData);
+                          }
+                        };
+
+                        return (
+                          <div
+                            key={pName}
+                            className="clay-card p-2.5 flex items-center justify-between gap-2 text-black"
+                          >
+                            <div
+                              onClick={handleOpenPlayer}
+                              className="flex items-center gap-2.5 min-w-0 cursor-pointer"
+                              title={`Klik untuk melihat profil ${pName}`}
+                            >
+                              <div className="w-8 h-8 rounded-lg bg-[#FFAE6D] border-2 border-[#5C3A21] flex items-center justify-center text-black font-bold text-xs shrink-0">
+                                {pName.charAt(0).toUpperCase()}
+                              </div>
+                              <div className="min-w-0">
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  <span className="font-bold text-xs text-black truncate underline">{pName}</span>
+                                  {isTargetRaden && (
+                                    <span className="clay-badge-cocoa text-[9px] text-white font-bold px-1.5 py-0.5 flex items-center gap-0.5 shrink-0">
+                                      <Crown className="w-2.5 h-2.5" /> RADEN
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="mt-0.5">
+                                  {isMutual ? (
+                                    <span className="clay-badge-secondary text-[9px] font-bold text-black px-1.5 py-0.5 inline-block">
+                                      TEMAN
+                                    </span>
+                                  ) : isFollowsMe ? (
+                                    <span className="clay-badge-primary text-[9px] font-bold text-black px-1.5 py-0.5 inline-block">
+                                      MENGIKUTI KAMU
+                                    </span>
+                                  ) : (
+                                    <span className="clay-badge-neutral text-[9px] font-bold text-black px-1.5 py-0.5 inline-block">
+                                      DIIKUTI
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
                             </div>
-                            <span className="font-bold text-xs truncate">{pName}</span>
+
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              <button
+                                type="button"
+                                onClick={handleOpenPlayer}
+                                className="clay-btn-neutral p-1.5 text-black"
+                                title={`Lihat profil ${pName}`}
+                              >
+                                <User className="w-3.5 h-3.5 stroke-[2.5]" />
+                              </button>
+
+                              {onWhisper && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    sound.playClick();
+                                    onWhisper(pName);
+                                  }}
+                                  className="clay-btn-secondary p-1.5 text-black"
+                                  title={`Kirim pesan chat ke ${pName}`}
+                                >
+                                  <MessageSquare className="w-3.5 h-3.5 stroke-[2.5]" />
+                                </button>
+                              )}
+
+                              {profileCategory === 'followers' && !isIFollow ? (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    if (onFollowToggle) onFollowToggle(pName);
+                                  }}
+                                  className="clay-btn-primary px-2 py-1 text-black text-[10px] font-bold uppercase flex items-center gap-1"
+                                  title="Ikuti balik untuk menjadi Teman!"
+                                >
+                                  <UserPlus className="w-3 h-3 stroke-[2.5]" />
+                                  <span>IKUTI</span>
+                                </button>
+                              ) : profileCategory === 'following' ? (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    if (onFollowToggle) onFollowToggle(pName);
+                                  }}
+                                  className="clay-btn-neutral px-2 py-1 text-black text-[10px] font-bold uppercase"
+                                  title="Berhenti mengikuti pemain ini"
+                                >
+                                  BATAL
+                                </button>
+                              ) : profileCategory === 'friends' ? (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    if (onRemoveFriend) onRemoveFriend(pName);
+                                    else if (onFollowToggle) onFollowToggle(pName);
+                                  }}
+                                  className="clay-btn-neutral px-2 py-1 text-black text-[10px] font-bold uppercase"
+                                  title="Hapus dari daftar Teman"
+                                >
+                                  HAPUS
+                                </button>
+                              ) : null}
+                            </div>
                           </div>
-                        </div>
-                      ))
+                        );
+                      })
                     )}
                   </div>
                 </div>

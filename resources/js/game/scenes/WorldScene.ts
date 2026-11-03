@@ -91,6 +91,8 @@ export class WorldScene extends Phaser.Scene {
   private lastNightLightmapTime: number = 0;
   private lastNightCamX: number = -99999;
   private lastNightCamY: number = -99999;
+  private lastNightPlayerX: number = -99999;
+  private lastNightPlayerY: number = -99999;
   private lastNightZoom: number = -1;
 
   // Cache bounding box rintangan statis untuk performa tinggi
@@ -1532,6 +1534,8 @@ export class WorldScene extends Phaser.Scene {
       this.lastNightLightmapTime = 0;
       this.lastNightCamX = -99999;
       this.lastNightCamY = -99999;
+      this.lastNightPlayerX = -99999;
+      this.lastNightPlayerY = -99999;
       this.lastNightZoom = -1;
     } catch (err) {
       console.warn('[WorldScene] Gagal inisialisasi lightmap malam:', err);
@@ -1568,22 +1572,31 @@ export class WorldScene extends Phaser.Scene {
       this.nightOverlaySprite.setVisible(true);
     }
 
-    const isMobileDevice = typeof window !== 'undefined' && (
-      window.innerWidth < 768 || window.innerHeight < 550 || ('ontouchstart' in window) || (navigator.maxTouchPoints > 0)
-    );
-    const camMovedFar =
-      Math.abs(wv.x - this.lastNightCamX) > (isMobileDevice ? 64 : 48) ||
-      Math.abs(wv.y - this.lastNightCamY) > (isMobileDevice ? 64 : 48) ||
-      Math.abs(cam.zoom - this.lastNightZoom) > 0.02;
+    // Cek apakah pemain lokal, kamera, atau pemain lain sedang bergerak
+    const playerMoved = Boolean(this.player && (Math.abs(this.player.x - this.lastNightPlayerX) > 0.5 || Math.abs(this.player.y - this.lastNightPlayerY) > 0.5));
+    const camMoved = Math.abs(wv.x - this.lastNightCamX) > 0.5 || Math.abs(wv.y - this.lastNightCamY) > 0.5 || Math.abs(cam.zoom - this.lastNightZoom) > 0.005;
+    let anyRemoteMoved = false;
+    if (this.remotePlayers && this.remotePlayers.size > 0) {
+      for (const rp of this.remotePlayers.values()) {
+        if (rp && rp.active && rp.getIsMoving()) {
+          anyRemoteMoved = true;
+          break;
+        }
+      }
+    }
 
-    const throttleMs = isMobileDevice ? 120 : 45;
-    if (!camMovedFar && time - this.lastNightLightmapTime < throttleMs) {
+    // Gerakan aktif (berjalan/berlari/kamera bergerak): Perbarui 60fps setiap frame agar cahaya mulus tanpa getar
+    // Diam total: Hemat komputasi dengan jeda 100ms
+    const isMoving = playerMoved || camMoved || anyRemoteMoved;
+    if (!isMoving && time - this.lastNightLightmapTime < 100) {
       return;
     }
 
     this.lastNightLightmapTime = time;
     this.lastNightCamX = wv.x;
     this.lastNightCamY = wv.y;
+    this.lastNightPlayerX = this.player?.x ?? 0;
+    this.lastNightPlayerY = this.player?.y ?? 0;
     this.lastNightZoom = cam.zoom;
 
     const pad = 220;

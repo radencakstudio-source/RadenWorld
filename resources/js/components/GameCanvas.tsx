@@ -9,9 +9,15 @@ export const GameCanvas: React.FC = React.memo(() => {
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    let initTimer: any = null;
     if (!gameRef.current && containerRef.current) {
-      const config = createGameConfig('game-container');
-      gameRef.current = new Phaser.Game(config);
+      // Jalankan inisialisasi berat Phaser di macrotask berikutnya agar tidak memblokir INP pointer
+      initTimer = setTimeout(() => {
+        if (!gameRef.current && containerRef.current) {
+          const config = createGameConfig('game-container');
+          gameRef.current = new Phaser.Game(config);
+        }
+      }, 0);
     }
 
     // Handler terpusat untuk transisi scene di Phaser
@@ -183,6 +189,7 @@ export const GameCanvas: React.FC = React.memo(() => {
         containerEl.removeEventListener('touchcancel', onTouchEnd);
       }
       if (pinchCooldownTimer) clearTimeout(pinchCooldownTimer);
+      if (initTimer) clearTimeout(initTimer);
       if (gameRef.current) {
         gameRef.current.destroy(true);
         gameRef.current = null;

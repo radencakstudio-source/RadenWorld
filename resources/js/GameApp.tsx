@@ -11,7 +11,7 @@
  * ============================================================================
  */
 
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, startTransition } from 'react';
 import { GameCanvas } from './components/GameCanvas';
 import { HomeScreen } from './game/ui/HomeScreen';
 import { HUD } from './game/ui/HUD';
@@ -1411,25 +1411,27 @@ export const GameApp: React.FC = () => {
     if (window.location.pathname !== worldPath) {
       window.history.pushState(null, '', worldPath);
     }
-    setCurrentPath(worldPath);
-    setGameState('playing');
-    setWardrobeAvatar(avatar);
-    setPlayerStats((prev) => ({
-      ...prev,
-      name,
-      avatar,
-      level,
-      role,
-      isSuperAdmin,
-      title,
-      x: 1380,
-      y: 900,
-      gridX: 11,
-      gridY: 7,
-      roomName: 'RADENWORLD OPEN REALMS',
-      inHouse: false,
-      privateRoomId: safeRoomId,
-    }));
+    startTransition(() => {
+      setCurrentPath(worldPath);
+      setGameState('playing');
+      setWardrobeAvatar(avatar);
+      setPlayerStats((prev) => ({
+        ...prev,
+        name,
+        avatar,
+        level,
+        role,
+        isSuperAdmin,
+        title,
+        x: 1380,
+        y: 900,
+        gridX: 11,
+        gridY: 7,
+        roomName: 'RADENWORLD OPEN REALMS',
+        inHouse: false,
+        privateRoomId: safeRoomId,
+      }));
+    });
     EventBus.emit('switch-scene', {
       scene: 'WorldScene',
       name,

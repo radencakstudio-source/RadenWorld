@@ -87,21 +87,7 @@ export const ServerUsersModal: React.FC<ServerUsersModalProps> = ({
       if (currentSocketId && p.id === currentSocketId) return;
       if (p.id === 'local-me' || p.id === 'me') return;
 
-      const pNameClean = (p.name || '')
-        .replace(/\[admin\]/i, '')
-        .replace(/👑/g, '')
-        .trim()
-        .toLowerCase();
-      if (myNameClean && pNameClean === myNameClean) return;
-
       if (list.some((existing) => existing.id && existing.id === p.id)) return;
-      if (
-        list.some(
-          (existing) =>
-            (existing.name || '').trim().toLowerCase() === (p.name || '').trim().toLowerCase()
-        )
-      )
-        return;
 
       list.push(p);
     });

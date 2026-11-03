@@ -1082,13 +1082,6 @@ export class CafeScene extends Phaser.Scene {
       this.remotePlayers.delete(p.id);
     }
 
-    for (const [existingId, existingRemote] of this.remotePlayers.entries()) {
-      if (existingRemote.getEntityName().trim().toLowerCase() === p.name.trim().toLowerCase()) {
-        existingRemote.destroy();
-        this.remotePlayers.delete(existingId);
-      }
-    }
-
     try {
       const remote = new RemotePlayer(
         this,

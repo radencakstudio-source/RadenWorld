@@ -1162,8 +1162,6 @@ export class WorldScene extends Phaser.Scene {
 
       data.players.forEach(p => {
         if (p.id === myId || p.id === data.selfId || p.id === 'local_player') return;
-        const pNameClean = (p.name || '').replace(/\[admin\]/i, '').replace(/👑/g, '').trim().toLowerCase();
-        if (myNameClean && pNameClean === myNameClean) return;
         this.addRemotePlayer(p);
       });
       EventBus.emit('player-count-updated', this.remotePlayers.size + 1);
@@ -1172,11 +1170,8 @@ export class WorldScene extends Phaser.Scene {
     this.networkManager.onPlayerJoined((playerData: IPlayerData) => {
       if (!this.sys || !this.sys.displayList || !this.scene.isActive()) return;
       const myId = this.networkManager.getSocketId();
-      const myNameClean = (this.player?.getEntityName() || this.pendingPlayerName || '').replace(/\[admin\]/i, '').replace(/👑/g, '').trim().toLowerCase();
 
       if (playerData.id === myId || playerData.id === 'local_player') return;
-      const pNameClean = (playerData.name || '').replace(/\[admin\]/i, '').replace(/👑/g, '').trim().toLowerCase();
-      if (myNameClean && pNameClean === myNameClean) return;
 
       this.addRemotePlayer(playerData);
       EventBus.emit('player-count-updated', this.remotePlayers.size + 1);
@@ -1264,10 +1259,6 @@ export class WorldScene extends Phaser.Scene {
 
     if (p.id === myId || p.id === 'local_player') return;
 
-    // Jangan pernah spawn remote player jika namanya sama dengan nama pemain lokal (mencegah duplikat / ghost)
-    const myName = (this.player?.getEntityName() || this.pendingPlayerName || '').trim().toLowerCase();
-    if (myName && p.name && p.name.trim().toLowerCase() === myName) return;
-
     if (this.remotePlayers.has(p.id)) {
       const existing = this.remotePlayers.get(p.id);
       if (existing && existing.active) {
@@ -1275,13 +1266,6 @@ export class WorldScene extends Phaser.Scene {
         existing.setPosition(p.x, p.y);
       }
       return;
-    }
-
-    for (const [existingId, existingRemote] of this.remotePlayers.entries()) {
-      if (existingRemote.getEntityName().trim().toLowerCase() === p.name.trim().toLowerCase()) {
-        existingRemote.destroy();
-        this.remotePlayers.delete(existingId);
-      }
     }
 
     try {

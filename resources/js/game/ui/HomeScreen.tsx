@@ -12,7 +12,7 @@
  * ============================================================================
  */
 
-import React, { useState } from 'react';
+import React, { useState, startTransition } from 'react';
 import { IAvatarCustomization } from '../types';
 import { AuthModal } from './AuthModal';
 import { SettingsModal, GameSettings } from './SettingsModal';
@@ -72,17 +72,19 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
     } catch (e) {}
 
     if (hasValidUser && userData) {
-      onStartGame(
-        userData.name,
-        userData.avatar || {
-          gender: 'male',
-          skinColor: '#fed7aa',
-          shirtColor: '#f59e0b',
-          pantsColor: '#1e293b',
-          hatType: 'none',
-        },
-        userData.private_room_id
-      );
+      startTransition(() => {
+        onStartGame(
+          userData.name,
+          userData.avatar || {
+            gender: 'male',
+            skinColor: '#fed7aa',
+            shirtColor: '#f59e0b',
+            pantsColor: '#1e293b',
+            hatType: 'none',
+          },
+          userData.private_room_id
+        );
+      });
     } else {
       setIsAuthOpen(true);
     }

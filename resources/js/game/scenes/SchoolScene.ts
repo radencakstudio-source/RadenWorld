@@ -624,7 +624,7 @@ export class SchoolScene extends Phaser.Scene {
 
     // Bersihkan duplicate jika ada remote player lama dengan ID sama atau nama sama
     for (const [existingId, existingRemote] of this.remotePlayers.entries()) {
-      if (existingId === p.id || existingRemote.getEntityName().trim().toLowerCase() === p.name.trim().toLowerCase()) {
+      if (existingId === p.id) {
         existingRemote.destroy();
         this.remotePlayers.delete(existingId);
       }

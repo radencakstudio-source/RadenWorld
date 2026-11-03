@@ -13,10 +13,12 @@
 
     <title>RadenWorld - 2D Open World Multiplayer Simulasi</title>
 
-    <!-- Google Fonts Fallback: Press Start 2P -->
+    <!-- Google Fonts Fallback: Press Start 2P (Asynchronous Non-Blocking) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" media="print" onload="this.media='all'">
+    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap"></noscript>
 
     <!-- Google Identity Services & Facebook SDK -->
     <script src="https://accounts.google.com/gsi/client" async defer></script>
@@ -55,6 +57,9 @@
             background-color: #FFF8EA;
             contain: strict;
         }
+        @keyframes raden-spin {
+            to { transform: rotate(360deg); }
+        }
     </style>
 
     <script>
@@ -79,6 +84,21 @@
     </script>
 </head>
 <body class="bg-[#FFF8EA] text-black antialiased overflow-hidden select-none">
-    <div id="raden-game-app"></div>
+    <div id="raden-game-app">
+        <!-- Ultra-Fast LCP Pre-rendered Splash Element (< 200ms Paint) -->
+        <div style="position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background-color:#FFF8EA;padding:1rem;">
+            <div style="background:#FFF8EA;border:2px solid #5C3A21;border-radius:12px;box-shadow:0 4px 0 #5C3A21;padding:8px 20px;display:flex;align-items:center;gap:10px;margin-bottom:1rem;">
+                <span style="font-size:24px;">🎮</span>
+                <h1 class="text-base sm:text-2xl md:text-4xl font-bold text-black tracking-wide leading-none" style="font-family:'Kenney Pixel Square','m5x7',monospace;margin:0;font-size:clamp(1.25rem, 4vw, 2.25rem);color:#000000;font-weight:bold;letter-spacing:1px;">
+                    RADENWORLD
+                </h1>
+                <span style="font-size:24px;">✨</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;font-family:'Kenney Pixel Square','m5x7',monospace;font-size:12px;color:#5C3A21;font-weight:bold;">
+                <div style="width:12px;height:12px;border:2px solid #5C3A21;border-top-color:transparent;border-radius:50%;animation:raden-spin 0.8s linear infinite;"></div>
+                <span>MEMUAT DUNIA SIMULASI...</span>
+            </div>
+        </div>
+    </div>
 </body>
 </html>

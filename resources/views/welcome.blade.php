@@ -10,6 +10,9 @@
     <meta name="format-detection" content="telephone=no">
     <meta name="HandheldFriendly" content="true">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
 
     <title>RadenWorld - 2D Open World Multiplayer Simulasi</title>
 
@@ -70,6 +73,19 @@
             }
             e.preventDefault();
         }, { passive: false });
+
+        // Auto-Purge Old Cache & Self-Healing Service Worker Update
+        const APP_BUILD_VER = 'radenworld-static-v5';
+        try {
+            if (localStorage.getItem('raden_sw_ver') !== APP_BUILD_VER) {
+                localStorage.setItem('raden_sw_ver', APP_BUILD_VER);
+                if ('caches' in window) {
+                    caches.keys().then(function(names) {
+                        names.forEach(function(name) { if (name !== APP_BUILD_VER) caches.delete(name); });
+                    });
+                }
+            }
+        } catch (e) {}
 
         // Registrasi Service Worker untuk Cache-First Aset Game (Mengurangi request Wasmer hingga 95%+)
         if ('serviceWorker' in navigator && (window.location.protocol === 'https:' || window.location.hostname === 'localhost')) {

@@ -10,7 +10,7 @@
  * ============================================================================
  */
 
-const CACHE_NAME = 'radenworld-static-v4';
+const CACHE_NAME = 'radenworld-static-v5';
 
 // Pola URL yang dikecualikan dari cache (harus selalu live realtime)
 const NETWORK_ONLY_PATTERNS = [
@@ -100,22 +100,17 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // 4. Strategi Network-First untuk Dokumen HTML Halaman Utama
+  // 4. Strategi Fresh Network untuk Dokumen HTML (Mencegah browser stuck pada script versi lama)
   if (request.mode === 'navigate') {
     event.respondWith(
-      fetch(request)
+      fetch(request, { cache: 'no-cache' })
         .then((networkResponse) => {
-          if (networkResponse && networkResponse.status === 200) {
-            const responseClone = networkResponse.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(request, responseClone));
-          }
           return networkResponse;
         })
         .catch(() => {
-          return caches.match(request).then((cached) => {
-            return cached || caches.match('/');
-          });
+          return caches.match(request).then((cached) => cached || caches.match('/'));
         })
     );
+    return;
   }
 });

@@ -101,6 +101,17 @@ const httpServer = createServer((req, res) => {
     return res.end('Server RPG Aktif 24 Jam!');
   }
 
+  // Root endpoint: Status aktif game server saat diakses via browser atau health checker
+  if (reqUrlPath === '/' || reqUrlPath === '') {
+    res.writeHead(200, {
+      'Content-Type': 'text/plain; charset=utf-8',
+      'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS',
+    });
+    return res.end('RadenWorld Multiplayer Game Server Online & Siap Digunakan! (Port: ' + PORT + ')');
+  }
+
   const proxyHeaders = {
     ...req.headers,
     host: `127.0.0.1:${LARAVEL_PORT}`,

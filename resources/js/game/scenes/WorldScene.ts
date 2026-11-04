@@ -98,6 +98,12 @@ export class WorldScene extends Phaser.Scene {
   // Cache bounding box rintangan statis untuk performa tinggi
   private cachedObstacleBoxes: { minX: number; maxX: number; minY: number; maxY: number }[] | null = null;
 
+  // Pengaturan Grafik & Batas Pemain Terlihat
+  private maxVisiblePlayers: number = 50;
+  private enableMovementEffects: boolean = true;
+  private enableAntiAliasing: boolean = true;
+  private lastVisibilityCheckTime: number = 0;
+
   constructor() {
     super({ key: 'WorldScene' });
     this.networkManager = NetworkManager.getInstance();
@@ -133,6 +139,31 @@ export class WorldScene extends Phaser.Scene {
   public create(): void {
     // 0. Aktifkan cooldown pintu 3 detik agar pemain yang baru keluar tidak terhisap kembali
     this.doorCooldownUntil = this.time ? this.time.now + 3000 : 3000;
+
+    // 0b. Muat preferensi pengaturan grafik (Batas User, Efek Gerakan, AA)
+    try {
+      const gs = JSON.parse(localStorage.getItem('raden_game_settings') || '{}');
+      if (typeof gs.maxVisiblePlayers === 'number') this.maxVisiblePlayers = gs.maxVisiblePlayers;
+      if (typeof gs.enableMovementEffects === 'boolean') this.enableMovementEffects = gs.enableMovementEffects;
+      if (typeof gs.enableAntiAliasing === 'boolean') this.enableAntiAliasing = gs.enableAntiAliasing;
+    } catch (e) {}
+
+    const onGraphicsSettingsUpdated = (data: any) => {
+      if (typeof data?.maxVisiblePlayers === 'number') {
+        this.maxVisiblePlayers = data.maxVisiblePlayers;
+        this.applyVisiblePlayersLimit();
+      }
+      if (typeof data?.enableMovementEffects === 'boolean') {
+        this.enableMovementEffects = data.enableMovementEffects;
+      }
+      if (typeof data?.enableAntiAliasing === 'boolean') {
+        this.enableAntiAliasing = data.enableAntiAliasing;
+      }
+    };
+    EventBus.on('graphics-settings-updated', onGraphicsSettingsUpdated);
+    this.events.once('shutdown', () => {
+      EventBus.off('graphics-settings-updated', onGraphicsSettingsUpdated);
+    });
 
     // 1. Batas fisika dunia diperlebar mencakup buffer (3600px) agar koridor jalan bisa dilewati ke luar
     const buf = 3600;
@@ -668,6 +699,7 @@ export class WorldScene extends Phaser.Scene {
   }
 
   private spawnTapRipple(x: number, y: number): void {
+    if (!this.enableMovementEffects) return;
     const circle = this.add.graphics();
     circle.lineStyle(2, 0xf59e0b, 0.9);
     circle.strokeCircle(x, y, 10);
@@ -680,6 +712,45 @@ export class WorldScene extends Phaser.Scene {
       duration: 350,
       ease: 'Cubic.easeOut',
       onComplete: () => circle.destroy(),
+    });
+  }
+
+  /**
+   * Mengatur visibilitas pemain lain di server berdasarkan kuota maxVisiblePlayers & jarak
+   */
+  public applyVisiblePlayersLimit(): void {
+    if (!this.remotePlayers || this.remotePlayers.size === 0) return;
+
+    // Kuota 0 = Hanya diri sendiri (Solo / Offline feel) -> sembunyikan semua pemain lain
+    if (this.maxVisiblePlayers <= 0) {
+      this.remotePlayers.forEach((rp) => {
+        if (rp.visible) rp.setVisible(false);
+      });
+      return;
+    }
+
+    // Jika jumlah pemain di server masih dalam batas kuota -> tampilkan semua
+    if (this.remotePlayers.size <= this.maxVisiblePlayers) {
+      this.remotePlayers.forEach((rp) => {
+        if (!rp.visible) rp.setVisible(true);
+      });
+      return;
+    }
+
+    // Urutkan pemain lain berdasarkan jarak terdekat ke pemain lokal
+    const px = this.player?.x || 0;
+    const py = this.player?.y || 0;
+    const sorted = Array.from(this.remotePlayers.values()).sort((a, b) => {
+      const distA = Math.hypot(a.x - px, a.y - py);
+      const distB = Math.hypot(b.x - px, b.y - py);
+      return distA - distB;
+    });
+
+    sorted.forEach((rp, idx) => {
+      const shouldBeVisible = idx < this.maxVisiblePlayers;
+      if (rp.visible !== shouldBeVisible) {
+        rp.setVisible(shouldBeVisible);
+      }
     });
   }
 
@@ -1316,6 +1387,7 @@ export class WorldScene extends Phaser.Scene {
       });
 
       this.remotePlayers.set(p.id, remote);
+      this.applyVisiblePlayersLimit();
 
       if ((p as any).fishing) {
         const f = (p as any).fishing;
@@ -1444,9 +1516,16 @@ export class WorldScene extends Phaser.Scene {
       } catch (e) { }
     }
 
+    if (time - this.lastVisibilityCheckTime > 800) {
+      this.lastVisibilityCheckTime = time;
+      this.applyVisiblePlayersLimit();
+    }
+
     this.remotePlayers.forEach(p => {
-      p.update(time, delta);
-      p.setDepth(Math.floor(p.y + 60));
+      if (p.visible) {
+        p.update(time, delta);
+        p.setDepth(Math.floor(p.y + 60));
+      }
     });
   }
 
@@ -1709,7 +1788,7 @@ export class WorldScene extends Phaser.Scene {
     // 3b. Cahaya terang di sekitar seluruh pemain lain (Multiplayer Remote Players)
     if (this.remotePlayers && this.remotePlayers.size > 0) {
       this.remotePlayers.forEach((rp) => {
-        if (!rp || !rp.active) return;
+        if (!rp || !rp.active || !rp.visible) return;
         if (
           rp.x < viewX - 250 ||
           rp.x > viewX + viewW + 250 ||

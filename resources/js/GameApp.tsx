@@ -77,40 +77,40 @@ export const GameApp: React.FC = () => {
   const [isLoadingScreen, setIsLoadingScreen] = useState<boolean>(true);
 
   // Game Settings State
-  const [settings, setSettings] = useState<GameSettings>({
-    language: 'id',
-    masterVolume: 0.8,
-    bgmVolume: (() => {
-      try {
-        const gs = localStorage.getItem('raden_game_settings');
-        if (gs) {
-          const parsed = JSON.parse(gs);
-          if (typeof parsed.bgmVolume === 'number' && parsed.bgmVolume >= 0 && parsed.bgmVolume <= 1) {
-            return parsed.bgmVolume;
+  const [settings, setSettings] = useState<GameSettings>(() => {
+    let saved: any = {};
+    try {
+      const gs = localStorage.getItem('raden_game_settings');
+      if (gs) saved = JSON.parse(gs);
+    } catch (e) {}
+
+    const isTouch = typeof window !== 'undefined' && ('ontouchstart' in window || navigator.maxTouchPoints > 0);
+
+    return {
+      language: saved.language || 'id',
+      masterVolume: typeof saved.masterVolume === 'number' ? saved.masterVolume : 0.8,
+      bgmVolume: (() => {
+        if (typeof saved.bgmVolume === 'number' && saved.bgmVolume >= 0 && saved.bgmVolume <= 1) {
+          return saved.bgmVolume;
+        }
+        try {
+          const s = localStorage.getItem('raden_bgm_vol');
+          if (s) {
+            const v = parseFloat(s);
+            if (!isNaN(v) && v >= 0 && v <= 1) return v;
           }
-        }
-        const s = localStorage.getItem('raden_bgm_vol');
-        if (s) {
-          const v = parseFloat(s);
-          if (!isNaN(v) && v >= 0 && v <= 1) return v;
-        }
-      } catch (e) {}
-      return 0.35;
-    })(),
-    sfxVolume: 0.8,
-    isMuted: false,
-    controlMode: (() => {
-      try {
-        const s = localStorage.getItem('raden_game_settings');
-        if (s) {
-          const p = JSON.parse(s);
-          if (p.controlMode) return p.controlMode;
-        }
-        const isTouch = typeof window !== 'undefined' && ('ontouchstart' in window || navigator.maxTouchPoints > 0);
-        return isTouch ? 'mobile' : 'pc';
-      } catch (e) {}
-      return 'pc';
-    })(),
+        } catch (e) {}
+        return 0.35;
+      })(),
+      sfxVolume: typeof saved.sfxVolume === 'number' ? saved.sfxVolume : 0.8,
+      isMuted: Boolean(saved.isMuted),
+      controlMode: saved.controlMode || (isTouch ? 'mobile' : 'pc'),
+      cameraZoom: saved.cameraZoom || (isTouch ? 0.65 : 0.9),
+      graphicsQuality: saved.graphicsQuality || (isTouch ? 'medium' : 'high'),
+      maxVisiblePlayers: typeof saved.maxVisiblePlayers === 'number' ? saved.maxVisiblePlayers : (isTouch ? 25 : 50),
+      enableMovementEffects: saved.enableMovementEffects !== false,
+      enableAntiAliasing: saved.enableAntiAliasing !== false,
+    };
   });
 
   const [inGameSettingsOpen, setInGameSettingsOpen] = useState(false);
@@ -1139,8 +1139,30 @@ export const GameApp: React.FC = () => {
 
   const handleUpdateSettings = (newSettings: GameSettings) => {
     setSettings(newSettings);
+    try {
+      localStorage.setItem('raden_game_settings', JSON.stringify(newSettings));
+    } catch (e) {}
+
     sound.setVolume(newSettings.masterVolume, newSettings.sfxVolume, newSettings.bgmVolume);
     sound.setMuted(newSettings.isMuted);
+
+    // Terapkan Anti-Aliasing ke canvas game secara dinamis
+    const canvas = document.querySelector('#game-container canvas') as HTMLCanvasElement | null;
+    if (canvas) {
+      if (newSettings.enableAntiAliasing === false) {
+        canvas.style.imageRendering = 'pixelated';
+      } else {
+        canvas.style.imageRendering = 'auto';
+      }
+    }
+
+    // Broadcast perubahan setting grafik ke seluruh Scene & Controller game
+    EventBus.emit('graphics-settings-updated', {
+      graphicsQuality: newSettings.graphicsQuality || 'high',
+      maxVisiblePlayers: typeof newSettings.maxVisiblePlayers === 'number' ? newSettings.maxVisiblePlayers : 50,
+      enableMovementEffects: newSettings.enableMovementEffects !== false,
+      enableAntiAliasing: newSettings.enableAntiAliasing !== false,
+    });
   };
 
   // Friend Request Handlers

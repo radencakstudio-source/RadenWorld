@@ -426,6 +426,10 @@ export class Player extends Entity {
    */
   public triggerJumpWhiteFlash(durationMs: number = 160): void {
     if (!this.sprite || !this.sprite.active || !this.scene) return;
+    try {
+      const gs = JSON.parse(localStorage.getItem('raden_game_settings') || '{}');
+      if (gs.enableMovementEffects === false) return;
+    } catch (e) {}
 
     if (this.whiteFlashTimer) {
       this.whiteFlashTimer.remove();

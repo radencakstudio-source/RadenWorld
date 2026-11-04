@@ -355,6 +355,7 @@ export class CharacterController {
   private runDustGraphics: Phaser.GameObjects.Graphics;
   private runPuffBalls: IRunPuffBall[] = [];
   private runStepFoot: boolean = false;
+  private enableMovementEffects: boolean = true;
 
   /** Objek Graphics untuk Tanda Kristal Melayang pada Klik/Tap Navigasi */
   private crystalGraphics: Phaser.GameObjects.Graphics;
@@ -693,6 +694,24 @@ export class CharacterController {
     };
     EventBus.on('player-consumed-potion', onPotionConsumed);
 
+    try {
+      const gs = JSON.parse(localStorage.getItem('raden_game_settings') || '{}');
+      if (gs.enableMovementEffects === false) {
+        this.enableMovementEffects = false;
+      }
+    } catch (e) {}
+
+    const onGraphicsSettingsUpdated = (data: any) => {
+      if (typeof data?.enableMovementEffects === 'boolean') {
+        this.enableMovementEffects = data.enableMovementEffects;
+        if (!this.enableMovementEffects) {
+          this.landingDustGraphics?.clear();
+          this.runDustGraphics?.clear();
+        }
+      }
+    };
+    EventBus.on('graphics-settings-updated', onGraphicsSettingsUpdated);
+
     this.player.once(Phaser.GameObjects.Events.DESTROY, () => {
       EventBus.off('joystick-move', onJoystickMove);
       EventBus.off('joystick-end', onJoystickEnd);
@@ -709,6 +728,7 @@ export class CharacterController {
       EventBus.off('player-run-end', onPlayerRunEnd);
       EventBus.off('player-run-toggle', onPlayerRunToggle);
       EventBus.off('player-consumed-potion', onPotionConsumed);
+      EventBus.off('graphics-settings-updated', onGraphicsSettingsUpdated);
       this.landingGraphics?.destroy();
       this.landingDustGraphics?.destroy();
       this.runDustGraphics?.destroy();
@@ -1091,6 +1111,7 @@ export class CharacterController {
    * Memicu efek riak debu pendaratan (Landing Dust Ripples)
    */
   private triggerLandingDust(x: number, y: number): void {
+    if (!this.enableMovementEffects) return;
     this.landingDustTime = this.scene.time.now;
     this.landingDustPos = { x, y: y + 12 };
   }
@@ -1099,7 +1120,10 @@ export class CharacterController {
    * Update efek riak debu setelah mendarat
    */
   private updateLandingDust(time: number): void {
-    if (this.landingDustTime === 0) return;
+    if (!this.enableMovementEffects || this.landingDustTime === 0) {
+      if (this.landingDustGraphics) this.landingDustGraphics.clear();
+      return;
+    }
 
     const elapsed = time - this.landingDustTime;
     const dur = 280; // 280ms animasi pudar
@@ -1131,6 +1155,7 @@ export class CharacterController {
    * tepat di bawah telapak kaki (bergantian kaki kiri dan kanan), BUKAN melayang ke atas (bukan lompat).
    */
   private triggerRunDustBall(time: number, vx: number, vy: number): void {
+    if (!this.enableMovementEffects) return;
     const dirLen = Math.hypot(vx, vy) || 1;
     const normX = vx / dirLen;
     const normY = vy / dirLen;
@@ -1198,7 +1223,8 @@ export class CharacterController {
    * Menggambar bola-bola kartun bulat sempurna dengan garis tepi biskuit dan pantulan 3D.
    */
   private updateRunDust(time: number, delta: number): void {
-    if (this.runPuffBalls.length === 0) {
+    if (!this.enableMovementEffects || this.runPuffBalls.length === 0) {
+      if (this.runDustGraphics) this.runDustGraphics.clear();
       return;
     }
 

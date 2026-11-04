@@ -18,6 +18,11 @@ import { LibraryScene } from '../scenes/LibraryScene';
 
 export function createGameConfig(parentContainerId: string = 'game-container'): Phaser.Types.Core.GameConfig {
   const dpr = typeof window !== 'undefined' ? Math.min(2, Math.max(1, window.devicePixelRatio || 1)) : 1;
+  let enableAA = true;
+  try {
+    const s = JSON.parse(localStorage.getItem('raden_game_settings') || '{}');
+    if (s.enableAntiAliasing === false) enableAA = false;
+  } catch (e) {}
 
   return {
     type: Phaser.AUTO,
@@ -51,15 +56,15 @@ export function createGameConfig(parentContainerId: string = 'game-container'): 
     render: {
       powerPreference: 'high-performance',
       batchSize: 4096,
-      antialias: true,
-      antialiasGL: true,
-      roundPixels: false,
+      antialias: enableAA,
+      antialiasGL: enableAA,
+      roundPixels: !enableAA,
     },
     scene: [BootScene, HouseScene, WorldScene, SchoolScene, CafeScene, LibraryScene],
-    pixelArt: false,
-    roundPixels: false,
-    antialias: true,
-    antialiasGL: true,
+    pixelArt: !enableAA,
+    roundPixels: !enableAA,
+    antialias: enableAA,
+    antialiasGL: enableAA,
     fps: {
       min: 30,
       target: 60,

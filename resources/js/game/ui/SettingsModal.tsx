@@ -39,10 +39,15 @@ import {
   Pause,
   Music,
   Move,
+  Sparkles,
+  Cpu,
+  Eye,
+  Wind,
 } from 'lucide-react';
 
 export type LanguageCode = 'id' | 'en' | 'zh' | 'ja' | 'ko' | 'ar' | 'fr' | 'ru' | 'de' | 'es';
 export type ControlMode = 'pc' | 'mobile';
+export type GraphicsQualityPreset = 'high' | 'medium' | 'low' | 'custom';
 
 export interface GameSettings {
   language: LanguageCode;
@@ -52,6 +57,11 @@ export interface GameSettings {
   isMuted: boolean;
   controlMode: ControlMode;
   cameraZoom?: number;
+  // Grafik & Performa (Batas User, Efek Gerakan, Anti-Aliasing)
+  graphicsQuality?: GraphicsQualityPreset;
+  maxVisiblePlayers?: number;
+  enableMovementEffects?: boolean;
+  enableAntiAliasing?: boolean;
 }
 
 interface SettingsModalProps {
@@ -70,10 +80,23 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   onOpenServerModal,
 }) => {
   const [activeSection, setActiveSection] = useState<
-    'language' | 'sound' | 'display' | 'controls' | 'network'
+    'language' | 'sound' | 'graphics' | 'display' | 'controls' | 'network'
   >('language');
   const sound = SoundManager.getInstance();
   const networkMgr = NetworkManager.getInstance();
+
+  const [graphicsQuality, setGraphicsQuality] = useState<GraphicsQualityPreset>(() => {
+    return settings.graphicsQuality || 'high';
+  });
+  const [maxVisiblePlayers, setMaxVisiblePlayers] = useState<number>(() => {
+    return typeof settings.maxVisiblePlayers === 'number' ? settings.maxVisiblePlayers : 50;
+  });
+  const [enableMovementEffects, setEnableMovementEffects] = useState<boolean>(() => {
+    return settings.enableMovementEffects !== false;
+  });
+  const [enableAntiAliasing, setEnableAntiAliasing] = useState<boolean>(() => {
+    return settings.enableAntiAliasing !== false;
+  });
 
   const [customHost, setCustomHost] = useState<string>(() => {
     try {
@@ -205,6 +228,75 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     }
   };
 
+  const handleSelectQualityPreset = (preset: 'high' | 'medium' | 'low') => {
+    sound.playClick();
+    let newMaxPlayers = 50;
+    let newEffects = true;
+    let newAA = true;
+
+    if (preset === 'high') {
+      newMaxPlayers = 50;
+      newEffects = true;
+      newAA = true;
+    } else if (preset === 'medium') {
+      newMaxPlayers = 25;
+      newEffects = true;
+      newAA = true;
+    } else if (preset === 'low') {
+      newMaxPlayers = 10;
+      newEffects = false;
+      newAA = false;
+    }
+
+    setGraphicsQuality(preset);
+    setMaxVisiblePlayers(newMaxPlayers);
+    setEnableMovementEffects(newEffects);
+    setEnableAntiAliasing(newAA);
+
+    onUpdateSettings({
+      ...settings,
+      graphicsQuality: preset,
+      maxVisiblePlayers: newMaxPlayers,
+      enableMovementEffects: newEffects,
+      enableAntiAliasing: newAA,
+    });
+  };
+
+  const handleMaxVisiblePlayersChange = (count: number) => {
+    sound.playClick();
+    setMaxVisiblePlayers(count);
+    setGraphicsQuality('custom');
+    onUpdateSettings({
+      ...settings,
+      graphicsQuality: 'custom',
+      maxVisiblePlayers: count,
+    });
+  };
+
+  const handleToggleMovementEffects = () => {
+    sound.playClick();
+    const nextVal = !enableMovementEffects;
+    setEnableMovementEffects(nextVal);
+    setGraphicsQuality('custom');
+    onUpdateSettings({
+      ...settings,
+      graphicsQuality: 'custom',
+      enableMovementEffects: nextVal,
+    });
+  };
+
+  const handleToggleAntiAliasing = () => {
+    sound.playClick();
+    const nextVal = !enableAntiAliasing;
+    setEnableAntiAliasing(nextVal);
+    setGraphicsQuality('custom');
+    onUpdateSettings({
+      ...settings,
+      graphicsQuality: 'custom',
+      enableAntiAliasing: nextVal,
+    });
+  };
+
   const handleCopyLink = () => {
     sound.playClick();
     const port = window.location.port ? `:${window.location.port}` : '';
@@ -267,6 +359,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               {[
                 { id: 'language', label: 'Bahasa', icon: Languages },
                 { id: 'sound', label: 'Audio', icon: Volume2 },
+                { id: 'graphics', label: 'Grafik', icon: Sparkles },
                 { id: 'display', label: 'Tampilan', icon: ZoomIn },
                 { id: 'controls', label: 'Kontrol', icon: Gamepad2 },
                 { id: 'network', label: 'Jaringan', icon: Wifi },
@@ -306,6 +399,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 <span className="text-xs sm:text-sm font-bold uppercase text-black truncate">
                   {activeSection === 'language' && 'PILIHAN BAHASA DUNIA'}
                   {activeSection === 'sound' && 'AUDIO & EFEK SUARA'}
+                  {activeSection === 'graphics' && 'KUALITAS GRAFIK & PERFORMA'}
                   {activeSection === 'display' && 'TAMPILAN & KAMERA'}
                   {activeSection === 'controls' && 'KONTROL PERMAINAN'}
                   {activeSection === 'network' && 'JARINGAN & MULTIPLAYER'}
@@ -527,7 +621,193 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             </div>
           )}
 
-          {/* TAB 3: TAMPILAN & KAMERA */}
+          {/* TAB: KUALITAS GRAFIK & PERFORMA */}
+          {activeSection === 'graphics' && (
+            <div className="space-y-3.5">
+              {/* 1. PRESET KUALITAS CEPAT */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-black uppercase flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 stroke-[2.5]" />
+                    <span>Preset Kualitas Grafik:</span>
+                  </label>
+                  <span className="clay-badge-secondary px-2 py-0.5 text-[9.5px] font-bold text-black uppercase">
+                    {graphicsQuality === 'high' && 'Tinggi (HD 60FPS)'}
+                    {graphicsQuality === 'medium' && 'Sedang (Seimbang)'}
+                    {graphicsQuality === 'low' && 'Rendah (Hemat Daya)'}
+                    {graphicsQuality === 'custom' && 'Kustom'}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    {
+                      id: 'high',
+                      title: 'TINGGI',
+                      sub: 'Maksimal 60 FPS',
+                      desc: '50 Pemain, Semua Efek & AA Aktif',
+                    },
+                    {
+                      id: 'medium',
+                      title: 'SEDANG',
+                      sub: 'Seimbang HP',
+                      desc: '25 Pemain, Efek & AA Aktif',
+                    },
+                    {
+                      id: 'low',
+                      title: 'HEMAT',
+                      sub: 'Performa Ringan',
+                      desc: '10 Pemain, Efek & AA OFF',
+                    },
+                  ].map((preset) => {
+                    const isSelected = graphicsQuality === preset.id;
+                    return (
+                      <button
+                        key={preset.id}
+                        type="button"
+                        onClick={() => handleSelectQualityPreset(preset.id as any)}
+                        className={`p-2.5 text-center flex flex-col items-center justify-between gap-1 text-black ${
+                          isSelected ? 'clay-btn-primary' : 'clay-btn-neutral'
+                        }`}
+                      >
+                        <div className="flex items-center gap-1 font-bold text-[11px] uppercase">
+                          {isSelected && <Check className="w-3 h-3 stroke-[3]" />}
+                          <span>{preset.title}</span>
+                        </div>
+                        <span className="text-[9px] font-bold opacity-80 leading-none">
+                          {preset.sub}
+                        </span>
+                        <span className="text-[8px] opacity-70 leading-tight mt-0.5">
+                          {preset.desc}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* 2. BATASI USER / PEMAIN TERLIHAT DI SERVER */}
+              <div className="clay-card p-3 space-y-2">
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-lg bg-[#FFAE6D] border-2 border-[#5C3A21] flex items-center justify-center text-black shrink-0">
+                      <Eye className="w-4 h-4 stroke-[2.5]" />
+                    </div>
+                    <div>
+                      <div className="text-xs font-bold text-black uppercase">
+                        Batas Pemain Terlihat di Layar
+                      </div>
+                      <div className="text-[10px] text-black/75">
+                        Memprioritaskan pemain terdekat untuk menghemat baterai & CPU
+                      </div>
+                    </div>
+                  </div>
+                  <span className="clay-badge-primary px-2 py-0.5 text-xs font-bold text-black shrink-0">
+                    {maxVisiblePlayers === 0
+                      ? 'Hanya Diri Sendiri (0)'
+                      : maxVisiblePlayers >= 50
+                      ? 'Semua (Maks 50)'
+                      : `${maxVisiblePlayers} Pemain Terdekat`}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-1.5 pt-1">
+                  {[
+                    { count: 50, label: 'Semua (50)', desc: 'Penuh' },
+                    { count: 25, label: '25 Pemain', desc: 'Standar' },
+                    { count: 15, label: '15 Pemain', desc: 'Hemat' },
+                    { count: 5, label: '5 Pemain', desc: 'Sangat Ringan' },
+                    { count: 0, label: 'Solo (0)', desc: 'Paling Ringan' },
+                  ].map((item) => {
+                    const isSelected = maxVisiblePlayers === item.count;
+                    return (
+                      <button
+                        key={item.count}
+                        type="button"
+                        onClick={() => handleMaxVisiblePlayersChange(item.count)}
+                        className={`p-1.5 flex flex-col items-center justify-center text-center text-black ${
+                          isSelected ? 'clay-btn-secondary' : 'clay-btn-neutral'
+                        }`}
+                      >
+                        <span className="text-[10.5px] font-bold leading-tight">{item.label}</span>
+                        <span className="text-[8px] opacity-75 mt-0.5 leading-none">{item.desc}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* 3. AKTIF/NONAKTIF EFEK GERAKAN (LARI, LOMPAT, DEBU) */}
+              <div className="clay-card p-3 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="w-8 h-8 rounded-lg bg-[#A8E6CF] border-2 border-[#5C3A21] flex items-center justify-center text-black shrink-0">
+                    <Wind className="w-4 h-4 stroke-[2.5]" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-xs font-bold text-black uppercase flex items-center gap-1.5 flex-wrap">
+                      <span>Efek Gerakan (Lari, Lompat & Debu)</span>
+                      <span
+                        className={`text-[9px] px-1.5 py-0.5 font-bold ${
+                          enableMovementEffects ? 'clay-badge-secondary' : 'clay-badge-neutral'
+                        }`}
+                      >
+                        {enableMovementEffects ? 'AKTIF (60 FPS)' : 'HEMAT DAYA (OFF)'}
+                      </span>
+                    </div>
+                    <div className="text-[10px] text-black/75">
+                      Animasi kepulan debu lari (sprint dust), riak pendaratan lompat, dan efek sentuhan
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleToggleMovementEffects}
+                  className={`px-3 py-1.5 text-xs font-bold uppercase shrink-0 ${
+                    enableMovementEffects ? 'clay-btn-primary' : 'clay-btn-neutral'
+                  }`}
+                >
+                  {enableMovementEffects ? 'AKTIF' : 'NONAKTIF'}
+                </button>
+              </div>
+
+              {/* 4. AKTIF/NONAKTIF ANTI-ALIASING */}
+              <div className="clay-card p-3 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="w-8 h-8 rounded-lg bg-[#FFAE6D] border-2 border-[#5C3A21] flex items-center justify-center text-black shrink-0">
+                    <Cpu className="w-4 h-4 stroke-[2.5]" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-xs font-bold text-black uppercase flex items-center gap-1.5 flex-wrap">
+                      <span>Anti-Aliasing (Penghalusan Tepi)</span>
+                      <span
+                        className={`text-[9px] px-1.5 py-0.5 font-bold ${
+                          enableAntiAliasing ? 'clay-badge-secondary' : 'clay-badge-neutral'
+                        }`}
+                      >
+                        {enableAntiAliasing ? 'AKTIF (HALUS HD)' : 'RETRO PIXEL (OFF)'}
+                      </span>
+                    </div>
+                    <div className="text-[10px] text-black/75">
+                      Menghaluskan sudut grafis WebGL & kanvas. Nonaktifkan untuk tampilan tajam retro dan hemat GPU
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleToggleAntiAliasing}
+                  className={`px-3 py-1.5 text-xs font-bold uppercase shrink-0 ${
+                    enableAntiAliasing ? 'clay-btn-primary' : 'clay-btn-neutral'
+                  }`}
+                >
+                  {enableAntiAliasing ? 'AKTIF' : 'NONAKTIF'}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 4: TAMPILAN & KAMERA */}
           {activeSection === 'display' && (
             <div className="space-y-3.5">
               <div className="space-y-2">

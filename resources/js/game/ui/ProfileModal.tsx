@@ -48,7 +48,6 @@ import {
 import { SoundManager } from '../core/SoundManager';
 import { EventBus } from '../core/EventBus';
 import { NetworkManager } from '../core/NetworkManager';
-import { SocialAccountChooserModal, ISocialAccount } from './SocialAccountChooserModal';
 
 export interface ProfileModalProps {
   isOpen: boolean;
@@ -231,12 +230,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
 
   const [verifyingEmail, setVerifyingEmail] = useState(false);
   const [accountFeedback, setAccountFeedback] = useState<string>('');
-  const [, setIsLinkingLoading] = useState(false);
-
-  const [isSocialChooserOpen, setIsSocialChooserOpen] = useState(false);
-  const [socialChooserProvider, setSocialChooserProvider] = useState<'google' | 'facebook'>(
-    'google'
-  );
+  const [isLinkingLoading, setIsLinkingLoading] = useState(false);
 
   const [isEditingName, setIsEditingName] = useState(false);
   const [currentDisplayName, setCurrentDisplayName] = useState(name);
@@ -328,7 +322,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
     }
   };
 
-  const handleAccountChosen = async (acc: ISocialAccount) => {
+  const linkSocialAccount = async (provider: 'google' | 'facebook', socialEmail: string) => {
     sound.playClick();
     setIsLinkingLoading(true);
     setAccountFeedback('');
@@ -344,28 +338,28 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
         },
         body: JSON.stringify({
           user_id: u.id,
-          provider: socialChooserProvider,
-          social_email: acc.email,
+          provider,
+          social_email: socialEmail,
         }),
       });
 
       const data = await res.json();
       if (res.ok && data.status === 'success') {
         sound.playSuccess();
-        if (socialChooserProvider === 'google') {
+        if (provider === 'google') {
           setIsGoogleLinked(true);
-          setLinkedGoogleEmail(acc.email);
+          setLinkedGoogleEmail(socialEmail);
           u.google_linked = true;
-          u.google_email = acc.email;
+          u.google_email = socialEmail;
         } else {
           setIsFacebookLinked(true);
-          setLinkedFacebookEmail(acc.email);
+          setLinkedFacebookEmail(socialEmail);
           u.facebook_linked = true;
-          u.facebook_email = acc.email;
+          u.facebook_email = socialEmail;
         }
         localStorage.setItem('raden_player_user', JSON.stringify(u));
         setAccountFeedback(
-          data.message || `Akun ${socialChooserProvider} (${acc.email}) berhasil ditautkan!`
+          data.message || `Akun ${provider} (${socialEmail}) berhasil ditautkan!`
         );
       } else {
         setAccountFeedback(data.message || 'Gagal menautkan akun.');
@@ -374,8 +368,47 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
       setAccountFeedback('Gagal menghubungi server database.');
     } finally {
       setIsLinkingLoading(false);
-      setIsSocialChooserOpen(false);
     }
+  };
+
+  const handleLinkSocial = (provider: 'google' | 'facebook') => {
+    sound.playClick();
+    setIsLinkingLoading(true);
+    setAccountFeedback('');
+
+    const popupUrl = `/api/auth/social/${provider}/redirect`;
+    const w = 520;
+    const h = 640;
+    const left = typeof window !== 'undefined' ? Math.max(0, window.screen.width / 2 - w / 2) : 100;
+    const top = typeof window !== 'undefined' ? Math.max(0, window.screen.height / 2 - h / 2) : 100;
+
+    const popup = window.open(
+      popupUrl,
+      `Raden${provider}Link`,
+      `width=${w},height=${h},top=${top},left=${left},toolbar=no,menubar=no,status=no`
+    );
+
+    if (!popup || popup.closed || typeof popup.closed === 'undefined') {
+      window.location.href = popupUrl;
+      return;
+    }
+
+    const messageHandler = async (event: MessageEvent) => {
+      if (event.data && event.data.type === 'RADEN_SOCIAL_AUTH_SUCCESS') {
+        window.removeEventListener('message', messageHandler);
+        const u = event.data.user;
+        const linkedEmail = u.email || `${u.name || provider}@${provider}.com`;
+        await linkSocialAccount(provider, linkedEmail);
+      }
+    };
+    window.addEventListener('message', messageHandler);
+
+    const checkTimer = setInterval(() => {
+      if (popup.closed) {
+        clearInterval(checkTimer);
+        setIsLinkingLoading(false);
+      }
+    }, 1000);
   };
 
   const handleSaveName = async (e: React.FormEvent) => {
@@ -1911,15 +1944,12 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                     ) : (
                       <button
                         type="button"
-                        onClick={() => {
-                          sound.playClick();
-                          setSocialChooserProvider('google');
-                          setIsSocialChooserOpen(true);
-                        }}
+                        onClick={() => handleLinkSocial('google')}
+                        disabled={isLinkingLoading}
                         className="clay-btn-neutral w-full py-2 px-3 text-black text-xs font-bold uppercase flex items-center justify-center gap-2"
                       >
                         <Link className="w-3.5 h-3.5 stroke-[2.5]" />
-                        <span>Tautkan Akun Google</span>
+                        <span>{isLinkingLoading ? 'Menghubungkan...' : 'Tautkan Akun Google'}</span>
                       </button>
                     )}
                   </div>
@@ -1958,15 +1988,12 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                     ) : (
                       <button
                         type="button"
-                        onClick={() => {
-                          sound.playClick();
-                          setSocialChooserProvider('facebook');
-                          setIsSocialChooserOpen(true);
-                        }}
+                        onClick={() => handleLinkSocial('facebook')}
+                        disabled={isLinkingLoading}
                         className="clay-btn-neutral w-full py-2 px-3 text-black text-xs font-bold uppercase flex items-center justify-center gap-2"
                       >
                         <Link className="w-3.5 h-3.5 stroke-[2.5]" />
-                        <span>Tautkan Akun Facebook</span>
+                        <span>{isLinkingLoading ? 'Menghubungkan...' : 'Tautkan Akun Facebook'}</span>
                       </button>
                     )}
                   </div>
@@ -2147,16 +2174,6 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
           </div>
         </div>
       )}
-
-      {/* SOCIAL ACCOUNT CHOOSER MODAL */}
-      <SocialAccountChooserModal
-        isOpen={isSocialChooserOpen}
-        provider={socialChooserProvider}
-        mode="link"
-        targetCharacterName={currentDisplayName || name}
-        onClose={() => setIsSocialChooserOpen(false)}
-        onSelectAccount={handleAccountChosen}
-      />
     </div>
   );
 };

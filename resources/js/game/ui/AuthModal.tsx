@@ -38,7 +38,6 @@ import {
   KeyRound,
   Send,
 } from 'lucide-react';
-import { SocialAccountChooserModal, ISocialAccount } from './SocialAccountChooserModal';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -113,14 +112,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
   const [showForgotNewPassword, setShowForgotNewPassword] = useState(false);
   const [forgotSent, setForgotSent] = useState(false);
 
-  // Social Modal Sub-view State (Google & Facebook)
-  const [socialModalProvider, setSocialModalProvider] = useState<'google' | 'facebook' | null>(null);
-  const [isSocialChooserOpen, setIsSocialChooserOpen] = useState(false);
-  const [selectedSocialAccount, setSelectedSocialAccount] = useState<ISocialAccount | null>(null);
-  const [socialEmail, setSocialEmail] = useState('');
-  const [socialDisplayName, setSocialDisplayName] = useState('');
-  const [socialGender, setSocialGender] = useState<Gender>('male');
-
+  // Social OAuth Loading State (Google & Facebook)
   const [socialLoading, setSocialLoading] = useState<string | null>(null);
   const [authError, setAuthError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -156,7 +148,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
     setAuthError(null);
     setIsForgotView(false);
     setForgotSent(false);
-    setSocialModalProvider(null);
     setRegisterStep(1);
   };
 
@@ -433,61 +424,41 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
 
   const handleSocialLogin = (provider: 'google' | 'facebook') => {
     sound.playClick();
-    setSocialLoading(null);
+    setSocialLoading(provider);
     setAuthError(null);
-    setActiveTab('login');
-    setSocialModalProvider(provider);
-    setIsSocialChooserOpen(true);
-  };
 
-  const handleSocialAccountChosen = (account: ISocialAccount) => {
-    sound.playSuccess();
-    setSelectedSocialAccount(account);
-    setSocialEmail(account.email);
-    const cleanNick = account.name
-      ? account.name.replace(/[^a-zA-Z0-9_]/g, '')
-      : account.email.split('@')[0];
-    setSocialDisplayName(cleanNick);
-    setIsSocialChooserOpen(false);
-  };
+    const popupUrl = `/api/auth/social/${provider}/redirect`;
+    const w = 520;
+    const h = 640;
+    const left = typeof window !== 'undefined' ? Math.max(0, window.screen.width / 2 - w / 2) : 100;
+    const top = typeof window !== 'undefined' ? Math.max(0, window.screen.height / 2 - h / 2) : 100;
 
-  const handleSocialVerifySubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!socialModalProvider) return;
-    if (!socialEmail.trim() && !socialDisplayName.trim()) {
-      setAuthError('Email atau Nama Akun wajib diisi!');
+    const popup = window.open(
+      popupUrl,
+      `Raden${provider}Auth`,
+      `width=${w},height=${h},top=${top},left=${left},toolbar=no,menubar=no,status=no`
+    );
+
+    if (!popup || popup.closed || typeof popup.closed === 'undefined') {
+      window.location.href = popupUrl;
       return;
     }
 
-    setAuthError(null);
-    setIsLoading(true);
-
-    try {
-      const res = await fetch('/api/auth/social/verify', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-        body: JSON.stringify({
-          provider: socialModalProvider,
-          email: socialEmail.trim(),
-          name: socialDisplayName.trim() || undefined,
-          gender: socialGender,
-        }),
-      });
-
-      const data = await res.json();
-      if (!res.ok || data.status === 'error') {
-        setAuthError(data.message || 'Gagal masuk dengan akun sosial.');
-        setIsLoading(false);
-        return;
+    const messageHandler = (event: MessageEvent) => {
+      if (event.data && event.data.type === 'RADEN_SOCIAL_AUTH_SUCCESS') {
+        window.removeEventListener('message', messageHandler);
+        setSocialLoading(null);
+        handleSocialSuccess(event.data.user);
       }
+    };
+    window.addEventListener('message', messageHandler);
 
-      setSocialModalProvider(null);
-      handleSocialSuccess(data.user);
-    } catch (err) {
-      setAuthError('Gagal terhubung ke server database.');
-    } finally {
-      setIsLoading(false);
-    }
+    const checkTimer = setInterval(() => {
+      if (popup.closed) {
+        clearInterval(checkTimer);
+        setSocialLoading(null);
+      }
+    }, 1000);
   };
 
   const stopKeyBubble = (e: React.KeyboardEvent) => {
@@ -574,109 +545,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
               {/* 1. KONTEN TAB MASUK */}
               {activeTab === 'login' && (
                 <div className="space-y-3.5">
-                  {socialModalProvider ? (
-                    <div className="space-y-3.5">
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            sound.playClick();
-                            setSocialModalProvider(null);
-                            setSelectedSocialAccount(null);
-                            setAuthError(null);
-                          }}
-                          className="clay-btn-neutral px-2.5 py-1 text-xs font-bold text-black flex items-center gap-1.5"
-                        >
-                          <ArrowLeft className="w-3.5 h-3.5 stroke-[2.5]" />
-                          <span>Kembali</span>
-                        </button>
-
-                        <span className="clay-badge-secondary text-[10px] font-bold px-2 py-0.5 text-black flex items-center gap-1">
-                          <Check className="w-3 h-3 stroke-[2.5]" />
-                          <span>
-                            AKUN {socialModalProvider === 'google' ? 'GOOGLE' : 'FACEBOOK'} TERVERIFIKASI
-                          </span>
-                        </span>
-                      </div>
-
-                      <div className="clay-card p-3 text-xs space-y-1.5 text-black">
-                        <div className="font-bold uppercase text-[11px] text-black">
-                          Detail Akun Terhubung:
-                        </div>
-                        <div className="flex justify-between gap-2">
-                          <span>Email Terhubung:</span>
-                          <span className="font-bold truncate">{socialEmail}</span>
-                        </div>
-                        {selectedSocialAccount?.name && (
-                          <div className="flex justify-between gap-2">
-                            <span>Nama Terdaftar:</span>
-                            <span className="font-bold truncate">{selectedSocialAccount.name}</span>
-                          </div>
-                        )}
-                      </div>
-
-                      <form onSubmit={handleSocialVerifySubmit} className="space-y-3">
-                        <div className="space-y-1">
-                          <label className="text-xs font-bold text-black uppercase flex items-center gap-1.5">
-                            <User className="w-3.5 h-3.5 stroke-[2.5]" />
-                            <span>Nama Karakter di Game:</span>
-                          </label>
-                          <input
-                            type="text"
-                            required
-                            value={socialDisplayName}
-                            onChange={(e) => setSocialDisplayName(e.target.value)}
-                            placeholder="KarakterRaden"
-                            className="clay-input w-full px-3 py-2 text-xs text-black"
-                          />
-                        </div>
-
-                        <div className="space-y-1">
-                          <label className="text-xs font-bold text-black uppercase flex items-center gap-1.5">
-                            <Sparkles className="w-3.5 h-3.5 stroke-[2.5]" />
-                            <span>Gender Karakter:</span>
-                          </label>
-                          <div className="grid grid-cols-2 gap-2">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                sound.playClick();
-                                setSocialGender('male');
-                              }}
-                              className={`py-2 px-3 text-xs font-bold uppercase text-black ${
-                                socialGender === 'male' ? 'clay-btn-primary' : 'clay-btn-neutral'
-                              }`}
-                            >
-                              LAKI-LAKI
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                sound.playClick();
-                                setSocialGender('female');
-                              }}
-                              className={`py-2 px-3 text-xs font-bold uppercase text-black ${
-                                socialGender === 'female' ? 'clay-btn-primary' : 'clay-btn-neutral'
-                              }`}
-                            >
-                              PEREMPUAN
-                            </button>
-                          </div>
-                        </div>
-
-                        <button
-                          type="submit"
-                          disabled={isLoading || !socialDisplayName.trim()}
-                          className="clay-btn-primary w-full py-2.5 text-xs font-bold uppercase text-black flex items-center justify-center gap-2"
-                        >
-                          <span>
-                            {isLoading ? 'Menghubungkan ke Database...' : 'MASUK KE RADENWORLD'}
-                          </span>
-                          {!isLoading && <ArrowRight className="w-4 h-4 stroke-[2.5]" />}
-                        </button>
-                      </form>
-                    </div>
-                  ) : !isForgotView ? (
+                  {!isForgotView ? (
                     <form onSubmit={handleLoginSubmit} className="space-y-3.5">
                       {/* Quick Social Buttons */}
                       <div className="grid grid-cols-2 gap-2.5">
@@ -1340,20 +1209,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
             </div>
           </div>
         </div>
-
-        {/* Dialog Pemilih Akun Google / Facebook */}
-        <SocialAccountChooserModal
-          isOpen={isSocialChooserOpen && !!socialModalProvider}
-          provider={socialModalProvider || 'google'}
-          mode="login"
-          onClose={() => {
-            setIsSocialChooserOpen(false);
-            if (!selectedSocialAccount) {
-              setSocialModalProvider(null);
-            }
-          }}
-          onSelectAccount={handleSocialAccountChosen}
-        />
       </div>
     </div>
   );

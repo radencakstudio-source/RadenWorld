@@ -7,7 +7,9 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap">
-    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico?v=8">
+    <link rel="icon" type="image/png" sizes="192x192" href="/assets/Logo/logo-192.png?v=8">
+    <link rel="apple-touch-icon" href="/assets/Logo/logo-192.png?v=8">
     <style>
         :root {
             --bg-main: #FFF8EA;

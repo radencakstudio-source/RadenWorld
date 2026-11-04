@@ -379,8 +379,8 @@ export abstract class Entity extends Phaser.GameObjects.Container {
     if (Math.abs(camZoom - this.lastCamZoom) < 0.005) return;
     this.lastCamZoom = camZoom;
 
-    const invScale = 1 / Math.max(0.6, camZoom);
-    const targetScale = Math.max(0.85, Math.min(1.3, invScale));
+    const invScale = 1 / Math.max(0.68, camZoom);
+    const targetScale = Math.max(0.9, Math.min(1.2, invScale));
 
     if (this.nameTag && this.nameTag.active) {
       this.nameTag.setScale(targetScale);

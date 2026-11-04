@@ -92,7 +92,7 @@ export class CameraController {
     this.baseUserZoom = options.defaultZoom ?? 1.0;
     this.defaultZoom = CameraController.calculateAdaptiveZoom(sceneWidth, sceneHeight, this.baseUserZoom);
     this.currentTargetZoom = this.defaultZoom;
-    this.minZoom = options.minZoom ?? 0.6;
+    this.minZoom = options.minZoom ?? 0.68;
     this.maxZoom = options.maxZoom ?? 2.0;
     this.zoomLerpSpeed = options.zoomLerpSpeed ?? 0.12;
 

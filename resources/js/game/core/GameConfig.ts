@@ -53,7 +53,7 @@ export function createGameConfig(parentContainerId: string = 'game-container'): 
     pixelArt: false,
     roundPixels: true,
     antialias: true,
-    antialiasGL: false,
+    antialiasGL: true,
     fps: {
       min: 30,
       target: 60,

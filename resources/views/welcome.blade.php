@@ -33,7 +33,9 @@
     @vite(['resources/css/app.css', 'resources/js/app.tsx'])
 
     <!-- Favicon -->
-    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico?v=8">
+    <link rel="icon" type="image/png" sizes="192x192" href="/assets/Logo/logo-192.png?v=8">
+    <link rel="apple-touch-icon" href="/assets/Logo/logo-192.png?v=8">
 
     <!-- Zero-CLS Global Layout Styling & Anti-Shift Containers -->
     <style>

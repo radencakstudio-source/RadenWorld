@@ -117,6 +117,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
   const [authError, setAuthError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
+  // Terms & Privacy State
+  const [agreeLegal, setAgreeLegal] = useState(true);
+  const [legalModalType, setLegalModalType] = useState<'terms' | 'privacy' | null>(null);
+
   const sound = SoundManager.getInstance();
 
   useEffect(() => {
@@ -296,6 +300,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
 
     if (registerPassword !== registerConfirmPassword) {
       setAuthError('Konfirmasi kata sandi tidak cocok!');
+      return;
+    }
+
+    if (!agreeLegal) {
+      sound.playError();
+      setAuthError('Harap menyetujui Ketentuan Layanan & Kebijakan Privasi terlebih dahulu!');
       return;
     }
 
@@ -665,6 +675,31 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
                         <span>{isLoading ? 'MEMVERIFIKASI...' : 'MASUK KE DUNIA SEKARANG'}</span>
                         <ArrowRight className="w-4 h-4 stroke-[2.5]" />
                       </button>
+
+                      <div className="text-center text-[10.5px] text-[#5C3A21]/80 leading-relaxed pt-0.5">
+                        Dengan masuk, Anda menyetujui{' '}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            sound.playClick();
+                            setLegalModalType('terms');
+                          }}
+                          className="font-bold underline hover:text-black cursor-pointer"
+                        >
+                          Ketentuan Layanan
+                        </button>{' '}
+                        &{' '}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            sound.playClick();
+                            setLegalModalType('privacy');
+                          }}
+                          className="font-bold underline hover:text-black cursor-pointer"
+                        >
+                          Kebijakan Privasi
+                        </button>
+                      </div>
                     </form>
                   ) : (
                     /* Form Lupa Sandi */
@@ -1054,6 +1089,43 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
                           </div>
                         </div>
 
+                        {/* Checkbox Ketentuan Layanan & Kebijakan Privasi */}
+                        <label className="flex items-start gap-2 text-[11px] text-black cursor-pointer pt-0.5 select-none">
+                          <input
+                            type="checkbox"
+                            checked={agreeLegal}
+                            onChange={(e) => setAgreeLegal(e.target.checked)}
+                            className="mt-0.5 rounded border-[#5C3A21] accent-[#5C3A21] cursor-pointer"
+                          />
+                          <span className="leading-tight">
+                            Saya menyetujui{' '}
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                sound.playClick();
+                                setLegalModalType('terms');
+                              }}
+                              className="font-bold underline hover:text-[#5C3A21]"
+                            >
+                              Ketentuan Layanan
+                            </button>{' '}
+                            dan{' '}
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                sound.playClick();
+                                setLegalModalType('privacy');
+                              }}
+                              className="font-bold underline hover:text-[#5C3A21]"
+                            >
+                              Kebijakan Privasi
+                            </button>{' '}
+                            RadenWorld.
+                          </span>
+                        </label>
+
                         <button
                           type="submit"
                           disabled={!isOtpVerified}
@@ -1209,6 +1281,74 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
             </div>
           </div>
         </div>
+
+        {/* Modal Ketentuan Layanan & Kebijakan Privasi In-Game */}
+        {legalModalType && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs">
+            <div className="clay-panel max-w-lg w-full max-h-[85vh] flex flex-col p-4 text-black">
+              <div className="flex items-center justify-between pb-2 mb-2 border-b-2 border-[#5C3A21]">
+                <div className="font-bold text-xs sm:text-sm uppercase flex items-center gap-2">
+                  <ShieldCheck className="w-4 h-4 text-black stroke-[2.5]" />
+                  <span>
+                    {legalModalType === 'terms' ? 'Ketentuan Layanan' : 'Kebijakan Privasi'}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    sound.playClick();
+                    setLegalModalType(null);
+                  }}
+                  className="clay-btn-neutral w-6 h-6 flex items-center justify-center text-black"
+                  title="Tutup"
+                >
+                  <X className="w-3.5 h-3.5 stroke-[2.5]" />
+                </button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto space-y-3 text-xs leading-relaxed custom-scrollbar pr-1">
+                {legalModalType === 'terms' ? (
+                  <>
+                    <p className="font-bold">Ketentuan Layanan RadenWorld:</p>
+                    <p>1. <strong>Integritas Bermain:</strong> Dilarang keras menggunakan cheat, bot, atau eksploitasi bug demi kenyamanan bersama.</p>
+                    <p>2. <strong>Etika Komunitas:</strong> Dilarang melakukan pelecehan, ujaran kebencian, spam, atau kata-kata kasar dalam chat publik maupun voice chat.</p>
+                    <p>3. <strong>Keamanan Akun:</strong> Anda bertanggung jawab atas kerahasiaan akun dan kata sandi Anda.</p>
+                    <p>4. <strong>Layanan Real-Time:</strong> Layanan game online disediakan &quot;sebagaimana adanya&quot; dengan pemeliharaan berkala.</p>
+                  </>
+                ) : (
+                  <>
+                    <p className="font-bold">Kebijakan Privasi RadenWorld:</p>
+                    <p>1. <strong>Data yang Disimpan:</strong> Nama pengguna, alamat email terdaftar, tanggal lahir (untuk umur karakter), dan data avatar game.</p>
+                    <p>2. <strong>Login Sosial (Google / Facebook):</strong> Kami hanya menerima nama profil dan email resmi untuk autentikasi. Kami tidak pernah meminta atau menyimpan sandi akun sosial Anda.</p>
+                    <p>3. <strong>Izin Mikrofon:</strong> Hanya digunakan untuk Proximity Voice Chat antar karakter secara langsung dan tidak pernah direkam ke server.</p>
+                    <p>4. <strong>Perlindungan Data:</strong> Kami tidak pernah menjual data pribadi Anda kepada pihak ketiga.</p>
+                  </>
+                )}
+              </div>
+
+              <div className="pt-3 mt-2 border-t-2 border-[#5C3A21]/30 flex gap-2">
+                <a
+                  href={legalModalType === 'terms' ? '/terms-of-service' : '/privacy-policy'}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="clay-btn-neutral flex-1 py-1.5 text-center text-xs font-bold uppercase text-black"
+                >
+                  Buka Halaman Web ↗
+                </a>
+                <button
+                  type="button"
+                  onClick={() => {
+                    sound.playClick();
+                    setLegalModalType(null);
+                  }}
+                  className="clay-btn-primary flex-1 py-1.5 text-xs font-bold uppercase text-black"
+                >
+                  Saya Mengerti
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

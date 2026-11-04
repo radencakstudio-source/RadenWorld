@@ -32,6 +32,20 @@ Route::get('/admin/{adminToken?}', function ($adminToken = null) {
     return redirect('/world');
 });
 
+// Halaman Legalitas Resmi (Google & Facebook OAuth Compliance)
+Route::get('/privacy-policy', function () {
+    return view('privacy');
+});
+Route::get('/privacy', function () {
+    return view('privacy');
+});
+Route::get('/terms-of-service', function () {
+    return view('terms');
+});
+Route::get('/terms', function () {
+    return view('terms');
+});
+
 // Dedicated fast ping endpoint for latency measurement
 Route::get('/api/ping', function () {
     return response('pong', 200)

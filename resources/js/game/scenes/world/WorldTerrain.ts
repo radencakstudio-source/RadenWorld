@@ -51,7 +51,7 @@ export class WorldTerrain {
     addGridObstacleFn: (gx: number, gy: number, gw: number, gh: number) => Phaser.GameObjects.Zone
   ): IWorldTerrainElements {
     const ts = tileSize; // 120px
-    const buf = 2400;
+    const buf = 3600; // Buffer 3600px (~30 petak) menyeluruh menjamin zoom-out panorama 100% full tanpa celah
 
     // 1. DASAR DUNIA: RUMPUT HIJAU SEGAR (4 Kuadran Aman 4800x4800, 100% Bebas WebGL Texture Overflow)
     const halfW = worldWidth / 2;
@@ -61,64 +61,32 @@ export class WorldTerrain {
     scene.add.tileSprite(0, halfH, halfW, halfH, 'world-checker-tile').setOrigin(0, 0).setDepth(-100);
     scene.add.tileSprite(halfW, halfH, halfW, halfH, 'world-checker-tile').setOrigin(0, 0).setDepth(-100);
 
-    // 0. BUFFER LAUT PENYANGGA (Strips 1200px di 4 sisi luar)
-    const outBuf = 1200;
-    scene.add.tileSprite(0, -outBuf, worldWidth, outBuf, 'water-checker-tile').setOrigin(0, 0).setDepth(-110);
-    scene.add.tileSprite(0, worldHeight, worldWidth, outBuf, 'water-checker-tile').setOrigin(0, 0).setDepth(-110);
-    scene.add.tileSprite(-outBuf, -outBuf, outBuf, worldHeight + outBuf * 2, 'water-checker-tile').setOrigin(0, 0).setDepth(-110);
-    scene.add.tileSprite(worldWidth, -outBuf, outBuf, worldHeight + outBuf * 2, 'water-checker-tile').setOrigin(0, 0).setDepth(-110);
-
     // ------------------------------------------------------------------------
     // TEMBOK PEMBATAS DUNIA MENYELURUH SAMPAI KE UJUNG LUAR (OUTER BOUNDS)
     // ------------------------------------------------------------------------
-    // a. Tembok Atas Utara: Memenuhi seluruh area Utara dari luar map
-    if (scene.textures.exists('wall-top-checker')) {
-      scene.add.tileSprite(0, -ts, halfW, ts * 2, 'wall-top-checker').setOrigin(0, 0).setDepth(10);
-      scene.add.tileSprite(halfW, -ts, halfW, ts * 2, 'wall-top-checker').setOrigin(0, 0).setDepth(10);
-    } else {
-      for (let gy = -20; gy <= 0; gy++) {
-        for (let gx = -20; gx < 80 + 20; gx++) {
-          const isDark = (gx + gy) % 2 === 0;
-          const key = isDark ? 'tile-wall-dark' : 'tile-wall-light';
-          scene.add.image(gx * ts, gy * ts, key).setOrigin(0, 0).setDepth(10);
-        }
-      }
-    }
+    const wallTex = scene.textures.exists('wall-side-checker') ? 'wall-side-checker' : 'wall-top-checker';
+
+    // a. Tembok Raksasa Utara: Memenuhi penuh area Utara dari y = -buf sampai y = ts (120px).
+    // Membentang horizontal dari x = -buf sampai x = worldWidth + buf (16.800 px total lebar)
+    // Menutup sempurna pojok kiri atas dan pojok kanan atas tanpa celah void/air sedikit pun.
+    const northWallH = buf + ts;
+    // Kuadran Barat-Utara (Pojok Kiri Atas yang sebelumnya bolong)
+    scene.add.tileSprite(-buf, -buf, buf, northWallH, wallTex).setOrigin(0, 0).setDepth(10);
+    // Kuadran Tengah-Utara Barat
+    scene.add.tileSprite(0, -buf, halfW, northWallH, wallTex).setOrigin(0, 0).setDepth(10);
+    // Kuadran Tengah-Utara Timur
+    scene.add.tileSprite(halfW, -buf, halfW, northWallH, wallTex).setOrigin(0, 0).setDepth(10);
+    // Kuadran Timur-Utara (Pojok Kanan Atas)
+    scene.add.tileSprite(worldWidth, -buf, buf, northWallH, wallTex).setOrigin(0, 0).setDepth(10);
 
     // b. Tembok Samping Barat: Memenuhi area Barat luar map (x: -buf s/d ts)
-    // Dibuat terbuka pada koridor jalan (gy: 11..16 dan gy: 64..69).
-    if (scene.textures.exists('wall-side-checker')) {
-      // Seksi 1: Atas Koridor 1 (gy: 1..10)
-      scene.add.tileSprite(-buf, ts, buf + ts, 10 * ts, 'wall-side-checker')
-        .setOrigin(0, 0).setDepth(10);
-      // Seksi 2: Antara Koridor 1 dan Koridor 2 (gy: 17..63)
-      scene.add.tileSprite(-buf, 17 * ts, buf + ts, 47 * ts, 'wall-side-checker')
-        .setOrigin(0, 0).setDepth(10);
-    } else {
-      for (let gy = 1; gy <= 63; gy++) {
-        if (gy >= 11 && gy <= 16) continue;
-        for (let gx = -20; gx <= 0; gx++) {
-          const isDark = (gx + gy) % 2 === 0;
-          const key = isDark ? 'tile-wall-top-dark' : 'tile-wall-top-light';
-          scene.add.image(gx * ts, gy * ts, key).setOrigin(0, 0).setDepth(10);
-        }
-      }
-    }
+    // Seksi 1: Atas Koridor 1 (gy: 1..10, y: ts s/d 11 * ts) - Menyambung tepat dengan Tembok Utara!
+    scene.add.tileSprite(-buf, ts, buf + ts, 10 * ts, wallTex).setOrigin(0, 0).setDepth(10);
+    // Seksi 2: Antara Koridor 1 dan Koridor 2 (gy: 17..63, y: 17 * ts s/d 64 * ts)
+    scene.add.tileSprite(-buf, 17 * ts, buf + ts, 47 * ts, wallTex).setOrigin(0, 0).setDepth(10);
 
-    // c. Tembok Samping Timur: Memenuhi area Timur Laut luar map (x: 80 s/d 80 + buf) pada gy: 1..10
-    // Menggunakan Wall With Top (wall-side-checker) agar tidak berupa tanah hijau polos
-    if (scene.textures.exists('wall-side-checker')) {
-      scene.add.tileSprite(worldWidth, ts, buf, 10 * ts, 'wall-side-checker')
-        .setOrigin(0, 0).setDepth(10);
-    } else {
-      for (let gy = 1; gy <= 10; gy++) {
-        for (let gx = 80; gx < 80 + 20; gx++) {
-          const isDark = (gx + gy) % 2 === 0;
-          const key = isDark ? 'tile-wall-top-dark' : 'tile-wall-top-light';
-          scene.add.image(gx * ts, gy * ts, key).setOrigin(0, 0).setDepth(10);
-        }
-      }
-    }
+    // c. Tembok Samping Timur: Memenuhi area Timur Laut luar map (x: worldWidth s/d worldWidth + buf) pada gy: 1..10
+    scene.add.tileSprite(worldWidth, ts, buf, 10 * ts, wallTex).setOrigin(0, 0).setDepth(10);
 
     // Tambahkan Rintangan Fisik Statis (Collider) di Sepanjang Tembok & Batas Wilayah
     if (obstacles) {

@@ -134,8 +134,8 @@ export class WorldScene extends Phaser.Scene {
     // 0. Aktifkan cooldown pintu 3 detik agar pemain yang baru keluar tidak terhisap kembali
     this.doorCooldownUntil = this.time ? this.time.now + 3000 : 3000;
 
-    // 1. Batas fisika dunia diperlebar mencakup buffer (2400px) agar koridor jalan bisa dilewati ke luar
-    const buf = 2400;
+    // 1. Batas fisika dunia diperlebar mencakup buffer (3600px) agar koridor jalan bisa dilewati ke luar
+    const buf = 3600;
     this.physics.world.setBounds(-buf, -buf, this.worldWidth + buf * 2, this.worldHeight + buf * 2);
 
     // 2. Inisialisasi grup rintangan fisik statis

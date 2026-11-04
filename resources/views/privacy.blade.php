@@ -165,7 +165,7 @@
                 <strong>Data Akun Mandiri:</strong> Nama pengguna (username), alamat email, tanggal lahir (untuk kalkulasi umur karakter dalam game), dan preferensi kustomisasi avatar.
             </li>
             <li>
-                <strong>Data Otentikasi Pihak Ketiga (Google & Facebook Sign-In):</strong> Ketika Anda memilih untuk masuk menggunakan Google atau Facebook, kami menerima nama profil publik, alamat email, dan ID pengguna unik yang diverifikasi oleh provider. <em>Kami TIDAK PERNAH meminta, mengakses, atau menyimpan kata sandi Google atau Facebook Anda.</em>
+                <strong>Data Otentikasi Pihak Ketiga (Google Sign-In):</strong> Ketika Anda memilih untuk masuk menggunakan Google, kami menerima nama profil publik, alamat email, dan ID pengguna unik yang diverifikasi resmi oleh Google. <em>Kami TIDAK PERNAH meminta, mengakses, atau menyimpan kata sandi Google Anda.</em>
             </li>
             <li>
                 <strong>Data Gameplay & Posisi Real-Time:</strong> Koordinat karakter dalam dunia game, nama ruangan/safe house, riwayat obrolan (chat publik dan privat), inventaris item, status level, koin, dan progres permainan.
@@ -197,7 +197,7 @@
         <h2>4. Hak dan Kontrol Pengguna</h2>
         <p>Sebagai pemain, Anda memiliki hak penuh untuk:</p>
         <ul>
-            <li>Memutuskan tautan akun sosial (Google / Facebook) kapan saja melalui menu Pengaturan Profil di dalam game.</li>
+            <li>Memutuskan tautan akun Google kapan saja melalui menu Pengaturan Profil di dalam game.</li>
             <li>Memperbarui nama karakter, kata sandi, dan kustomisasi avatar Anda.</li>
             <li>Meminta penghapusan permanen akun dan seluruh data terkait dengan menghubungi kami melalui email resmi.</li>
         </ul>

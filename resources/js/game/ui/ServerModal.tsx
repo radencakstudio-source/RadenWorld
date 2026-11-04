@@ -112,7 +112,7 @@ export const ServerModal: React.FC<ServerModalProps> = ({
       port: 3001,
       ping: serverPings['Asia 1'] || 14,
       onlineCount: Math.max(activeCodeClean === 'Asia 1' ? 1 : 0, serverStats['Asia 1'] ?? 0),
-      maxPlayers: 60,
+      maxPlayers: 50,
       isRecommended: true,
     },
     {
@@ -126,7 +126,7 @@ export const ServerModal: React.FC<ServerModalProps> = ({
       port: 3001,
       ping: serverPings['Asia 2'] || 24,
       onlineCount: Math.max(activeCodeClean === 'Asia 2' ? 1 : 0, serverStats['Asia 2'] ?? 0),
-      maxPlayers: 60,
+      maxPlayers: 50,
     },
     {
       id: 'asia-3',
@@ -139,7 +139,7 @@ export const ServerModal: React.FC<ServerModalProps> = ({
       port: 3001,
       ping: serverPings['Asia 3'] || 8,
       onlineCount: Math.max(activeCodeClean === 'Asia 3' ? 1 : 0, serverStats['Asia 3'] ?? 0),
-      maxPlayers: 60,
+      maxPlayers: 50,
       isRecommended: true,
     },
     {
@@ -153,7 +153,7 @@ export const ServerModal: React.FC<ServerModalProps> = ({
       port: 3001,
       ping: serverPings['Asia 4'] || 65,
       onlineCount: Math.max(activeCodeClean === 'Asia 4' ? 1 : 0, serverStats['Asia 4'] ?? 0),
-      maxPlayers: 60,
+      maxPlayers: 50,
     },
   ];
 
@@ -244,7 +244,7 @@ export const ServerModal: React.FC<ServerModalProps> = ({
       port: 3001,
       ping: 8,
       onlineCount: 1,
-      maxPlayers: 60,
+      maxPlayers: 50,
     };
     handleSwitchToServer(customServer);
   };

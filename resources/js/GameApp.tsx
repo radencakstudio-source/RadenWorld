@@ -507,8 +507,6 @@ export const GameApp: React.FC = () => {
         u.email_verified_at = w.email_verified_at;
         u.google_linked = Boolean(w.google_linked);
         u.google_email = w.google_email;
-        u.facebook_linked = Boolean(w.facebook_linked);
-        u.facebook_email = w.facebook_email;
         localStorage.setItem('raden_player_user', JSON.stringify(u));
       }
     } catch (e) {
@@ -1869,30 +1867,6 @@ export const GameApp: React.FC = () => {
                         try {
                           const u = JSON.parse(localStorage.getItem('raden_player_user') || '{}');
                           return u.google_email || (u.provider === 'google' ? u.email : '');
-                        } catch (e) {
-                          return '';
-                        }
-                      })()
-                }
-                facebookLinked={
-                  inspectedPlayer
-                    ? undefined
-                    : (() => {
-                        try {
-                          const u = JSON.parse(localStorage.getItem('raden_player_user') || '{}');
-                          return Boolean(u.facebook_linked || u.facebook_email || u.provider === 'facebook');
-                        } catch (e) {
-                          return false;
-                        }
-                      })()
-                }
-                facebookEmail={
-                  inspectedPlayer
-                    ? undefined
-                    : (() => {
-                        try {
-                          const u = JSON.parse(localStorage.getItem('raden_player_user') || '{}');
-                          return u.facebook_email || (u.provider === 'facebook' ? u.email : '');
                         } catch (e) {
                           return '';
                         }

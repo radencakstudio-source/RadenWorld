@@ -299,7 +299,7 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({
       className="ui-modal-backdrop select-none"
       onKeyDown={(e) => e.stopPropagation()}
     >
-      <div className="clay-modal-shell max-w-4xl text-black">
+      <div className="clay-panel landscape-compact-modal clay-modal-shell relative w-full max-w-4xl max-h-[min(94dvh,calc(100dvh-0.5rem))] flex flex-row overflow-hidden text-black">
         {/* SIDEBAR SEBELAH KIRI */}
         <aside className="clay-sidebar">
           <div className="clay-sidebar-header">

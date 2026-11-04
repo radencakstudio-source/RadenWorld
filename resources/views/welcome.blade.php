@@ -25,9 +25,8 @@
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" media="print" onload="this.media='all'">
     <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap"></noscript>
 
-    <!-- Google Identity Services & Facebook SDK -->
+    <!-- Google Identity Services -->
     <script src="https://accounts.google.com/gsi/client" async defer></script>
-    <script async defer crossorigin="anonymous" src="https://connect.facebook.net/id_ID/sdk.js"></script>
 
     <!-- Vite Assets -->
     @viteReactRefresh
@@ -46,7 +45,8 @@
             overflow: hidden;
             background-color: #FFF8EA;
             color: #000000;
-            font-family: 'Kenney Pixel Square', 'm5x7', 'Press Start 2P', monospace;
+            font-family: 'Pixelify Sans', 'Kenney Pixel Square', monospace;
+            letter-spacing: 0.035em;
             touch-action: none;
             -webkit-user-select: none;
             user-select: none;

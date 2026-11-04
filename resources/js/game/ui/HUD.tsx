@@ -798,8 +798,11 @@ export const HUD: React.FC<HUDProps> = React.memo(({
                 </div>
               </div>
 
-              {/* Nama Wilayah di Bawah Minimap */}
-              <div className="clay-badge-neutral px-2 py-0.5 max-w-[138px] text-[8px] sm:text-[9px] font-bold text-black truncate pointer-events-none" title={displayLocation}>
+              {/* Nama Wilayah di Bawah Minimap (Lebar Selaras Presisi dengan Kartu Peta) */}
+              <div
+                className="clay-badge-neutral px-1.5 py-0.5 w-[92px] sm:w-[118px] md:w-[138px] text-[8px] sm:text-[9px] font-bold text-black truncate text-center pointer-events-none"
+                title={displayLocation}
+              >
                 {displayLocation}
               </div>
             </div>

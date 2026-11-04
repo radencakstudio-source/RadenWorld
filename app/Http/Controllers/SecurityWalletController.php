@@ -90,8 +90,6 @@ class SecurityWalletController extends Controller
                 'email' => $user->email,
                 'google_linked' => !empty($user->google_email) || $user->provider === 'google',
                 'google_email' => $user->google_email ?: ($user->provider === 'google' ? $user->email : null),
-                'facebook_linked' => !empty($user->facebook_email) || $user->provider === 'facebook',
-                'facebook_email' => $user->facebook_email ?: ($user->provider === 'facebook' ? $user->email : null),
                 'is_super_admin' => $isSuper,
             ];
 
@@ -363,30 +361,23 @@ class SecurityWalletController extends Controller
         }
 
         $provider = strtolower(trim($request->input('provider', 'google')));
-        if (!in_array($provider, ['google', 'facebook'])) {
-            return response()->json(['status' => 'error', 'message' => 'Provider harus google atau facebook.'], 422);
+        if ($provider !== 'google') {
+            return response()->json(['status' => 'error', 'message' => 'Provider harus google.'], 422);
         }
 
         $socialEmail = trim($request->input('social_email', ''));
         if (empty($socialEmail)) {
-            return response()->json(['status' => 'error', 'message' => "Email {$provider} wajib diisi!"], 422);
+            return response()->json(['status' => 'error', 'message' => "Email Google wajib diisi!"], 422);
         }
 
-        if ($provider === 'google') {
-            $user->google_email = $socialEmail;
-        } else {
-            $user->facebook_email = $socialEmail;
-        }
-
+        $user->google_email = $socialEmail;
         $user->save();
 
         return response()->json([
             'status' => 'success',
-            'message' => "✓ Akun {$provider} ({$socialEmail}) berhasil ditautkan ke akun Anda!",
+            'message' => "✓ Akun Google ({$socialEmail}) berhasil ditautkan ke akun Anda!",
             'google_linked' => !empty($user->google_email) || $user->provider === 'google',
             'google_email' => $user->google_email ?: ($user->provider === 'google' ? $user->email : null),
-            'facebook_linked' => !empty($user->facebook_email) || $user->provider === 'facebook',
-            'facebook_email' => $user->facebook_email ?: ($user->provider === 'facebook' ? $user->email : null),
         ]);
     }
 
@@ -411,22 +402,15 @@ class SecurityWalletController extends Controller
             if ($user->provider === 'google' && !empty($user->password)) {
                 $user->provider = 'local';
             }
-        } elseif ($provider === 'facebook') {
-            $user->facebook_email = null;
-            if ($user->provider === 'facebook' && !empty($user->password)) {
-                $user->provider = 'local';
-            }
         }
 
         $user->save();
 
         return response()->json([
             'status' => 'success',
-            'message' => "✓ Tautan akun {$provider} berhasil dilepas.",
+            'message' => "✓ Tautan akun Google berhasil dilepas.",
             'google_linked' => !empty($user->google_email) || $user->provider === 'google',
             'google_email' => $user->google_email ?: ($user->provider === 'google' ? $user->email : null),
-            'facebook_linked' => !empty($user->facebook_email) || $user->provider === 'facebook',
-            'facebook_email' => $user->facebook_email ?: ($user->provider === 'facebook' ? $user->email : null),
         ]);
     }
 

@@ -99,8 +99,6 @@ export interface ProfileModalProps {
   emailVerified?: boolean;
   googleLinked?: boolean;
   googleEmail?: string;
-  facebookLinked?: boolean;
-  facebookEmail?: string;
   onRefreshWallet?: () => void;
 }
 
@@ -149,8 +147,6 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
   emailVerified,
   googleLinked,
   googleEmail,
-  facebookLinked,
-  facebookEmail,
   onRefreshWallet,
 }) => {
   const sound = SoundManager.getInstance();
@@ -208,26 +204,6 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
     }
   });
 
-  const [isFacebookLinked, setIsFacebookLinked] = useState<boolean>(() => {
-    try {
-      const u = JSON.parse(localStorage.getItem('raden_player_user') || '{}');
-      return facebookLinked !== undefined
-        ? facebookLinked
-        : Boolean(u.facebook_linked || u.facebook_email || u.provider === 'facebook');
-    } catch (e) {
-      return Boolean(facebookLinked);
-    }
-  });
-
-  const [linkedFacebookEmail, setLinkedFacebookEmail] = useState<string>(() => {
-    try {
-      const u = JSON.parse(localStorage.getItem('raden_player_user') || '{}');
-      return facebookEmail || u.facebook_email || (u.provider === 'facebook' ? u.email : '');
-    } catch (e) {
-      return facebookEmail || '';
-    }
-  });
-
   const [verifyingEmail, setVerifyingEmail] = useState(false);
   const [accountFeedback, setAccountFeedback] = useState<string>('');
   const [isLinkingLoading, setIsLinkingLoading] = useState(false);
@@ -281,7 +257,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
     }
   };
 
-  const handleUnlink = async (provider: 'google' | 'facebook') => {
+  const handleUnlinkGoogle = async () => {
     sound.playClick();
     setAccountFeedback('');
     try {
@@ -296,33 +272,26 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
         },
         body: JSON.stringify({
           user_id: u.id,
-          provider,
+          provider: 'google',
         }),
       });
 
       const data = await res.json();
       if (res.ok && data.status === 'success') {
         sound.playSuccess();
-        if (provider === 'google') {
-          setIsGoogleLinked(false);
-          setLinkedGoogleEmail('');
-          u.google_linked = false;
-          u.google_email = null;
-        } else {
-          setIsFacebookLinked(false);
-          setLinkedFacebookEmail('');
-          u.facebook_linked = false;
-          u.facebook_email = null;
-        }
+        setIsGoogleLinked(false);
+        setLinkedGoogleEmail('');
+        u.google_linked = false;
+        u.google_email = null;
         localStorage.setItem('raden_player_user', JSON.stringify(u));
-        setAccountFeedback(`Tautan akun ${provider} berhasil dilepas.`);
+        setAccountFeedback('Tautan akun Google berhasil dilepas.');
       }
     } catch (err) {
       setAccountFeedback('Gagal menghubungi server.');
     }
   };
 
-  const linkSocialAccount = async (provider: 'google' | 'facebook', socialEmail: string) => {
+  const linkGoogleAccount = async (socialEmail: string) => {
     sound.playClick();
     setIsLinkingLoading(true);
     setAccountFeedback('');
@@ -338,7 +307,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
         },
         body: JSON.stringify({
           user_id: u.id,
-          provider,
+          provider: 'google',
           social_email: socialEmail,
         }),
       });
@@ -346,20 +315,13 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
       const data = await res.json();
       if (res.ok && data.status === 'success') {
         sound.playSuccess();
-        if (provider === 'google') {
-          setIsGoogleLinked(true);
-          setLinkedGoogleEmail(socialEmail);
-          u.google_linked = true;
-          u.google_email = socialEmail;
-        } else {
-          setIsFacebookLinked(true);
-          setLinkedFacebookEmail(socialEmail);
-          u.facebook_linked = true;
-          u.facebook_email = socialEmail;
-        }
+        setIsGoogleLinked(true);
+        setLinkedGoogleEmail(socialEmail);
+        u.google_linked = true;
+        u.google_email = socialEmail;
         localStorage.setItem('raden_player_user', JSON.stringify(u));
         setAccountFeedback(
-          data.message || `Akun ${provider} (${socialEmail}) berhasil ditautkan!`
+          data.message || `Akun Google (${socialEmail}) berhasil ditautkan!`
         );
       } else {
         setAccountFeedback(data.message || 'Gagal menautkan akun.');
@@ -371,12 +333,12 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
     }
   };
 
-  const handleLinkSocial = (provider: 'google' | 'facebook') => {
+  const handleLinkGoogle = () => {
     sound.playClick();
     setIsLinkingLoading(true);
     setAccountFeedback('');
 
-    const popupUrl = `/api/auth/social/${provider}/redirect`;
+    const popupUrl = `/api/auth/social/google/redirect`;
     const w = 520;
     const h = 640;
     const left = typeof window !== 'undefined' ? Math.max(0, window.screen.width / 2 - w / 2) : 100;
@@ -384,7 +346,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
 
     const popup = window.open(
       popupUrl,
-      `Raden${provider}Link`,
+      'RadengoogleLink',
       `width=${w},height=${h},top=${top},left=${left},toolbar=no,menubar=no,status=no`
     );
 
@@ -397,8 +359,8 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
       if (event.data && event.data.type === 'RADEN_SOCIAL_AUTH_SUCCESS') {
         window.removeEventListener('message', messageHandler);
         const u = event.data.user;
-        const linkedEmail = u.email || `${u.name || provider}@${provider}.com`;
-        await linkSocialAccount(provider, linkedEmail);
+        const linkedEmail = u.email || `${u.name || 'google'}@google.com`;
+        await linkGoogleAccount(linkedEmail);
       }
     };
     window.addEventListener('message', messageHandler);
@@ -767,7 +729,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
       onKeyUp={(e) => e.stopPropagation()}
       className="ui-modal-backdrop select-none"
     >
-      <div className="clay-panel landscape-compact-modal relative w-full max-w-lg max-h-[min(92dvh,calc(100dvh-1rem))] overflow-hidden flex flex-col text-black">
+      <div className="clay-panel landscape-compact-modal relative w-full max-w-[640px] max-h-[min(88dvh,560px)] overflow-hidden flex flex-col text-black">
         {/* ================================================================ */}
         {/* TAMPILAN 1: DAFTAR SOSIAL (TEMAN / MENGIKUTI / DIIKUTI)           */}
         {/* ================================================================ */}
@@ -1935,7 +1897,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                         </span>
                         <button
                           type="button"
-                          onClick={() => handleUnlink('google')}
+                          onClick={handleUnlinkGoogle}
                           className="clay-badge-primary px-2 py-0.5 text-[10px] font-bold text-black ml-2 cursor-pointer shrink-0"
                         >
                           Putuskan
@@ -1944,56 +1906,12 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                     ) : (
                       <button
                         type="button"
-                        onClick={() => handleLinkSocial('google')}
+                        onClick={handleLinkGoogle}
                         disabled={isLinkingLoading}
                         className="clay-btn-neutral w-full py-2 px-3 text-black text-xs font-bold uppercase flex items-center justify-center gap-2"
                       >
                         <Link className="w-3.5 h-3.5 stroke-[2.5]" />
                         <span>{isLinkingLoading ? 'Menghubungkan...' : 'Tautkan Akun Google'}</span>
-                      </button>
-                    )}
-                  </div>
-
-                  {/* KARTU 4: TAUTAN FACEBOOK */}
-                  <div className="clay-card p-3 flex flex-col gap-2 text-black">
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-2">
-                        <svg className="w-4 h-4 fill-[#1877F2] shrink-0" viewBox="0 0 24 24">
-                          <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
-                        </svg>
-                        <span className="text-xs font-bold uppercase">Tautan Facebook</span>
-                      </div>
-                      <span
-                        className={`text-[9px] font-bold px-2 py-0.5 ${
-                          isFacebookLinked ? 'clay-badge-secondary' : 'clay-badge-neutral'
-                        }`}
-                      >
-                        {isFacebookLinked ? 'TERTAUT' : 'BELUM'}
-                      </span>
-                    </div>
-
-                    {isFacebookLinked ? (
-                      <div className="clay-badge-neutral p-2 flex items-center justify-between text-xs font-bold">
-                        <span className="truncate">
-                          {linkedFacebookEmail || accountEmail || 'Akun Facebook Tertaut'}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => handleUnlink('facebook')}
-                          className="clay-badge-primary px-2 py-0.5 text-[10px] font-bold text-black ml-2 cursor-pointer shrink-0"
-                        >
-                          Putuskan
-                        </button>
-                      </div>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => handleLinkSocial('facebook')}
-                        disabled={isLinkingLoading}
-                        className="clay-btn-neutral w-full py-2 px-3 text-black text-xs font-bold uppercase flex items-center justify-center gap-2"
-                      >
-                        <Link className="w-3.5 h-3.5 stroke-[2.5]" />
-                        <span>{isLinkingLoading ? 'Menghubungkan...' : 'Tautkan Akun Facebook'}</span>
                       </button>
                     )}
                   </div>

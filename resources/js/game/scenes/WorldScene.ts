@@ -818,14 +818,14 @@ export class WorldScene extends Phaser.Scene {
     }
     this.cameraController = new CameraController(this, {
       defaultZoom,
-      minZoom: 0.35,
+      minZoom: 0.6,
       maxZoom: 1.8,
       zoomLerpSpeed: 0.12,
     });
   }
 
   public smoothZoomTo(newZoom: number): void {
-    this.targetZoom = Phaser.Math.Clamp(newZoom, 0.35, 1.8);
+    this.targetZoom = Phaser.Math.Clamp(newZoom, 0.6, 1.8);
     this.cameraController?.smoothZoomTo(newZoom);
   }
 

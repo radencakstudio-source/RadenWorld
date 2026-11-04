@@ -230,11 +230,11 @@ export abstract class Entity extends Phaser.GameObjects.Container {
     const bubble = this.scene.add.container(0, bubbleY);
 
     const bubbleText = this.scene.add.text(0, 0, message, {
-      fontFamily: '"Plus Jakarta Sans", sans-serif',
+      fontFamily: '"Plus Jakarta Sans", "Pixelify Sans", sans-serif',
       fontSize: '12px',
       color: '#0f172a',
       fontStyle: 'bold',
-      resolution: 2, // Resolusi HD tajam efisien tanpa membebani GPU texture
+      resolution: 4, // Resolusi 4x HD tajam kristal bebas blur
       wordWrap: { width: 160 },
       align: 'center',
     }).setOrigin(0.5);
@@ -271,10 +271,10 @@ export abstract class Entity extends Phaser.GameObjects.Container {
       this.expressionBubble.y = -290;
     }
 
-    // Skala awal menyesuaikan tingkat zoom kamera secara terbalik (Inverse Scale: Zoom out -> bubble perbesar, Zoom in -> bubble perkecil)
+    // Skala awal menyesuaikan tingkat zoom kamera secara terbalik (Inverse Scale: Zoom out -> bubble perbesar proporsional, Zoom in -> bubble perkecil)
     const camZoom = this.scene.cameras?.main?.zoom || 1.0;
-    const invScale = 1 / Math.max(0.5, camZoom);
-    const initScale = Math.max(0.75, Math.min(1.85, invScale));
+    const invScale = 1 / Math.max(0.6, camZoom);
+    const initScale = Math.max(0.85, Math.min(1.3, invScale));
     bubble.setScale(0.2);
     this.scene.tweens.add({
       targets: bubble,
@@ -339,8 +339,8 @@ export abstract class Entity extends Phaser.GameObjects.Container {
 
     // Skala awal menyesuaikan tingkat zoom kamera secara terbalik
     const camZoom = this.scene.cameras?.main?.zoom || 1.0;
-    const invScale = 1 / Math.max(0.5, camZoom);
-    const initScale = Math.max(0.75, Math.min(1.85, invScale));
+    const invScale = 1 / Math.max(0.6, camZoom);
+    const initScale = Math.max(0.85, Math.min(1.3, invScale));
 
     bubble.setScale(0.2);
     this.scene.tweens.add({
@@ -379,8 +379,8 @@ export abstract class Entity extends Phaser.GameObjects.Container {
     if (Math.abs(camZoom - this.lastCamZoom) < 0.005) return;
     this.lastCamZoom = camZoom;
 
-    const invScale = 1 / Math.max(0.5, camZoom);
-    const targetScale = Math.max(0.75, Math.min(1.85, invScale));
+    const invScale = 1 / Math.max(0.6, camZoom);
+    const targetScale = Math.max(0.85, Math.min(1.3, invScale));
 
     if (this.nameTag && this.nameTag.active) {
       this.nameTag.setScale(targetScale);

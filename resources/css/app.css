@@ -85,7 +85,7 @@ html, body {
     background-color: #FFF8EA;
     color: #000000;
     font-family: 'Pixelify Sans', 'Kenney Pixel Square', 'm5x7', 'Press Start 2P', monospace;
-    letter-spacing: 0.01em;
+    letter-spacing: 0.035em;
     user-select: none;
     -webkit-user-select: none;
     -webkit-touch-callout: none !important;
@@ -98,11 +98,7 @@ html, body {
 }
 
 /* ============================================================================
- * PIXEL FONT THICKENING & HIGH LEGIBILITY (Anti-Font Tipis)
- * ============================================================================
- * 1. Faux-bold sintetis bekerja untuk seluruh elemen font-bold / heading.
- * 2. Micro text-stroke (0.35px) memberi ketebalan solid tanpa blur.
- * 3. Text-shadow horizontal (0.25px) menyatukan piksel yang renggang.
+ * PIXEL FONT: Pixelify Sans Crisp Natural Typography (Renggang & Jelas Tanpa Dempet)
  * ============================================================================ */
 .font-bold,
 .font-semibold,
@@ -112,12 +108,15 @@ strong, b,
 th,
 [class*="font-bold"],
 [class*="font-semibold"] {
-    font-weight: 700 !important;
-    -webkit-text-stroke: 0.35px currentColor;
-    text-shadow: 0.25px 0 0 currentColor;
+    font-weight: 600;
+    letter-spacing: 0.035em;
 }
 
-/* Teks tombol, badge, input, dan label dibuat lebih tegas & padat */
+.uppercase,
+[class*="uppercase"] {
+    letter-spacing: 0.045em;
+}
+
 button,
 .clay-btn,
 .clay-badge,
@@ -125,12 +124,7 @@ input,
 select,
 textarea {
     font-family: 'Pixelify Sans', 'Kenney Pixel Square', 'm5x7', 'Press Start 2P', monospace;
-    -webkit-text-stroke: 0.2px currentColor;
-}
-
-/* Teks umum / body diberi sedikit kepadatan agar tidak kerempeng */
-body, p, span, label {
-    -webkit-text-stroke: 0.15px currentColor;
+    letter-spacing: 0.035em;
 }
 
 /* Izinkan seleksi teks hanya pada input form dan textarea */
@@ -196,22 +190,19 @@ input, textarea, [contenteditable="true"] {
     display: flex;
     align-items: center;
     justify-content: center;
-    background-color: rgba(92, 58, 33, 0.45);
-    padding-top: max(0.5rem, var(--sat));
-    padding-right: max(0.5rem, var(--sar));
-    padding-bottom: max(0.5rem, var(--sab));
-    padding-left: max(0.5rem, var(--sal));
+    background-color: rgba(92, 58, 33, 0.5);
+    backdrop-filter: blur(2px);
+    padding: 1rem;
+}
+
+/* Ensure modal panels don't stretch full width uncontrollably on PC */
+.ui-modal-backdrop > .clay-panel {
+    margin: auto;
 }
 
 /* ============================================================================
  * ANTI-OVERFLOW & BOUNDARY CONTAINMENT (PC & Mobile)
- * ============================================================================
- * Mencegah teks menembus keluar border kontainer baik di PC maupun layar HP:
- * 1. Seluruh panel, card, modal, button, dan badge memiliki box-sizing: border-box.
- * 2. Word-wrap dan break-word aktif untuk mencegah kata panjang meluap.
- * 3. Tombol dan badge membatasi teks yang terlalu panjang dengan ellipsis.
  * ============================================================================ */
-.clay-panel,
 .clay-card,
 [class*="clay-card"],
 .clay-header,
@@ -219,6 +210,12 @@ input, textarea, [contenteditable="true"] {
 .clay-main-pane {
     box-sizing: border-box;
     max-width: 100%;
+    overflow-wrap: break-word;
+    word-break: break-word;
+}
+
+.clay-panel {
+    box-sizing: border-box;
     overflow-wrap: break-word;
     word-break: break-word;
 }
@@ -439,18 +436,25 @@ input, textarea, [contenteditable="true"] {
     scrollbar-width: none;
 }
 
-/* Mobile Landscape Compactness Utility */
-@media (max-height: 480px) and (orientation: landscape) {
+/* Mobile Landscape Compactness & Safe Exit Anchor Utility */
+@media (max-height: 520px) and (orientation: landscape) {
+    .ui-modal-backdrop {
+        padding: 0.25rem 0.5rem !important;
+        align-items: flex-start !important;
+        overflow-y: auto !important;
+    }
     .landscape-compact-modal {
-        max-height: calc(100dvh - 0.75rem) !important;
+        max-height: calc(100dvh - 0.5rem) !important;
+        margin-top: auto !important;
+        margin-bottom: auto !important;
     }
     .landscape-compact-header {
-        padding-top: 0.375rem !important;
-        padding-bottom: 0.375rem !important;
+        padding-top: 0.35rem !important;
+        padding-bottom: 0.35rem !important;
     }
     .landscape-compact-body {
-        padding-top: 0.5rem !important;
-        padding-bottom: 0.5rem !important;
+        padding-top: 0.45rem !important;
+        padding-bottom: 0.45rem !important;
     }
 }
 
@@ -477,7 +481,8 @@ input, textarea, [contenteditable="true"] {
     overflow: hidden;
 }
 
-.clay-sidebar-brand {
+.clay-sidebar-brand,
+.clay-sidebar-header {
     flex-shrink: 0;
     background-color: #FFAE6D;
     border-bottom: 2px solid #5C3A21;
@@ -490,6 +495,22 @@ input, textarea, [contenteditable="true"] {
     justify-content: center;
     text-align: center;
     gap: 0.25rem;
+}
+
+.clay-sidebar-brand-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.clay-sidebar-brand-text {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    min-width: 0;
+    width: 100%;
 }
 
 .clay-sidebar-brand-secondary {

@@ -16,17 +16,12 @@ class SocialAuthController extends Controller
     public function getConfig()
     {
         $googleClientId = config('services.google.client_id');
-        $facebookClientId = config('services.facebook.client_id');
 
         return response()->json([
             'status' => 'success',
             'google' => [
                 'configured' => !empty($googleClientId) && $googleClientId !== 'YOUR_GOOGLE_CLIENT_ID',
                 'client_id' => $googleClientId ?: null,
-            ],
-            'facebook' => [
-                'configured' => !empty($facebookClientId) && $facebookClientId !== 'YOUR_FACEBOOK_CLIENT_ID',
-                'client_id' => $facebookClientId ?: null,
             ],
         ]);
     }
@@ -36,7 +31,7 @@ class SocialAuthController extends Controller
      */
     public function redirect(string $provider)
     {
-        if (!in_array($provider, ['google', 'facebook'])) {
+        if ($provider !== 'google') {
             return response()->json(['status' => 'error', 'message' => 'Provider tidak didukung.'], 400);
         }
 
@@ -75,7 +70,7 @@ class SocialAuthController extends Controller
      */
     public function callback(string $provider, Request $request)
     {
-        if (!in_array($provider, ['google', 'facebook'])) {
+        if ($provider !== 'google') {
             return response("Provider tidak didukung", 400);
         }
 
@@ -132,19 +127,19 @@ class SocialAuthController extends Controller
         $data = $request->json()->all() ?: $request->all();
 
         $provider = strtolower($data['provider'] ?? 'google');
-        if (!in_array($provider, ['google', 'facebook'])) {
-            return response()->json(['status' => 'error', 'message' => 'Provider harus google atau facebook.'], 422);
+        if ($provider !== 'google') {
+            return response()->json(['status' => 'error', 'message' => 'Provider harus google.'], 422);
         }
 
         $email = trim($data['email'] ?? '');
         $name = trim($data['name'] ?? '');
         $providerId = trim($data['provider_id'] ?? '');
         $avatarUrl = trim($data['avatar_url'] ?? '');
-        $credential = trim($data['credential'] ?? ''); // Google JWT or FB token
+        $credential = trim($data['credential'] ?? ''); // Google JWT
         $gender = ($data['gender'] ?? 'male') === 'female' ? 'female' : 'male';
 
-        // 1. Jika Google Credential (JWT) diberikan, coba verifikasi via Google tokeninfo
-        if ($provider === 'google' && !empty($credential)) {
+        // Verifikasi Google ID token (JWT)
+        if (!empty($credential)) {
             try {
                 $response = Http::timeout(3)->get("https://oauth2.googleapis.com/tokeninfo", [
                     'id_token' => $credential
@@ -166,36 +161,7 @@ class SocialAuthController extends Controller
                     }
                 }
             } catch (\Throwable $e) {
-                // Fallback jika tidak ada internet/timeout: gunakan payload dari request
                 Log::warning("Google tokeninfo check skipped: " . $e->getMessage());
-            }
-        }
-
-        // 2. Jika Facebook token diberikan, coba verifikasi via Graph API
-        if ($provider === 'facebook' && !empty($credential)) {
-            try {
-                $response = Http::timeout(3)->get("https://graph.facebook.com/me", [
-                    'fields' => 'id,name,email,picture.width(200).height(200)',
-                    'access_token' => $credential
-                ]);
-
-                if ($response->successful()) {
-                    $fbData = $response->json();
-                    if (!empty($fbData['email'])) {
-                        $email = $fbData['email'];
-                    }
-                    if (!empty($fbData['name'])) {
-                        $name = $fbData['name'];
-                    }
-                    if (!empty($fbData['id'])) {
-                        $providerId = (string) $fbData['id'];
-                    }
-                    if (!empty($fbData['picture']['data']['url'])) {
-                        $avatarUrl = $fbData['picture']['data']['url'];
-                    }
-                }
-            } catch (\Throwable $e) {
-                Log::warning("FB Graph API check skipped: " . $e->getMessage());
             }
         }
 
@@ -358,8 +324,6 @@ class SocialAuthController extends Controller
             'email_verified_at' => $user->email_verified_at ? $user->email_verified_at->toIso8601String() : null,
             'google_linked' => !empty($user->google_email) || $user->provider === 'google',
             'google_email' => $user->google_email ?: ($user->provider === 'google' ? $user->email : null),
-            'facebook_linked' => !empty($user->facebook_email) || $user->provider === 'facebook',
-            'facebook_email' => $user->facebook_email ?: ($user->provider === 'facebook' ? $user->email : null),
             'is_super_admin' => $user->isSuperAdmin(),
             'created_at' => $user->created_at ? $user->created_at->toIso8601String() : null,
             'joined_at' => $joinedDateStr,

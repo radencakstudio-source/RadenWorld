@@ -284,7 +284,7 @@ export class HouseScene extends Phaser.Scene {
     }
     this.cameraController = new CameraController(this, {
       defaultZoom,
-      minZoom: 0.6,
+      minZoom: 0.38,
       maxZoom: 2.0,
       zoomLerpSpeed: 0.12,
     });

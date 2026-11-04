@@ -273,7 +273,7 @@ export abstract class Entity extends Phaser.GameObjects.Container {
 
     // Skala awal menyesuaikan tingkat zoom kamera secara terbalik (Inverse Scale: ukuran balon di layar tetap proporsional HD dan tidak mengecil)
     const camZoom = this.scene.cameras?.main?.zoom || 1.0;
-    const invScale = 1 / Math.max(0.45, camZoom);
+    const invScale = 1 / Math.max(0.35, camZoom);
     bubble.setScale(0.2);
     this.scene.tweens.add({
       targets: bubble,
@@ -338,7 +338,7 @@ export abstract class Entity extends Phaser.GameObjects.Container {
 
     // Skala awal menyesuaikan tingkat zoom kamera secara terbalik (Inverse Scale presisi HD)
     const camZoom = this.scene.cameras?.main?.zoom || 1.0;
-    const invScale = 1 / Math.max(0.45, camZoom);
+    const invScale = 1 / Math.max(0.35, camZoom);
 
     bubble.setScale(0.2);
     this.scene.tweens.add({
@@ -378,7 +378,7 @@ export abstract class Entity extends Phaser.GameObjects.Container {
     this.lastCamZoom = camZoom;
 
     // Skala terbalik presisi agar UI melayang (Nama, Chat, Ekspresi) selalu konsisten tajam HD di layar pengguna
-    const invScale = 1 / Math.max(0.45, camZoom);
+    const invScale = 1 / Math.max(0.35, camZoom);
 
     if (this.nameTag && this.nameTag.active) {
       this.nameTag.setScale(invScale);

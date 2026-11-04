@@ -234,11 +234,11 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({
       item !== null &&
       item.category !== activeCategory;
 
-    let slotClass = 'clay-btn-neutral';
+    let slotClass = 'clay-slot-neutral';
     if (isSelected || isDragOver) {
-      slotClass = 'clay-btn-primary';
+      slotClass = 'clay-slot-primary';
     } else if (isHotbar && item) {
-      slotClass = 'clay-btn-secondary';
+      slotClass = 'clay-slot-secondary';
     }
 
     return (
@@ -254,7 +254,7 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({
           sound.playClick();
           setSelectedSlot(idx);
         }}
-        className={`relative aspect-square flex flex-col items-center justify-center select-none text-black ${slotClass} ${
+        className={`clay-slot ${slotClass} ${
           item ? 'cursor-grab active:cursor-grabbing' : ''
         } ${isDragging ? 'opacity-45 border-dashed' : ''} ${
           isDimmed ? 'opacity-25 pointer-events-none' : ''
@@ -268,24 +268,24 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({
         }
       >
         {/* Nomor Slot */}
-        <span className="absolute top-0.5 left-1 text-[8px] sm:text-[9px] font-bold text-black leading-none pointer-events-none">
+        <span className="absolute top-0.5 left-1 text-[7px] sm:text-[8px] font-bold text-black/75 leading-none pointer-events-none select-none">
           {isHotbar ? `#${idx + 1}` : idx + 1}
         </span>
 
         {/* Icon Item */}
         {item ? (
           <>
-            <span className="text-xl sm:text-2xl select-none pointer-events-none leading-none">
+            <span className="text-base sm:text-xl md:text-2xl select-none pointer-events-none leading-none">
               {item.icon}
             </span>
             {item.quantity > 1 && (
-              <span className="absolute bottom-0.5 right-0.5 bg-[#5C3A21] text-white text-[8px] sm:text-[9px] font-bold px-1 rounded leading-tight pointer-events-none">
+              <span className="absolute bottom-0.5 right-0.5 bg-[#5C3A21] text-white text-[7.5px] sm:text-[8.5px] font-bold px-1 rounded leading-tight pointer-events-none select-none">
                 {item.quantity}
               </span>
             )}
           </>
         ) : (
-          <span className="text-black/30 text-xs font-bold pointer-events-none">•</span>
+          <span className="text-black/25 text-xs font-bold pointer-events-none select-none">•</span>
         )}
       </div>
     );
@@ -389,7 +389,7 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({
           </header>
 
           {/* BODY */}
-          <div className="clay-main-body flex flex-col lg:flex-row gap-3">
+          <div className="clay-main-body flex flex-col md:flex-row gap-3">
             {/* GRID HOTBAR & TAS */}
             <div className="flex-1 flex flex-col gap-3 min-w-0">
               {/* 1. HOTBAR UTAMA (SLOT 1 - 6) */}
@@ -409,7 +409,7 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({
                   </span>
                 </div>
 
-                <div className="grid grid-cols-6 gap-1.5 sm:gap-2">
+                <div className="grid grid-cols-6 gap-1.5 sm:gap-2 w-full">
                   {Array.from({ length: InventoryManager.HOTBAR_SLOTS }).map((_, idx) =>
                     renderSlot(idx, true)
                   )}
@@ -429,7 +429,7 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({
                   </span>
                 </div>
 
-                <div className="grid grid-cols-6 gap-1.5 sm:gap-2 max-h-[260px] overflow-y-auto custom-scrollbar pr-1">
+                <div className="grid grid-cols-6 gap-1.5 sm:gap-2 w-full">
                   {Array.from({
                     length: InventoryManager.MAX_SLOTS - InventoryManager.HOTBAR_SLOTS,
                   }).map((_, i) => {
@@ -441,7 +441,7 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({
             </div>
 
             {/* DETAIL & AKSI ITEM */}
-            <div className="w-full lg:w-64 clay-card p-3 sm:p-3.5 flex flex-col justify-between shrink-0 text-black">
+            <div className="w-full md:w-60 lg:w-64 clay-card p-3 sm:p-3.5 flex flex-col justify-between shrink-0 text-black">
               {selectedItem ? (
                 <div className="flex flex-col h-full gap-2.5">
                   <div className="flex items-center gap-2.5 pb-2 border-b-2 border-[#5C3A21]/30">

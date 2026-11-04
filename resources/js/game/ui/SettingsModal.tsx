@@ -233,6 +233,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
   const cameraZoomPresets = [
     {
+      label: 'Ultra Panorama (Sangat Luas)',
+      value: 0.42,
+      desc: 'Melihat seluruh kota dan open world dari ketinggian langit',
+    },
+    {
       label: 'Panorama Luas (80×80)',
       value: 0.6,
       desc: 'Melihat kawasan open world ekstra luas',

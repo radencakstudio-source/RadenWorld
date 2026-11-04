@@ -17,11 +17,14 @@ import { CafeScene } from '../scenes/CafeScene';
 import { LibraryScene } from '../scenes/LibraryScene';
 
 export function createGameConfig(parentContainerId: string = 'game-container'): Phaser.Types.Core.GameConfig {
+  const dpr = typeof window !== 'undefined' ? Math.min(2, Math.max(1, window.devicePixelRatio || 1)) : 1;
+
   return {
     type: Phaser.AUTO,
     parent: parentContainerId,
     width: window.innerWidth,
     height: window.innerHeight,
+    resolution: dpr,
     backgroundColor: '#0b0f19',
     physics: {
       default: 'arcade',
@@ -48,10 +51,13 @@ export function createGameConfig(parentContainerId: string = 'game-container'): 
     render: {
       powerPreference: 'high-performance',
       batchSize: 4096,
+      antialias: true,
+      antialiasGL: true,
+      roundPixels: false,
     },
     scene: [BootScene, HouseScene, WorldScene, SchoolScene, CafeScene, LibraryScene],
     pixelArt: false,
-    roundPixels: true,
+    roundPixels: false,
     antialias: true,
     antialiasGL: true,
     fps: {

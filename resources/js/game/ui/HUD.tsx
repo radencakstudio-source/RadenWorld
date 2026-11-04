@@ -688,8 +688,8 @@ export const HUD: React.FC<HUDProps> = React.memo(({
 
           {/* UI PETA / MINIMAP CLAY-PIXEL */}
           {!stats.inHouse && (
-            <div className="pointer-events-auto flex flex-col items-end gap-1 shrink-0">
-              <div className="clay-panel w-[92px] sm:w-[118px] md:w-[138px] overflow-hidden flex flex-col">
+            <div className="pointer-events-auto flex flex-col items-end gap-1 shrink-0 w-[92px] sm:w-[118px] md:w-[138px]">
+              <div className="clay-panel w-full overflow-hidden flex flex-col">
                 {/* Header Peta Mini */}
                 <div className="clay-header h-6 sm:h-7 flex items-center justify-between px-1.5 sm:px-2 text-black">
                   <div className="flex items-center gap-1">
@@ -800,7 +800,7 @@ export const HUD: React.FC<HUDProps> = React.memo(({
 
               {/* Nama Wilayah di Bawah Minimap (Lebar Selaras Presisi dengan Kartu Peta) */}
               <div
-                className="clay-badge-neutral px-1.5 py-0.5 w-[92px] sm:w-[118px] md:w-[138px] text-[8px] sm:text-[9px] font-bold text-black truncate text-center pointer-events-none"
+                className="clay-badge-neutral px-1.5 py-0.5 w-full text-[8px] sm:text-[9px] font-bold text-black truncate text-center pointer-events-none"
                 title={displayLocation}
               >
                 {displayLocation}

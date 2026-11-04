@@ -16,9 +16,11 @@
 
     <title>RadenWorld - 2D Open World Multiplayer Simulasi</title>
 
-    <!-- Google Fonts Fallback: Press Start 2P (Asynchronous Non-Blocking) -->
+    <!-- Google Fonts: Pixelify Sans (Primary Cozy RPG Pixel Font) & Press Start 2P -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400..700&display=swap">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400..700&display=swap">
     <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" media="print" onload="this.media='all'">
     <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap"></noscript>
@@ -48,6 +50,9 @@
             touch-action: none;
             -webkit-user-select: none;
             user-select: none;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            text-rendering: optimizeLegibility;
         }
         #raden-game-app {
             position: fixed;
@@ -75,7 +80,7 @@
         }, { passive: false });
 
         // Auto-Purge Old Cache & Self-Healing Service Worker Update
-        const APP_BUILD_VER = 'radenworld-static-v5';
+        const APP_BUILD_VER = 'radenworld-static-v7';
         try {
             if (localStorage.getItem('raden_sw_ver') !== APP_BUILD_VER) {
                 localStorage.setItem('raden_sw_ver', APP_BUILD_VER);

@@ -12,7 +12,7 @@
     "name": "vendor-socket"
   },
   "resources/css/app.css": {
-    "file": "assets/app-DUpOl9mG.css",
+    "file": "assets/app-CD7yClfR.css",
     "src": "resources/css/app.css",
     "isEntry": true,
     "name": "app",
@@ -24,12 +24,20 @@
     "file": "assets/KenneyPixelSquare-BGJbmVgp.ttf",
     "src": "resources/fonts/KenneyPixelSquare.ttf"
   },
+  "resources/fonts/PixelifySans-Bold.ttf": {
+    "file": "assets/PixelifySans-Bold-DnmInNKW.ttf",
+    "src": "resources/fonts/PixelifySans-Bold.ttf"
+  },
+  "resources/fonts/PixelifySans-Regular.ttf": {
+    "file": "assets/PixelifySans-Regular-kQYMvAl-.ttf",
+    "src": "resources/fonts/PixelifySans-Regular.ttf"
+  },
   "resources/fonts/m5x7.ttf": {
     "file": "assets/m5x7-C0ua5re1.ttf",
     "src": "resources/fonts/m5x7.ttf"
   },
   "resources/js/app.tsx": {
-    "file": "assets/app-B5BXhsc8.js",
+    "file": "assets/app-B203gJq8.js",
     "name": "app",
     "src": "resources/js/app.tsx",
     "isEntry": true,

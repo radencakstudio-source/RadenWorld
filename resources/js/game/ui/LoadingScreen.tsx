@@ -72,12 +72,9 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
     startTimeRef.current = Date.now();
     isCompleteRef.current = false;
 
-    const alreadyReady = Boolean(
-      (EventBus as any).lastSceneReady ||
-      (typeof window !== 'undefined' && (window as any).__raden_last_scene_ready)
-    );
-    sceneReadyRef.current = alreadyReady;
-    targetProgressRef.current = alreadyReady ? 100 : 18;
+    // Selalu pastikan loading screen menunggu scene target siap merender frame pertama
+    sceneReadyRef.current = false;
+    targetProgressRef.current = 30;
 
     const triggerComplete = () => {
       if (isCompleteRef.current) return;
@@ -103,8 +100,15 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
 
     // Handler saat Scene tujuan selesai create() dan spawn player
     const handleSceneReady = () => {
-      sceneReadyRef.current = true;
-      targetProgressRef.current = 100;
+      // Jeda 2 frame animasi agar canvas WebGL telah selesai menggambar seluruh tekstur & lingkungan
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          setTimeout(() => {
+            sceneReadyRef.current = true;
+            targetProgressRef.current = 100;
+          }, 100);
+        });
+      });
     };
 
     // Ticker untuk pergerakan bar progres yang ringan

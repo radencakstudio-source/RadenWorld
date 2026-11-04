@@ -484,7 +484,7 @@ export const HUD: React.FC<HUDProps> = React.memo(({
             </div>
             <div className="flex flex-col leading-none">
               <div className="flex items-center gap-1">
-                <span className="font-bold text-[10px] sm:text-xs text-black uppercase truncate max-w-[68px] sm:max-w-[120px]">
+                <span className="font-bold text-[11px] sm:text-xs text-black truncate max-w-[95px] sm:max-w-[145px]" title={stats.name}>
                   {stats.name}
                 </span>
                 {isSuperAdmin && (
@@ -799,7 +799,7 @@ export const HUD: React.FC<HUDProps> = React.memo(({
               </div>
 
               {/* Nama Wilayah di Bawah Minimap */}
-              <div className="clay-badge-neutral px-2 py-0.5 max-w-[138px] text-[7.5px] sm:text-[8.5px] font-bold text-black uppercase truncate pointer-events-none">
+              <div className="clay-badge-neutral px-2 py-0.5 max-w-[138px] text-[8px] sm:text-[9px] font-bold text-black truncate pointer-events-none" title={displayLocation}>
                 {displayLocation}
               </div>
             </div>

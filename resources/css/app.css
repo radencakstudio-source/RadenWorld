@@ -8,12 +8,28 @@
 @source '../**/*.tsx';
 
 /* ============================================================================
- * PIXEL FONTS: Kenney Pixel Square (Primary) -> m5x7 -> Press Start 2P -> monospace
+ * PIXEL FONTS: Pixelify Sans (Primary Cozy RPG) -> Kenney Pixel Square -> m5x7 -> Press Start 2P
  * ============================================================================ */
+@font-face {
+    font-family: 'Pixelify Sans';
+    src: url('../fonts/PixelifySans-Regular.ttf') format('truetype');
+    font-weight: 400 500;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Pixelify Sans';
+    src: url('../fonts/PixelifySans-Bold.ttf') format('truetype');
+    font-weight: 600 900;
+    font-style: normal;
+    font-display: swap;
+}
+
 @font-face {
     font-family: 'Kenney Pixel Square';
     src: url('../fonts/KenneyPixelSquare.ttf') format('truetype');
-    font-weight: 400 900;
+    font-weight: 400;
     font-style: normal;
     font-display: swap;
 }
@@ -21,21 +37,21 @@
 @font-face {
     font-family: 'm5x7';
     src: url('../fonts/m5x7.ttf') format('truetype');
-    font-weight: 400 900;
+    font-weight: 400;
     font-style: normal;
     font-display: swap;
 }
 
 @theme {
-    --font-sans: 'Kenney Pixel Square', 'm5x7', 'Press Start 2P', monospace;
-    --font-mono: 'Kenney Pixel Square', 'm5x7', 'Press Start 2P', monospace;
-    --font-cute: 'Kenney Pixel Square', 'm5x7', 'Press Start 2P', monospace;
-    --font-pixel: 'Kenney Pixel Square', 'm5x7', 'Press Start 2P', monospace;
+    --font-sans: 'Pixelify Sans', 'Kenney Pixel Square', 'm5x7', 'Press Start 2P', monospace;
+    --font-mono: 'Pixelify Sans', 'Kenney Pixel Square', 'm5x7', 'Press Start 2P', monospace;
+    --font-cute: 'Pixelify Sans', 'Kenney Pixel Square', 'm5x7', 'Press Start 2P', monospace;
+    --font-pixel: 'Pixelify Sans', 'Kenney Pixel Square', 'm5x7', 'Press Start 2P', monospace;
 }
 
 .font-cute,
 .font-pixel {
-    font-family: 'Kenney Pixel Square', 'm5x7', 'Press Start 2P', monospace;
+    font-family: 'Pixelify Sans', 'Kenney Pixel Square', 'm5x7', 'Press Start 2P', monospace;
 }
 
 /* ============================================================================
@@ -68,20 +84,53 @@ html, body {
     -webkit-overflow-scrolling: auto;
     background-color: #FFF8EA;
     color: #000000;
-    font-family: 'Kenney Pixel Square', 'm5x7', 'Press Start 2P', monospace;
+    font-family: 'Pixelify Sans', 'Kenney Pixel Square', 'm5x7', 'Press Start 2P', monospace;
     letter-spacing: 0.01em;
     user-select: none;
     -webkit-user-select: none;
     -webkit-touch-callout: none !important;
     touch-action: none;
-    -webkit-font-smoothing: none;
+    -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
     position: fixed;
     inset: 0;
 }
 
-button, input, select, textarea {
-    font-family: 'Kenney Pixel Square', 'm5x7', 'Press Start 2P', monospace;
+/* ============================================================================
+ * PIXEL FONT THICKENING & HIGH LEGIBILITY (Anti-Font Tipis)
+ * ============================================================================
+ * 1. Faux-bold sintetis bekerja untuk seluruh elemen font-bold / heading.
+ * 2. Micro text-stroke (0.35px) memberi ketebalan solid tanpa blur.
+ * 3. Text-shadow horizontal (0.25px) menyatukan piksel yang renggang.
+ * ============================================================================ */
+.font-bold,
+.font-semibold,
+.font-extrabold,
+h1, h2, h3, h4, h5, h6,
+strong, b,
+th,
+[class*="font-bold"],
+[class*="font-semibold"] {
+    font-weight: 700 !important;
+    -webkit-text-stroke: 0.35px currentColor;
+    text-shadow: 0.25px 0 0 currentColor;
+}
+
+/* Teks tombol, badge, input, dan label dibuat lebih tegas & padat */
+button,
+.clay-btn,
+.clay-badge,
+input,
+select,
+textarea {
+    font-family: 'Pixelify Sans', 'Kenney Pixel Square', 'm5x7', 'Press Start 2P', monospace;
+    -webkit-text-stroke: 0.2px currentColor;
+}
+
+/* Teks umum / body diberi sedikit kepadatan agar tidak kerempeng */
+body, p, span, label {
+    -webkit-text-stroke: 0.15px currentColor;
 }
 
 /* Izinkan seleksi teks hanya pada input form dan textarea */
@@ -152,6 +201,36 @@ input, textarea, [contenteditable="true"] {
     padding-right: max(0.5rem, var(--sar));
     padding-bottom: max(0.5rem, var(--sab));
     padding-left: max(0.5rem, var(--sal));
+}
+
+/* ============================================================================
+ * ANTI-OVERFLOW & BOUNDARY CONTAINMENT (PC & Mobile)
+ * ============================================================================
+ * Mencegah teks menembus keluar border kontainer baik di PC maupun layar HP:
+ * 1. Seluruh panel, card, modal, button, dan badge memiliki box-sizing: border-box.
+ * 2. Word-wrap dan break-word aktif untuk mencegah kata panjang meluap.
+ * 3. Tombol dan badge membatasi teks yang terlalu panjang dengan ellipsis.
+ * ============================================================================ */
+.clay-panel,
+.clay-card,
+[class*="clay-card"],
+.clay-header,
+.clay-modal-shell,
+.clay-main-pane {
+    box-sizing: border-box;
+    max-width: 100%;
+    overflow-wrap: break-word;
+    word-break: break-word;
+}
+
+.clay-btn,
+[class*="clay-btn"],
+.clay-badge,
+[class*="clay-badge"] {
+    box-sizing: border-box;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .clay-panel {

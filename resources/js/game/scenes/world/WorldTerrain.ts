@@ -53,36 +53,28 @@ export class WorldTerrain {
     const ts = tileSize; // 120px
     const buf = 2400;
 
-    // 0. BUFFER LAUT & PENYANGGA DI LUAR GRID DUNIA (Mencegah layar hitam kosong saat kamera fokus di pojok)
-    scene.add.tileSprite(
-      worldWidth / 2,
-      worldHeight / 2,
-      worldWidth + buf * 2,
-      worldHeight + buf * 2,
-      'water-checker-tile'
-    ).setDepth(-110);
+    // 1. DASAR DUNIA: RUMPUT HIJAU SEGAR (4 Kuadran Aman 4800x4800, 100% Bebas WebGL Texture Overflow)
+    const halfW = worldWidth / 2;
+    const halfH = worldHeight / 2;
+    scene.add.tileSprite(0, 0, halfW, halfH, 'world-checker-tile').setOrigin(0, 0).setDepth(-100);
+    scene.add.tileSprite(halfW, 0, halfW, halfH, 'world-checker-tile').setOrigin(0, 0).setDepth(-100);
+    scene.add.tileSprite(0, halfH, halfW, halfH, 'world-checker-tile').setOrigin(0, 0).setDepth(-100);
+    scene.add.tileSprite(halfW, halfH, halfW, halfH, 'world-checker-tile').setOrigin(0, 0).setDepth(-100);
 
-    // 1. DASAR DUNIA: RUMPUT HIJAU SEGAR (world-checker-tile)
-    scene.add.tileSprite(
-      -buf,
-      -buf,
-      worldWidth + buf * 2,
-      worldHeight + buf * 2,
-      'world-checker-tile'
-    ).setOrigin(0, 0).setDepth(-100);
+    // 0. BUFFER LAUT PENYANGGA (Strips 1200px di 4 sisi luar)
+    const outBuf = 1200;
+    scene.add.tileSprite(0, -outBuf, worldWidth, outBuf, 'water-checker-tile').setOrigin(0, 0).setDepth(-110);
+    scene.add.tileSprite(0, worldHeight, worldWidth, outBuf, 'water-checker-tile').setOrigin(0, 0).setDepth(-110);
+    scene.add.tileSprite(-outBuf, -outBuf, outBuf, worldHeight + outBuf * 2, 'water-checker-tile').setOrigin(0, 0).setDepth(-110);
+    scene.add.tileSprite(worldWidth, -outBuf, outBuf, worldHeight + outBuf * 2, 'water-checker-tile').setOrigin(0, 0).setDepth(-110);
 
     // ------------------------------------------------------------------------
     // TEMBOK PEMBATAS DUNIA MENYELURUH SAMPAI KE UJUNG LUAR (OUTER BOUNDS)
     // ------------------------------------------------------------------------
-    // a. Tembok Atas Utara: Memenuhi seluruh area Utara dari luar map (y: -buf s/d ts)
+    // a. Tembok Atas Utara: Memenuhi seluruh area Utara dari luar map
     if (scene.textures.exists('wall-top-checker')) {
-      scene.add.tileSprite(
-        -buf,
-        -buf,
-        worldWidth + buf * 2,
-        buf + ts,
-        'wall-top-checker'
-      ).setOrigin(0, 0).setDepth(10);
+      scene.add.tileSprite(0, -ts, halfW, ts * 2, 'wall-top-checker').setOrigin(0, 0).setDepth(10);
+      scene.add.tileSprite(halfW, -ts, halfW, ts * 2, 'wall-top-checker').setOrigin(0, 0).setDepth(10);
     } else {
       for (let gy = -20; gy <= 0; gy++) {
         for (let gx = -20; gx < 80 + 20; gx++) {

@@ -129,10 +129,10 @@ export abstract class Entity extends Phaser.GameObjects.Container {
 
     this.nameTag = scene.add.text(0, -165, displayName, {
       fontFamily: '"Chakra Petch", "Plus Jakarta Sans", sans-serif',
-      fontSize: '13px',
+      fontSize: '14px',
       color: nameColor,
       stroke: '#050811',
-      strokeThickness: 3.5,
+      strokeThickness: 2.2,
       fontStyle: 'bold',
       align: 'center',
       resolution: 4, // Resolusi 4x agar teks tetap tajam kristal tanpa blur pada zoom atau layar retina
@@ -231,18 +231,18 @@ export abstract class Entity extends Phaser.GameObjects.Container {
 
     const bubbleText = this.scene.add.text(0, 0, message, {
       fontFamily: '"Plus Jakarta Sans", "Pixelify Sans", sans-serif',
-      fontSize: '12px',
+      fontSize: '13.5px',
       color: '#0f172a',
       fontStyle: 'bold',
       resolution: 4, // Resolusi 4x HD tajam kristal bebas blur
-      wordWrap: { width: 160 },
+      wordWrap: { width: 180 },
       align: 'center',
     }).setOrigin(0.5);
 
     const paddingX = 14;
     const paddingY = 8;
-    const bgWidth = Math.max(50, bubbleText.width + paddingX * 2);
-    const bgHeight = bubbleText.height + paddingY * 2;
+    const bgWidth = Math.max(56, bubbleText.width + paddingX * 2);
+    const bgHeight = Math.max(32, bubbleText.height + paddingY * 2);
 
     const bg = this.scene.add.graphics();
     // Bayangan halus balon
@@ -271,14 +271,13 @@ export abstract class Entity extends Phaser.GameObjects.Container {
       this.expressionBubble.y = -290;
     }
 
-    // Skala awal menyesuaikan tingkat zoom kamera secara terbalik (Inverse Scale: Zoom out -> bubble perbesar proporsional, Zoom in -> bubble perkecil)
+    // Skala awal menyesuaikan tingkat zoom kamera secara terbalik (Inverse Scale: ukuran balon di layar tetap proporsional HD dan tidak mengecil)
     const camZoom = this.scene.cameras?.main?.zoom || 1.0;
-    const invScale = 1 / Math.max(0.6, camZoom);
-    const initScale = Math.max(0.85, Math.min(1.3, invScale));
+    const invScale = 1 / Math.max(0.45, camZoom);
     bubble.setScale(0.2);
     this.scene.tweens.add({
       targets: bubble,
-      scale: initScale,
+      scale: invScale,
       duration: 200,
       ease: 'Back.easeOut',
     });
@@ -337,15 +336,14 @@ export abstract class Entity extends Phaser.GameObjects.Container {
     this.add(bubble);
     this.expressionBubble = bubble;
 
-    // Skala awal menyesuaikan tingkat zoom kamera secara terbalik
+    // Skala awal menyesuaikan tingkat zoom kamera secara terbalik (Inverse Scale presisi HD)
     const camZoom = this.scene.cameras?.main?.zoom || 1.0;
-    const invScale = 1 / Math.max(0.6, camZoom);
-    const initScale = Math.max(0.85, Math.min(1.3, invScale));
+    const invScale = 1 / Math.max(0.45, camZoom);
 
     bubble.setScale(0.2);
     this.scene.tweens.add({
       targets: bubble,
-      scale: initScale,
+      scale: invScale,
       y: bubbleY - 10,
       duration: 250,
       ease: 'Back.easeOut',
@@ -379,20 +377,20 @@ export abstract class Entity extends Phaser.GameObjects.Container {
     if (Math.abs(camZoom - this.lastCamZoom) < 0.005) return;
     this.lastCamZoom = camZoom;
 
-    const invScale = 1 / Math.max(0.68, camZoom);
-    const targetScale = Math.max(0.9, Math.min(1.2, invScale));
+    // Skala terbalik presisi agar UI melayang (Nama, Chat, Ekspresi) selalu konsisten tajam HD di layar pengguna
+    const invScale = 1 / Math.max(0.45, camZoom);
 
     if (this.nameTag && this.nameTag.active) {
-      this.nameTag.setScale(targetScale);
+      this.nameTag.setScale(invScale);
     }
     if (this.speechBubble && this.speechBubble.active) {
-      this.speechBubble.setScale(targetScale);
+      this.speechBubble.setScale(invScale);
     }
     if (this.expressionBubble && this.expressionBubble.active) {
-      this.expressionBubble.setScale(targetScale);
+      this.expressionBubble.setScale(invScale);
     }
     if (this.speakingIndicator && this.speakingIndicator.active) {
-      this.speakingIndicator.setScale(targetScale);
+      this.speakingIndicator.setScale(invScale);
     }
   }
 

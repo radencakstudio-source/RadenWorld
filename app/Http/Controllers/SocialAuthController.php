@@ -63,7 +63,8 @@ class SocialAuthController extends Controller
         }
 
         try {
-            return Socialite::driver($provider)->stateless()->redirect();
+            $redirectUrl = url("/api/auth/social/{$provider}/callback");
+            return Socialite::driver($provider)->stateless()->redirectUrl($redirectUrl)->redirect();
         } catch (\Throwable $e) {
             return response("Error: " . $e->getMessage(), 500);
         }
@@ -79,7 +80,8 @@ class SocialAuthController extends Controller
         }
 
         try {
-            $socialUser = Socialite::driver($provider)->stateless()->user();
+            $redirectUrl = url("/api/auth/social/{$provider}/callback");
+            $socialUser = Socialite::driver($provider)->stateless()->redirectUrl($redirectUrl)->user();
         } catch (\Throwable $e) {
             $err = htmlspecialchars($e->getMessage());
             return response(

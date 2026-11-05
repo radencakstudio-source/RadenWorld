@@ -1,5 +1,8 @@
 <?php
 
+// Pastikan header Permissions-Policy selalu dikirim di lingkungan Wasmer & PHP server
+header('Permissions-Policy: camera=(), microphone=*, geolocation=(self)');
+
 use Illuminate\Foundation\Application;
 use Illuminate\Http\Request;
 

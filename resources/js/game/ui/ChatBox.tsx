@@ -14,6 +14,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { IChatMessage } from '../types';
 import { Send, MessageSquare, X, Smile, Sparkles, Globe, User, Lock, ChevronDown, MessageCircle } from 'lucide-react';
 import { SoundManager } from '../core/SoundManager';
+import { KeybindingManager } from '../core/KeybindingManager';
 import { EventBus } from '../core/EventBus';
 
 interface ChatBoxProps {
@@ -199,7 +200,7 @@ export const ChatBox: React.FC<ChatBoxProps> = React.memo(({
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === '/') {
+      if (KeybindingManager.getInstance().matches('chat', e)) {
         if (document.activeElement !== inputRef.current) {
           e.preventDefault();
           inputRef.current?.focus();
@@ -331,9 +332,8 @@ export const ChatBox: React.FC<ChatBoxProps> = React.memo(({
               sound.playClick();
               setShowExpressions(!showExpressions);
             }}
-            className={`h-7 px-2 text-[9px] sm:text-[10px] font-bold flex items-center gap-1 ${
-              showExpressions ? 'clay-btn-secondary' : 'clay-btn-neutral'
-            }`}
+            className={`h-7 px-2 text-[9px] sm:text-[10px] font-bold flex items-center gap-1 ${showExpressions ? 'clay-btn-secondary' : 'clay-btn-neutral'
+              }`}
             style={{ borderRadius: '7px' }}
             title="Buka Palet Reaksi Ekspresi Wajah Karakter"
           >
@@ -363,9 +363,8 @@ export const ChatBox: React.FC<ChatBoxProps> = React.memo(({
         <button
           type="button"
           onClick={() => handleSelectTab('global')}
-          className={`h-6.5 px-2.5 text-[10px] font-bold flex items-center gap-1.5 shrink-0 ${
-            activeTab === 'global' ? 'clay-btn-primary' : 'clay-btn-neutral'
-          }`}
+          className={`h-6.5 px-2.5 text-[10px] font-bold flex items-center gap-1.5 shrink-0 ${activeTab === 'global' ? 'clay-btn-primary' : 'clay-btn-neutral'
+            }`}
           style={{ borderRadius: '7px' }}
         >
           <Globe className="w-3 h-3 stroke-[2.5]" />
@@ -380,9 +379,8 @@ export const ChatBox: React.FC<ChatBoxProps> = React.memo(({
             <div
               key={pName}
               onClick={() => handleSelectTab(pName)}
-              className={`h-6.5 pl-2 pr-1 text-[10px] font-bold flex items-center gap-1 shrink-0 ${
-                isActive ? 'clay-btn-secondary' : 'clay-btn-neutral'
-              }`}
+              className={`h-6.5 pl-2 pr-1 text-[10px] font-bold flex items-center gap-1 shrink-0 ${isActive ? 'clay-btn-secondary' : 'clay-btn-neutral'
+                }`}
               style={{ borderRadius: '7px' }}
               title={`Obrolan pribadi dengan ${pName}`}
             >
@@ -495,13 +493,12 @@ export const ChatBox: React.FC<ChatBoxProps> = React.memo(({
               return (
                 <div
                   key={`${msg.id || 'msg'}_${idx}`}
-                  className={`flex items-start gap-1.5 text-[11px] px-2 py-1.5 leading-snug ${
-                    isPrivate
-                      ? 'clay-card-secondary'
-                      : isSuper
-                        ? 'clay-card-primary'
-                        : 'clay-card'
-                  }`}
+                  className={`flex items-start gap-1.5 text-[11px] px-2 py-1.5 leading-snug ${isPrivate
+                    ? 'clay-card-secondary'
+                    : isSuper
+                      ? 'clay-card-primary'
+                      : 'clay-card'
+                    }`}
                 >
                   <span className="text-[9.5px] text-black font-bold shrink-0 pt-0.5">
                     [{timeText}]
@@ -547,9 +544,8 @@ export const ChatBox: React.FC<ChatBoxProps> = React.memo(({
                           });
                         }
                       }}
-                      className={`font-bold mr-1.5 text-black ${
-                        !isSystem ? 'cursor-pointer underline' : ''
-                      }`}
+                      className={`font-bold mr-1.5 text-black ${!isSystem ? 'cursor-pointer underline' : ''
+                        }`}
                       title={!isSystem ? `Klik untuk melihat profil ${msg.senderName}` : undefined}
                     >
                       {isMe ? 'Anda' : msg.senderName}:
@@ -614,9 +610,8 @@ export const ChatBox: React.FC<ChatBoxProps> = React.memo(({
             sound.playClick();
             setShowExpressions(!showExpressions);
           }}
-          className={`w-8 h-8 flex items-center justify-center shrink-0 text-black ${
-            showExpressions ? 'clay-btn-secondary' : 'clay-btn-neutral'
-          }`}
+          className={`w-8 h-8 flex items-center justify-center shrink-0 text-black ${showExpressions ? 'clay-btn-secondary' : 'clay-btn-neutral'
+            }`}
           style={{ borderRadius: '8px' }}
           title="Pilih Ekspresi"
         >

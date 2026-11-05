@@ -94,6 +94,16 @@ export class CameraController {
     this.currentTargetZoom = this.defaultZoom;
     this.minZoom = options.minZoom ?? 0.38;
     this.maxZoom = options.maxZoom ?? 2.0;
+    try {
+      if (typeof window !== 'undefined') {
+        const raw = localStorage.getItem('raden_game_settings');
+        if (raw) {
+          const s = JSON.parse(raw);
+          if (typeof s.minCameraZoom === 'number') this.minZoom = s.minCameraZoom;
+          if (typeof s.maxCameraZoom === 'number') this.maxZoom = s.maxCameraZoom;
+        }
+      }
+    } catch (e) { }
     this.zoomLerpSpeed = options.zoomLerpSpeed ?? 0.12;
 
     const cam = this.getCamera();
@@ -199,7 +209,7 @@ export class CameraController {
     if (cam) {
       try {
         cam.stopFollow();
-      } catch (e) {}
+      } catch (e) { }
     }
     this.followTarget = null;
     this.isFollowing = false;
@@ -258,7 +268,7 @@ export class CameraController {
     if (cam) {
       try {
         cam.setZoom(this.defaultZoom);
-      } catch (e) {}
+      } catch (e) { }
     }
 
     // 1. Mouse Scroll Wheel Zooming
@@ -280,16 +290,23 @@ export class CameraController {
       const handleZoomOut = () => this.zoomOut();
       const handleZoomReset = () => this.resetZoom();
       const handleZoomSet = (zoom: number) => this.smoothZoomTo(zoom);
+      const handleLimitsUpdate = (limits: { minZoom?: number; maxZoom?: number; zoomLerpSpeed?: number }) => {
+        if (typeof limits.minZoom === 'number') this.setMinZoom(limits.minZoom);
+        if (typeof limits.maxZoom === 'number') this.setMaxZoom(limits.maxZoom);
+        if (typeof limits.zoomLerpSpeed === 'number') this.zoomLerpSpeed = limits.zoomLerpSpeed;
+      };
 
       this.eventBusHandlers.set('camera-zoom-in', handleZoomIn);
       this.eventBusHandlers.set('camera-zoom-out', handleZoomOut);
       this.eventBusHandlers.set('camera-zoom-reset', handleZoomReset);
       this.eventBusHandlers.set('camera-zoom-set', handleZoomSet);
+      this.eventBusHandlers.set('camera-limits-updated', handleLimitsUpdate);
 
       EventBus.on('camera-zoom-in', handleZoomIn);
       EventBus.on('camera-zoom-out', handleZoomOut);
       EventBus.on('camera-zoom-reset', handleZoomReset);
       EventBus.on('camera-zoom-set', handleZoomSet);
+      EventBus.on('camera-limits-updated', handleLimitsUpdate);
     }
 
     // 3. Tombol Keyboard (+ / - / Numpad)
@@ -327,6 +344,26 @@ export class CameraController {
     return this;
   }
 
+  public setMinZoom(min: number): this {
+    this.minZoom = Math.max(0.2, min);
+    this.currentTargetZoom = Phaser.Math.Clamp(this.currentTargetZoom, this.minZoom, this.maxZoom);
+    return this;
+  }
+
+  public setMaxZoom(max: number): this {
+    this.maxZoom = Math.max(this.minZoom, max);
+    this.currentTargetZoom = Phaser.Math.Clamp(this.currentTargetZoom, this.minZoom, this.maxZoom);
+    return this;
+  }
+
+  public getMinZoom(): number {
+    return this.minZoom;
+  }
+
+  public getMaxZoom(): number {
+    return this.maxZoom;
+  }
+
   /**
    * Mengatur nilai zoom (dengan opsi instan tanpa interpolasi)
    */
@@ -336,7 +373,7 @@ export class CameraController {
     if (immediate && cam) {
       try {
         cam.setZoom(this.currentTargetZoom);
-      } catch (e) {}
+      } catch (e) { }
     }
     return this;
   }
@@ -361,16 +398,6 @@ export class CameraController {
     return this;
   }
 
-  public setMinZoom(minZoom: number): this {
-    this.minZoom = minZoom;
-    return this;
-  }
-
-  public setMaxZoom(maxZoom: number): this {
-    this.maxZoom = maxZoom;
-    return this;
-  }
-
   public getZoom(): number {
     const cam = this.getCamera();
     return cam ? cam.zoom : this.currentTargetZoom;
@@ -392,7 +419,7 @@ export class CameraController {
     if (cam) {
       try {
         cam.shake(durationMs, intensity);
-      } catch (e) {}
+      } catch (e) { }
     }
     return this;
   }
@@ -405,7 +432,7 @@ export class CameraController {
     if (cam) {
       try {
         cam.flash(durationMs, r, g, b);
-      } catch (e) {}
+      } catch (e) { }
     }
     return this;
   }
@@ -477,7 +504,7 @@ export class CameraController {
     if (wasFollowing) {
       try {
         cam.stopFollow();
-      } catch (e) {}
+      } catch (e) { }
     }
 
     try {
@@ -486,7 +513,7 @@ export class CameraController {
           if (wasFollowing && this.followTarget) {
             try {
               cam.startFollow(this.followTarget, true, 1.0, 1.0);
-            } catch (e) {}
+            } catch (e) { }
           }
           if (callback) callback();
         }
@@ -514,7 +541,7 @@ export class CameraController {
       const step = Math.min(1, Math.max(0.01, delta * this.zoomLerpSpeed * 0.15));
       try {
         cam.setZoom(Phaser.Math.Linear(cam.zoom, this.currentTargetZoom, step));
-      } catch (e) {}
+      } catch (e) { }
     }
   }
 

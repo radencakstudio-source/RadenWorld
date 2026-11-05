@@ -49,13 +49,17 @@ export class VoiceManager {
   /** Radius maksimal proximity voice dalam petak grid (x -5 s/d 5, y -5 s/d 5) */
   private readonly maxTileRange: number = 5;
 
-  /** Frekuensi sampel standar untuk transmisi suara ringan & jernih (16 kHz) */
-  private readonly sampleRate: number = 16000;
+  /** Frekuensi sampel standar HD Wideband Studio untuk transmisi suara super jernih (24 kHz) */
+  private readonly sampleRate: number = 24000;
+
+  /** Ukuran paket audio per pengiriman (512 sampel = ~21.3 ms) untuk transmisi suara ultra-rendah latensi (zero lag) */
+  private readonly CHUNK_SIZE: number = 512;
+  private audioAccumulator: number[] = [];
 
   /** Status apakah pemain lokal sedang terdeteksi bersuara */
   private isLocalSpeaking: boolean = false;
 
-  /** Timer jeda diam agar indikator tidak berkedip antar suku kata */
+  /** Timer jeda diam (hangover) agar suku kata lembut tidak terpotong */
   private silenceTimeout: number | null = null;
 
   /** Waktu penjadwalan pemutaran buffer audio berikutnya per pengirim */
@@ -179,8 +183,22 @@ export class VoiceManager {
    * Memulai perekaman mikrofon dan transmisi suara proximity
    */
   public async startMic(): Promise<boolean> {
+    if (typeof window !== 'undefined' && !window.isSecureContext && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+      const msg = 'Akses mikrofon memerlukan koneksi aman HTTPS atau dibuka melalui http://localhost. Silakan akses via https:// atau buka melalui http://localhost:8000 (atau aktifkan SSL di Laragon).';
+      console.warn('[VoiceManager] Insecure Context:', msg);
+      EventBus.emit('new-chat-message', {
+        id: `mic_sec_${Date.now()}`,
+        sender: 'SISTEM SUARA',
+        text: msg,
+        timestamp: Date.now(),
+        isSystem: true,
+      });
+      alert(msg);
+      return false;
+    }
+
     if (typeof navigator === 'undefined' || !navigator.mediaDevices?.getUserMedia) {
-      alert('Browser Anda tidak mendukung akses Mikrofon (getUserMedia).');
+      alert('Browser Anda tidak mendukung akses Mikrofon (getUserMedia). Pastikan menggunakan browser modern dan protokol HTTPS/localhost.');
       return false;
     }
 
@@ -290,50 +308,71 @@ export class VoiceManager {
   }
 
   /**
-   * Memproses paket audio input (Float32Array) dengan VAD dan konversi ke Int16 PCM
+   * Memproses paket audio input (Float32Array) dengan akumulator chunk 1024 sampel,
+   * VAD adaptif sensitif, dan konversi ke Int16 PCM jernih tanpa putus-putus.
    */
   private processAudioInput(input: Float32Array): void {
     if (!this.isMicEnabled) return;
 
-    // 1. Hitung intensitas volume RMS (Voice Activity Detection)
-    let sumSquares = 0;
+    // Masukkan sampel baru ke akumulator
     for (let i = 0; i < input.length; i++) {
-      sumSquares += input[i] * input[i];
+      this.audioAccumulator.push(input[i]);
     }
-    const rms = Math.sqrt(sumSquares / input.length);
 
-    // Ambang batas berbicara wajar (menghindari mendengus pelan/background noise)
-    const isSpeakingNow = rms > 0.015;
+    // Proses per paket ukuran CHUNK_SIZE (1024 sampel = ~42.6 ms)
+    while (this.audioAccumulator.length >= this.CHUNK_SIZE) {
+      const chunk = this.audioAccumulator.splice(0, this.CHUNK_SIZE);
 
-    if (isSpeakingNow) {
-      if (this.silenceTimeout) {
-        window.clearTimeout(this.silenceTimeout);
-        this.silenceTimeout = null;
+      // 1. Hitung intensitas volume RMS (Voice Activity Detection)
+      let sumSquares = 0;
+      for (let i = 0; i < chunk.length; i++) {
+        sumSquares += chunk[i] * chunk[i];
       }
+      const rms = Math.sqrt(sumSquares / chunk.length);
 
-      if (!this.isLocalSpeaking) {
-        this.isLocalSpeaking = true;
-        this.networkManager.sendVoiceSpeaking(true);
-        EventBus.emit('local-player-speaking', { isSpeaking: true });
-      }
+      // Ambang batas sensitif 0.008 (menangkap bisikan dan konsonan halus seperti s, t, p, k)
+      const isSpeakingNow = rms > 0.008;
 
-      // 2. Konversi Float32 [-1.0, 1.0] ke Int16 PCM untuk transmisi biner
-      const pcm16 = new Int16Array(input.length);
-      for (let i = 0; i < input.length; i++) {
-        const s = Math.max(-1, Math.min(1, input[i]));
-        pcm16[i] = s < 0 ? s * 0x8000 : s * 0x7fff;
-      }
-
-      // 3. Kirim paket suara biner melalui WebSocket
-      this.networkManager.sendVoiceChunk(pcm16.buffer, this.localX, this.localY);
-    } else {
-      if (this.isLocalSpeaking && !this.silenceTimeout) {
-        this.silenceTimeout = window.setTimeout(() => {
-          this.isLocalSpeaking = false;
+      if (isSpeakingNow) {
+        if (this.silenceTimeout) {
+          window.clearTimeout(this.silenceTimeout);
           this.silenceTimeout = null;
-          this.networkManager.sendVoiceSpeaking(false);
-          EventBus.emit('local-player-speaking', { isSpeaking: false });
-        }, 350);
+        }
+
+        if (!this.isLocalSpeaking) {
+          this.isLocalSpeaking = true;
+          this.networkManager.sendVoiceSpeaking(true);
+          EventBus.emit('local-player-speaking', { isSpeaking: true });
+        }
+
+        // 2. Konversi Float32 [-1.0, 1.0] ke Int16 PCM
+        const pcm16 = new Int16Array(chunk.length);
+        for (let i = 0; i < chunk.length; i++) {
+          const s = Math.max(-1, Math.min(1, chunk[i]));
+          pcm16[i] = s < 0 ? s * 0x8000 : s * 0x7fff;
+        }
+
+        // 3. Kirim paket suara biner melalui WebSocket
+        this.networkManager.sendVoiceChunk(pcm16.buffer, this.localX, this.localY);
+      } else {
+        // Jika sedang dalam periode hangover (jeda antar kata), tetap kirimkan audio agar kalimat tidak terpotong
+        if (this.isLocalSpeaking) {
+          const pcm16 = new Int16Array(chunk.length);
+          for (let i = 0; i < chunk.length; i++) {
+            const s = Math.max(-1, Math.min(1, chunk[i]));
+            pcm16[i] = s < 0 ? s * 0x8000 : s * 0x7fff;
+          }
+          this.networkManager.sendVoiceChunk(pcm16.buffer, this.localX, this.localY);
+
+          if (!this.silenceTimeout) {
+            this.silenceTimeout = window.setTimeout(() => {
+              this.isLocalSpeaking = false;
+              this.silenceTimeout = null;
+              this.networkManager.sendVoiceSpeaking(false);
+              EventBus.emit('local-player-speaking', { isSpeaking: false });
+            }, 550); // Hangover 550ms untuk transisi suara alami
+          }
+        }
       }
     }
   }
@@ -343,6 +382,7 @@ export class VoiceManager {
    */
   public stopMic(): void {
     this.isMicEnabled = false;
+    this.audioAccumulator = [];
 
     if (this.silenceTimeout) {
       window.clearTimeout(this.silenceTimeout);
@@ -441,11 +481,14 @@ export class VoiceManager {
       sourceNode.connect(gainNode);
       gainNode.connect(ctx.destination);
 
-      // 6. Penjadwalan buffer mulus tanpa jeda/stutter (Jitter Buffer Mulus)
+      // 6. Penjadwalan buffer ultra-rendah latensi (Anti-Drift Real-Time Voice)
       const now = ctx.currentTime;
       let startTime = this.nextPlaybackTimes[data.senderId] || 0;
-      if (startTime < now) {
-        startTime = now + 0.015;
+
+      // Jika buffer tertinggal di masa lalu ATAU terakumulasi lebih dari 60ms ke masa depan,
+      // sinkronkan seketika ke real-time (now + 5ms) untuk mencegah penumpukan delay!
+      if (startTime < now || startTime > now + 0.06) {
+        startTime = now + 0.005;
       }
       sourceNode.start(startTime);
       this.nextPlaybackTimes[data.senderId] = startTime + audioBuffer.duration;

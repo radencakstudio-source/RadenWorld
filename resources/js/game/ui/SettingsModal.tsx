@@ -34,6 +34,7 @@ import {
   RefreshCw,
   Server,
   ZoomIn,
+  ZoomOut,
   Activity,
   Play,
   Pause,
@@ -43,7 +44,15 @@ import {
   Cpu,
   Eye,
   Wind,
+  RotateCcw,
+  Keyboard,
+  Radio,
+  Gauge,
+  Battery,
+  BatteryCharging,
+  HardDrive,
 } from 'lucide-react';
+import { KeybindingManager, KEYBINDING_METADATA, DEFAULT_PC_KEYBINDINGS } from '../core/KeybindingManager';
 
 export type LanguageCode = 'id' | 'en' | 'zh' | 'ja' | 'ko' | 'ar' | 'fr' | 'ru' | 'de' | 'es';
 export type ControlMode = 'pc' | 'mobile';
@@ -57,6 +66,9 @@ export interface GameSettings {
   isMuted: boolean;
   controlMode: ControlMode;
   cameraZoom?: number;
+  minCameraZoom?: number;
+  maxCameraZoom?: number;
+  cameraSmoothingSpeed?: 'fast' | 'normal' | 'cinematic';
   // Grafik & Performa (Batas User, Efek Gerakan, Anti-Aliasing)
   graphicsQuality?: GraphicsQualityPreset;
   maxVisiblePlayers?: number;
@@ -116,6 +128,45 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const [currentCameraZoom, setCurrentCameraZoom] = useState<number>(() => {
     return settings.cameraZoom || 0.9;
   });
+  const [minCameraZoom, setMinCameraZoom] = useState<number>(() => {
+    return typeof settings.minCameraZoom === 'number' ? settings.minCameraZoom : 0.38;
+  });
+  const [maxCameraZoom, setMaxCameraZoom] = useState<number>(() => {
+    return typeof settings.maxCameraZoom === 'number' ? settings.maxCameraZoom : 2.0;
+  });
+  const [cameraSmoothingSpeed, setCameraSmoothingSpeed] = useState<'fast' | 'normal' | 'cinematic'>(() => {
+    return settings.cameraSmoothingSpeed || 'normal';
+  });
+
+  // State Kustomisasi Tombol Pintas PC
+  const [editingActionId, setEditingActionId] = useState<string | null>(null);
+  const [keybindings, setKeybindings] = useState<Record<string, string>>(() =>
+    KeybindingManager.getInstance().getAllKeybindings()
+  );
+
+  // State Live FPS & Diagnostik Performa
+  const [liveFps, setLiveFps] = useState<number>(60);
+  const [frameTimeMs, setFrameTimeMs] = useState<number>(16.6);
+  const [connectionDetails, setConnectionDetails] = useState<{
+    effectiveType: string;
+    downlink: string;
+    rtt: string;
+    isOnline: boolean;
+  }>({
+    effectiveType: 'Wi-Fi / LAN',
+    downlink: 'Kecepatan Tinggi',
+    rtt: 'Stabil',
+    isOnline: typeof navigator !== 'undefined' ? navigator.onLine : true,
+  });
+  const [deviceStats, setDeviceStats] = useState<{
+    cores: number;
+    memory?: string;
+    batteryLevel?: number;
+    isCharging?: boolean;
+  }>({
+    cores: typeof navigator !== 'undefined' ? navigator.hardwareConcurrency || 4 : 4,
+  });
+
   const [isBgmPlaying, setIsBgmPlaying] = useState<boolean>(() => sound.getIsBgmPlaying());
 
   const [, setControlsLayout] = useState<IVirtualControlsLayout>(() => {
@@ -165,6 +216,103 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     };
   }, [isOpen]);
 
+  // Efek Monitor Live FPS & Diagnostik Performa saat Tab Jaringan Aktif
+  useEffect(() => {
+    if (!isOpen || activeSection !== 'network') return;
+
+    let animId: number;
+    let lastTime = performance.now();
+    let frameCount = 0;
+    let lastFpsUpdate = performance.now();
+
+    const loop = (currentTime: number) => {
+      frameCount++;
+      const delta = currentTime - lastTime;
+      lastTime = currentTime;
+
+      if (currentTime - lastFpsUpdate >= 450) {
+        const computedFps = Math.min(120, Math.round((frameCount * 1000) / (currentTime - lastFpsUpdate)));
+        setLiveFps(computedFps);
+        setFrameTimeMs(Number(delta.toFixed(1)));
+        frameCount = 0;
+        lastFpsUpdate = currentTime;
+      }
+      animId = requestAnimationFrame(loop);
+    };
+
+    animId = requestAnimationFrame(loop);
+
+    // Baca Network Information API
+    if (typeof navigator !== 'undefined') {
+      const conn =
+        (navigator as any).connection ||
+        (navigator as any).mozConnection ||
+        (navigator as any).webkitConnection;
+      if (conn) {
+        setConnectionDetails({
+          effectiveType: (conn.effectiveType || conn.type || 'Wi-Fi').toUpperCase(),
+          downlink: conn.downlink ? `${conn.downlink} Mbps` : 'Kecepatan Tinggi',
+          rtt: conn.rtt ? `${conn.rtt} ms` : 'Stabil',
+          isOnline: navigator.onLine,
+        });
+      }
+
+      // Memory
+      const devMem = (navigator as any).deviceMemory;
+      const memStr = devMem ? `${devMem} GB RAM` : 'Standar Sistem';
+
+      // Battery
+      if (typeof (navigator as any).getBattery === 'function') {
+        (navigator as any)
+          .getBattery()
+          .then((batt: any) => {
+            setDeviceStats((prev) => ({
+              ...prev,
+              memory: memStr,
+              batteryLevel: Math.round(batt.level * 100),
+              isCharging: batt.charging,
+            }));
+          })
+          .catch(() => {});
+      } else {
+        setDeviceStats((prev) => ({ ...prev, memory: memStr }));
+      }
+    }
+
+    return () => {
+      cancelAnimationFrame(animId);
+    };
+  }, [isOpen, activeSection]);
+
+  // Efek Tangkap Tombol Keyboard Saat Pemain Mengganti (Rebind) Shortcut PC
+  useEffect(() => {
+    if (!editingActionId) return;
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      if (e.key === 'Escape') {
+        sound.playClick();
+        setEditingActionId(null);
+        return;
+      }
+
+      let keyToSet = e.key;
+      if (keyToSet === ' ') keyToSet = 'Space';
+
+      sound.playClick();
+      KeybindingManager.getInstance().setKey(editingActionId, keyToSet);
+      setKeybindings(KeybindingManager.getInstance().getAllKeybindings());
+      setEditingActionId(null);
+    };
+
+    window.addEventListener('keydown', onKeyDown, { capture: true });
+    return () => {
+      window.removeEventListener('keydown', onKeyDown, { capture: true });
+    };
+  }, [editingActionId]);
+
   if (!isOpen) return null;
 
   const measureLivePing = async () => {
@@ -210,6 +358,66 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     setCurrentCameraZoom(zoom);
     onUpdateSettings({ ...settings, cameraZoom: zoom });
     EventBus.emit('camera-zoom-set', zoom);
+  };
+
+  const handleMinZoomChange = (val: number) => {
+    sound.playClick();
+    const clamped = Math.min(val, maxCameraZoom - 0.2);
+    setMinCameraZoom(clamped);
+    const updated = { ...settings, minCameraZoom: clamped };
+    onUpdateSettings(updated);
+    EventBus.emit('camera-limits-updated', { minZoom: clamped, maxZoom: maxCameraZoom });
+  };
+
+  const handleMaxZoomChange = (val: number) => {
+    sound.playClick();
+    const clamped = Math.max(val, minCameraZoom + 0.2);
+    setMaxCameraZoom(clamped);
+    const updated = { ...settings, maxCameraZoom: clamped };
+    onUpdateSettings(updated);
+    EventBus.emit('camera-limits-updated', { minZoom: minCameraZoom, maxZoom: clamped });
+  };
+
+  const handleSmoothingChange = (speed: 'fast' | 'normal' | 'cinematic') => {
+    sound.playClick();
+    setCameraSmoothingSpeed(speed);
+    const lerpMap = { fast: 0.2, normal: 0.12, cinematic: 0.06 };
+    const updated = { ...settings, cameraSmoothingSpeed: speed };
+    onUpdateSettings(updated);
+    EventBus.emit('camera-limits-updated', { zoomLerpSpeed: lerpMap[speed] });
+  };
+
+  const handleResetCamera = () => {
+    sound.playClick();
+    const defMin = 0.38;
+    const defMax = 2.0;
+    const defZoom = 1.0;
+    setMinCameraZoom(defMin);
+    setMaxCameraZoom(defMax);
+    setCurrentCameraZoom(defZoom);
+    setCameraSmoothingSpeed('normal');
+    const updated = {
+      ...settings,
+      minCameraZoom: defMin,
+      maxCameraZoom: defMax,
+      cameraZoom: defZoom,
+      cameraSmoothingSpeed: 'normal' as const,
+    };
+    onUpdateSettings(updated);
+    EventBus.emit('camera-limits-updated', { minZoom: defMin, maxZoom: defMax, zoomLerpSpeed: 0.12 });
+    EventBus.emit('camera-zoom-set', defZoom);
+  };
+
+  const handleStartRebind = (actionId: string) => {
+    sound.playClick();
+    setEditingActionId(actionId);
+  };
+
+  const handleResetKeybindings = () => {
+    sound.playClick();
+    KeybindingManager.getInstance().resetToDefaults();
+    setKeybindings(KeybindingManager.getInstance().getAllKeybindings());
+    setEditingActionId(null);
   };
 
   const toggleMute = () => {
@@ -810,93 +1018,233 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           {/* TAB 4: TAMPILAN & KAMERA */}
           {activeSection === 'display' && (
             <div className="space-y-3.5">
-              <div className="space-y-2">
+              {/* 1. BATAS ZOOM MINIMAL (PANORAMA JAUH) */}
+              <div className="clay-card p-3 space-y-2 text-black">
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-lg bg-[#FFAE6D] border-2 border-[#5C3A21] flex items-center justify-center text-black shrink-0">
+                      <ZoomOut className="w-4 h-4 stroke-[2.5]" />
+                    </div>
+                    <div>
+                      <div className="text-xs font-bold uppercase">Batas Zoom Minimal (Panorama Jauh)</div>
+                      <div className="text-[10px] text-black/75">
+                        Jarak pandang terjauh saat zoom-out (melihat area map lebih luas)
+                      </div>
+                    </div>
+                  </div>
+                  <span className="clay-badge-primary px-2 py-0.5 text-xs font-bold">
+                    {minCameraZoom.toFixed(2)}x ({Math.round(minCameraZoom * 100)}%)
+                  </span>
+                </div>
+
+                <div className="space-y-1.5 pt-1">
+                  <input
+                    type="range"
+                    min="0.25"
+                    max="0.65"
+                    step="0.01"
+                    value={minCameraZoom}
+                    onChange={(e) => handleMinZoomChange(parseFloat(e.target.value))}
+                    className="w-full accent-[#FFAE6D] cursor-pointer h-2.5 bg-[#FFF8EA] border border-[#5C3A21] rounded-lg"
+                  />
+                  <div className="flex justify-between text-[9px] font-bold text-black/70">
+                    <span>0.25x (Super Luas)</span>
+                    <span>0.38x (Rekomendasi)</span>
+                    <span>0.65x (Sedang)</span>
+                  </div>
+                </div>
+
+                <div className="flex gap-1.5 pt-0.5">
+                  {[
+                    { val: 0.30, label: '0.30x (Ultra Panorama)' },
+                    { val: 0.38, label: '0.38x (Standar HD)' },
+                    { val: 0.50, label: '0.50x (Sedang)' },
+                  ].map((p) => (
+                    <button
+                      key={p.val}
+                      type="button"
+                      onClick={() => handleMinZoomChange(p.val)}
+                      className={`px-2 py-1 text-[9.5px] font-bold flex-1 ${
+                        Math.abs(minCameraZoom - p.val) < 0.03 ? 'clay-btn-secondary' : 'clay-btn-neutral'
+                      }`}
+                    >
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* 2. BATAS ZOOM MAKSIMAL (CLOSE-UP DETAIL) */}
+              <div className="clay-card p-3 space-y-2 text-black">
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-lg bg-[#A8E6CF] border-2 border-[#5C3A21] flex items-center justify-center text-black shrink-0">
+                      <ZoomIn className="w-4 h-4 stroke-[2.5]" />
+                    </div>
+                    <div>
+                      <div className="text-xs font-bold uppercase">Batas Zoom Maksimal (Close-up Karakter)</div>
+                      <div className="text-[10px] text-black/75">
+                        Jarak pandang terdekat saat zoom-in (melihat detail busana & ekspresi)
+                      </div>
+                    </div>
+                  </div>
+                  <span className="clay-badge-secondary px-2 py-0.5 text-xs font-bold">
+                    {maxCameraZoom.toFixed(2)}x ({Math.round(maxCameraZoom * 100)}%)
+                  </span>
+                </div>
+
+                <div className="space-y-1.5 pt-1">
+                  <input
+                    type="range"
+                    min="1.20"
+                    max="3.00"
+                    step="0.05"
+                    value={maxCameraZoom}
+                    onChange={(e) => handleMaxZoomChange(parseFloat(e.target.value))}
+                    className="w-full accent-[#FFAE6D] cursor-pointer h-2.5 bg-[#FFF8EA] border border-[#5C3A21] rounded-lg"
+                  />
+                  <div className="flex justify-between text-[9px] font-bold text-black/70">
+                    <span>1.20x (Standar)</span>
+                    <span>2.00x (Close-up)</span>
+                    <span>3.00x (Ultra Detail)</span>
+                  </div>
+                </div>
+
+                <div className="flex gap-1.5 pt-0.5">
+                  {[
+                    { val: 1.50, label: '1.50x (Standar)' },
+                    { val: 2.00, label: '2.00x (Close-up)' },
+                    { val: 2.50, label: '2.50x (Ultra Detail)' },
+                  ].map((p) => (
+                    <button
+                      key={p.val}
+                      type="button"
+                      onClick={() => handleMaxZoomChange(p.val)}
+                      className={`px-2 py-1 text-[9.5px] font-bold flex-1 ${
+                        Math.abs(maxCameraZoom - p.val) < 0.05 ? 'clay-btn-secondary' : 'clay-btn-neutral'
+                      }`}
+                    >
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* 3. JARAK PANDANG SAAT INI (CURRENT ZOOM PRESET) */}
+              <div className="space-y-1.5">
                 <div className="flex items-center justify-between gap-2">
                   <label className="text-xs font-bold text-black uppercase">
-                    Jarak Pandang Kamera (Zoom):
+                    Jarak Pandang Kamera Saat Ini:
                   </label>
                   <span className="clay-badge-primary px-2 py-0.5 text-xs font-bold text-black">
                     {Math.round(currentCameraZoom * 100)}%
                   </span>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                  {cameraZoomPresets.map((preset) => {
-                    const isSelected = Math.abs(currentCameraZoom - preset.value) < 0.08;
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {[
+                    { val: 0.50, label: '50% (Panorama)' },
+                    { val: 0.75, label: '75% (Luas)' },
+                    { val: 1.00, label: '100% (Standar)' },
+                    { val: 1.30, label: '130% (Dekat)' },
+                  ].map((p) => {
+                    const isSelected = Math.abs(currentCameraZoom - p.val) < 0.06;
                     return (
                       <button
-                        key={preset.value}
+                        key={p.val}
                         type="button"
-                        onClick={() => handleZoomChange(preset.value)}
-                        className={`p-3 text-left flex flex-col justify-between text-black ${
+                        onClick={() => handleZoomChange(p.val)}
+                        className={`p-2 text-center text-xs font-bold text-black ${
                           isSelected ? 'clay-btn-secondary' : 'clay-btn-neutral'
                         }`}
                       >
-                        <div className="flex items-center justify-between gap-2 w-full">
-                          <span className="text-xs font-bold uppercase text-black">
-                            {preset.label}
-                          </span>
-                          <span className="clay-badge-primary px-1.5 py-0.5 text-[10px] font-bold text-black shrink-0">
-                            {preset.value}x
-                          </span>
-                        </div>
-                        <p className="text-[10px] text-black mt-1 leading-snug">{preset.desc}</p>
+                        {p.label}
                       </button>
                     );
                   })}
                 </div>
               </div>
 
-              {/* Fullscreen */}
-              <div className="clay-card p-3 flex flex-wrap items-center justify-between gap-2.5">
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="w-9 h-9 rounded-lg bg-[#A8E6CF] border-2 border-[#5C3A21] flex items-center justify-center text-black shrink-0">
-                    {isFullscreen ? (
-                      <Minimize2 className="w-4 h-4 stroke-[2.5]" />
-                    ) : (
-                      <Maximize2 className="w-4 h-4 stroke-[2.5]" />
-                    )}
-                  </div>
-                  <div className="min-w-0">
-                    <div className="text-xs font-bold text-black uppercase flex items-center gap-1.5 flex-wrap">
-                      <span>Layar Penuh (Fullscreen)</span>
-                      <span
-                        className={`text-[9px] px-1.5 py-0.5 font-bold ${
-                          isFullscreen ? 'clay-badge-secondary' : 'clay-badge-neutral'
-                        }`}
-                      >
-                        {isFullscreen ? 'AKTIF' : 'JENDELA'}
-                      </span>
-                    </div>
-                    <div className="text-[10px] text-black">
-                      Meningkatkan fokus dan imersi visual permainan
-                    </div>
-                  </div>
+              {/* 4. KEHALUSAN PERGERAKAN KAMERA (CAMERA SMOOTHING LERP) */}
+              <div className="clay-card p-3 space-y-2 text-black">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-xs font-bold uppercase">Kehalusan Gerak Kamera:</span>
+                  <span className="clay-badge-secondary px-2 py-0.5 text-[10px] font-bold uppercase">
+                    {cameraSmoothingSpeed === 'fast' && 'Responsif Cepat'}
+                    {cameraSmoothingSpeed === 'normal' && 'Seimbang Mulus'}
+                    {cameraSmoothingSpeed === 'cinematic' && 'Sinematik Lembut'}
+                  </span>
                 </div>
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { id: 'fast', label: 'Cepat', desc: 'Instan mengikuti' },
+                    { id: 'normal', label: 'Seimbang', desc: 'Standar 60 FPS' },
+                    { id: 'cinematic', label: 'Sinematik', desc: 'Lembut dramatis' },
+                  ].map((item) => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => handleSmoothingChange(item.id as any)}
+                      className={`p-2 text-center text-black flex flex-col items-center justify-center ${
+                        cameraSmoothingSpeed === item.id ? 'clay-btn-primary' : 'clay-btn-neutral'
+                      }`}
+                    >
+                      <span className="text-xs font-bold uppercase">{item.label}</span>
+                      <span className="text-[8px] opacity-75 mt-0.5">{item.desc}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
 
+              {/* 5. FULLSCREEN & RESET KAMERA */}
+              <div className="flex flex-col sm:flex-row gap-2">
                 <button
                   type="button"
                   onClick={toggleFullscreen}
-                  className="clay-btn-primary px-3.5 py-1.5 text-black font-bold text-xs uppercase shrink-0"
+                  className="clay-btn-neutral flex-1 py-2.5 px-3 flex items-center justify-center gap-2 text-xs font-bold text-black uppercase"
                 >
-                  {isFullscreen ? 'Keluar Fullscreen' : 'Masuk Fullscreen'}
+                  {isFullscreen ? <Minimize2 className="w-4 h-4 stroke-[2.5]" /> : <Maximize2 className="w-4 h-4 stroke-[2.5]" />}
+                  <span>{isFullscreen ? 'Keluar Fullscreen' : 'Masuk Fullscreen'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleResetCamera}
+                  className="clay-btn-secondary py-2.5 px-4 flex items-center justify-center gap-1.5 text-xs font-bold text-black uppercase shrink-0"
+                  title="Kembalikan zoom & limit kamera ke rekomendasi standar"
+                >
+                  <RotateCcw className="w-4 h-4 stroke-[2.5]" />
+                  <span>Reset Kamera</span>
                 </button>
               </div>
             </div>
           )}
 
-          {/* TAB 4: KONTROL */}
+          {/* TAB 5: KONTROL */}
           {activeSection === 'controls' && (
             <div className="space-y-3.5">
-              <label className="text-xs font-bold text-black uppercase block">
-                Pilih Mode Navigasi Karakter:
-              </label>
+              <div className="flex items-center justify-between gap-2">
+                <label className="text-xs font-bold text-black uppercase block">
+                  Pilih Mode Navigasi Karakter:
+                </label>
+                {settings.controlMode === 'pc' && (
+                  <button
+                    type="button"
+                    onClick={handleResetKeybindings}
+                    className="clay-btn-neutral px-2.5 py-1 text-[10px] font-bold text-black flex items-center gap-1.5"
+                    title="Kembalikan seluruh tombol pintas keyboard ke pengaturan awal pabrik"
+                  >
+                    <RotateCcw className="w-3 h-3 stroke-[2.5]" />
+                    <span>Reset Default</span>
+                  </button>
+                )}
+              </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                 <button
                   type="button"
                   onClick={() => handleControlModeChange('pc')}
-                  className={`p-3.5 text-left flex flex-col gap-2 text-black ${
+                  className={`p-3 text-left flex flex-col gap-1 text-black ${
                     settings.controlMode === 'pc' ? 'clay-btn-secondary' : 'clay-btn-neutral'
                   }`}
                 >
@@ -907,16 +1255,15 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     </div>
                     {settings.controlMode === 'pc' && <Check className="w-4 h-4 stroke-[3]" />}
                   </div>
-                  <p className="text-[11px] leading-snug">
-                    Navigasi keyboard <strong>WASD / Panah</strong> dan{' '}
-                    <strong>Klik Mouse (Tap-to-move)</strong>.
+                  <p className="text-[10px] text-black/80 leading-snug">
+                    Keyboard <strong>WASD / Tombol Kustom</strong> & <strong>Klik Mouse</strong>.
                   </p>
                 </button>
 
                 <button
                   type="button"
                   onClick={() => handleControlModeChange('mobile')}
-                  className={`p-3.5 text-left flex flex-col gap-2 text-black ${
+                  className={`p-3 text-left flex flex-col gap-1 text-black ${
                     settings.controlMode === 'mobile' ? 'clay-btn-secondary' : 'clay-btn-neutral'
                   }`}
                 >
@@ -927,28 +1274,105 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     </div>
                     {settings.controlMode === 'mobile' && <Check className="w-4 h-4 stroke-[3]" />}
                   </div>
-                  <p className="text-[11px] leading-snug">
-                    Menampilkan <strong>Analog Joystick 360°</strong> dan tombol aksi sentuh di
-                    layar.
+                  <p className="text-[10px] text-black/80 leading-snug">
+                    <strong>Analog Joystick 360°</strong> & tombol sentuh virtual di layar.
                   </p>
                 </button>
               </div>
 
+              {/* JIKA MODE PC: DAFTAR LENGKAP TOMBOL PINTAS DENGAN EDIT / REBIND */}
               {settings.controlMode === 'pc' ? (
-                <div className="clay-card p-3 text-xs space-y-2 text-black">
-                  <span className="font-bold uppercase text-[11px] block">
-                    Daftar Tombol Pintas PC:
-                  </span>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-[11px]">
-                    <div>• WASD / Panah : Bergerak</div>
-                    <div>• Klik Kiri : Point & Move</div>
-                    <div>• E : Interaksi Objek / Pintu</div>
-                    <div>• / (Slash) : Buka Chat Box</div>
-                    <div>• Scroll Mouse : Zoom Kamera</div>
-                    <div>• B / M : Tas / Peta Dunia</div>
-                  </div>
+                <div className="space-y-3">
+                  {/* Banner Notifikasi Saat Sedang Menunggu Input Tombol Baru */}
+                  {editingActionId && (
+                    <div className="clay-card-secondary p-3 flex items-center justify-between gap-2 border-2 border-[#5C3A21] bg-[#FFAE6D]/30 animate-pulse">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <Keyboard className="w-5 h-5 stroke-[2.5] text-black shrink-0" />
+                        <div className="min-w-0 text-black">
+                          <div className="text-xs font-bold uppercase truncate">
+                            Mengganti Tombol: {KEYBINDING_METADATA[editingActionId]?.label}
+                          </div>
+                          <div className="text-[10px] text-black/80">
+                            Tekan tombol apa pun pada keyboard Anda sekarang...
+                          </div>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setEditingActionId(null)}
+                        className="clay-btn-neutral px-2.5 py-1 text-[10px] font-bold text-black uppercase shrink-0"
+                      >
+                        Batal (Esc)
+                      </button>
+                    </div>
+                  )}
+
+                  {/* DAFTAR KATEGORI SHORTCUT */}
+                  {[
+                    {
+                      title: 'Pergerakan Karakter',
+                      actions: ['moveUp', 'moveDown', 'moveLeft', 'moveRight', 'sprint', 'jump'],
+                    },
+                    {
+                      title: 'Aksi & Interaksi Dunia',
+                      actions: ['interact', 'fish', 'backpack', 'map'],
+                    },
+                    {
+                      title: 'Komunikasi & Kamera',
+                      actions: ['chat', 'emote', 'zoomIn', 'zoomOut'],
+                    },
+                    {
+                      title: 'Slot Cepat Hotbar (1 - 6)',
+                      actions: ['hotbar1', 'hotbar2', 'hotbar3', 'hotbar4', 'hotbar5', 'hotbar6'],
+                    },
+                  ].map((category) => (
+                    <div key={category.title} className="clay-card p-3 space-y-2 text-black">
+                      <div className="text-xs font-bold uppercase text-[#5C3A21] flex items-center justify-between">
+                        <span>{category.title}</span>
+                        <span className="text-[9px] font-normal text-black/60">Klik tombol untuk ganti</span>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {category.actions.map((actId) => {
+                          const meta = KEYBINDING_METADATA[actId];
+                          const boundKey = keybindings[actId] || DEFAULT_PC_KEYBINDINGS[actId] || '?';
+                          const isEditingThis = editingActionId === actId;
+
+                          return (
+                            <div
+                              key={actId}
+                              className={`p-2 rounded-lg border-2 border-[#5C3A21] flex items-center justify-between gap-2 transition-all ${
+                                isEditingThis
+                                  ? 'bg-[#FFAE6D] shadow-inner'
+                                  : 'bg-[#FFFDF7] hover:bg-[#FFF8EA]'
+                              }`}
+                            >
+                              <div className="min-w-0 flex-1">
+                                <div className="text-[11px] font-bold text-black truncate">{meta?.label}</div>
+                                <div className="text-[9px] text-black/70 truncate">{meta?.desc}</div>
+                              </div>
+
+                              <button
+                                type="button"
+                                onClick={() => handleStartRebind(actId)}
+                                className={`px-2.5 py-1 text-[10.5px] font-bold uppercase rounded border border-[#5C3A21] shrink-0 transition-all ${
+                                  isEditingThis
+                                    ? 'bg-[#FFF8EA] text-black animate-bounce shadow-md'
+                                    : 'clay-btn-neutral'
+                                }`}
+                                title="Klik untuk mengganti shortcut ini"
+                              >
+                                {isEditingThis ? 'Tekan...' : `[ ${boundKey} ]`}
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               ) : (
+                /* JIKA MODE MOBILE */
                 <div className="space-y-3">
                   <div className="clay-card-secondary p-3.5 space-y-2.5 text-black">
                     <div className="flex flex-wrap items-center justify-between gap-2">
@@ -1006,44 +1430,194 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             </div>
           )}
 
-          {/* TAB 5: JARINGAN & SERVER */}
+          {/* TAB 6: JARINGAN, SERVER & MONITOR FPS HP/PC */}
           {activeSection === 'network' && (
-            <div className="space-y-3">
-              <div className="clay-card p-3 flex flex-wrap items-center justify-between gap-2.5">
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <span
-                    className={`w-3 h-3 rounded-full border-2 border-[#5C3A21] shrink-0 ${
-                      isSocketConnected ? 'bg-[#A8E6CF]' : 'bg-[#FFAE6D]'
-                    }`}
-                  />
-                  <div className="min-w-0">
-                    <div className="text-xs font-bold text-black uppercase truncate">
-                      {isSocketConnected
-                        ? 'Terhubung ke Multiplayer Server'
-                        : 'Server Socket Terputus'}
+            <div className="space-y-3.5">
+              {/* 1. CEK SINYAL SERVER & LATENSI */}
+              <div className="clay-card p-3 space-y-2.5 text-black">
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <div className="w-8 h-8 rounded-lg bg-[#FFAE6D] border-2 border-[#5C3A21] flex items-center justify-center text-black shrink-0">
+                      <Radio className="w-4 h-4 stroke-[2.5]" />
                     </div>
-                    <div className="text-[11px] text-black truncate">{currentSocketUrl}</div>
+                    <div className="min-w-0">
+                      <div className="text-xs font-bold uppercase truncate">
+                        Sinyal Server & Latensi Multiplayer
+                      </div>
+                      <div className="text-[10px] text-black/75 truncate">{currentSocketUrl}</div>
+                    </div>
+                  </div>
+
+                  {/* 4-BAR INDIKATOR SINYAL GRAFIS */}
+                  <div className="flex items-end gap-1 h-5 px-2 py-1 bg-[#FFFDF7] rounded border border-[#5C3A21]/30 shrink-0">
+                    {[1, 2, 3, 4].map((bar) => {
+                      const pingVal = activePing ?? 999;
+                      const isLit =
+                        isSocketConnected &&
+                        (bar === 1 ||
+                          (bar === 2 && pingVal < 250) ||
+                          (bar === 3 && pingVal < 120) ||
+                          (bar === 4 && pingVal < 60));
+
+                      const barColor =
+                        pingVal < 60
+                          ? 'bg-[#A8E6CF]'
+                          : pingVal < 150
+                          ? 'bg-[#FFAE6D]'
+                          : 'bg-[#FF8B8B]';
+
+                      return (
+                        <div
+                          key={bar}
+                          style={{ height: `${bar * 25}%` }}
+                          className={`w-1.5 rounded-sm transition-all ${
+                            isLit ? `${barColor} border border-[#5C3A21]` : 'bg-black/15'
+                          }`}
+                        />
+                      );
+                    })}
                   </div>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={measureLivePing}
-                  disabled={isTestingPing}
-                  className="clay-btn-secondary px-3 py-1.5 text-black text-[11px] font-bold uppercase flex items-center gap-1.5 shrink-0"
-                  title="Uji Ping"
-                >
-                  <Activity
-                    className={`w-3.5 h-3.5 stroke-[2.5] ${isTestingPing ? 'animate-spin' : ''}`}
-                  />
-                  <span>{activePing !== null ? `${activePing} ms` : 'Uji Ping'}</span>
-                </button>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-1 text-center">
+                  <div className="p-2 bg-[#FFFDF7] rounded-lg border border-[#5C3A21]/30">
+                    <div className="text-[9px] font-bold opacity-75 uppercase">Status Server</div>
+                    <div className="text-xs font-bold text-black mt-0.5 flex items-center justify-center gap-1">
+                      <span
+                        className={`w-2 h-2 rounded-full ${
+                          isSocketConnected ? 'bg-green-600' : 'bg-red-500'
+                        }`}
+                      />
+                      <span>{isSocketConnected ? 'ONLINE' : 'TERPUTUS'}</span>
+                    </div>
+                  </div>
+
+                  <div className="p-2 bg-[#FFFDF7] rounded-lg border border-[#5C3A21]/30">
+                    <div className="text-[9px] font-bold opacity-75 uppercase">Ping Latensi</div>
+                    <div className="text-xs font-bold text-black mt-0.5">
+                      {activePing !== null ? `${activePing} ms` : 'Mengukur...'}
+                    </div>
+                  </div>
+
+                  <div className="col-span-2 sm:col-span-1 p-2 bg-[#FFFDF7] rounded-lg border border-[#5C3A21]/30 flex items-center justify-center">
+                    <button
+                      type="button"
+                      onClick={measureLivePing}
+                      disabled={isTestingPing}
+                      className="clay-btn-secondary w-full py-1 text-[10px] font-bold uppercase flex items-center justify-center gap-1 text-black"
+                    >
+                      <Activity className={`w-3 h-3 stroke-[2.5] ${isTestingPing ? 'animate-spin' : ''}`} />
+                      <span>{isTestingPing ? 'Menguji...' : 'Uji Sinyal'}</span>
+                    </button>
+                  </div>
+                </div>
               </div>
 
+              {/* 2. CEK SINYAL WI-FI & KONEKSI SENDIRI */}
+              <div className="clay-card p-3 space-y-2 text-black">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-[#A8E6CF] border-2 border-[#5C3A21] flex items-center justify-center text-black shrink-0">
+                    <Wifi className="w-4 h-4 stroke-[2.5]" />
+                  </div>
+                  <div>
+                    <div className="text-xs font-bold uppercase">Sinyal Wi-Fi / Koneksi Internet Sendiri</div>
+                    <div className="text-[10px] text-black/75">
+                      Informasi bandwidth dan stabilitas jaringan yang sedang digunakan perangkat Anda
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 text-center">
+                  <div className="p-2 bg-[#FFFDF7] rounded-lg border border-[#5C3A21]/30">
+                    <div className="text-[9px] font-bold opacity-75 uppercase">Tipe Jaringan</div>
+                    <div className="text-[11px] font-bold text-black mt-0.5 truncate">
+                      {connectionDetails.effectiveType}
+                    </div>
+                  </div>
+
+                  <div className="p-2 bg-[#FFFDF7] rounded-lg border border-[#5C3A21]/30">
+                    <div className="text-[9px] font-bold opacity-75 uppercase">Kecepatan Unduh</div>
+                    <div className="text-[11px] font-bold text-black mt-0.5 truncate">
+                      {connectionDetails.downlink}
+                    </div>
+                  </div>
+
+                  <div className="p-2 bg-[#FFFDF7] rounded-lg border border-[#5C3A21]/30">
+                    <div className="text-[9px] font-bold opacity-75 uppercase">RTT Lokal</div>
+                    <div className="text-[11px] font-bold text-black mt-0.5 truncate">
+                      {connectionDetails.rtt}
+                    </div>
+                  </div>
+
+                  <div className="p-2 bg-[#FFFDF7] rounded-lg border border-[#5C3A21]/30">
+                    <div className="text-[9px] font-bold opacity-75 uppercase">Status Internet</div>
+                    <div className="text-[11px] font-bold text-green-700 mt-0.5 truncate">
+                      {connectionDetails.isOnline ? 'TERHUBUNG' : 'OFFLINE'}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* 3. CEK FPS HP/PC & DIAGNOSTIK HARDWARE */}
+              <div className="clay-card-secondary p-3 space-y-2 text-black border-2 border-[#5C3A21]">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-lg bg-[#FFF8EA] border-2 border-[#5C3A21] flex items-center justify-center text-black shrink-0">
+                      <Gauge className="w-4 h-4 stroke-[2.5] text-[#FFAE6D]" />
+                    </div>
+                    <div>
+                      <div className="text-xs font-bold uppercase">Monitor FPS & Performa Perangkat</div>
+                      <div className="text-[10px] text-black/75">
+                        Pengukuran laju bingkai render real-time dan kapasitas gawai
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="clay-badge-primary px-3 py-1 text-sm font-bold flex items-center gap-1.5 shrink-0">
+                    <span className="w-2 h-2 rounded-full bg-green-600 animate-ping" />
+                    <span>{liveFps} FPS</span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 text-center">
+                  <div className="p-2 bg-[#FFF8EA] rounded-lg border border-[#5C3A21]/30">
+                    <div className="text-[9px] font-bold opacity-75 uppercase">Frame Time</div>
+                    <div className="text-[11px] font-bold text-black mt-0.5">{frameTimeMs} ms</div>
+                  </div>
+
+                  <div className="p-2 bg-[#FFF8EA] rounded-lg border border-[#5C3A21]/30">
+                    <div className="text-[9px] font-bold opacity-75 uppercase">CPU Cores</div>
+                    <div className="text-[11px] font-bold text-black mt-0.5">{deviceStats.cores} Processors</div>
+                  </div>
+
+                  <div className="p-2 bg-[#FFF8EA] rounded-lg border border-[#5C3A21]/30">
+                    <div className="text-[9px] font-bold opacity-75 uppercase">Memori RAM</div>
+                    <div className="text-[11px] font-bold text-black mt-0.5">{deviceStats.memory || 'Standar'}</div>
+                  </div>
+
+                  <div className="p-2 bg-[#FFF8EA] rounded-lg border border-[#5C3A21]/30">
+                    <div className="text-[9px] font-bold opacity-75 uppercase">Baterai Gawai</div>
+                    <div className="text-[11px] font-bold text-black mt-0.5 flex items-center justify-center gap-1">
+                      {deviceStats.isCharging ? (
+                        <BatteryCharging className="w-3.5 h-3.5 text-green-700 stroke-[2.5]" />
+                      ) : (
+                        <Battery className="w-3.5 h-3.5 stroke-[2.5]" />
+                      )}
+                      <span>
+                        {typeof deviceStats.batteryLevel === 'number'
+                          ? `${deviceStats.batteryLevel}%`
+                          : 'Tersedia'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* 4. PINDAH REALM SERVER & TAUTAN LAN */}
               {onOpenServerModal && (
                 <div className="clay-card p-3 flex flex-wrap items-center justify-between gap-2.5">
                   <div className="flex items-center gap-2.5 min-w-0">
-                    <div className="w-9 h-9 rounded-lg bg-[#A8E6CF] border-2 border-[#5C3A21] flex items-center justify-center text-black shrink-0">
+                    <div className="w-8 h-8 rounded-lg bg-[#A8E6CF] border-2 border-[#5C3A21] flex items-center justify-center text-black shrink-0">
                       <Server className="w-4 h-4 stroke-[2.5]" />
                     </div>
                     <div className="min-w-0">
@@ -1062,7 +1636,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       sound.playClick();
                       onOpenServerModal();
                     }}
-                    className="clay-btn-primary px-3.5 py-2 text-black font-bold text-xs uppercase shrink-0"
+                    className="clay-btn-primary px-3.5 py-1.5 text-black font-bold text-xs uppercase shrink-0"
                   >
                     Buka Daftar Server
                   </button>

@@ -16,6 +16,7 @@ import { InventoryManager, IInventoryItem } from '../core/InventoryManager';
 import { SoundManager } from '../core/SoundManager';
 import { EventBus } from '../core/EventBus';
 import { PotionManager, IActivePotionBuff } from '../core/PotionManager';
+import { KeybindingManager } from '../core/KeybindingManager';
 import { Backpack, X } from 'lucide-react';
 
 interface HotbarProps {
@@ -105,12 +106,27 @@ export const Hotbar: React.FC<HotbarProps> = React.memo(({ onOpenBackpack, isBac
       const activeTag = document.activeElement?.tagName;
       if (activeTag === 'INPUT' || activeTag === 'TEXTAREA') return;
 
-      if (e.key >= '1' && e.key <= '6') {
-        const slotIdx = parseInt(e.key, 10) - 1;
-        inv.setActiveSlotIndex(slotIdx);
-        sound.playClick();
-      } else if (e.key.toLowerCase() === 'b') {
+      const km = KeybindingManager.getInstance();
+      if (km.matches('backpack', e)) {
         onOpenBackpack();
+        sound.playClick();
+      } else if (km.matches('hotbar1', e)) {
+        inv.setActiveSlotIndex(0);
+        sound.playClick();
+      } else if (km.matches('hotbar2', e)) {
+        inv.setActiveSlotIndex(1);
+        sound.playClick();
+      } else if (km.matches('hotbar3', e)) {
+        inv.setActiveSlotIndex(2);
+        sound.playClick();
+      } else if (km.matches('hotbar4', e)) {
+        inv.setActiveSlotIndex(3);
+        sound.playClick();
+      } else if (km.matches('hotbar5', e)) {
+        inv.setActiveSlotIndex(4);
+        sound.playClick();
+      } else if (km.matches('hotbar6', e)) {
+        inv.setActiveSlotIndex(5);
         sound.playClick();
       }
     };

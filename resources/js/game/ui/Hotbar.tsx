@@ -102,42 +102,10 @@ export const Hotbar: React.FC<HotbarProps> = React.memo(({ onOpenBackpack, isBac
 
     EventBus.on('inventory-updated', handleUpdate);
 
-    const handleKeyDown = (e: KeyboardEvent) => {
-      const activeTag = document.activeElement?.tagName;
-      if (activeTag === 'INPUT' || activeTag === 'TEXTAREA') return;
-
-      const km = KeybindingManager.getInstance();
-      if (km.matches('backpack', e)) {
-        onOpenBackpack();
-        sound.playClick();
-      } else if (km.matches('hotbar1', e)) {
-        inv.setActiveSlotIndex(0);
-        sound.playClick();
-      } else if (km.matches('hotbar2', e)) {
-        inv.setActiveSlotIndex(1);
-        sound.playClick();
-      } else if (km.matches('hotbar3', e)) {
-        inv.setActiveSlotIndex(2);
-        sound.playClick();
-      } else if (km.matches('hotbar4', e)) {
-        inv.setActiveSlotIndex(3);
-        sound.playClick();
-      } else if (km.matches('hotbar5', e)) {
-        inv.setActiveSlotIndex(4);
-        sound.playClick();
-      } else if (km.matches('hotbar6', e)) {
-        inv.setActiveSlotIndex(5);
-        sound.playClick();
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown, { passive: true });
-
     return () => {
       EventBus.off('inventory-updated', handleUpdate);
-      window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [inv, sound, onOpenBackpack]);
+  }, [inv]);
 
   const handleSelectSlot = (idx: number) => {
     if (activeSlot === idx) {

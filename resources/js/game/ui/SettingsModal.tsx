@@ -286,7 +286,16 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
   // Efek Tangkap Tombol Keyboard Saat Pemain Mengganti (Rebind) Shortcut PC
   useEffect(() => {
-    if (!editingActionId) return;
+    if (!editingActionId) {
+      if (typeof window !== 'undefined') {
+        (window as any).__raden_is_rebinding_key = false;
+      }
+      return;
+    }
+
+    if (typeof window !== 'undefined') {
+      (window as any).__raden_is_rebinding_key = true;
+    }
 
     const onKeyDown = (e: KeyboardEvent) => {
       e.preventDefault();
@@ -295,6 +304,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       if (e.key === 'Escape') {
         sound.playClick();
         setEditingActionId(null);
+        if (typeof window !== 'undefined') {
+          (window as any).__raden_is_rebinding_key = false;
+        }
         return;
       }
 
@@ -305,11 +317,17 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       KeybindingManager.getInstance().setKey(editingActionId, keyToSet);
       setKeybindings(KeybindingManager.getInstance().getAllKeybindings());
       setEditingActionId(null);
+      if (typeof window !== 'undefined') {
+        (window as any).__raden_is_rebinding_key = false;
+      }
     };
 
     window.addEventListener('keydown', onKeyDown, { capture: true });
     return () => {
       window.removeEventListener('keydown', onKeyDown, { capture: true });
+      if (typeof window !== 'undefined') {
+        (window as any).__raden_is_rebinding_key = false;
+      }
     };
   }, [editingActionId]);
 

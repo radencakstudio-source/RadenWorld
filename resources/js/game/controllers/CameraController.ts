@@ -22,6 +22,7 @@
 
 import Phaser from 'phaser';
 import { EventBus } from '../core/EventBus';
+import { KeybindingManager } from '../core/KeybindingManager';
 
 export interface ICameraControllerOptions {
   camera?: Phaser.Cameras.Scene2D.Camera;
@@ -55,6 +56,7 @@ export class CameraController {
 
   // Event Handlers untuk Cleanup
   private onWheelHandler: ((pointer: Phaser.Input.Pointer, gameObjects: any, deltaX: number, deltaY: number) => void) | null = null;
+  private onWindowKeyHandler: ((e: KeyboardEvent) => void) | null = null;
   private eventBusHandlers: Map<string, (...args: any[]) => void> = new Map();
   private keyboardHandlers: Map<string, () => void> = new Map();
   private resizeHandler: ((gameSize: Phaser.Structs.Size) => void) | null = null;
@@ -309,28 +311,19 @@ export class CameraController {
       EventBus.on('camera-limits-updated', handleLimitsUpdate);
     }
 
-    // 3. Tombol Keyboard (+ / - / Numpad)
-    if (options.enableKeyboard !== false && this.scene.input?.keyboard && this.keyboardHandlers.size === 0) {
-      const handlePlus = () => {
+    // 3. Tombol Keyboard (+ / - / Numpad & Shortcut Kustom KeybindingManager)
+    if (options.enableKeyboard !== false && !this.onWindowKeyHandler) {
+      this.onWindowKeyHandler = (e: KeyboardEvent) => {
         if (this.isTyping()) return;
-        this.zoomIn();
+        if ((window as any).__raden_is_rebinding_key) return;
+        const km = KeybindingManager.getInstance();
+        if (km.matches('zoomIn', e)) {
+          this.zoomIn();
+        } else if (km.matches('zoomOut', e)) {
+          this.zoomOut();
+        }
       };
-      const handleMinus = () => {
-        if (this.isTyping()) return;
-        this.zoomOut();
-      };
-
-      const keysPlus = ['keydown-PLUS', 'keydown-NUMPAD_ADD'];
-      const keysMinus = ['keydown-MINUS', 'keydown-NUMPAD_SUBTRACT'];
-
-      keysPlus.forEach((k) => {
-        this.keyboardHandlers.set(k, handlePlus);
-        this.scene.input.keyboard?.on(k, handlePlus);
-      });
-      keysMinus.forEach((k) => {
-        this.keyboardHandlers.set(k, handleMinus);
-        this.scene.input.keyboard?.on(k, handleMinus);
-      });
+      window.addEventListener('keydown', this.onWindowKeyHandler);
     }
 
     return this;
@@ -570,6 +563,10 @@ export class CameraController {
     this.eventBusHandlers.clear();
 
     // 3. Keyboard listeners
+    if (this.onWindowKeyHandler) {
+      window.removeEventListener('keydown', this.onWindowKeyHandler);
+      this.onWindowKeyHandler = null;
+    }
     if (this.scene?.input?.keyboard) {
       this.keyboardHandlers.forEach((handler, keyEvent) => {
         this.scene.input.keyboard?.off(keyEvent, handler);

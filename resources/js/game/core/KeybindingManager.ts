@@ -6,6 +6,7 @@
  * Pengelola Tombol Pintas & Kustomisasi Kontrol Keyboard PC (Keybindings Manager).
  * - Menyimpan pemetaan tombol pintas kustom pemain di localStorage.
  * - Mendukung penggantian tombol (rebind), reset ke pengaturan pabrik (default).
+ * - Melacak status penekanan tombol real-time (pressedKeys) untuk pergerakan mulus & responsif.
  * - Memancarkan event 'keybindings-updated' ke seluruh subsistem game.
  * ============================================================================
  */
@@ -74,9 +75,12 @@ const STORAGE_KEY = 'raden_pc_keybindings';
 export class KeybindingManager {
   private static instance: KeybindingManager;
   private keybindings: Record<string, string>;
+  private pressedKeys: Set<string> = new Set();
+  private hasInitializedGlobalEvents: boolean = false;
 
   private constructor() {
     this.keybindings = this.loadFromStorage();
+    this.setupGlobalListeners();
   }
 
   public static getInstance(): KeybindingManager {
@@ -84,6 +88,41 @@ export class KeybindingManager {
       KeybindingManager.instance = new KeybindingManager();
     }
     return KeybindingManager.instance;
+  }
+
+  private setupGlobalListeners(): void {
+    if (typeof window === 'undefined' || this.hasInitializedGlobalEvents) return;
+    this.hasInitializedGlobalEvents = true;
+
+    window.addEventListener('keydown', (e: KeyboardEvent) => {
+      // Abaikan pencatatan jika sedang mengetik di input / textarea
+      const target = e.target as HTMLElement | null;
+      const tag = (target?.tagName || '').toUpperCase();
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || target?.isContentEditable) {
+        return;
+      }
+
+      if (e.key) {
+        this.pressedKeys.add(e.key.toLowerCase());
+      }
+      if (e.code) {
+        this.pressedKeys.add(e.code.toLowerCase());
+      }
+    });
+
+    window.addEventListener('keyup', (e: KeyboardEvent) => {
+      if (e.key) {
+        this.pressedKeys.delete(e.key.toLowerCase());
+      }
+      if (e.code) {
+        this.pressedKeys.delete(e.code.toLowerCase());
+      }
+    });
+
+    // Saat jendela blur (pindah tab atau hilang fokus), kosongkan semua tombol ditekan agar karakter tidak berjalan terus
+    window.addEventListener('blur', () => {
+      this.pressedKeys.clear();
+    });
   }
 
   private loadFromStorage(): Record<string, string> {
@@ -135,11 +174,20 @@ export class KeybindingManager {
   public setKey(actionId: string, newKey: string): boolean {
     if (!KEYBINDING_METADATA[actionId]) return false;
 
-    // Normalisasi nama tombol untuk konsistensi tampilan
+    // Normalisasi nama tombol untuk konsistensi tampilan & pembacaan
     let formattedKey = newKey.trim();
-    if (formattedKey === ' ') formattedKey = 'Space';
-    if (formattedKey.toLowerCase() === 'spacebar') formattedKey = 'Space';
-    if (formattedKey.length === 1) formattedKey = formattedKey.toUpperCase();
+    const lk = formattedKey.toLowerCase();
+
+    if (formattedKey === ' ' || lk === 'space' || lk === 'spacebar') formattedKey = 'Space';
+    else if (lk === 'shift' || lk === 'shiftleft' || lk === 'shiftright') formattedKey = 'Shift';
+    else if (lk === 'control' || lk === 'ctrl' || lk === 'controlleft' || lk === 'controlright') formattedKey = 'Ctrl';
+    else if (lk === 'alt' || lk === 'altleft' || lk === 'altright') formattedKey = 'Alt';
+    else if (lk === 'enter') formattedKey = 'Enter';
+    else if (lk === 'arrowup' || lk === 'up') formattedKey = 'ArrowUp';
+    else if (lk === 'arrowdown' || lk === 'down') formattedKey = 'ArrowDown';
+    else if (lk === 'arrowleft' || lk === 'left') formattedKey = 'ArrowLeft';
+    else if (lk === 'arrowright' || lk === 'right') formattedKey = 'ArrowRight';
+    else if (formattedKey.length === 1) formattedKey = formattedKey.toUpperCase();
 
     this.keybindings[actionId] = formattedKey;
     this.saveToStorage();
@@ -154,31 +202,123 @@ export class KeybindingManager {
   }
 
   /**
-   * Mengecek apakah KeyboardEvent cocok dengan aksi yang ditentukan.
+   * Mengecek apakah aksi tertentu saat ini sedang aktif (tombolnya sedang ditekan).
+   * Digunakan oleh pergerakan karakter (WASD & Sprint) pada loop update frame rate.
+   */
+  public isActionActive(actionId: string): boolean {
+    if (typeof document !== 'undefined') {
+      const activeEl = document.activeElement as HTMLElement | null;
+      const tag = (activeEl?.tagName || '').toUpperCase();
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || activeEl?.isContentEditable) {
+        return false;
+      }
+    }
+
+    const boundKey = this.getKey(actionId);
+    if (!boundKey) return false;
+
+    const bk = boundKey.toLowerCase();
+
+    // Fallback Panah (Arrow Keys) untuk arah navigasi dasar
+    if (actionId === 'moveUp' && (this.pressedKeys.has('arrowup') || this.pressedKeys.has('up'))) return true;
+    if (actionId === 'moveDown' && (this.pressedKeys.has('arrowdown') || this.pressedKeys.has('down'))) return true;
+    if (actionId === 'moveLeft' && (this.pressedKeys.has('arrowleft') || this.pressedKeys.has('left'))) return true;
+    if (actionId === 'moveRight' && (this.pressedKeys.has('arrowright') || this.pressedKeys.has('right'))) return true;
+
+    // Shift / Sprint
+    if (bk === 'shift') {
+      return this.pressedKeys.has('shift') || this.pressedKeys.has('shiftleft') || this.pressedKeys.has('shiftright');
+    }
+
+    // Ctrl
+    if (bk === 'ctrl' || bk === 'control') {
+      return this.pressedKeys.has('control') || this.pressedKeys.has('ctrl') || this.pressedKeys.has('controlleft') || this.pressedKeys.has('controlright');
+    }
+
+    // Alt
+    if (bk === 'alt') {
+      return this.pressedKeys.has('alt') || this.pressedKeys.has('altleft') || this.pressedKeys.has('altright');
+    }
+
+    // Space
+    if (bk === 'space' || bk === 'spacebar') {
+      return this.pressedKeys.has(' ') || this.pressedKeys.has('space');
+    }
+
+    // Karakter tunggal (A-Z, 0-9)
+    if (boundKey.length === 1) {
+      if (this.pressedKeys.has(bk)) return true;
+      if (this.pressedKeys.has(`key${bk}`)) return true;
+      if (this.pressedKeys.has(`digit${bk}`)) return true;
+      if (this.pressedKeys.has(`numpad${bk}`)) return true;
+    }
+
+    return this.pressedKeys.has(bk);
+  }
+
+  /**
+   * Mengecek apakah KeyboardEvent instan cocok dengan aksi yang ditentukan.
    */
   public matches(actionId: string, event: KeyboardEvent): boolean {
     const boundKey = this.getKey(actionId);
     if (!boundKey) return false;
 
-    const eventKey = event.key;
-    const eventCode = event.code;
+    const ek = (event.key || '').toLowerCase();
+    const ec = (event.code || '').toLowerCase();
+    const bk = boundKey.toLowerCase();
 
     // Cek tombol khusus Space
-    if (boundKey.toLowerCase() === 'space' && (eventKey === ' ' || eventCode === 'Space')) {
+    if ((bk === 'space' || bk === 'spacebar') && (ek === ' ' || ek === 'spacebar' || ec === 'space')) {
       return true;
     }
 
     // Cek tombol Shift
-    if (boundKey.toLowerCase() === 'shift' && (eventKey === 'Shift' || eventCode.includes('Shift'))) {
+    if (bk === 'shift' && (ek === 'shift' || ec.startsWith('shift'))) {
       return true;
     }
 
-    // Cek karakter 1 huruf (case insensitive)
-    if (boundKey.length === 1 && eventKey.length === 1) {
-      return boundKey.toUpperCase() === eventKey.toUpperCase();
+    // Cek tombol Ctrl
+    if ((bk === 'ctrl' || bk === 'control') && (ek === 'control' || ec.startsWith('control'))) {
+      return true;
     }
 
-    return boundKey.toLowerCase() === eventKey.toLowerCase() || boundKey.toLowerCase() === eventCode.toLowerCase();
+    // Cek tombol Alt
+    if (bk === 'alt' && (ek === 'alt' || ec.startsWith('alt'))) {
+      return true;
+    }
+
+    // Cek tombol Enter
+    if (bk === 'enter' && (ek === 'enter' || ec === 'enter' || ec === 'numpadenter')) {
+      return true;
+    }
+
+    // Cek Tombol Chat (Default '/' atau Enter)
+    if (actionId === 'chat') {
+      if (ek === '/' || ec === 'slash' || ek === 'enter' || ec === 'enter') return true;
+    }
+
+    // Cek Tombol Zoom In (Default '+' atau '=' atau NumpadAdd)
+    if (actionId === 'zoomIn') {
+      if (ek === '+' || ek === '=' || ec === 'equal' || ec === 'numpadadd') return true;
+    }
+
+    // Cek Tombol Zoom Out (Default '-' atau NumpadSubtract)
+    if (actionId === 'zoomOut') {
+      if (ek === '-' || ec === 'minus' || ec === 'numpadsubtract') return true;
+    }
+
+    // Cek Panah (Arrow Keys)
+    if (bk === 'arrowup' && (ek === 'arrowup' || ec === 'arrowup')) return true;
+    if (bk === 'arrowdown' && (ek === 'arrowdown' || ec === 'arrowdown')) return true;
+    if (bk === 'arrowleft' && (ek === 'arrowleft' || ec === 'arrowleft')) return true;
+    if (bk === 'arrowright' && (ek === 'arrowright' || ec === 'arrowright')) return true;
+
+    // Karakter 1 huruf/angka (case insensitive)
+    if (boundKey.length === 1) {
+      if (ek === bk) return true;
+      if (ec === `key${bk}` || ec === `digit${bk}` || ec === `numpad${bk}`) return true;
+    }
+
+    return ek === bk || ec === bk || ec === `key${bk}`;
   }
 }
-

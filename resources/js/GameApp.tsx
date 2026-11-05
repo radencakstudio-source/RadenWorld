@@ -45,6 +45,8 @@ import { PoliceReportModal } from './game/ui/PoliceReportModal';
 import { BankModal } from './game/ui/BankModal';
 import { PharmacyModal } from './game/ui/PharmacyModal';
 import { MarketRealtorModal } from './game/ui/MarketRealtorModal';
+import { KeybindingManager } from './game/core/KeybindingManager';
+import { InventoryManager } from './game/core/InventoryManager';
 
 export const GameApp: React.FC = () => {
   // Cek apakah pemain memiliki akun yang sah tersimpan
@@ -222,6 +224,125 @@ export const GameApp: React.FC = () => {
       EventBus.off('open-backpack', handleToggleBackpack);
     };
   }, []);
+
+  // Pengendali Terpusat Seluruh Tombol Pintas PC (Keybinding Manager Dispatcher)
+  useEffect(() => {
+    if (gameState !== 'playing') return;
+
+    const sound = SoundManager.getInstance();
+    const km = KeybindingManager.getInstance();
+
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      // 1. Abaikan jika pemain sedang mengetik di input / textarea
+      const target = e.target as HTMLElement | null;
+      const tagName = (target?.tagName || '').toUpperCase();
+      if (tagName === 'INPUT' || tagName === 'TEXTAREA' || target?.isContentEditable) {
+        return;
+      }
+
+      // 2. Abaikan jika sedang rebind tombol di SettingsModal
+      if ((window as any).__raden_is_rebinding_key) {
+        return;
+      }
+
+      // Chat (/ atau Enter)
+      if (km.matches('chat', e)) {
+        e.preventDefault();
+        setIsChatOpen(true);
+        setTimeout(() => {
+          EventBus.emit('focus-chat-input');
+        }, 50);
+        return;
+      }
+
+      // Tas / Inventaris (B)
+      if (km.matches('backpack', e)) {
+        e.preventDefault();
+        setIsBackpackOpen((prev) => !prev);
+        sound.playClick();
+        return;
+      }
+
+      // Peta Dunia (M)
+      if (km.matches('map', e)) {
+        e.preventDefault();
+        EventBus.emit('toggle-full-map');
+        return;
+      }
+
+      // Palet Reaksi Emote & Ekspresi Wajah (T)
+      if (km.matches('emote', e)) {
+        e.preventDefault();
+        setIsChatOpen(true);
+        setTimeout(() => {
+          EventBus.emit('toggle-chat-expressions');
+        }, 50);
+        return;
+      }
+
+      // Interaksi Objek / NPC / Pintu (E)
+      if (km.matches('interact', e)) {
+        EventBus.emit('trigger-interaction');
+        return;
+      }
+
+      // Alat Kerja / Mancing / Panen / Siram (F)
+      if (km.matches('fish', e)) {
+        EventBus.emit('player-fish');
+        return;
+      }
+
+      // Lompat 2.5D (Space)
+      if (km.matches('jump', e)) {
+        EventBus.emit('player-jump');
+        return;
+      }
+
+      // Perbesar Kamera (+ / =)
+      if (km.matches('zoomIn', e)) {
+        EventBus.emit('camera-zoom-in');
+        return;
+      }
+
+      // Perkecil Kamera (-)
+      if (km.matches('zoomOut', e)) {
+        EventBus.emit('camera-zoom-out');
+        return;
+      }
+
+      // Slot Mini Hotbar (1 - 6)
+      for (let i = 1; i <= 6; i++) {
+        if (km.matches(`hotbar${i}`, e)) {
+          InventoryManager.getInstance().setActiveSlotIndex(i - 1);
+          sound.playClick();
+          return;
+        }
+      }
+
+      // Tombol Escape menutup modal yang sedang terbuka
+      if (e.key === 'Escape') {
+        if (isBackpackOpen) setIsBackpackOpen(false);
+        else if (isChatOpen) setIsChatOpen(false);
+        else if (isGuideOpen) setIsGuideOpen(false);
+        else if (isProfileOpen) setIsProfileOpen(false);
+      }
+    };
+
+    const handleGlobalKeyUp = (e: KeyboardEvent) => {
+      if ((window as any).__raden_is_rebinding_key) return;
+      if (km.matches('fish', e)) {
+        EventBus.emit('fish-charge-release');
+      }
+    };
+
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    window.addEventListener('keyup', handleGlobalKeyUp);
+
+    return () => {
+      window.removeEventListener('keydown', handleGlobalKeyDown);
+      window.removeEventListener('keyup', handleGlobalKeyUp);
+    };
+  }, [gameState, isBackpackOpen, isChatOpen, isGuideOpen, isProfileOpen]);
 
   // Profile Attribute States
   const [playerBio, setPlayerBio] = useState<string>(() => {

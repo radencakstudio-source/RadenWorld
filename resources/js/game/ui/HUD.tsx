@@ -168,6 +168,22 @@ export const HUD: React.FC<HUDProps> = React.memo(({
   }, [isFullMapOpen]);
 
   React.useEffect(() => {
+    const handleToggleFullMap = () => {
+      if (stats.inHouse) {
+        SoundManager.getInstance().playError();
+        return;
+      }
+      setIsFullMapOpen((prev) => !prev);
+      SoundManager.getInstance().playClick();
+    };
+
+    EventBus.on('toggle-full-map', handleToggleFullMap);
+    return () => {
+      EventBus.off('toggle-full-map', handleToggleFullMap);
+    };
+  }, [stats.inHouse]);
+
+  React.useEffect(() => {
     const handleCount = (count: number) => setServerPlayerCount(count);
     const handlePlayers = (list: IPlayerData[]) => {
       setServerPlayers(list);

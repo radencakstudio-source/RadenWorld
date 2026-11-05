@@ -42,6 +42,7 @@ import { NetworkManager } from '../core/NetworkManager';
 import { InventoryManager } from '../core/InventoryManager';
 import { PotionManager } from '../core/PotionManager';
 import { WorldFarming } from '../scenes/world/WorldFarming';
+import { KeybindingManager } from '../core/KeybindingManager';
 
 export type CharacterActionState = 'grounded' | 'jumping' | 'fishing';
 
@@ -2025,11 +2026,12 @@ export class CharacterController {
     if (this.fishingState === 'caught') {
       const cursors = this.player.getCursors?.();
       const keysWASD = this.player.getKeysWASD?.();
+      const km = KeybindingManager.getInstance();
       const hasKeyInput = Boolean(
-        cursors?.left?.isDown || keysWASD?.A?.isDown ||
-        cursors?.right?.isDown || keysWASD?.D?.isDown ||
-        cursors?.up?.isDown || keysWASD?.W?.isDown ||
-        cursors?.down?.isDown || keysWASD?.S?.isDown
+        cursors?.left?.isDown || keysWASD?.A?.isDown || km.isActionActive('moveLeft') ||
+        cursors?.right?.isDown || keysWASD?.D?.isDown || km.isActionActive('moveRight') ||
+        cursors?.up?.isDown || keysWASD?.W?.isDown || km.isActionActive('moveUp') ||
+        cursors?.down?.isDown || keysWASD?.S?.isDown || km.isActionActive('moveDown')
       );
       const hasJoyInput = Boolean(this.joystickVector && (Math.abs(this.joystickVector.x) > 0.05 || Math.abs(this.joystickVector.y) > 0.05));
       if (hasKeyInput || hasJoyInput || this.targetDestination) {
@@ -2051,17 +2053,19 @@ export class CharacterController {
 
     const cursors = this.player.getCursors?.();
     const keysWASD = this.player.getKeysWASD?.();
+    const km = KeybindingManager.getInstance();
 
-    const left = Boolean(cursors?.left?.isDown || keysWASD?.A?.isDown);
-    const right = Boolean(cursors?.right?.isDown || keysWASD?.D?.isDown);
-    const up = Boolean(cursors?.up?.isDown || keysWASD?.W?.isDown);
-    const down = Boolean(cursors?.down?.isDown || keysWASD?.S?.isDown);
+    const left = Boolean(cursors?.left?.isDown || keysWASD?.A?.isDown || km.isActionActive('moveLeft'));
+    const right = Boolean(cursors?.right?.isDown || keysWASD?.D?.isDown || km.isActionActive('moveRight'));
+    const up = Boolean(cursors?.up?.isDown || keysWASD?.W?.isDown || km.isActionActive('moveUp'));
+    const down = Boolean(cursors?.down?.isDown || keysWASD?.S?.isDown || km.isActionActive('moveDown'));
 
     const hasManualInput = left || right || up || down;
 
     const shiftIsDown = Boolean(
       this.keyShift?.isDown ||
-      cursors?.shift?.isDown
+      cursors?.shift?.isDown ||
+      km.isActionActive('sprint')
     );
     const isPlayerRunning = this.isRunning || shiftIsDown;
 

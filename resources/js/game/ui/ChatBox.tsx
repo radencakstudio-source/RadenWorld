@@ -199,6 +199,24 @@ export const ChatBox: React.FC<ChatBoxProps> = React.memo(({
   }, [isOpen, activeTab]);
 
   useEffect(() => {
+    const onFocusChat = () => {
+      setTimeout(() => {
+        inputRef.current?.focus();
+      }, 50);
+    };
+    const onToggleExpressions = () => {
+      setShowExpressions((prev) => !prev);
+      sound.playClick();
+    };
+    EventBus.on('focus-chat-input', onFocusChat);
+    EventBus.on('toggle-chat-expressions', onToggleExpressions);
+    return () => {
+      EventBus.off('focus-chat-input', onFocusChat);
+      EventBus.off('toggle-chat-expressions', onToggleExpressions);
+    };
+  }, [sound]);
+
+  useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (KeybindingManager.getInstance().matches('chat', e)) {
         if (document.activeElement !== inputRef.current) {

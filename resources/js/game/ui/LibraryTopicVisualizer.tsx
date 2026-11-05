@@ -79,6 +79,12 @@ export type VisualDiagramType =
   | 'pressure_pascal'
   | 'electric_circuit'
   | 'wave_sound'
+  | 'calculus_integral_derivative'
+  | 'economics_supply_demand'
+  | 'thermodynamics_carnot'
+  | 'optics_light'
+  | 'organic_chemistry'
+  | 'relativity_einstein'
   // Kewarganegaraan & PKn
   | 'pancasila_shield'
   | 'civics_gotong_royong'
@@ -264,6 +270,123 @@ export function detectDiagramType(subject: {
     hay.includes('paleolitikum')
   ) {
     return 'history_timeline';
+  }
+
+  // ==========================================================================
+  // PRIORITAS UTAMA: TOPIK SPESIFIK SMA (KELAS 10, 11, 12)
+  // ==========================================================================
+  // L. Matematika SMA - Kalkulus: Turunan (Diferensial) & Integral Fungsi Aljabar
+  if (
+    hay.includes('turunan fungsi') ||
+    hay.includes('diferensial') ||
+    hay.includes('integral') ||
+    hay.includes('nilai stasioner') ||
+    hay.includes('garis singgung kurva') ||
+    hay.includes('kalkulus')
+  ) {
+    return 'calculus_integral_derivative';
+  }
+
+  // M. Matematika SMA - Trigonometri: Lingkaran Satuan & Sudut Istimewa
+  if (
+    hay.includes('trigonometri') ||
+    hay.includes('sin cos') ||
+    hay.includes('sudut istimewa') ||
+    hay.includes('lingkaran satuan') ||
+    hay.includes('tangen')
+  ) {
+    return 'trigonometry_wave';
+  }
+
+  // N. Fisika SMA - Termodinamika & Efisiensi Mesin Kalor Carnot / Termokimia
+  if (
+    hay.includes('termodinamika') ||
+    hay.includes('mesin kalor') ||
+    hay.includes('mesin carnot') ||
+    hay.includes('termokimia') ||
+    hay.includes('hukum hess') ||
+    hay.includes('entalpi')
+  ) {
+    return 'thermodynamics_carnot';
+  }
+
+  // O. Fisika SMA - Alat-Alat Optik, Pembiasan Cahaya & Lensa
+  if (
+    hay.includes('alat optik') ||
+    hay.includes('alat-alat optik') ||
+    hay.includes('kacamata') ||
+    hay.includes('lensa') ||
+    hay.includes('cermin') ||
+    hay.includes('lup') ||
+    hay.includes('pembiasan cahaya')
+  ) {
+    return 'optics_light';
+  }
+
+  // P. Fisika Modern & Relativitas Einstein
+  if (
+    hay.includes('relativitas') ||
+    hay.includes('dilatasi waktu') ||
+    hay.includes('e=mc') ||
+    hay.includes('einstein') ||
+    hay.includes('kecepatan cahaya')
+  ) {
+    return 'relativity_einstein';
+  }
+
+  // Q. Kimia SMA & Fisika Modern - Model Atom Bohr, Kuantum & Fotolistrik
+  if (
+    hay.includes('struktur atom') ||
+    hay.includes('niels bohr') ||
+    hay.includes('mekanika kuantum') ||
+    hay.includes('kulit atom') ||
+    hay.includes('fotolistrik') ||
+    hay.includes('dualisme') ||
+    hay.includes('sistem periodik')
+  ) {
+    return 'bohr_atom';
+  }
+
+  // R. Kimia SMA - Larutan Asam Basa, Titrasi, Laju Reaksi & Le Chatelier
+  if (
+    hay.includes('ph ') ||
+    hay.includes('derajat keasaman') ||
+    hay.includes('titrasi') ||
+    hay.includes('laju reaksi') ||
+    hay.includes('le chatelier') ||
+    hay.includes('kesetimbangan kimia')
+  ) {
+    return 'ph_scale';
+  }
+
+  // S. Kimia SMA - Senyawa Karbon Turunan Alkana, Polimer & Benzena
+  if (
+    hay.includes('senyawa karbon') ||
+    hay.includes('alkana') ||
+    hay.includes('alkohol') ||
+    hay.includes('eter') ||
+    hay.includes('aldehid') ||
+    hay.includes('keton') ||
+    hay.includes('benzena') ||
+    hay.includes('makromolekul') ||
+    hay.includes('polimer') ||
+    hay.includes('ikatan kimia')
+  ) {
+    return 'organic_chemistry';
+  }
+
+  // T. Ekonomi SMA - Kelangkaan, Biaya Peluang, Kurva Permintaan-Penawaran & Pendapatan Nasional
+  if (
+    hay.includes('permintaan') ||
+    hay.includes('penawaran') ||
+    hay.includes('kelangkaan') ||
+    hay.includes('biaya peluang') ||
+    hay.includes('opportunity cost') ||
+    hay.includes('pendapatan nasional') ||
+    hay.includes('pasar') ||
+    hay.includes('ekuilibrium')
+  ) {
+    return 'economics_supply_demand';
   }
 
   // 1. Bahasa Inggris (Seluruh Materi English)
@@ -1976,6 +2099,216 @@ export function getTopicStoryScenes(
           highlightText: 'Resonansi akustik & getaran merdu alat musik',
         },
       ];
+    case 'calculus_integral_derivative':
+      return [
+        {
+          chapter: 'Babak 1',
+          title: "Konsep Turunan Laju Perubahan f'(x)",
+          narration: "📈 Turunan diferensial mengukur laju perubahan sesaat suatu fungsi di setiap titik, diwakili oleh garis singgung kurva yang menyentuh grafik.",
+          badge: 'Diferensial',
+          icon: '📈',
+          highlightText: "Garis singgung kurva laju perubahan f'(x)",
+        },
+        {
+          chapter: 'Babak 2',
+          title: "Titik Puncak & Nilai Stasioner",
+          narration: "⛰️ Saat turunan pertama sama dengan nol (f'(x) = 0), garis singgung mendatar sempurna, menandakan titik puncak maksimum atau lembah minimum.",
+          badge: 'Nilai Stasioner',
+          icon: '⛰️',
+          highlightText: "Kondisi puncak maksimum stasioner: f'(x) = 0",
+        },
+        {
+          chapter: 'Babak 3',
+          title: 'Integral: Luas Daerah di Bawah Kurva',
+          narration: '🟩 Integral adalah operasi kebalikan turunan (antiturunan) yang menjumlahkan luasan area tak hingga kecil di bawah kurva grafik dari batas a hingga b.',
+          badge: 'Integral Tentu',
+          icon: '🟩',
+          highlightText: 'Luas area arsiran di bawah kurva: ∫ f(x) dx',
+        },
+        {
+          chapter: 'Babak 4',
+          title: 'Aplikasi Sains Antariksa & Ekonomi',
+          narration: '🚀 Kalkulus adalah bahasa rahasia alam semesta! Dari perhitungan lintasan roket peluncur satelit hingga pemodelan keuntungan maksimal bisnis!',
+          badge: 'Rekayasa Modern',
+          icon: '🚀',
+          highlightText: 'Pondasi sains antariksa & ekonomi tingkat lanjut',
+        },
+      ];
+    case 'economics_supply_demand':
+      return [
+        {
+          chapter: 'Babak 1',
+          title: 'Hukum Permintaan Pembeli (Qd)',
+          narration: '🛍️ Kurva permintaan miring ke bawah: Semakin tinggi harga suatu barang, semakin sedikit jumlah barang yang ingin dibeli oleh konsumen di pasar.',
+          badge: 'Permintaan (Qd)',
+          icon: '🛍️',
+          highlightText: 'Harga naik, jumlah permintaan barang menurun',
+        },
+        {
+          chapter: 'Babak 2',
+          title: 'Hukum Penawaran Produsen (Qs)',
+          narration: '🏭 Kurva penawaran miring ke atas: Semakin mahal harga di pasar, produsen dan penjual semakin bersemangat memasok lebih banyak barang.',
+          badge: 'Penawaran (Qs)',
+          icon: '🏭',
+          highlightText: 'Harga tinggi memicu peningkatan pasokan barang',
+        },
+        {
+          chapter: 'Babak 3',
+          title: 'Titik Temu Keseimbangan Pasar (E)',
+          narration: '⚖️ Di titik temu perpotongan Qd = Qs, tercapailah harga keseimbangan (ekuilibrium E) di mana penjual dan pembeli sepakat tanpa kelebihan stok!',
+          badge: 'Ekuilibrium Pasar',
+          icon: '⚖️',
+          highlightText: 'Keseimbangan adil: Permintaan Qd = Penawaran Qs',
+        },
+        {
+          chapter: 'Babak 4',
+          title: 'Stabilitas Ekonomi & Kesejahteraan',
+          narration: '🏛️ Memahami mekanisme pasar membantu negara menjaga kestabilan harga pangan pokok dan mencegah inflasi demi kemakmuran seluruh rakyat!',
+          badge: 'Kesejahteraan Rakyat',
+          icon: '🏛️',
+          highlightText: 'Perekonomian stabil & perdagangan adil berkelanjutan',
+        },
+      ];
+    case 'thermodynamics_carnot':
+      return [
+        {
+          chapter: 'Babak 1',
+          title: 'Aliran Kalor & Hukum Termodinamika',
+          narration: '🔥 Kalor berpindah secara alami dari benda bersuhu tinggi ke suhu rendah. Energi total bersifat kekal, hanya berubah dari panas menjadi gerak mekanik.',
+          badge: 'Hukum Termodinamika',
+          icon: '🔥',
+          highlightText: 'Kekekalan energi: Kalor berubah menjadi usaha',
+        },
+        {
+          chapter: 'Babak 2',
+          title: 'Siklus Ideal Mesin Kalor Carnot',
+          narration: '⚙️ Sadi Carnot merancang mesin paling efisien: Silinder menyerap kalor Q1 dari reservoir panas T1, menggerakkan piston menghasilkan usaha W.',
+          badge: 'Mesin Carnot',
+          icon: '⚙️',
+          highlightText: 'Piston bergerak menghasilkan usaha kerja luar W',
+        },
+        {
+          chapter: 'Babak 3',
+          title: 'Formula Efisiensi Mesin (η)',
+          narration: '📏 Usaha luar adalah selisih kalor masuk dan buang (W = Q1 - Q2). Efisiensi maksimum bergantung pada rasio suhu: eta = 1 dikurangi (T2 dibagi T1)!',
+          badge: 'Efisiensi Mesin',
+          icon: '📏',
+          highlightText: 'Rumus efisiensi: W = Q1 - Q2, eta = 1 - (T2/T1)',
+        },
+        {
+          chapter: 'Babak 4',
+          title: 'Tenaga Mesin Industri & Mobil Ramah Lingkungan',
+          narration: '🚗 Prinsip termodinamika diterapkan pada mesin mobil, pendingin kulkas, AC, hingga turbin pembangkit listrik tenaga uap modern!',
+          badge: 'Teknologi Tenaga',
+          icon: '🚗',
+          highlightText: 'Dasar mesin otomotif & turbin energi listrik',
+        },
+      ];
+    case 'optics_light':
+      return [
+        {
+          chapter: 'Babak 1',
+          title: 'Pembiasan Cahaya & Hukum Snellius',
+          narration: '🌈 Ketika berkas cahaya menembus medium yang berbeda seperti udara ke kaca, lajunya melambat dan arah rambatnya dibiaskan membelok.',
+          badge: 'Pembiasan Cahaya',
+          icon: '🌈',
+          highlightText: 'Cahaya berbelok saat memasuki medium berbeda',
+        },
+        {
+          chapter: 'Babak 2',
+          title: 'Lensa Cembung Pengumpul Berkas (Konvergen)',
+          narration: '🔍 Lensa cembung mengumpulkan berkas sinar sejajar dan memfokuskannya tepat pada satu titik api atau titik fokus utama (F).',
+          badge: 'Lensa Cembung',
+          icon: '🔍',
+          highlightText: 'Sinar dibiaskan mengumpul tepat di titik fokus F',
+        },
+        {
+          chapter: 'Babak 3',
+          title: 'Rumus Lensa & Pembentukan Bayangan',
+          narration: '📐 Jarak benda (s), jarak bayangan (s-aksen), dan jarak fokus terikat rumus legendaris: satu per f sama dengan satu per s ditambah satu per s-aksen!',
+          badge: 'Formula Optik',
+          icon: '📐',
+          highlightText: 'Rumus lensa: 1/f = 1/s + 1/s-aksen',
+        },
+        {
+          chapter: 'Babak 4',
+          title: 'Kacamata, Mikroskop & Teleskop Angkasa',
+          narration: '🔭 Berkat lensa optik, penderita rabun dapat melihat jelas dengan kacamata, peneliti melihat virus via mikroskop, dan teleskop mengamati bintang jauh!',
+          badge: 'Mata Dunia',
+          icon: '🔭',
+          highlightText: 'Kacamata, kamera, mikroskop & teleskop bintang',
+        },
+      ];
+    case 'organic_chemistry':
+      return [
+        {
+          chapter: 'Babak 1',
+          title: 'Keistimewaan 4 Tangan Atom Karbon',
+          narration: '⚛️ Atom karbon (C) memiliki 4 elektron valensi yang fleksibel, memungkinkannya bergandengan tangan membentuk jutaan variasi molekul kehidupan.',
+          badge: 'Tetravalen Karbon',
+          icon: '⚛️',
+          highlightText: 'Empat tangan ikatan kovalen kokoh atom C',
+        },
+        {
+          chapter: 'Babak 2',
+          title: 'Keluarga Alkana, Alkena & Gugus Fungsi',
+          narration: '🧪 Rantai hidrokarbon ikatan tunggal disebut alkana. Dengan menambahkan gugus fungsi seperti alkohol (-OH), terciptalah zat kimia berkhasiat medis!',
+          badge: 'Gugus Fungsi',
+          icon: '🧪',
+          highlightText: 'Rantai karbon turunan alkana & gugus fungsi alkohol',
+        },
+        {
+          chapter: 'Babak 3',
+          title: 'Cincin Aromatik Benzena (C6H6)',
+          narration: '💎 Enam atom karbon membentuk cincin heksagonal melingkar yang sangat stabil karena elektron beresonansi bebas di dalam cincin aromatik.',
+          badge: 'Cincin Benzena',
+          icon: '💎',
+          highlightText: 'Cincin segi enam aromatik benzena stabil',
+        },
+        {
+          chapter: 'Babak 4',
+          title: 'Bahan Baku Obat & Polimer Kehidupan',
+          narration: '💊 Dari obat pereda nyeri parasetamol, serat pakaian nilon, hingga protein penyusun otot tubuh kita, semuanya tersusun atas kimia organik!',
+          badge: 'Kimia Medis',
+          icon: '💊',
+          highlightText: 'Menyusun obat-obatan, serat kain & protein tubuh',
+        },
+      ];
+    case 'relativity_einstein':
+      return [
+        {
+          chapter: 'Babak 1',
+          title: 'Kecepatan Cahaya Mutlak (c = 300.000 km/s)',
+          narration: '✨ Albert Einstein mempostulatkan bahwa kecepatan cahaya di ruang hampa adalah batas kecepatan tertinggi alam semesta dan bernilai konstan bagi semua orang.',
+          badge: 'Postulat Relativitas',
+          icon: '✨',
+          highlightText: 'Kecepatan cahaya konstan 300.000 km per detik',
+        },
+        {
+          chapter: 'Babak 2',
+          title: 'Dilatasi Waktu & Jam yang Melambat',
+          narration: '⏳ Ruang dan waktu bersifat lentur! Bagi astronot yang melesat dalam roket berkecepatan tinggi, waktu berdetak lebih lambat dibanding orang di bumi!',
+          badge: 'Dilatasi Waktu',
+          icon: '⏳',
+          highlightText: 'Waktu melambat bagi pengamat yang bergerak cepat',
+        },
+        {
+          chapter: 'Babak 3',
+          title: 'Rumus Legendaris Energi: E = m · c²',
+          narration: '💥 Massa dan energi adalah dua sisi dari koin yang sama! Sedikit saja materi dapat dikonversi menjadi energi raksasa yang menyalakan kobaran Matahari!',
+          badge: 'E = m · c²',
+          icon: '💥',
+          highlightText: 'Energi E sama dengan massa m dikali c kuadrat',
+        },
+        {
+          chapter: 'Babak 4',
+          title: 'Satelit GPS & Masa Depan Antariksa',
+          narration: '🛰️ Tanpa koreksi rumus relativitas Einstein setiap hari, navigasi satelit GPS di smartphone kita akan meleset berkilometer-kilometer!',
+          badge: 'Navigasi Presisi',
+          icon: '🛰️',
+          highlightText: 'Dasar kalibrasi satelit GPS smartphone & kosmos',
+        },
+      ];
     default: {
       if (topic && topic.title) {
         const p1 = topic.points?.[0] || 'Perhatikan konsep dasar materi ini dengan cermat.';
@@ -3105,6 +3438,243 @@ export function renderDiagramSvg(
           <rect x="370" y="85" width="170" height="55" rx="8" fill="#0f172a" stroke="#38bdf8" strokeWidth="1.5" />
           <text x="455" y="108" fill="#38bdf8" fontSize="13" fontWeight="bold" textAnchor="middle">v = λ × f</text>
           <text x="455" y="126" fill="#94a3b8" fontSize="10" textAnchor="middle">Cepat Rambat = Lambda × Frek</text>
+        </svg>
+      );
+
+    case 'calculus_integral_derivative':
+      return (
+        <svg viewBox="0 0 600 320" className="w-full h-full select-none">
+          <text x="300" y="38" fill="#f8fafc" fontSize="15" fontWeight="bold" textAnchor="middle">
+            KALKULUS: TURUNAN (f') & INTEGRAL TENTU (∫ f(x) dx)
+          </text>
+          {/* Sumbu X dan Y */}
+          <line x1="80" y1="240" x2="520" y2="240" stroke="#64748b" strokeWidth="2" />
+          <line x1="120" y1="60" x2="120" y2="260" stroke="#64748b" strokeWidth="2" />
+          <text x="510" y="235" fill="#94a3b8" fontSize="11" fontWeight="bold">X</text>
+          <text x="125" y="75" fill="#94a3b8" fontSize="11" fontWeight="bold">Y = f(x)</text>
+
+          {/* Area Arsiran Integral di Bawah Kurva */}
+          <path d="M 200 240 L 200 170 Q 280 90, 360 140 Q 400 165, 420 180 L 420 240 Z" fill="#10b981" fillOpacity="0.25" stroke="none" />
+          <line x1="200" y1="240" x2="200" y2="170" stroke="#10b981" strokeWidth="2" strokeDasharray="3,3" />
+          <line x1="420" y1="240" x2="420" y2="180" stroke="#10b981" strokeWidth="2" strokeDasharray="3,3" />
+          <text x="200" y="255" fill="#34d399" fontSize="11" fontWeight="bold" textAnchor="middle">a</text>
+          <text x="420" y="255" fill="#34d399" fontSize="11" fontWeight="bold" textAnchor="middle">b</text>
+          <text x="310" y="210" fill="#6ee7b7" fontSize="12" fontWeight="bold" textAnchor="middle">Luas = ∫[a➔b] f(x) dx</text>
+
+          {/* Kurva Parabola Halus f(x) */}
+          <path d="M 140 220 Q 260 70, 460 210" fill="none" stroke="#38bdf8" strokeWidth="4" />
+
+          {/* Garis Singgung Turunan f'(x) di Titik Puncak */}
+          <line x1="200" y1="108" x2="320" y2="108" stroke="#f59e0b" strokeWidth="3" />
+          <circle cx="260" cy="108" r="5" fill="#f59e0b" />
+          <text x="260" y="95" fill="#fbbf24" fontSize="11" fontWeight="bold" textAnchor="middle">Stasioner: f'(x) = 0</text>
+
+          {/* Kotak Formula */}
+          <rect x="370" y="60" width="180" height="65" rx="8" fill="#0f172a" stroke="#38bdf8" strokeWidth="1.5" />
+          <text x="460" y="82" fill="#38bdf8" fontSize="12" fontWeight="bold" textAnchor="middle">f'(x) = lim Δy/Δx</text>
+          <text x="460" y="100" fill="#fde047" fontSize="11" fontWeight="bold" textAnchor="middle">d(xⁿ)/dx = n·xⁿ⁻¹</text>
+          <text x="460" y="116" fill="#94a3b8" fontSize="9" textAnchor="middle">∫ xⁿ dx = (1/(n+1)) xⁿ⁺¹ + C</text>
+        </svg>
+      );
+
+    case 'economics_supply_demand':
+      return (
+        <svg viewBox="0 0 600 320" className="w-full h-full select-none">
+          <text x="300" y="38" fill="#f8fafc" fontSize="15" fontWeight="bold" textAnchor="middle">
+            KURVA PERMINTAAN (Qd), PENAWARAN (Qs) & KESEIMBANGAN PASAR (E)
+          </text>
+          {/* Sumbu Harga P dan Jumlah Barang Q */}
+          <line x1="120" y1="240" x2="480" y2="240" stroke="#64748b" strokeWidth="2.5" />
+          <line x1="120" y1="65" x2="120" y2="240" stroke="#64748b" strokeWidth="2.5" />
+          <text x="495" y="244" fill="#94a3b8" fontSize="11" fontWeight="bold">Q (Kuantitas)</text>
+          <text x="120" y="55" fill="#94a3b8" fontSize="11" fontWeight="bold" textAnchor="middle">P (Harga)</text>
+
+          {/* Kurva Permintaan (Qd: Merah Muda Menurun) */}
+          <line x1="160" y1="90" x2="420" y2="220" stroke="#f43f5e" strokeWidth="4" strokeLinecap="round" />
+          <text x="430" y="225" fill="#fb7185" fontSize="12" fontWeight="bold">D (Permintaan)</text>
+
+          {/* Kurva Penawaran (Qs: Biru Meningkat) */}
+          <line x1="160" y1="220" x2="420" y2="90" stroke="#38bdf8" strokeWidth="4" strokeLinecap="round" />
+          <text x="430" y="95" fill="#7dd3fc" fontSize="12" fontWeight="bold">S (Penawaran)</text>
+
+          {/* Titik Keseimbangan Ekuilibrium E */}
+          <circle cx="290" cy="155" r="7" fill="#fbbf24" stroke="#78350f" strokeWidth="2" className="animate-pulse" />
+          <line x1="290" y1="155" x2="290" y2="240" stroke="#fbbf24" strokeWidth="1.5" strokeDasharray="3,3" />
+          <line x1="120" y1="155" x2="290" y2="155" stroke="#fbbf24" strokeWidth="1.5" strokeDasharray="3,3" />
+          <text x="310" y="150" fill="#fde047" fontSize="13" fontWeight="bold">E (Pe, Qe)</text>
+          <text x="100" y="159" fill="#fde047" fontSize="10" textAnchor="end">Pe (Sepakat)</text>
+          <text x="290" y="258" fill="#fde047" fontSize="10" textAnchor="middle">Qe (Seimbang)</text>
+
+          {/* Card Formula */}
+          <rect x="180" y="270" width="240" height="35" rx="6" fill="#0f172a" stroke="#fbbf24" strokeWidth="1.5" />
+          <text x="300" y="292" fill="#fde047" fontSize="11" fontWeight="bold" textAnchor="middle">
+            Keseimbangan Pasar: Qd = Qs
+          </text>
+        </svg>
+      );
+
+    case 'thermodynamics_carnot':
+      return (
+        <svg viewBox="0 0 600 320" className="w-full h-full select-none">
+          <text x="300" y="38" fill="#f8fafc" fontSize="15" fontWeight="bold" textAnchor="middle">
+            SIKLUS MESIN KALOR CARNOT: W = Q₁ - Q₂ & EFISIENSI (η)
+          </text>
+          {/* Reservoir Suhu Tinggi T1 */}
+          <rect x="200" y="65" width="200" height="40" rx="8" fill="#991b1b" stroke="#f87171" strokeWidth="2" />
+          <text x="300" y="89" fill="#fee2e2" fontSize="12" fontWeight="bold" textAnchor="middle">Reservoir Suhu Tinggi (T₁)</text>
+
+          {/* Panah Kalor Masuk Q1 */}
+          <line x1="300" y1="105" x2="300" y2="140" stroke="#ef4444" strokeWidth="4" />
+          <polygon points="300,145 295,135 305,135" fill="#ef4444" />
+          <text x="330" y="130" fill="#fca5a5" fontSize="11" fontWeight="bold">Kalor Q₁</text>
+
+          {/* Mesin Carnot (Silinder Kerja) */}
+          <circle cx="300" cy="180" r="35" fill="#1e293b" stroke="#38bdf8" strokeWidth="3" />
+          <text x="300" y="185" fill="#e0f2fe" fontSize="11" fontWeight="bold" textAnchor="middle">Mesin</text>
+
+          {/* Usaha Mekanik Keluar W */}
+          <line x1="335" y1="180" x2="440" y2="180" stroke="#22c55e" strokeWidth="4" />
+          <polygon points="445,180 435,175 435,185" fill="#22c55e" />
+          <text x="390" y="170" fill="#4ade80" fontSize="12" fontWeight="bold">Usaha W</text>
+
+          {/* Panah Kalor Buang Q2 */}
+          <line x1="300" y1="215" x2="300" y2="245" stroke="#3b82f6" strokeWidth="4" />
+          <polygon points="300,250 295,240 305,240" fill="#3b82f6" />
+          <text x="330" y="235" fill="#93c5fd" fontSize="11" fontWeight="bold">Kalor Q₂</text>
+
+          {/* Reservoir Suhu Rendah T2 */}
+          <rect x="200" y="250" width="200" height="40" rx="8" fill="#1e3a8a" stroke="#60a5fa" strokeWidth="2" />
+          <text x="300" y="274" fill="#dbeafe" fontSize="12" fontWeight="bold" textAnchor="middle">Reservoir Suhu Rendah (T₂)</text>
+
+          {/* Kotak Formula Efisiensi */}
+          <rect x="420" y="70" width="160" height="80" rx="8" fill="#0f172a" stroke="#38bdf8" strokeWidth="1.5" />
+          <text x="500" y="95" fill="#38bdf8" fontSize="11" fontWeight="bold" textAnchor="middle">W = Q₁ - Q₂</text>
+          <text x="500" y="118" fill="#4ade80" fontSize="12" fontWeight="bold" textAnchor="middle">η = 1 - (T₂/T₁)</text>
+          <text x="500" y="136" fill="#94a3b8" fontSize="9" textAnchor="middle">Efisiensi Maksimum</text>
+        </svg>
+      );
+
+    case 'optics_light':
+      return (
+        <svg viewBox="0 0 600 320" className="w-full h-full select-none">
+          <text x="300" y="38" fill="#f8fafc" fontSize="15" fontWeight="bold" textAnchor="middle">
+            PEMBIASAN CAHAYA & PEMBENTUKAN BAYANGAN LENSA CEMBUNG
+          </text>
+          {/* Sumbu Utama Horizontal */}
+          <line x1="50" y1="160" x2="550" y2="160" stroke="#64748b" strokeWidth="2" />
+          <text x="555" y="164" fill="#94a3b8" fontSize="9">Sumbu Utama</text>
+
+          {/* Lensa Cembung di Tengah */}
+          <path d="M 300 60 Q 330 160, 300 260 Q 270 160, 300 60" fill="#38bdf8" fillOpacity="0.3" stroke="#38bdf8" strokeWidth="3" />
+          <line x1="300" y1="50" x2="300" y2="270" stroke="#38bdf8" strokeWidth="1" strokeDasharray="3,3" />
+
+          {/* Titik Fokus F1 & F2 */}
+          <circle cx="200" cy="160" r="4" fill="#facc15" />
+          <text x="200" y="178" fill="#fde047" fontSize="11" fontWeight="bold" textAnchor="middle">F₁</text>
+          <circle cx="400" cy="160" r="4" fill="#facc15" />
+          <text x="400" y="178" fill="#fde047" fontSize="11" fontWeight="bold" textAnchor="middle">F₂</text>
+
+          {/* Benda Nyata Tegak (Panah Hijau) */}
+          <line x1="140" y1="160" x2="140" y2="90" stroke="#22c55e" strokeWidth="4" />
+          <polygon points="140,85 134,98 146,98" fill="#22c55e" />
+          <text x="140" y="75" fill="#4ade80" fontSize="10" fontWeight="bold" textAnchor="middle">Benda (s)</text>
+
+          {/* Berkas Sinar Istimewa Lensa */}
+          {/* Sinar 1: Sejajar sumbu utama lalu dibiaskan lewat fokus F2 */}
+          <line x1="140" y1="90" x2="300" y2="90" stroke="#ef4444" strokeWidth="2.5" />
+          <line x1="300" y1="90" x2="480" y2="210" stroke="#ef4444" strokeWidth="2.5" />
+
+          {/* Sinar 2: Menembus pusat optik tanpa dibiaskan */}
+          <line x1="140" y1="90" x2="480" y2="210" stroke="#f59e0b" strokeWidth="2" strokeDasharray="3,3" />
+
+          {/* Bayangan Nyata Terbalik (Panah Merah Terbalik) */}
+          <line x1="480" y1="160" x2="480" y2="210" stroke="#ef4444" strokeWidth="4" />
+          <polygon points="480,215 474,202 486,202" fill="#ef4444" />
+          <text x="480" y="235" fill="#f87171" fontSize="10" fontWeight="bold" textAnchor="middle">Bayangan (s')</text>
+
+          {/* Formula Lensa */}
+          <rect x="50" y="245" width="220" height="50" rx="8" fill="#0f172a" stroke="#38bdf8" strokeWidth="1.5" />
+          <text x="160" y="268" fill="#38bdf8" fontSize="12" fontWeight="bold" textAnchor="middle">1/f = 1/s + 1/s'</text>
+          <text x="160" y="284" fill="#94a3b8" fontSize="9.5" textAnchor="middle">Perbesaran M = |s'/s| = |h'/h|</text>
+        </svg>
+      );
+
+    case 'organic_chemistry':
+      return (
+        <svg viewBox="0 0 600 320" className="w-full h-full select-none">
+          <text x="300" y="38" fill="#f8fafc" fontSize="15" fontWeight="bold" textAnchor="middle">
+            KIMIA ORGANIK: RANTAI KARBON (C-H) & CINCIN BENZENA (C₆H₆)
+          </text>
+          {/* Cincin Aromatik Benzena Segi Enam di Kiri */}
+          <g transform="translate(180, 155)">
+            <polygon points="0,-60 52,-30 52,30 0,60 -52,30 -52,-30" fill="none" stroke="#38bdf8" strokeWidth="3.5" />
+            {/* Lingkaran Resonansi Elektron Aromatik */}
+            <circle cx="0" cy="0" r="32" fill="none" stroke="#38bdf8" strokeWidth="2.5" strokeDasharray="6,4" />
+            <text x="0" y="5" fill="#bae6fd" fontSize="11" fontWeight="bold" textAnchor="middle">C₆H₆</text>
+            <text x="0" y="85" fill="#38bdf8" fontSize="11" fontWeight="bold" textAnchor="middle">Cincin Benzena Aromatik</text>
+          </g>
+
+          {/* Rantai Karbon Etanol (Alkohol) di Kanan */}
+          <g transform="translate(390, 150)">
+            {/* C1 */}
+            <circle cx="-50" cy="0" r="16" fill="#1e293b" stroke="#f59e0b" strokeWidth="2" />
+            <text x="-50" y="5" fill="#fde047" fontSize="12" fontWeight="bold" textAnchor="middle">C</text>
+            {/* Ikatan C-C */}
+            <line x1="-34" y1="0" x2="14" y2="0" stroke="#f59e0b" strokeWidth="3" />
+            {/* C2 */}
+            <circle cx="30" cy="0" r="16" fill="#1e293b" stroke="#f59e0b" strokeWidth="2" />
+            <text x="30" y="5" fill="#fde047" fontSize="12" fontWeight="bold" textAnchor="middle">C</text>
+            {/* Ikatan C-OH */}
+            <line x1="46" y1="0" x2="84" y2="0" stroke="#ef4444" strokeWidth="3" />
+            {/* Gugus OH */}
+            <circle cx="102" cy="0" r="18" fill="#991b1b" stroke="#f87171" strokeWidth="2" />
+            <text x="102" y="5" fill="#fee2e2" fontSize="11" fontWeight="bold" textAnchor="middle">OH</text>
+            <text x="25" y="55" fill="#f87171" fontSize="11" fontWeight="bold" textAnchor="middle">Etanol (C₂H₅OH)</text>
+          </g>
+
+          {/* Card Formula */}
+          <rect x="180" y="260" width="240" height="42" rx="8" fill="#0f172a" stroke="#f59e0b" strokeWidth="1.5" />
+          <text x="300" y="278" fill="#fde047" fontSize="11" fontWeight="bold" textAnchor="middle">
+            Alkana: CₙH₂ₙ₊₂ • Alkena: CₙH₂ₙ
+          </text>
+          <text x="300" y="293" fill="#cbd5e1" fontSize="9.5" textAnchor="middle">
+            Atom C Tetravalen (Mampu mengikat 4 atom lain)
+          </text>
+        </svg>
+      );
+
+    case 'relativity_einstein':
+      return (
+        <svg viewBox="0 0 600 320" className="w-full h-full select-none">
+          <text x="300" y="38" fill="#f8fafc" fontSize="15" fontWeight="bold" textAnchor="middle">
+            TEORI RELATIVITAS KHUSUS EINSTEIN: E = m · c² & DILATASI WAKTU
+          </text>
+          {/* Roket Bergerak Mendekati Kecepatan Cahaya */}
+          <g transform="translate(180, 140)">
+            <ellipse cx="0" cy="0" rx="45" ry="16" fill="#475569" stroke="#94a3b8" strokeWidth="2" />
+            <polygon points="45,0 20,-12 20,12" fill="#ef4444" />
+            {/* Api Jet Peluncur */}
+            <polygon points="-45,0 -70,-8 -60,0 -70,8" fill="#f59e0b" />
+            <text x="0" y="4" fill="#f8fafc" fontSize="9" fontWeight="bold" textAnchor="middle">v ≈ 0.8c</text>
+            <text x="0" y="42" fill="#94a3b8" fontSize="10" textAnchor="middle">Kecepatan Relativistik</text>
+          </g>
+
+          {/* Jam Waktu Melambat */}
+          <g transform="translate(380, 140)">
+            <circle cx="0" cy="0" r="32" fill="#1e293b" stroke="#38bdf8" strokeWidth="3" />
+            <line x1="0" y1="0" x2="0" y2="-18" stroke="#38bdf8" strokeWidth="2.5" />
+            <line x1="0" y1="0" x2="14" y2="0" stroke="#fde047" strokeWidth="2" />
+            <text x="0" y="45" fill="#38bdf8" fontSize="10" fontWeight="bold" textAnchor="middle">Jam Berdetak Lambat</text>
+          </g>
+
+          {/* Formula Relativitas */}
+          <rect x="120" y="225" width="360" height="65" rx="10" fill="#0f172a" stroke="#f59e0b" strokeWidth="2" />
+          <text x="300" y="250" fill="#fde047" fontSize="15" fontWeight="extrabold" textAnchor="middle">
+            E = m · c²
+          </text>
+          <text x="300" y="272" fill="#cbd5e1" fontSize="11" textAnchor="middle">
+            Dilatasi Waktu: Δt = Δt₀ / √(1 - v²/c²)  •  c = 300.000 km/s
+          </text>
         </svg>
       );
 

@@ -2513,7 +2513,693 @@ export const EducationalVideoCanvas: React.FC<EducationalVideoCanvasProps> = ({
       )}
 
       {/* ==================================================================== */}
-      {/* 34. PAPAN TULIS KELAS CERIA DINAMIS (PANGGUNG EDUKASI 60FPS)         */}
+      {/* 34. MATEMATIKA SMA: TRIGONOMETRI & GELOMBANG SINUSOIDAL              */}
+      {/* ==================================================================== */}
+      {type === 'trigonometry_wave' && (
+        <svg viewBox="0 0 600 320" className="w-full h-full max-h-[320px] select-none">
+          <rect x="6" y="6" width="588" height="308" rx="14" fill="#FFF8EA" stroke="#5C3A21" strokeWidth="3" />
+          <rect x="14" y="14" width="572" height="292" rx="10" fill="#FFFDF7" stroke="#EADBC0" strokeWidth="1.5" />
+
+          {/* Header Kartu Clay */}
+          <g transform="translate(300, 22)">
+            <rect x="-210" y="0" width="420" height="32" rx="8" fill="#BAE6FD" stroke="#5C3A21" strokeWidth="2" />
+            <text x="0" y="21" fill="#000000" fontSize="12" fontWeight="900" textAnchor="middle">
+              📐 TRIGONOMETRI: LINGKARAN SATUAN & SUDUT ISTIMEWA 🌊
+            </text>
+          </g>
+
+          {/* Lingkaran Satuan Trigonometri (R = 1) di Kiri */}
+          <g transform="translate(170, 165)">
+            {/* Sumbu Salib Koordinat */}
+            <line x1="-85" y1="0" x2="85" y2="0" stroke="#5C3A21" strokeWidth="2" />
+            <line x1="0" y1="-85" x2="0" y2="85" stroke="#5C3A21" strokeWidth="2" />
+            <text x="88" y="4" fill="#5C3A21" fontSize="9" fontWeight="bold">X</text>
+            <text x="0" y="-88" fill="#5C3A21" fontSize="9" fontWeight="bold" textAnchor="middle">Y</text>
+
+            {/* Lingkaran R = 1 Unit */}
+            <circle cx="0" cy="0" r="65" fill="#FFF8EA" stroke="#0284C7" strokeWidth="3" />
+
+            {/* Jari-Jari Sudut θ = 45° */}
+            <line x1="0" y1="0" x2="46" y2="-46" stroke="#5C3A21" strokeWidth="2.5" />
+            <circle cx="46" cy="-46" r="4.5" fill="#EF4444" stroke="#5C3A21" strokeWidth="1.5" />
+
+            {/* Proyeksi Sinus (Vertikal: Merah) & Kosinus (Horizontal: Biru) */}
+            <line x1="46" y1="0" x2="46" y2="-46" stroke="#EF4444" strokeWidth="3" strokeDasharray="2,2" />
+            <line x1="0" y1="0" x2="46" y2="0" stroke="#0284C7" strokeWidth="3" />
+            <text x="52" y="-22" fill="#EF4444" fontSize="9" fontWeight="bold">sin θ</text>
+            <text x="23" y="14" fill="#0284C7" fontSize="9" fontWeight="bold" textAnchor="middle">cos θ</text>
+            <text x="14" y="-8" fill="#D97706" fontSize="8" fontWeight="bold">θ = 45°</text>
+
+            <rect x="-80" y="74" width="160" height="20" rx="5" fill="#FEF08A" stroke="#5C3A21" strokeWidth="1.5" />
+            <text x="0" y="88" fill="#000000" fontSize="9" fontWeight="bold" textAnchor="middle">
+              sin² θ + cos² θ = 1 (Identitas Utama)
+            </text>
+          </g>
+
+          {/* Sisi Kanan: Tabel Sudut Istimewa & Gelombang Sinus */}
+          <g transform="translate(345, 66)">
+            <rect x="0" y="0" width="225" height="215" rx="10" fill="#FFF8EA" stroke="#5C3A21" strokeWidth="2" />
+            <rect x="0" y="0" width="225" height="28" rx="10" fill="#FFAE6D" stroke="#5C3A21" strokeWidth="1.5" />
+            <text x="112" y="19" fill="#000000" fontSize="11" fontWeight="bold" textAnchor="middle">
+              📊 TABEL SUDUT ISTIMEWA
+            </text>
+
+            <g transform="translate(10, 36)">
+              <rect x="0" y="0" width="205" height="100" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
+              {/* Header Kolom */}
+              <text x="35" y="18" fill="#000000" fontSize="9.5" fontWeight="900" textAnchor="middle">Sudut</text>
+              <text x="85" y="18" fill="#EF4444" fontSize="9.5" fontWeight="900" textAnchor="middle">sin θ</text>
+              <text x="135" y="18" fill="#0284C7" fontSize="9.5" fontWeight="900" textAnchor="middle">cos θ</text>
+              <text x="180" y="18" fill="#166534" fontSize="9.5" fontWeight="900" textAnchor="middle">tan θ</text>
+              <line x1="10" y1="24" x2="195" y2="24" stroke="#5C3A21" strokeWidth="1" />
+
+              {[
+                { deg: '0°', s: '0', c: '1', t: '0' },
+                { deg: '30°', s: '1/2', c: '½√3', t: '⅓√3' },
+                { deg: '45°', s: '½√2', c: '½√2', t: '1' },
+                { deg: '60°', s: '½√3', c: '1/2', t: '√3' },
+                { deg: '90°', s: '1', c: '0', t: '∞' },
+              ].map((row, idx) => (
+                <g key={row.deg} transform={`translate(0, ${38 + idx * 14})`}>
+                  <text x="35" y="0" fill="#000000" fontSize="8.5" fontWeight="bold" textAnchor="middle">{row.deg}</text>
+                  <text x="85" y="0" fill="#EF4444" fontSize="8.5" textAnchor="middle">{row.s}</text>
+                  <text x="135" y="0" fill="#0284C7" fontSize="8.5" textAnchor="middle">{row.c}</text>
+                  <text x="180" y="0" fill="#166534" fontSize="8.5" textAnchor="middle">{row.t}</text>
+                </g>
+              ))}
+
+              <rect x="0" y="108" width="205" height="62" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
+              <text x="10" y="124" fill="#000000" fontSize="9.5" fontWeight="bold">Aturan Sinus & Kosinus:</text>
+              <text x="10" y="138" fill="#5C3A21" fontSize="8.5">• a / sin A = b / sin B = c / sin C</text>
+              <text x="10" y="152" fill="#5C3A21" fontSize="8.5">• a² = b² + c² - 2bc · cos A</text>
+            </g>
+          </g>
+        </svg>
+      )}
+
+      {/* ==================================================================== */}
+      {/* 35. MATEMATIKA SMA: KALKULUS TURUNAN (f') & INTEGRAL TENTU           */}
+      {/* ==================================================================== */}
+      {type === 'calculus_integral_derivative' && (
+        <svg viewBox="0 0 600 320" className="w-full h-full max-h-[320px] select-none">
+          <rect x="6" y="6" width="588" height="308" rx="14" fill="#FFF8EA" stroke="#5C3A21" strokeWidth="3" />
+          <rect x="14" y="14" width="572" height="292" rx="10" fill="#FFFDF7" stroke="#EADBC0" strokeWidth="1.5" />
+
+          {/* Header Kartu Clay */}
+          <g transform="translate(300, 22)">
+            <rect x="-210" y="0" width="420" height="32" rx="8" fill="#A8E6CF" stroke="#5C3A21" strokeWidth="2" />
+            <text x="0" y="21" fill="#000000" fontSize="12" fontWeight="900" textAnchor="middle">
+              📈 KALKULUS: TURUNAN (f') & INTEGRAL TENTU (∫ f(x) dx) 🟩
+            </text>
+          </g>
+
+          {/* Grafik Kurva & Area Arsiran Integral di Kiri */}
+          <g transform="translate(35, 66)">
+            <rect x="0" y="0" width="285" height="215" rx="10" fill="#FFF8EA" stroke="#5C3A21" strokeWidth="2" />
+            
+            {/* Sumbu X dan Y */}
+            <line x1="30" y1="180" x2="265" y2="180" stroke="#5C3A21" strokeWidth="2" />
+            <line x1="45" y1="20" x2="45" y2="195" stroke="#5C3A21" strokeWidth="2" />
+            <text x="268" y="184" fill="#5C3A21" fontSize="9" fontWeight="bold">X</text>
+            <text x="45" y="14" fill="#5C3A21" fontSize="9" fontWeight="bold" textAnchor="middle">Y</text>
+
+            {/* Arsiran Integral di Bawah Kurva dari a ke b */}
+            <path d="M 85 180 L 85 125 Q 145 60, 205 105 L 205 180 Z" fill="#A8E6CF" fillOpacity="0.6" stroke="none" />
+            <line x1="85" y1="180" x2="85" y2="125" stroke="#166534" strokeWidth="1.5" strokeDasharray="3,3" />
+            <line x1="205" y1="180" x2="205" y2="105" stroke="#166534" strokeWidth="1.5" strokeDasharray="3,3" />
+            <text x="85" y="194" fill="#166534" fontSize="10" fontWeight="bold" textAnchor="middle">a</text>
+            <text x="205" y="194" fill="#166534" fontSize="10" fontWeight="bold" textAnchor="middle">b</text>
+            <text x="145" y="155" fill="#000000" fontSize="9.5" fontWeight="900" textAnchor="middle">Luas = ∫[a➔b] f(x) dx</text>
+
+            {/* Kurva Parabola Halus f(x) */}
+            <path d="M 55 165 Q 145 50, 245 160" fill="none" stroke="#0284C7" strokeWidth="3.5" />
+
+            {/* Garis Singgung Turunan f'(x) Mendatar di Puncak */}
+            <line x1="100" y1="78" x2="190" y2="78" stroke="#EF4444" strokeWidth="2.5" />
+            <circle cx="145" cy="78" r="4.5" fill="#FEF08A" stroke="#5C3A21" strokeWidth="1.5" />
+            <text x="145" y="68" fill="#EF4444" fontSize="9" fontWeight="900" textAnchor="middle">f'(x) = 0 (Stasioner Puncak)</text>
+          </g>
+
+          {/* Sisi Kanan: Rumus Turunan & Integral */}
+          <g transform="translate(345, 66)">
+            <rect x="0" y="0" width="225" height="215" rx="10" fill="#FFF8EA" stroke="#5C3A21" strokeWidth="2" />
+            <rect x="0" y="0" width="225" height="28" rx="10" fill="#FEF08A" stroke="#5C3A21" strokeWidth="1.5" />
+            <text x="112" y="19" fill="#000000" fontSize="11" fontWeight="bold" textAnchor="middle">
+              📐 ATURAN DASAR KALKULUS
+            </text>
+
+            <g transform="translate(10, 36)">
+              <rect x="0" y="0" width="205" height="52" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
+              <text x="10" y="18" fill="#EF4444" fontSize="10" fontWeight="900">1. Turunan (Diferensial):</text>
+              <text x="10" y="32" fill="#0284C7" fontSize="9.5" fontWeight="bold">• d(xⁿ)/dx = n · xⁿ⁻¹</text>
+              <text x="10" y="44" fill="#5C3A21" fontSize="8.5">• Gradien garis singgung m = f'(x)</text>
+
+              <rect x="0" y="60" width="205" height="52" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
+              <text x="10" y="18" fill="#166534" fontSize="10" fontWeight="900">2. Integral (Antiturunan):</text>
+              <text x="10" y="32" fill="#166534" fontSize="9.5" fontWeight="bold">• ∫ xⁿ dx = (1/(n+1)) xⁿ⁺¹ + C</text>
+              <text x="10" y="44" fill="#5C3A21" fontSize="8.5">• Menghitung luas & volume benda putar</text>
+
+              <rect x="0" y="120" width="205" height="50" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
+              <text x="10" y="18" fill="#D97706" fontSize="10" fontWeight="bold">3. Nilai Optimum:</text>
+              <text x="10" y="32" fill="#5C3A21" fontSize="8.5">• Maksimum/Minimum saat f'(x) = 0</text>
+              <text x="10" y="44" fill="#5C3A21" fontSize="8.5">• Digunakan untuk laba maksimal bisnis!</text>
+            </g>
+          </g>
+        </svg>
+      )}
+
+      {/* ==================================================================== */}
+      {/* 36. KIMIA & FISIKA SMA: MODEL ATOM BOHR & KUANTUM                    */}
+      {/* ==================================================================== */}
+      {type === 'bohr_atom' && (
+        <svg viewBox="0 0 600 320" className="w-full h-full max-h-[320px] select-none">
+          <rect x="6" y="6" width="588" height="308" rx="14" fill="#FFF8EA" stroke="#5C3A21" strokeWidth="3" />
+          <rect x="14" y="14" width="572" height="292" rx="10" fill="#FFFDF7" stroke="#EADBC0" strokeWidth="1.5" />
+
+          {/* Header Kartu Clay */}
+          <g transform="translate(300, 22)">
+            <rect x="-210" y="0" width="420" height="32" rx="8" fill="#DDD6FE" stroke="#5C3A21" strokeWidth="2" />
+            <text x="0" y="21" fill="#000000" fontSize="12" fontWeight="900" textAnchor="middle">
+              ⚛️ MODEL ATOM NIELS BOHR: KULIT ELEKTRON & FOTON KUANTUM 💫
+            </text>
+          </g>
+
+          {/* Model Atom Bohr di Kiri */}
+          <g transform="translate(170, 165)">
+            {/* Kulit M (n=3) */}
+            <circle cx="0" cy="0" r="95" fill="none" stroke="#D4A373" strokeWidth="2" strokeDasharray="5,5" />
+            <circle cx="95" cy="0" r="5" fill="#38BDF8" stroke="#5C3A21" strokeWidth="1.5" />
+            <text x="85" y="-12" fill="#5C3A21" fontSize="8" fontWeight="bold">Kulit M (n=3)</text>
+
+            {/* Kulit L (n=2) */}
+            <circle cx="0" cy="0" r="65" fill="none" stroke="#D4A373" strokeWidth="2" strokeDasharray="4,4" />
+            <circle cx="0" cy="65" r="5" fill="#38BDF8" stroke="#5C3A21" strokeWidth="1.5" />
+            <circle cx="-65" cy="0" r="5" fill="#38BDF8" stroke="#5C3A21" strokeWidth="1.5" />
+            <text x="50" y="55" fill="#5C3A21" fontSize="8" fontWeight="bold">Kulit L (n=2)</text>
+
+            {/* Kulit K (n=1) */}
+            <circle cx="0" cy="0" r="38" fill="none" stroke="#D4A373" strokeWidth="2" strokeDasharray="3,3" />
+            <circle cx="0" cy="-38" r="5" fill="#38BDF8" stroke="#5C3A21" strokeWidth="1.5" />
+            <circle cx="38" cy="0" r="5" fill="#38BDF8" stroke="#5C3A21" strokeWidth="1.5" />
+            <text x="25" y="-25" fill="#5C3A21" fontSize="8" fontWeight="bold">Kulit K (n=1)</text>
+
+            {/* Inti Atom di Tengah (Proton + & Neutron 0) */}
+            <circle cx="0" cy="0" r="18" fill="#FFAE6D" stroke="#5C3A21" strokeWidth="2.5" style={{ animation: 'solarPulse 2.5s infinite' }} />
+            <circle cx="-4" cy="-4" r="5" fill="#EF4444" />
+            <circle cx="4" cy="4" r="5" fill="#94A3B8" />
+            <text x="0" y="28" fill="#000000" fontSize="8.5" fontWeight="900" textAnchor="middle">Inti (p⁺, n⁰)</text>
+
+            {/* Foton Kuantum Terpancar */}
+            <path d="M 65 0 Q 75 -20, 95 -25 T 125 -30" stroke="#F59E0B" strokeWidth="3" fill="none" />
+            <text x="135" y="-25" fill="#D97706" fontSize="9" fontWeight="900">Foton ΔE = h·ν</text>
+          </g>
+
+          {/* Sisi Kanan: Panduan Konfigurasi Elektron & Kuantum */}
+          <g transform="translate(345, 66)">
+            <rect x="0" y="0" width="225" height="215" rx="10" fill="#FFF8EA" stroke="#5C3A21" strokeWidth="2" />
+            <rect x="0" y="0" width="225" height="28" rx="10" fill="#FFAE6D" stroke="#5C3A21" strokeWidth="1.5" />
+            <text x="112" y="19" fill="#000000" fontSize="11" fontWeight="bold" textAnchor="middle">
+              📚 KONFIGURASI ELEKTRON
+            </text>
+
+            <g transform="translate(10, 36)">
+              <rect x="0" y="0" width="205" height="52" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
+              <text x="10" y="18" fill="#0284C7" fontSize="10" fontWeight="900">1. Daya Tampung Kulit (2n²):</text>
+              <text x="10" y="32" fill="#5C3A21" fontSize="8.5">• Kulit K (n=1) = maks 2 elektron</text>
+              <text x="10" y="44" fill="#5C3A21" fontSize="8.5">• Kulit L (n=2) = maks 8 • M (n=3) = 18</text>
+
+              <rect x="0" y="60" width="205" height="52" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
+              <text x="10" y="18" fill="#7C3AED" fontSize="10" fontWeight="900">2. 4 Bilangan Kuantum:</text>
+              <text x="10" y="32" fill="#5C3A21" fontSize="8.5">• Utama (n) • Azimut (l: s, p, d, f)</text>
+              <text x="10" y="44" fill="#5C3A21" fontSize="8.5">• Magnetik (m) • Spin (s: +½, -½)</text>
+
+              <rect x="0" y="120" width="205" height="50" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
+              <text x="10" y="18" fill="#D97706" fontSize="10" fontWeight="bold">3. Efek Fotolistrik (Einstein):</text>
+              <text x="10" y="32" fill="#5C3A21" fontSize="8.5">• Elektron terlempar saat disinari foton</text>
+              <text x="10" y="44" fill="#5C3A21" fontSize="8.5">• Membuktikan sifat partikel cahaya!</text>
+            </g>
+          </g>
+        </svg>
+      )}
+
+      {/* ==================================================================== */}
+      {/* 37. KIMIA SMA: SKALA DERAJAT KEASAMAN (pH 0-14) & NETRALISASI        */}
+      {/* ==================================================================== */}
+      {type === 'ph_scale' && (
+        <svg viewBox="0 0 600 320" className="w-full h-full max-h-[320px] select-none">
+          <defs>
+            <linearGradient id="phGradClay" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="#EF4444" />
+              <stop offset="30%" stopColor="#F59E0B" />
+              <stop offset="50%" stopColor="#10B981" />
+              <stop offset="70%" stopColor="#0284C7" />
+              <stop offset="100%" stopColor="#7C3AED" />
+            </linearGradient>
+          </defs>
+
+          <rect x="6" y="6" width="588" height="308" rx="14" fill="#FFF8EA" stroke="#5C3A21" strokeWidth="3" />
+          <rect x="14" y="14" width="572" height="292" rx="10" fill="#FFFDF7" stroke="#EADBC0" strokeWidth="1.5" />
+
+          {/* Header Kartu Clay */}
+          <g transform="translate(300, 22)">
+            <rect x="-210" y="0" width="420" height="32" rx="8" fill="#FFAE6D" stroke="#5C3A21" strokeWidth="2" />
+            <text x="0" y="21" fill="#000000" fontSize="12" fontWeight="900" textAnchor="middle">
+              🧪 SKALA DERAJAT KEASAMAN (pH 0 - 14) & TITRASI ASAM-BASA 💧
+            </text>
+          </g>
+
+          {/* Spektrum Warna pH di Bagian Atas */}
+          <g transform="translate(45, 68)">
+            <rect x="0" y="0" width="510" height="38" rx="8" fill="url(#phGradClay)" stroke="#5C3A21" strokeWidth="2.5" />
+            {[0, 2, 4, 6, 7, 8, 10, 12, 14].map((val) => {
+              const xPos = (val / 14) * 510;
+              return (
+                <g key={val} transform={`translate(${xPos}, 0)`}>
+                  <line x1="0" y1="0" x2="0" y2="38" stroke="#FFF8EA" strokeWidth="2" />
+                  <rect x="-12" y="44" width="24" height="18" rx="4" fill="#FFF8EA" stroke="#5C3A21" strokeWidth="1.5" />
+                  <text x="0" y="57" fill="#000000" fontSize="10" fontWeight="900" textAnchor="middle">{val}</text>
+                </g>
+              );
+            })}
+          </g>
+
+          {/* 3 Tabung Larutan Edukasi di Bagian Bawah */}
+          <g transform="translate(45, 150)">
+            {/* Tabung 1: ASAM (pH < 7) */}
+            <g transform="translate(0, 0)">
+              <rect x="0" y="0" width="160" height="120" rx="10" fill="#FFF8EA" stroke="#5C3A21" strokeWidth="2" />
+              <rect x="0" y="0" width="160" height="26" rx="10" fill="#FDA4AF" stroke="#5C3A21" strokeWidth="1.5" />
+              <text x="80" y="18" fill="#000000" fontSize="10.5" fontWeight="900" textAnchor="middle">🍋 ASAM (pH 0-6)</text>
+              <text x="10" y="44" fill="#EF4444" fontSize="9.5" fontWeight="bold">• Kaya ion H⁺ (Asam)</text>
+              <text x="10" y="58" fill="#5C3A21" fontSize="8.5">• Lakmus biru ➔ merah</text>
+              <text x="10" y="72" fill="#5C3A21" fontSize="8.5">• Contoh: Jeruk, cuka, HCl</text>
+              <text x="10" y="96" fill="#000000" fontSize="9" fontWeight="bold">pH = -log [H⁺]</text>
+            </g>
+
+            {/* Tabung 2: NETRAL (pH = 7) */}
+            <g transform="translate(175, 0)">
+              <rect x="0" y="0" width="160" height="120" rx="10" fill="#FFF8EA" stroke="#5C3A21" strokeWidth="2" />
+              <rect x="0" y="0" width="160" height="26" rx="10" fill="#A8E6CF" stroke="#5C3A21" strokeWidth="1.5" />
+              <text x="80" y="18" fill="#000000" fontSize="10.5" fontWeight="900" textAnchor="middle">💧 NETRAL (pH = 7)</text>
+              <text x="10" y="44" fill="#166534" fontSize="9.5" fontWeight="bold">• [H⁺] = [OH⁻] Seimbang</text>
+              <text x="10" y="58" fill="#5C3A21" fontSize="8.5">• Tidak mengubah lakmus</text>
+              <text x="10" y="72" fill="#5C3A21" fontSize="8.5">• Contoh: Air murni, garam</text>
+              <text x="10" y="96" fill="#000000" fontSize="9" fontWeight="bold">pH + pOH = 14</text>
+            </g>
+
+            {/* Tabung 3: BASA (pH > 7) */}
+            <g transform="translate(350, 0)">
+              <rect x="0" y="0" width="160" height="120" rx="10" fill="#FFF8EA" stroke="#5C3A21" strokeWidth="2" />
+              <rect x="0" y="0" width="160" height="26" rx="10" fill="#BAE6FD" stroke="#5C3A21" strokeWidth="1.5" />
+              <text x="80" y="18" fill="#000000" fontSize="10.5" fontWeight="900" textAnchor="middle">🧼 BASA (pH 8-14)</text>
+              <text x="10" y="44" fill="#0284C7" fontSize="9.5" fontWeight="bold">• Kaya ion OH⁻ (Basa)</text>
+              <text x="10" y="58" fill="#5C3A21" fontSize="8.5">• Lakmus merah ➔ biru</text>
+              <text x="10" y="72" fill="#5C3A21" fontSize="8.5">• Contoh: Sabun, antasida</text>
+              <text x="10" y="96" fill="#000000" fontSize="9" fontWeight="bold">pOH = -log [OH⁻]</text>
+            </g>
+          </g>
+        </svg>
+      )}
+
+      {/* ==================================================================== */}
+      {/* 38. EKONOMI SMA: KURVA PERMINTAAN, PENAWARAN & EKUILIBRIUM           */}
+      {/* ==================================================================== */}
+      {type === 'economics_supply_demand' && (
+        <svg viewBox="0 0 600 320" className="w-full h-full max-h-[320px] select-none">
+          <rect x="6" y="6" width="588" height="308" rx="14" fill="#FFF8EA" stroke="#5C3A21" strokeWidth="3" />
+          <rect x="14" y="14" width="572" height="292" rx="10" fill="#FFFDF7" stroke="#EADBC0" strokeWidth="1.5" />
+
+          {/* Header Kartu Clay */}
+          <g transform="translate(300, 22)">
+            <rect x="-210" y="0" width="420" height="32" rx="8" fill="#FEF08A" stroke="#5C3A21" strokeWidth="2" />
+            <text x="0" y="21" fill="#000000" fontSize="12" fontWeight="900" textAnchor="middle">
+              ⚖️ EKONOMI: KURVA PERMINTAAN (D), PENAWARAN (S) & EKUILIBRIUM 🛍️
+            </text>
+          </g>
+
+          {/* Grafik Kurva Permintaan & Penawaran di Kiri */}
+          <g transform="translate(45, 66)">
+            <rect x="0" y="0" width="285" height="215" rx="10" fill="#FFF8EA" stroke="#5C3A21" strokeWidth="2" />
+
+            {/* Sumbu P (Harga) dan Q (Jumlah) */}
+            <line x1="45" y1="180" x2="265" y2="180" stroke="#5C3A21" strokeWidth="2.5" />
+            <line x1="45" y1="20" x2="45" y2="180" stroke="#5C3A21" strokeWidth="2.5" />
+            <text x="268" y="184" fill="#5C3A21" fontSize="9" fontWeight="bold">Q</text>
+            <text x="45" y="14" fill="#5C3A21" fontSize="9" fontWeight="bold" textAnchor="middle">P (Harga)</text>
+
+            {/* Kurva Permintaan (Qd: Merah Muda Turun) */}
+            <line x1="65" y1="40" x2="245" y2="160" stroke="#EF4444" strokeWidth="3.5" strokeLinecap="round" />
+            <text x="250" y="165" fill="#EF4444" fontSize="10" fontWeight="900">D (Qd)</text>
+
+            {/* Kurva Penawaran (Qs: Biru Naik) */}
+            <line x1="65" y1="160" x2="245" y2="40" stroke="#0284C7" strokeWidth="3.5" strokeLinecap="round" />
+            <text x="250" y="44" fill="#0284C7" fontSize="10" fontWeight="900">S (Qs)</text>
+
+            {/* Titik Temu Ekuilibrium Pasar (E) */}
+            <circle cx="155" cy="100" r="7" fill="#FEF08A" stroke="#5C3A21" strokeWidth="2" style={{ animation: 'solarPulse 2s infinite' }} />
+            <line x1="45" y1="100" x2="155" y2="100" stroke="#D97706" strokeWidth="1.5" strokeDasharray="3,3" />
+            <line x1="155" y1="100" x2="155" y2="180" stroke="#D97706" strokeWidth="1.5" strokeDasharray="3,3" />
+            <text x="175" y="96" fill="#000000" fontSize="10" fontWeight="900">E (Pe, Qe)</text>
+            <text x="32" y="103" fill="#D97706" fontSize="8" fontWeight="bold" textAnchor="end">Pe</text>
+            <text x="155" y="195" fill="#D97706" fontSize="8" fontWeight="bold" textAnchor="middle">Qe</text>
+          </g>
+
+          {/* Sisi Kanan: Panduan Hukum Ekonomi & Ekuilibrium */}
+          <g transform="translate(345, 66)">
+            <rect x="0" y="0" width="225" height="215" rx="10" fill="#FFF8EA" stroke="#5C3A21" strokeWidth="2" />
+            <rect x="0" y="0" width="225" height="28" rx="10" fill="#FFAE6D" stroke="#5C3A21" strokeWidth="1.5" />
+            <text x="112" y="19" fill="#000000" fontSize="11" fontWeight="bold" textAnchor="middle">
+              📊 MEKANISME PASAR & HARGA
+            </text>
+
+            <g transform="translate(10, 36)">
+              <rect x="0" y="0" width="205" height="52" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
+              <text x="10" y="18" fill="#EF4444" fontSize="10" fontWeight="900">1. Hukum Permintaan (D):</text>
+              <text x="10" y="32" fill="#5C3A21" fontSize="8.5">• Harga P naik ➔ Permintaan Qd turun</text>
+              <text x="10" y="44" fill="#5C3A21" fontSize="8.5">• Sudut pandang pembeli / konsumen</text>
+
+              <rect x="0" y="60" width="205" height="52" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
+              <text x="10" y="18" fill="#0284C7" fontSize="10" fontWeight="900">2. Hukum Penawaran (S):</text>
+              <text x="10" y="32" fill="#5C3A21" fontSize="8.5">• Harga P naik ➔ Pasokan Qs naik</text>
+              <text x="10" y="44" fill="#5C3A21" fontSize="8.5">• Sudut pandang penjual / produsen</text>
+
+              <rect x="0" y="120" width="205" height="50" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
+              <text x="10" y="18" fill="#166534" fontSize="10" fontWeight="bold">3. Titik Keseimbangan (E):</text>
+              <text x="10" y="32" fill="#166534" fontSize="9" fontWeight="bold">• Qd = Qs (Harga pasar sepakat adil)</text>
+              <text x="10" y="44" fill="#5C3A21" fontSize="8.5">• Mencegah kelangkaan & surplus!</text>
+            </g>
+          </g>
+        </svg>
+      )}
+
+      {/* ==================================================================== */}
+      {/* 39. FISIKA SMA: TERMODINAMIKA & MESIN KALOR CARNOT                   */}
+      {/* ==================================================================== */}
+      {type === 'thermodynamics_carnot' && (
+        <svg viewBox="0 0 600 320" className="w-full h-full max-h-[320px] select-none">
+          <rect x="6" y="6" width="588" height="308" rx="14" fill="#FFF8EA" stroke="#5C3A21" strokeWidth="3" />
+          <rect x="14" y="14" width="572" height="292" rx="10" fill="#FFFDF7" stroke="#EADBC0" strokeWidth="1.5" />
+
+          {/* Header Kartu Clay */}
+          <g transform="translate(300, 22)">
+            <rect x="-210" y="0" width="420" height="32" rx="8" fill="#FFAE6D" stroke="#5C3A21" strokeWidth="2" />
+            <text x="0" y="21" fill="#000000" fontSize="12" fontWeight="900" textAnchor="middle">
+              🔥 TERMODINAMIKA & SIKLUS MESIN KALOR CARNOT: W = Q₁ - Q₂ ⚙️
+            </text>
+          </g>
+
+          {/* Diagram Alir Mesin Carnot di Kiri */}
+          <g transform="translate(45, 66)">
+            <rect x="0" y="0" width="285" height="215" rx="10" fill="#FFF8EA" stroke="#5C3A21" strokeWidth="2" />
+
+            {/* Reservoir Suhu Tinggi T1 */}
+            <rect x="42" y="15" width="200" height="36" rx="6" fill="#FDA4AF" stroke="#5C3A21" strokeWidth="2" />
+            <text x="142" y="38" fill="#000000" fontSize="11" fontWeight="900" textAnchor="middle">Reservoir Suhu Tinggi (T₁)</text>
+
+            {/* Panah Kalor Masuk Q1 */}
+            <line x1="142" y1="51" x2="142" y2="82" stroke="#EF4444" strokeWidth="4.5" />
+            <polygon points="142,86 137,74 147,74" fill="#EF4444" />
+            <text x="168" y="72" fill="#EF4444" fontSize="10.5" fontWeight="900">Kalor Q₁</text>
+
+            {/* Mesin Carnot di Tengah */}
+            <g transform="translate(142, 112)">
+              <circle cx="0" cy="0" r="26" fill="#BAE6FD" stroke="#5C3A21" strokeWidth="2.5" />
+              <text x="0" y="4" fill="#000000" fontSize="10" fontWeight="900" textAnchor="middle">Mesin</text>
+              <text x="0" y="14" fill="#5C3A21" fontSize="7.5" textAnchor="middle">Carnot</text>
+            </g>
+
+            {/* Usaha Mekanik Keluar W */}
+            <line x1="168" y1="112" x2="235" y2="112" stroke="#166534" strokeWidth="4.5" />
+            <polygon points="240,112 228,107 228,117" fill="#166534" />
+            <text x="210" y="104" fill="#166534" fontSize="11" fontWeight="900">Usaha W</text>
+
+            {/* Panah Kalor Buang Q2 */}
+            <line x1="142" y1="138" x2="142" y2="162" stroke="#0284C7" strokeWidth="4.5" />
+            <polygon points="142,166 137,154 147,154" fill="#0284C7" />
+            <text x="168" y="156" fill="#0284C7" fontSize="10.5" fontWeight="900">Kalor Q₂</text>
+
+            {/* Reservoir Suhu Rendah T2 */}
+            <rect x="42" y="166" width="200" height="36" rx="6" fill="#BAE6FD" stroke="#5C3A21" strokeWidth="2" />
+            <text x="142" y="189" fill="#000000" fontSize="11" fontWeight="900" textAnchor="middle">Reservoir Suhu Rendah (T₂)</text>
+          </g>
+
+          {/* Sisi Kanan: Panduan Efisiensi & Hukum Termodinamika */}
+          <g transform="translate(345, 66)">
+            <rect x="0" y="0" width="225" height="215" rx="10" fill="#FFF8EA" stroke="#5C3A21" strokeWidth="2" />
+            <rect x="0" y="0" width="225" height="28" rx="10" fill="#FEF08A" stroke="#5C3A21" strokeWidth="1.5" />
+            <text x="112" y="19" fill="#000000" fontSize="11" fontWeight="bold" textAnchor="middle">
+              ⚙️ FORMULA MESIN KALOR
+            </text>
+
+            <g transform="translate(10, 36)">
+              <rect x="0" y="0" width="205" height="48" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
+              <text x="102" y="20" fill="#166534" fontSize="12" fontWeight="900" textAnchor="middle">
+                W = Q₁ - Q₂
+              </text>
+              <text x="102" y="36" fill="#5C3A21" fontSize="8.5" textAnchor="middle">
+                Usaha Luar = Kalor Masuk - Kalor Buang
+              </text>
+
+              <rect x="0" y="56" width="205" height="52" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
+              <text x="10" y="18" fill="#0284C7" fontSize="10" fontWeight="900">Efisiensi Carnot (η):</text>
+              <text x="10" y="32" fill="#0284C7" fontSize="9.5" fontWeight="bold">• η = 1 - (T₂ / T₁)</text>
+              <text x="10" y="44" fill="#5C3A21" fontSize="8.5">• Suhu mutlak dalam Kelvin (K)</text>
+
+              <rect x="0" y="116" width="205" height="56" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
+              <text x="10" y="18" fill="#D97706" fontSize="10" fontWeight="bold">Hukum Hess Termokimia:</text>
+              <text x="10" y="32" fill="#5C3A21" fontSize="8.5">• ΔH reaksi tidak bergantung lintasan</text>
+              <text x="10" y="44" fill="#5C3A21" fontSize="8.5">• Eksoterm (ΔH &lt; 0) • Endoterm (ΔH &gt; 0)</text>
+            </g>
+          </g>
+        </svg>
+      )}
+
+      {/* ==================================================================== */}
+      {/* 40. FISIKA SMA: OPTIK, PEMBIASAN CAHAYA & LENSA CEMBUNG              */}
+      {/* ==================================================================== */}
+      {type === 'optics_light' && (
+        <svg viewBox="0 0 600 320" className="w-full h-full max-h-[320px] select-none">
+          <rect x="6" y="6" width="588" height="308" rx="14" fill="#FFF8EA" stroke="#5C3A21" strokeWidth="3" />
+          <rect x="14" y="14" width="572" height="292" rx="10" fill="#FFFDF7" stroke="#EADBC0" strokeWidth="1.5" />
+
+          {/* Header Kartu Clay */}
+          <g transform="translate(300, 22)">
+            <rect x="-210" y="0" width="420" height="32" rx="8" fill="#BAE6FD" stroke="#5C3A21" strokeWidth="2" />
+            <text x="0" y="21" fill="#000000" fontSize="12" fontWeight="900" textAnchor="middle">
+              🔍 OPTIK: PEMBIASAN CAHAYA LENSA CEMBUNG & TITIK FOKUS 🌈
+            </text>
+          </g>
+
+          {/* Diagram Pembiasan Lensa di Kiri */}
+          <g transform="translate(35, 66)">
+            <rect x="0" y="0" width="285" height="215" rx="10" fill="#FFF8EA" stroke="#5C3A21" strokeWidth="2" />
+
+            {/* Sumbu Utama Horizontal */}
+            <line x1="15" y1="110" x2="270" y2="110" stroke="#5C3A21" strokeWidth="2" />
+            <text x="272" y="113" fill="#5C3A21" fontSize="8" fontWeight="bold">Sumbu</text>
+
+            {/* Lensa Cembung Kaca di Tengah */}
+            <path d="M 142 30 Q 162 110, 142 190 Q 122 110, 142 30" fill="#BAE6FD" fillOpacity="0.7" stroke="#0284C7" strokeWidth="2.5" />
+            <line x1="142" y1="20" x2="142" y2="200" stroke="#0284C7" strokeWidth="1" strokeDasharray="3,3" />
+
+            {/* Titik Fokus F1 & F2 */}
+            <circle cx="85" cy="110" r="3.5" fill="#FEF08A" stroke="#5C3A21" strokeWidth="1.5" />
+            <text x="85" y="125" fill="#5C3A21" fontSize="9" fontWeight="bold" textAnchor="middle">F₁</text>
+            <circle cx="200" cy="110" r="3.5" fill="#FEF08A" stroke="#5C3A21" strokeWidth="1.5" />
+            <text x="200" y="125" fill="#5C3A21" fontSize="9" fontWeight="bold" textAnchor="middle">F₂</text>
+
+            {/* Benda Tegak Panah Hijau di Kiri */}
+            <line x1="50" y1="110" x2="50" y2="55" stroke="#166534" strokeWidth="3.5" />
+            <polygon points="50,50 45,62 55,62" fill="#166534" />
+            <text x="50" y="44" fill="#166534" fontSize="9" fontWeight="bold" textAnchor="middle">Benda (s)</text>
+
+            {/* Sinar Istimewa 1: Sejajar sumbu dibiaskan lewat F2 */}
+            <line x1="50" y1="55" x2="142" y2="55" stroke="#EF4444" strokeWidth="2" />
+            <line x1="142" y1="55" x2="245" y2="150" stroke="#EF4444" strokeWidth="2" />
+
+            {/* Sinar Istimewa 2: Lewat pusat optik diteruskan */}
+            <line x1="50" y1="55" x2="245" y2="150" stroke="#F59E0B" strokeWidth="1.5" strokeDasharray="3,3" />
+
+            {/* Bayangan Nyata Terbalik Panah Merah di Kanan */}
+            <line x1="245" y1="110" x2="245" y2="150" stroke="#EF4444" strokeWidth="3.5" />
+            <polygon points="245,155 240,143 250,143" fill="#EF4444" />
+            <text x="245" y="170" fill="#EF4444" fontSize="9" fontWeight="bold" textAnchor="middle">Bayangan (s')</text>
+          </g>
+
+          {/* Sisi Kanan: Panduan Rumus Lensa & Optik */}
+          <g transform="translate(345, 66)">
+            <rect x="0" y="0" width="225" height="215" rx="10" fill="#FFF8EA" stroke="#5C3A21" strokeWidth="2" />
+            <rect x="0" y="0" width="225" height="28" rx="10" fill="#FFAE6D" stroke="#5C3A21" strokeWidth="1.5" />
+            <text x="112" y="19" fill="#000000" fontSize="11" fontWeight="bold" textAnchor="middle">
+              📐 RUMUS LENSA & ALAT OPTIK
+            </text>
+
+            <g transform="translate(10, 36)">
+              <rect x="0" y="0" width="205" height="48" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
+              <text x="102" y="20" fill="#0284C7" fontSize="12" fontWeight="900" textAnchor="middle">
+                1/f = 1/s + 1/s'
+              </text>
+              <text x="102" y="36" fill="#5C3A21" fontSize="8.5" textAnchor="middle">
+                f = Jarak Fokus • s = Jarak Benda • s' = Bayangan
+              </text>
+
+              <rect x="0" y="56" width="205" height="52" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
+              <text x="10" y="18" fill="#166534" fontSize="10" fontWeight="900">Perbesaran Bayangan (M):</text>
+              <text x="10" y="32" fill="#166534" fontSize="9.5" fontWeight="bold">• M = |s' / s| = |h' / h|</text>
+              <text x="10" y="44" fill="#5C3A21" fontSize="8.5">• Kuat Lensa: P = 100/f(cm) Dioptri</text>
+
+              <rect x="0" y="116" width="205" height="56" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
+              <text x="10" y="18" fill="#D97706" fontSize="10" fontWeight="bold">Aplikasi Alat Optik:</text>
+              <text x="10" y="32" fill="#5C3A21" fontSize="8.5">• Kacamata: Lensa cekung (-) / cembung (+)</text>
+              <text x="10" y="44" fill="#5C3A21" fontSize="8.5">• Mikroskop: 2 Lensa cembung (Objektif + Okuler)</text>
+            </g>
+          </g>
+        </svg>
+      )}
+
+      {/* ==================================================================== */}
+      {/* 41. KIMIA SMA: SENYAWA KARBON, HIDROKARBON & CINCIN BENZENA          */}
+      {/* ==================================================================== */}
+      {type === 'organic_chemistry' && (
+        <svg viewBox="0 0 600 320" className="w-full h-full max-h-[320px] select-none">
+          <rect x="6" y="6" width="588" height="308" rx="14" fill="#FFF8EA" stroke="#5C3A21" strokeWidth="3" />
+          <rect x="14" y="14" width="572" height="292" rx="10" fill="#FFFDF7" stroke="#EADBC0" strokeWidth="1.5" />
+
+          {/* Header Kartu Clay */}
+          <g transform="translate(300, 22)">
+            <rect x="-210" y="0" width="420" height="32" rx="8" fill="#DDD6FE" stroke="#5C3A21" strokeWidth="2" />
+            <text x="0" y="21" fill="#000000" fontSize="12" fontWeight="900" textAnchor="middle">
+              🧪 KIMIA ORGANIK: RANTAI KARBON ALKANA & CINCIN BENZENA (C₆H₆) 💎
+            </text>
+          </g>
+
+          {/* Cincin Benzena Aromatik & Molekul Karbon di Kiri */}
+          <g transform="translate(35, 66)">
+            <rect x="0" y="0" width="285" height="215" rx="10" fill="#FFF8EA" stroke="#5C3A21" strokeWidth="2" />
+
+            {/* Cincin Aromatik Benzena Segi Enam */}
+            <g transform="translate(85, 105)">
+              <polygon points="0,-48 42,-24 42,24 0,48 -42,24 -42,-24" fill="#BAE6FD" fillOpacity="0.4" stroke="#0284C7" strokeWidth="3" />
+              <circle cx="0" cy="0" r="26" fill="none" stroke="#0284C7" strokeWidth="2" strokeDasharray="5,4" />
+              <text x="0" y="4" fill="#000000" fontSize="10" fontWeight="900" textAnchor="middle">C₆H₆</text>
+              <text x="0" y="66" fill="#0284C7" fontSize="9" fontWeight="bold" textAnchor="middle">Benzena Aromatik</text>
+            </g>
+
+            {/* Rantai Karbon Etanol (Alkohol) */}
+            <g transform="translate(205, 105)">
+              <circle cx="-25" cy="0" r="14" fill="#FFAE6D" stroke="#5C3A21" strokeWidth="2" />
+              <text x="-25" y="4" fill="#000000" fontSize="10" fontWeight="900" textAnchor="middle">C</text>
+              <line x1="-11" y1="0" x2="11" y2="0" stroke="#5C3A21" strokeWidth="3" />
+              <circle cx="25" cy="0" r="14" fill="#FFAE6D" stroke="#5C3A21" strokeWidth="2" />
+              <text x="25" y="4" fill="#000000" fontSize="10" fontWeight="900" textAnchor="middle">C</text>
+              <line x1="39" y1="0" x2="56" y2="0" stroke="#5C3A21" strokeWidth="3" />
+              <circle cx="68" cy="0" r="12" fill="#FDA4AF" stroke="#5C3A21" strokeWidth="2" />
+              <text x="68" y="4" fill="#000000" fontSize="8" fontWeight="bold" textAnchor="middle">OH</text>
+              <text x="20" y="66" fill="#EF4444" fontSize="9" fontWeight="bold" textAnchor="middle">Etanol (C₂H₅OH)</text>
+            </g>
+          </g>
+
+          {/* Sisi Kanan: Panduan Deret Homolog & Gugus Fungsi */}
+          <g transform="translate(345, 66)">
+            <rect x="0" y="0" width="225" height="215" rx="10" fill="#FFF8EA" stroke="#5C3A21" strokeWidth="2" />
+            <rect x="0" y="0" width="225" height="28" rx="10" fill="#FEF08A" stroke="#5C3A21" strokeWidth="1.5" />
+            <text x="112" y="19" fill="#000000" fontSize="11" fontWeight="bold" textAnchor="middle">
+              📚 DERET HOMOLOG HIDROKARBON
+            </text>
+
+            <g transform="translate(10, 36)">
+              <rect x="0" y="0" width="205" height="52" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
+              <text x="10" y="18" fill="#166534" fontSize="10" fontWeight="900">1. Deret Alkana, Alkena, Alkuna:</text>
+              <text x="10" y="32" fill="#5C3A21" fontSize="8.5">• Alkana: CₙH₂ₙ₊₂ (Ikatan tunggal)</text>
+              <text x="10" y="44" fill="#5C3A21" fontSize="8.5">• Alkena: CₙH₂ₙ • Alkuna: CₙH₂ₙ₋₂</text>
+
+              <rect x="0" y="60" width="205" height="52" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
+              <text x="10" y="18" fill="#0284C7" fontSize="10" fontWeight="900">2. Gugus Fungsi Utama:</text>
+              <text x="10" y="32" fill="#5C3A21" fontSize="8.5">• Alkohol (-OH) • Eter (-O-)</text>
+              <text x="10" y="44" fill="#5C3A21" fontSize="8.5">• Aldehid (-CHO) • Asam Karboksilat</text>
+
+              <rect x="0" y="120" width="205" height="50" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
+              <text x="10" y="18" fill="#D97706" fontSize="10" fontWeight="bold">3. Makromolekul Kehidupan:</text>
+              <text x="10" y="32" fill="#5C3A21" fontSize="8.5">• Polimer, Karbohidrat, Protein, Lipid</text>
+              <text x="10" y="44" fill="#5C3A21" fontSize="8.5">• Menyusun seluruh sel makhluk hidup!</text>
+            </g>
+          </g>
+        </svg>
+      )}
+
+      {/* ==================================================================== */}
+      {/* 42. FISIKA SMA: RELATIVITAS KHUSUS EINSTEIN (E = mc²) & DILATASI      */}
+      {/* ==================================================================== */}
+      {type === 'relativity_einstein' && (
+        <svg viewBox="0 0 600 320" className="w-full h-full max-h-[320px] select-none">
+          <rect x="6" y="6" width="588" height="308" rx="14" fill="#FFF8EA" stroke="#5C3A21" strokeWidth="3" />
+          <rect x="14" y="14" width="572" height="292" rx="10" fill="#FFFDF7" stroke="#EADBC0" strokeWidth="1.5" />
+
+          {/* Header Kartu Clay */}
+          <g transform="translate(300, 22)">
+            <rect x="-210" y="0" width="420" height="32" rx="8" fill="#FEF08A" stroke="#5C3A21" strokeWidth="2" />
+            <text x="0" y="21" fill="#000000" fontSize="12" fontWeight="900" textAnchor="middle">
+              ✨ TEORI RELATIVITAS KHUSUS EINSTEIN: E = m · c² & DILATASI WAKTU 🚀
+            </text>
+          </g>
+
+          {/* Roket Relativistik & Jam Waktu Melambat di Kiri */}
+          <g transform="translate(35, 66)">
+            <rect x="0" y="0" width="285" height="215" rx="10" fill="#FFF8EA" stroke="#5C3A21" strokeWidth="2" />
+
+            {/* Roket Antariksa Berkecepatan Tinggi */}
+            <g transform="translate(142, 65)">
+              <ellipse cx="0" cy="0" rx="55" ry="18" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="2.5" />
+              <polygon points="55,0 30,-14 30,14" fill="#EF4444" stroke="#5C3A21" strokeWidth="1.5" />
+              {/* Semburan Api Plasma Jet */}
+              <polygon points="-55,0 -80,-8 -70,0 -80,8" fill="#FFAE6D" />
+              <text x="0" y="5" fill="#000000" fontSize="10" fontWeight="900" textAnchor="middle">v ≈ 0.8 c</text>
+              <text x="0" y="32" fill="#5C3A21" fontSize="8.5" fontWeight="bold" textAnchor="middle">Mendekati Kecepatan Cahaya</text>
+            </g>
+
+            {/* Jam Waktu Berdetak Lebih Lambat */}
+            <g transform="translate(142, 145)">
+              <circle cx="0" cy="0" r="28" fill="#BAE6FD" stroke="#5C3A21" strokeWidth="2.5" />
+              <line x1="0" y1="0" x2="0" y2="-16" stroke="#5C3A21" strokeWidth="2.5" strokeLinecap="round" />
+              <line x1="0" y1="0" x2="12" y2="0" stroke="#EF4444" strokeWidth="2" strokeLinecap="round" />
+              <circle cx="0" cy="0" r="3" fill="#5C3A21" />
+              <text x="0" y="42" fill="#0284C7" fontSize="9" fontWeight="900" textAnchor="middle">Waktu Berdetak Melambat!</text>
+            </g>
+          </g>
+
+          {/* Sisi Kanan: Panduan Rumus Relativitas Einstein */}
+          <g transform="translate(345, 66)">
+            <rect x="0" y="0" width="225" height="215" rx="10" fill="#FFF8EA" stroke="#5C3A21" strokeWidth="2" />
+            <rect x="0" y="0" width="225" height="28" rx="10" fill="#FFAE6D" stroke="#5C3A21" strokeWidth="1.5" />
+            <text x="112" y="19" fill="#000000" fontSize="11" fontWeight="bold" textAnchor="middle">
+              ⚡ KESETARAAN MASSA & ENERGI
+            </text>
+
+            <g transform="translate(10, 36)">
+              <rect x="0" y="0" width="205" height="52" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
+              <text x="102" y="20" fill="#D97706" fontSize="14" fontWeight="900" textAnchor="middle">
+                E = m · c²
+              </text>
+              <text x="102" y="36" fill="#5C3A21" fontSize="8.5" textAnchor="middle">
+                c = 300.000 km/s (Cepat rambat cahaya)
+              </text>
+
+              <rect x="0" y="60" width="205" height="52" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
+              <text x="10" y="18" fill="#0284C7" fontSize="10" fontWeight="900">1. Dilatasi Waktu (Δt):</text>
+              <text x="10" y="32" fill="#0284C7" fontSize="9" fontWeight="bold">• Δt = Δt₀ / √(1 - v²/c²)</text>
+              <text x="10" y="44" fill="#5C3A21" fontSize="8.5">• Jam astronot bergerak lebih lambat</text>
+
+              <rect x="0" y="120" width="205" height="50" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
+              <text x="10" y="18" fill="#166534" fontSize="10" fontWeight="bold">2. Kalibrasi Satelit GPS:</text>
+              <text x="10" y="32" fill="#5C3A21" fontSize="8.5">• Satelit GPS wajib koreksi rumus Einstein</text>
+              <text x="10" y="44" fill="#5C3A21" fontSize="8.5">• Peta smartphone akurat hingga meter!</text>
+            </g>
+          </g>
+        </svg>
+      )}
+
+      {/* ==================================================================== */}
+      {/* 43. PAPAN TULIS KELAS CERIA DINAMIS (PANGGUNG EDUKASI 60FPS)         */}
       {/* ==================================================================== */}
       {(type === 'classroom_chalkboard' ||
         type === 'mindmap_general' ||
@@ -2549,7 +3235,16 @@ export const EducationalVideoCanvas: React.FC<EducationalVideoCanvasProps> = ({
           type !== 'flowchart_logic' &&
           type !== 'wave_sound' &&
           type !== 'dna_helix' &&
-          type !== 'history_timeline')) && (
+          type !== 'history_timeline' &&
+          type !== 'trigonometry_wave' &&
+          type !== 'calculus_integral_derivative' &&
+          type !== 'bohr_atom' &&
+          type !== 'ph_scale' &&
+          type !== 'economics_supply_demand' &&
+          type !== 'thermodynamics_carnot' &&
+          type !== 'optics_light' &&
+          type !== 'organic_chemistry' &&
+          type !== 'relativity_einstein')) && (
         <svg viewBox="0 0 600 320" className="w-full h-full max-h-[320px] select-none">
           {/* Bingkai Papan Kayu Chunky RadenWorld */}
           <rect x="6" y="6" width="588" height="308" rx="14" fill="#FFF8EA" stroke="#5C3A21" strokeWidth="3.5" />

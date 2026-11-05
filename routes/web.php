@@ -61,6 +61,62 @@ Route::get('/ping', function () {
 });
 
 // ============================================================================
+// API TTS (TEXT-TO-SPEECH) EDUKASI BAHASA INDONESIA BERKECEPATAN TINGGI
+// Menghasilkan Audio MP3 Pelafalan Bahasa Indonesia Jernih & Ditembolok (Cached)
+// ============================================================================
+Route::get('/api/tts', function (\Illuminate\Http\Request $request) {
+    $text = trim((string) $request->query('text', ''));
+    $lang = trim((string) $request->query('lang', 'id'));
+
+    if (empty($text)) {
+        return response()->json(['error' => 'Parameter text wajib diisi'], 400);
+    }
+
+    // Batasi teks maksimal 250 karakter per potongan
+    $text = mb_substr($text, 0, 250, 'UTF-8');
+    $cacheDir = storage_path('app/tts_cache');
+    if (!file_exists($cacheDir)) {
+        @mkdir($cacheDir, 0777, true);
+    }
+
+    $cacheKey = md5($lang . '_' . $text);
+    $cacheFile = $cacheDir . DIRECTORY_SEPARATOR . $cacheKey . '.mp3';
+
+    if (file_exists($cacheFile) && filesize($cacheFile) > 500) {
+        return response()->file($cacheFile, [
+            'Content-Type' => 'audio/mpeg',
+            'Cache-Control' => 'public, max-age=604800, immutable',
+            'Access-Control-Allow-Origin' => '*',
+            'Accept-Ranges' => 'bytes',
+        ]);
+    }
+
+    $url = 'https://translate.google.com/translate_tts?ie=UTF-8&tl=' . urlencode($lang) . '&client=tw-ob&q=' . urlencode($text);
+
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, $url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 6);
+    curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
+    $audioData = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    if ($httpCode === 200 && !empty($audioData) && strlen($audioData) > 500) {
+        @file_put_contents($cacheFile, $audioData);
+        return response($audioData, 200, [
+            'Content-Type' => 'audio/mpeg',
+            'Cache-Control' => 'public, max-age=604800, immutable',
+            'Access-Control-Allow-Origin' => '*',
+            'Accept-Ranges' => 'bytes',
+        ]);
+    }
+
+    return response()->json(['error' => 'Gagal menghasilkan audio TTS'], 502);
+});
+
+// ============================================================================
 // API SEKOLAH (SD, SMP, SMA)
 // ============================================================================
 Route::get('/api/game/school/{type?}', function ($type = 'sd') {

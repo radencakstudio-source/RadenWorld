@@ -225,7 +225,7 @@ export class VoiceNarratorService {
 
     const chunk = this.audioQueue[this.currentQueueIndex];
     const encoded = encodeURIComponent(chunk);
-    const audioUrl = `https://translate.google.com/translate_tts?ie=UTF-8&tl=id&client=tw-ob&q=${encoded}`;
+    const audioUrl = `/api/tts?lang=id&text=${encoded}`;
 
     try {
       const audio = new Audio(audioUrl);
@@ -238,9 +238,10 @@ export class VoiceNarratorService {
         }
       };
 
-      audio.onerror = () => {
+      audio.onerror = (e) => {
         console.warn(
-          '[VoiceNarratorService] Online TTS stream gagal/luring, fallback ke SpeechSynthesis lokal...'
+          '[VoiceNarratorService] Audio /api/tts gagal, fallback ke SpeechSynthesis lokal...',
+          e
         );
         this.fallbackToSpeechSynthesis(onEnd);
       };
@@ -248,9 +249,14 @@ export class VoiceNarratorService {
       const playPromise = audio.play();
       if (playPromise !== undefined) {
         playPromise.catch((err) => {
-          console.warn('[VoiceNarratorService] Autoplay audio error:', err);
-          // Coba fallback ke speechSynthesis
-          this.fallbackToSpeechSynthesis(onEnd);
+          if (err.name === 'NotAllowedError') {
+            console.warn(
+              '[VoiceNarratorService] Browser membatasi pemutaran otomatis (perlu klik pengguna).'
+            );
+          } else {
+            console.warn('[VoiceNarratorService] Autoplay audio error:', err);
+            this.fallbackToSpeechSynthesis(onEnd);
+          }
         });
       }
     } catch (err) {

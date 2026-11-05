@@ -279,12 +279,32 @@ export const InteractiveVideoStage: React.FC<InteractiveVideoStageProps> = ({
     return `${mins.toString().padStart(2, '0')}:${rest.toString().padStart(2, '0')}`;
   };
 
+  // Toggle Play dengan aktivasi suara langsung dari user gesture
+  const handleTogglePlayWithVoice = useCallback(() => {
+    if (!isPlaying) {
+      onTogglePlay();
+      if (isVoiceEnabled) {
+        speakCurrentScene(true);
+      }
+    } else {
+      onTogglePlay();
+      narrator.stop();
+    }
+  }, [isPlaying, onTogglePlay, isVoiceEnabled, speakCurrentScene, narrator]);
+
   // Navigasi Babak
   const jumpToStep = (targetStep: number) => {
     sound.playClick();
     const targetTime = targetStep * sceneDuration;
     setPlaybackTime(targetTime);
     setActiveStep(targetStep);
+    if (isVoiceEnabled) {
+      const nextScene = storyScenes[targetStep];
+      if (nextScene) {
+        const text = `${nextScene.chapter}: ${nextScene.title}. ${nextScene.narration}`;
+        narrator.speak(text, { force: true });
+      }
+    }
   };
 
   const handlePrevStep = () => {
@@ -401,7 +421,7 @@ export const InteractiveVideoStage: React.FC<InteractiveVideoStageProps> = ({
         {/* Kanvas Utama Animasi SVG */}
         <div
           className="relative w-full h-full max-w-2xl flex items-center justify-center cursor-pointer"
-          onClick={onTogglePlay}
+          onClick={handleTogglePlayWithVoice}
           title={isPlaying ? 'Klik untuk Jeda Video' : 'Klik untuk Putar Video'}
         >
           <EducationalVideoCanvas
@@ -639,7 +659,7 @@ export const InteractiveVideoStage: React.FC<InteractiveVideoStageProps> = ({
             onClick={(e) => {
               e.stopPropagation();
               sound.playClick();
-              onTogglePlay();
+              handleTogglePlayWithVoice();
             }}
             className="p-1.5 clay-btn-primary text-black shrink-0"
             title={isPlaying ? 'Jeda Video' : 'Putar Video'}

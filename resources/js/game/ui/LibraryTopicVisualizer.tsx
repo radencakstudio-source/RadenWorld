@@ -57,6 +57,7 @@ export type VisualDiagramType =
   | 'math_arithmetic'
   | 'math_multiplication_division'
   | 'math_data_charts'
+  | 'math_exponential_logarithm'
   // IPA / Sains
   | 'science_plants_growth'
   | 'science_animals_habitat'
@@ -99,6 +100,7 @@ export type VisualDiagramType =
   // Informatika & Komputasi
   | 'informatics_scratch'
   | 'flowchart_logic'
+  | 'data_structures_algorithms'
   | 'history_timeline'
   // Default Fallback
   | 'classroom_chalkboard'
@@ -116,189 +118,83 @@ export function detectDiagramType(subject: {
   const hay = `${subject.id || ''} ${subject.name || ''} ${subject.title || ''} ${subject.badge || ''} ${subject.subtitle || ''} ${subject.category || ''} ${(subject.points || []).join(' ')}`.toLowerCase();
 
   // ==========================================================================
-  // PRIORITAS UTAMA: TOPIK SPESIFIK SMP / SAINS LANJUTAN
+  // 1. BAHASA INGGRIS (Prioritas Tertinggi untuk Seluruh Pelajaran English)
   // ==========================================================================
-  // A. Matematika SMP - Aljabar, Persamaan Linear (PLSV, SPLDV), Koordinat Kartesius & Fungsi Kuadrat
   if (
-    hay.includes('aljabar') ||
-    hay.includes('plsv') ||
-    hay.includes('ptlsv') ||
-    hay.includes('spldv') ||
-    hay.includes('suku sejenis') ||
-    hay.includes('variabel') ||
-    hay.includes('koefisien') ||
-    hay.includes('konstanta') ||
-    hay.includes('kartesius') ||
-    hay.includes('gradien') ||
-    hay.includes('fungsi kuadrat') ||
-    hay.includes('persamaan kuadrat') ||
-    hay.includes('persamaan linear')
+    subject.category === 'Bahasa Inggris' ||
+    subject.name === 'Bahasa Inggris' ||
+    hay.includes('bahasa inggris') ||
+    hay.includes('english') ||
+    hay.includes('exposition') ||
+    hay.includes('narrative text') ||
+    hay.includes('conditional sentences') ||
+    hay.includes('news item') ||
+    hay.includes('past tense') ||
+    hay.includes('greetings')
   ) {
-    return 'cartesian_linear';
-  }
-
-  // B. Matematika SMP - Teorema Pythagoras & Tripel Pythagoras
-  if (
-    hay.includes('pythagoras') ||
-    hay.includes('hipotenusa') ||
-    hay.includes('segitiga siku-siku') ||
-    hay.includes('tripel pythagoras') ||
-    hay.includes('triple pythagoras')
-  ) {
-    return 'pythagoras';
-  }
-
-  // C. IPA SMP - Organisasi Kehidupan: Struktur Sel, Organel, Nukleus & Mitokondria
-  if (
-    hay.includes('struktur sel') ||
-    hay.includes('organisasi kehidupan') ||
-    hay.includes('sel hewan') ||
-    hay.includes('sel tumbuhan') ||
-    hay.includes('organel') ||
-    hay.includes('nukleus') ||
-    hay.includes('mitokondria') ||
-    hay.includes('mikroskop') ||
-    hay.includes('pembelahan sel')
-  ) {
-    return 'cell_structure';
-  }
-
-  // D. IPA Fisika SMP - Tekanan Zat, Hukum Pascal, Tekanan Hidrostatis & Bejana Hidrolik
-  if (
-    hay.includes('tekanan zat') ||
-    hay.includes('hukum pascal') ||
-    hay.includes('hidrostatis') ||
-    hay.includes('bejana berhubungan') ||
-    hay.includes('archimedes') ||
-    hay.includes('dongkrak hidrolik') ||
-    hay.includes('tekanan zat padat') ||
-    hay.includes('tekanan cair')
-  ) {
-    return 'pressure_pascal';
-  }
-
-  // E. IPA Biologi SMP - Sistem Peredaran Darah Manusia, Jantung 4 Ruang & Pembuluh Darah
-  if (
-    hay.includes('peredaran darah') ||
-    hay.includes('jantung') ||
-    hay.includes('golongan darah') ||
-    hay.includes('aorta') ||
-    hay.includes('serambi') ||
-    hay.includes('bilik jantung') ||
-    hay.includes('eritrosit') ||
-    hay.includes('leukosit') ||
-    hay.includes('trombosit')
-  ) {
-    return 'blood_circulation';
-  }
-
-  // F. IPA Fisika SMP - Listrik Dinamis, Statis, Hukum Ohm & Rangkaian Seri-Paralel
-  if (
-    hay.includes('listrik dinamis') ||
-    hay.includes('listrik statis') ||
-    hay.includes('hukum ohm') ||
-    hay.includes('rangkaian seri') ||
-    hay.includes('rangkaian paralel') ||
-    hay.includes('hukum coulomb') ||
-    hay.includes('kemagnetan') ||
-    hay.includes('induksi elektromagnetik') ||
-    hay.includes('trafo') ||
-    hay.includes('arus listrik') ||
-    hay.includes('hambatan listrik')
-  ) {
-    return 'electric_circuit';
-  }
-
-  // G. IPA Fisika SMP - Getaran, Gelombang, Bunyi, Resonansi & Frekuensi
-  if (
-    hay.includes('getaran') ||
-    hay.includes('gelombang') ||
-    hay.includes('resonansi') ||
-    hay.includes('amplitudo') ||
-    hay.includes('cepat rambat') ||
-    (hay.includes('bunyi') && !hay.includes('pancasila'))
-  ) {
-    return 'wave_sound';
-  }
-
-  // H. IPA Fisika SMP - Hukum Newton, Dinamika Gerak & Gaya
-  if (
-    hay.includes('hukum newton') ||
-    hay.includes('kelembaman') ||
-    hay.includes('gaya dorong') ||
-    hay.includes('gaya aksi reaksi') ||
-    hay.includes('f = m')
-  ) {
-    return 'newton_dynamics';
-  }
-
-  // I. IPA Biologi SMP - Pewarisan Sifat: Hukum Mendel, DNA & Genetika
-  if (
-    hay.includes('pewarisan sifat') ||
-    hay.includes('hukum mendel') ||
-    hay.includes('genetika') ||
-    hay.includes('dna') ||
-    hay.includes('kromosom')
-  ) {
-    return 'dna_helix';
-  }
-
-  // J. Informatika SMP - Berpikir Komputasional, Flowchart Logika, Jaringan & Database
-  if (
-    hay.includes('berpikir komputasional') ||
-    hay.includes('dekomposisi') ||
-    hay.includes('abstraksi') ||
-    hay.includes('flowchart') ||
-    hay.includes('pseudocode') ||
-    hay.includes('jaringan komputer') ||
-    hay.includes('topologi') ||
-    hay.includes('ip address') ||
-    hay.includes('basis data') ||
-    hay.includes('database') ||
-    hay.includes('keamanan siber') ||
-    hay.includes('cybersecurity')
-  ) {
-    return 'flowchart_logic';
-  }
-
-  // K. Sejarah & Garis Waktu SMP
-  if (
-    hay.includes('praaksara') ||
-    hay.includes('kebangkitan nasional') ||
-    hay.includes('sumpah pemuda') ||
-    hay.includes('zaman logam') ||
-    hay.includes('paleolitikum')
-  ) {
-    return 'history_timeline';
+    return 'english_kids';
   }
 
   // ==========================================================================
-  // PRIORITAS UTAMA: TOPIK SPESIFIK SMA (KELAS 10, 11, 12)
+  // 2. SENI BUDAYA & KARYA SENI
   // ==========================================================================
-  // L. Matematika SMA - Kalkulus: Turunan (Diferensial) & Integral Fungsi Aljabar
   if (
-    hay.includes('turunan fungsi') ||
-    hay.includes('diferensial') ||
-    hay.includes('integral') ||
-    hay.includes('nilai stasioner') ||
-    hay.includes('garis singgung kurva') ||
-    hay.includes('kalkulus')
+    hay.includes('seni rupa') ||
+    hay.includes('karya seni') ||
+    hay.includes('batik') ||
+    hay.includes('wayang') ||
+    hay.includes('aksara jawa') ||
+    hay.includes('tangga nada') ||
+    hay.includes('tembang')
   ) {
-    return 'calculus_integral_derivative';
+    return 'art_culture_jawa';
   }
 
-  // M. Matematika SMA - Trigonometri: Lingkaran Satuan & Sudut Istimewa
+  // ==========================================================================
+  // 3. PRIORITAS KHUSUS TINGKAT TINGGI SMA (KELAS 10, 11, 12)
+  // ==========================================================================
+  // A. Matematika SMA - Fungsi Eksponen dan Logaritma
   if (
-    hay.includes('trigonometri') ||
-    hay.includes('sin cos') ||
-    hay.includes('sudut istimewa') ||
-    hay.includes('lingkaran satuan') ||
-    hay.includes('tangen')
+    hay.includes('eksponen') ||
+    hay.includes('logaritma') ||
+    hay.includes('pertumbuhan eksponensial') ||
+    hay.includes('peluruhan radioaktif') ||
+    hay.includes('perpangkatan')
   ) {
-    return 'trigonometry_wave';
+    return 'math_exponential_logarithm';
   }
 
-  // N. Fisika SMA - Termodinamika & Efisiensi Mesin Kalor Carnot / Termokimia
+  // B. Informatika SMA - Struktur Data Linier, Algoritma Pemrograman & AI Machine Learning
+  if (
+    hay.includes('array') ||
+    hay.includes('stack') ||
+    hay.includes('queue') ||
+    hay.includes('rekursi') ||
+    hay.includes('big-o') ||
+    hay.includes('kompleksitas') ||
+    hay.includes('binary search') ||
+    hay.includes('machine learning') ||
+    hay.includes('kecerdasan buatan') ||
+    hay.includes('artificial intelligence') ||
+    hay.includes('neural network') ||
+    hay.includes('supervised learning') ||
+    hay.includes('struktur data') ||
+    hay.includes('algoritma pemrograman')
+  ) {
+    return 'data_structures_algorithms';
+  }
+
+  // C. Statistika Lanjutan & Data Charts (Cegah kata "frekuensi data" memicu gelombang suara)
+  if (
+    hay.includes('statistika') ||
+    hay.includes('data berkelompok') ||
+    hay.includes('ukuran pemusatan') ||
+    hay.includes('penyebaran data')
+  ) {
+    return 'math_data_charts';
+  }
+
+  // D. Fisika SMA - Termodinamika & Kalor Carnot / Termokimia Entalpi
   if (
     hay.includes('termodinamika') ||
     hay.includes('mesin kalor') ||
@@ -310,7 +206,47 @@ export function detectDiagramType(subject: {
     return 'thermodynamics_carnot';
   }
 
-  // O. Fisika SMA - Alat-Alat Optik, Pembiasan Cahaya & Lensa
+  // E. Kimia SMA - Senyawa Karbon, Turunan Alkana, Polimer & Makromolekul
+  if (
+    hay.includes('turunan alkana') ||
+    hay.includes('senyawa karbon') ||
+    hay.includes('alkana') ||
+    hay.includes('alkohol') ||
+    hay.includes('aldehid') ||
+    hay.includes('keton') ||
+    hay.includes('benzena') ||
+    hay.includes('makromolekul') ||
+    hay.includes('polimer') ||
+    (hay.includes('eter') && !hay.includes('determinan') && !hay.includes('karakter')) ||
+    hay.includes('ikatan kimia')
+  ) {
+    return 'organic_chemistry';
+  }
+
+  // F. Matematika SMA - Kalkulus: Turunan Fungsi (Diferensial) & Integral Aljabar
+  if (
+    (hay.includes('turunan') && !hay.includes('turunan alkana')) ||
+    hay.includes('diferensial') ||
+    hay.includes('integral') ||
+    hay.includes('nilai stasioner') ||
+    hay.includes('garis singgung kurva') ||
+    hay.includes('kalkulus')
+  ) {
+    return 'calculus_integral_derivative';
+  }
+
+  // G. Matematika SMA - Trigonometri: Lingkaran Satuan & Sudut Istimewa
+  if (
+    hay.includes('trigonometri') ||
+    hay.includes('sin cos') ||
+    hay.includes('sudut istimewa') ||
+    hay.includes('lingkaran satuan') ||
+    hay.includes('tangen')
+  ) {
+    return 'trigonometry_wave';
+  }
+
+  // H. Fisika SMA - Alat-Alat Optik, Pembiasan Cahaya & Lensa
   if (
     hay.includes('alat optik') ||
     hay.includes('alat-alat optik') ||
@@ -318,12 +254,13 @@ export function detectDiagramType(subject: {
     hay.includes('lensa') ||
     hay.includes('cermin') ||
     hay.includes('lup') ||
+    (hay.includes('mikroskop') && !hay.includes('sel')) ||
     hay.includes('pembiasan cahaya')
   ) {
     return 'optics_light';
   }
 
-  // P. Fisika Modern & Relativitas Einstein
+  // I. Fisika SMA - Teori Relativitas Khusus Einstein
   if (
     hay.includes('relativitas') ||
     hay.includes('dilatasi waktu') ||
@@ -334,7 +271,7 @@ export function detectDiagramType(subject: {
     return 'relativity_einstein';
   }
 
-  // Q. Kimia SMA & Fisika Modern - Model Atom Bohr, Kuantum & Fotolistrik
+  // J. Kimia SMA & Fisika Modern - Model Atom Bohr, Kuantum & Fotolistrik
   if (
     hay.includes('struktur atom') ||
     hay.includes('niels bohr') ||
@@ -347,35 +284,19 @@ export function detectDiagramType(subject: {
     return 'bohr_atom';
   }
 
-  // R. Kimia SMA - Larutan Asam Basa, Titrasi, Laju Reaksi & Le Chatelier
+  // K. Kimia SMA - Larutan Asam Basa, Titrasi, Laju Reaksi & Le Chatelier
   if (
-    hay.includes('ph ') ||
     hay.includes('derajat keasaman') ||
     hay.includes('titrasi') ||
     hay.includes('laju reaksi') ||
     hay.includes('le chatelier') ||
-    hay.includes('kesetimbangan kimia')
+    hay.includes('kesetimbangan kimia') ||
+    (hay.includes('ph ') && !hay.includes('photo'))
   ) {
     return 'ph_scale';
   }
 
-  // S. Kimia SMA - Senyawa Karbon Turunan Alkana, Polimer & Benzena
-  if (
-    hay.includes('senyawa karbon') ||
-    hay.includes('alkana') ||
-    hay.includes('alkohol') ||
-    hay.includes('eter') ||
-    hay.includes('aldehid') ||
-    hay.includes('keton') ||
-    hay.includes('benzena') ||
-    hay.includes('makromolekul') ||
-    hay.includes('polimer') ||
-    hay.includes('ikatan kimia')
-  ) {
-    return 'organic_chemistry';
-  }
-
-  // T. Ekonomi SMA - Kelangkaan, Biaya Peluang, Kurva Permintaan-Penawaran & Pendapatan Nasional
+  // L. Ekonomi SMA - Kelangkaan, Kurva Permintaan-Penawaran & Pendapatan Nasional
   if (
     hay.includes('permintaan') ||
     hay.includes('penawaran') ||
@@ -389,87 +310,241 @@ export function detectDiagramType(subject: {
     return 'economics_supply_demand';
   }
 
-  // 1. Bahasa Inggris (Seluruh Materi English)
+  // M. Biologi SMA - Struktur DNA, Genetika Molekuler, Virus & Bioteknologi
   if (
-    hay.includes('bahasa inggris') ||
-    hay.includes('english') ||
-    hay.includes('greetings') ||
-    hay.includes('past tense') ||
-    hay.includes('prepositions') ||
-    hay.includes('classroom objects') ||
-    hay.includes('telling time') ||
-    hay.includes('body parts') ||
-    hay.includes('comparative')
+    hay.includes('dna') ||
+    hay.includes('genetika') ||
+    hay.includes('kromosom') ||
+    hay.includes('virus') ||
+    hay.includes('bioteknologi') ||
+    hay.includes('daur litik')
   ) {
-    return 'english_kids';
+    return 'dna_helix';
   }
 
-  // 2. Informatika & Scratch Koding
+  // N. Biologi SMA - Sel Saraf, Jaringan, Mitokondria & Metabolisme Sel
   if (
-    hay.includes('scratch') ||
-    hay.includes('koding') ||
-    hay.includes('hardware') ||
-    hay.includes('cyber') ||
-    hay.includes('komputer') ||
-    hay.includes('algoritma') ||
-    hay.includes('kata sandi') ||
-    hay.includes('perangkat keras')
+    hay.includes('struktur sel') ||
+    hay.includes('sel saraf') ||
+    hay.includes('saraf') ||
+    hay.includes('metabolisme sel') ||
+    hay.includes('respirasi aerob') ||
+    hay.includes('enzim') ||
+    hay.includes('mitokondria') ||
+    hay.includes('sel eukariotik')
   ) {
-    return 'informatics_scratch';
+    return 'cell_structure';
   }
 
-  // 3. Seni Budaya, Prakarya, Wayang & Bahasa Jawa
+  // O. Fisika SMA / SMP - Rangkaian Listrik AC/DC, Magnet, Redoks & Gaya Lorentz
   if (
-    hay.includes('batik') ||
-    hay.includes('wayang') ||
-    hay.includes('aksara jawa') ||
-    hay.includes('warna primer') ||
-    hay.includes('tembang') ||
-    hay.includes('birama') ||
-    hay.includes('tangga nada') ||
-    hay.includes('patung') ||
-    hay.includes('kolase') ||
-    hay.includes('mozaik') ||
-    hay.includes('montase') ||
-    hay.includes('pandhawa') ||
-    hay.includes('hanuman') ||
-    hay.includes('kewan')
+    hay.includes('medan magnet') ||
+    hay.includes('lorentz') ||
+    hay.includes('biot-savart') ||
+    hay.includes('bolak-balik') ||
+    hay.includes('induktor') ||
+    hay.includes('kapasitor') ||
+    hay.includes('redoks') ||
+    hay.includes('elektrokimia') ||
+    hay.includes('sel volta') ||
+    hay.includes('elektrolisis') ||
+    hay.includes('listrik dinamis') ||
+    hay.includes('listrik statis') ||
+    hay.includes('hukum ohm') ||
+    hay.includes('rangkaian seri') ||
+    hay.includes('rangkaian paralel')
   ) {
-    return 'art_culture_jawa';
+    return 'electric_circuit';
   }
 
-  // 4. Matematika - Jam Analog & Satuan Waktu
+  // P. Fisika SMA / SMP - Dinamika Gerak & Kinematika Newton
   if (
-    hay.includes('jam analog') ||
-    hay.includes('membaca jam') ||
-    hay.includes('pukul ') ||
-    hay.includes('menit') ||
-    hay.includes('detik') ||
-    (hay.includes('waktu') && !hay.includes('garis waktu'))
+    hay.includes('kinematika') ||
+    hay.includes('glb') ||
+    hay.includes('glbb') ||
+    hay.includes('hukum gerak') ||
+    hay.includes('hukum newton') ||
+    hay.includes('kelembaman') ||
+    hay.includes('gaya gesek') ||
+    hay.includes('gaya aksi reaksi') ||
+    hay.includes('f = m')
   ) {
-    return 'math_clock_time';
+    return 'newton_dynamics';
   }
 
-  // 5. Matematika - Bangun Datar, Keliling, Luas & Pengukuran Panjang Baku
+  // Q. Matematika SMA / SMP - Vektor, Program Linear, Matriks, Deret & Aljabar Kartesius
   if (
+    hay.includes('program linear') ||
+    hay.includes('vektor') ||
+    hay.includes('matriks') ||
+    hay.includes('determinan') ||
+    hay.includes('deret') ||
+    hay.includes('barisan') ||
+    hay.includes('aljabar') ||
+    hay.includes('plsv') ||
+    hay.includes('ptlsv') ||
+    hay.includes('spldv') ||
+    hay.includes('kartesius') ||
+    hay.includes('gradien') ||
+    hay.includes('persamaan linear') ||
+    hay.includes('fungsi kuadrat')
+  ) {
+    return 'cartesian_linear';
+  }
+
+  // R. Matematika SMA / SMP - Pythagoras
+  if (
+    hay.includes('pythagoras') ||
+    hay.includes('hipotenusa') ||
+    hay.includes('tripel pythagoras')
+  ) {
+    return 'pythagoras';
+  }
+
+  // S. Fisika SMA / SMP - Tekanan Zat, Fluida & Pascal
+  if (
+    hay.includes('tekanan zat') ||
+    hay.includes('hukum pascal') ||
+    hay.includes('hidrostatis') ||
+    hay.includes('archimedes') ||
+    hay.includes('dongkrak hidrolik') ||
+    hay.includes('bejana berhubungan')
+  ) {
+    return 'pressure_pascal';
+  }
+
+  // T. Biologi SMA / SMP - Sistem Peredaran Darah
+  if (
+    hay.includes('peredaran darah') ||
+    hay.includes('jantung') ||
+    hay.includes('golongan darah') ||
+    hay.includes('aorta') ||
+    hay.includes('eritrosit') ||
+    hay.includes('leukosit')
+  ) {
+    return 'blood_circulation';
+  }
+
+  // U. Fisika SMA / SMP - Getaran & Gelombang Bunyi Doppler
+  if (
+    hay.includes('getaran') ||
+    hay.includes('gelombang') ||
+    hay.includes('efek doppler') ||
+    hay.includes('resonansi') ||
+    (hay.includes('frekuensi') && !hay.includes('data')) ||
+    (hay.includes('bunyi') && !hay.includes('pancasila'))
+  ) {
+    return 'wave_sound';
+  }
+
+  // V. PKn SMA / SMP - Pancasila, UUD, Hukum, HAM, Bhinneka
+  if (
+    hay.includes('pancasila') ||
+    hay.includes('garuda') ||
+    hay.includes('sila') ||
+    hay.includes('bhinneka') ||
+    hay.includes('integrasi nasional') ||
+    hay.includes('sistem hukum') ||
+    hay.includes('hak asasi manusia') ||
+    hay.includes('peradilan')
+  ) {
+    return 'pancasila_shield';
+  }
+
+  // W. Sosiologi & IPS SMA / SMP - Gotong Royong, Sosiologi, Konflik, Stratifikasi
+  if (
+    hay.includes('sosiologi') ||
+    hay.includes('stratifikasi') ||
+    hay.includes('diferensiasi') ||
+    hay.includes('ketimpangan sosial') ||
+    hay.includes('konflik') ||
+    hay.includes('gotong royong') ||
+    hay.includes('toleransi') ||
+    hay.includes('asean')
+  ) {
+    return 'civics_gotong_royong';
+  }
+
+  // X. Bahasa Indonesia SMA / SMP - Teks Ilmiah, LHO, Eksposisi, Resensi, Drama, Lamaran, Editorial, SPOK
+  if (
+    hay.includes('lho') ||
+    hay.includes('eksposisi') ||
+    hay.includes('resensi') ||
+    hay.includes('drama') ||
+    hay.includes('lamaran pekerjaan') ||
+    hay.includes('editorial') ||
+    hay.includes('spok') ||
+    hay.includes('kalimat') ||
+    hay.includes('teks') ||
+    hay.includes('tata bahasa')
+  ) {
+    return 'spok_sentence';
+  }
+
+  // Y. Informatika SMP - Flowchart, Pseudocode, Jaringan & Database
+  if (
+    hay.includes('flowchart') ||
+    hay.includes('pseudocode') ||
+    hay.includes('jaringan komputer') ||
+    hay.includes('topologi') ||
+    hay.includes('basis data') ||
+    hay.includes('database') ||
+    hay.includes('keamanan siber')
+  ) {
+    return 'flowchart_logic';
+  }
+
+  // Z. Sejarah & Garis Waktu
+  if (
+    hay.includes('praaksara') ||
+    hay.includes('kebangkitan nasional') ||
+    hay.includes('sumpah pemuda') ||
+    hay.includes('sejarah') ||
+    hay.includes('majapahit') ||
+    hay.includes('proklamasi')
+  ) {
+    return 'history_timeline';
+  }
+
+  // ==========================================================================
+  // 4. MATERI SEKOLAH DASAR (SD) & SAINS DASAR
+  // ==========================================================================
+  // Geometri Dimensi 3 / Bangun Datar
+  if (
+    hay.includes('geometri dimensi tiga') ||
+    hay.includes('dimensi tiga') ||
     hay.includes('bangun datar') ||
-    hay.includes('keliling') ||
-    hay.includes('luas bangun') ||
-    hay.includes('lingkaran') ||
     hay.includes('bangun ruang') ||
     hay.includes('persegi') ||
+    hay.includes('lingkaran') ||
     hay.includes('segitiga') ||
-    hay.includes('pengukuran panjang') ||
-    hay.includes('satuan baku') ||
-    hay.includes('cm & m') ||
-    hay.includes('tabung') ||
-    hay.includes('prisma') ||
-    hay.includes('kerucut')
+    hay.includes('keliling')
   ) {
     return 'math_geometry_shapes';
   }
 
-  // 6. Matematika - Pecahan Sederhana, Campuran, Desimal & Persen
+  // Peluang & Pencacahan
+  if (
+    hay.includes('kaidah pencacahan') ||
+    hay.includes('permutasi') ||
+    hay.includes('kombinasi') ||
+    hay.includes('peluang')
+  ) {
+    return 'math_counting';
+  }
+
+  // Jam Analog & Waktu
+  if (
+    hay.includes('jam analog') ||
+    hay.includes('membaca jam') ||
+    hay.includes('pukul ') ||
+    (hay.includes('menit') && !hay.includes('menentukan')) ||
+    hay.includes('detik')
+  ) {
+    return 'math_clock_time';
+  }
+
+  // Pecahan & Aritmetika
   if (
     hay.includes('pecahan') ||
     hay.includes('desimal') ||
@@ -480,32 +555,29 @@ export function detectDiagramType(subject: {
     return 'math_arithmetic';
   }
 
-  // 7. Matematika - Bilangan Cacah 1-10, 1-20 & Nilai Tempat (Satuan, Puluhan, Ratusan)
+  // Bilangan Cacah & Berhitung
   if (
-    hay.includes('bilangan cacah 1') ||
+    hay.includes('bilangan cacah') ||
     hay.includes('angka 1-10') ||
     hay.includes('nilai tempat') ||
-    hay.includes('bilangan cacah 21') ||
     hay.includes('membilang') ||
     hay.includes('cacah')
   ) {
     return 'math_counting';
   }
 
-  // 8. Matematika - Penjumlahan, Pengurangan & Bilangan Negatif
+  // Penjumlahan & Pengurangan SD
   if (
     hay.includes('penjumlahan') ||
     hay.includes('pengurangan') ||
-    hay.includes('tambah') ||
-    hay.includes('kurang') ||
-    hay.includes('bersusun') ||
     hay.includes('bilangan negatif') ||
-    hay.includes('garis bilangan')
+    hay.includes('garis bilangan') ||
+    (hay.includes('tambah') && hay.includes('kurang'))
   ) {
     return 'math_addition_subtraction';
   }
 
-  // 9. Matematika - Perkalian, Pembagian, KPK & FPB
+  // Perkalian & Pembagian SD
   if (
     hay.includes('perkalian') ||
     hay.includes('pembagian') ||
@@ -515,70 +587,60 @@ export function detectDiagramType(subject: {
     return 'math_multiplication_division';
   }
 
-  // 10. Matematika - Diagram Batang, Data Statistik, Skala & Taksiran
+  // Diagram Batang & Statistik SD
   if (
     hay.includes('diagram batang') ||
     hay.includes('statistik') ||
-    hay.includes('skala peta') ||
-    hay.includes('taksiran') ||
-    hay.includes('pembulatan') ||
-    hay.includes('kecepatan') ||
-    hay.includes('debit') ||
-    hay.includes('denah')
+    hay.includes('skala peta')
   ) {
     return 'math_data_charts';
   }
 
-  // 11. IPA - Tata Surya, Planet, Rotasi & Revolusi Bumi
+  // Tata Surya SD
   if (
     hay.includes('tata surya') ||
     hay.includes('planet') ||
-    hay.includes('rotasi') ||
     hay.includes('revolusi bumi') ||
-    hay.includes('gerhana') ||
-    hay.includes('saturnus') ||
-    hay.includes('jupiter') ||
-    hay.includes('merkurius')
+    hay.includes('gerhana')
   ) {
     return 'solar_system';
   }
 
-  // 12. IPA - Siklus Air, Cuaca, Awan & Hujan
+  // Siklus Air SD
   if (
     hay.includes('siklus air') ||
-    hay.includes('cuaca') ||
-    hay.includes('hujan') ||
     hay.includes('kondensasi') ||
     hay.includes('evaporasi') ||
-    hay.includes('awan') ||
     hay.includes('presipitasi')
   ) {
     return 'water_cycle';
   }
 
-  // 13. IPA - Fotosintesis Daun Hijau
+  // Fotosintesis & Jaringan Tumbuhan
   if (
     hay.includes('fotosintesis') ||
     hay.includes('klorofil') ||
-    hay.includes('dapur ajaib daun')
+    hay.includes('jaringan tumbuhan') ||
+    hay.includes('xilem') ||
+    hay.includes('floem')
   ) {
     return 'photosynthesis';
   }
 
-  // 14. IPA - Bagian Tumbuhan, Bunga Sempurna, Biji & Vegetatif
+  // Pertumbuhan Tanaman SD (Dilindungi ketat agar TIDAK mendeteksi "pertumbuhan eksponensial")
   if (
     hay.includes('bagian tumbuhan') ||
     hay.includes('bunga sempurna') ||
     hay.includes('tanaman') ||
     hay.includes('vegetatif') ||
     hay.includes('penyerbukan') ||
-    hay.includes('tumbuhan') ||
+    (hay.includes('tumbuhan') && !hay.includes('pertumbuhan')) ||
     hay.includes('daun hijau')
   ) {
     return 'science_plants_growth';
   }
 
-  // 15. IPA - Daur Hidup & Metamorfosis Kupu-Kupu
+  // Daur Hidup & Metamorfosis SD
   if (
     hay.includes('metamorfosis') ||
     hay.includes('daur hidup') ||
@@ -588,9 +650,10 @@ export function detectDiagramType(subject: {
     return 'science_metamorphosis';
   }
 
-  // 16. IPA - Rantai Makanan & Jaring-Jaring Ekosistem
+  // Rantai Makanan & Keanekaragaman Ekosistem SD
   if (
     hay.includes('rantai makanan') ||
+    hay.includes('keanekaragaman hayati') ||
     hay.includes('jaring-jaring') ||
     hay.includes('ekosistem') ||
     hay.includes('herbivora') ||
@@ -599,133 +662,63 @@ export function detectDiagramType(subject: {
     return 'science_food_chain';
   }
 
-  // 17. IPA - Hewan, Habitat & Perkembangbiakan (Ovipar/Vivipar)
+  // Hewan & Habitat SD
   if (
     hay.includes('hewan') ||
     hay.includes('habitat') ||
-    hay.includes('amfibi') ||
-    hay.includes('perkembangbiakan hewan') ||
     hay.includes('ovipar') ||
-    hay.includes('vivipar') ||
-    hay.includes('peliharaan')
+    hay.includes('vivipar')
   ) {
     return 'science_animals_habitat';
   }
 
-  // 18. IPA - Wujud Benda (Padat, Cair, Gas) & Macam Gaya Energi
+  // Wujud Benda SD
   if (
     hay.includes('wujud benda') ||
     hay.includes('mencair') ||
-    hay.includes('membeku') ||
-    hay.includes('energi') ||
-    hay.includes('padat') ||
-    hay.includes('macam gaya') ||
-    hay.includes('gaya gesek') ||
-    hay.includes('gaya gravitasi') ||
-    hay.includes('magnet') ||
-    hay.includes('listrik')
+    hay.includes('membeku')
   ) {
     return 'science_matter_states';
   }
 
-  // 19. IPA - Panca Indra, Anggota Tubuh & Organ Manusia (Pernapasan, Pencernaan, Jantung)
+  // Anggota Tubuh & Panca Indra SD
   if (
     hay.includes('panca indra') ||
     hay.includes('anggota tubuh') ||
     hay.includes('pernapasan') ||
     hay.includes('paru-paru') ||
-    hay.includes('pencernaan') ||
-    hay.includes('jantung') ||
-    hay.includes('peredaran darah') ||
-    hay.includes('darah') ||
-    hay.includes('organ tubuh')
+    hay.includes('pencernaan')
   ) {
     return 'science_human_body';
   }
 
-  // 20. PKn - Simbol Garuda & 5 Sila Pancasila
-  if (
-    hay.includes('garuda') ||
-    hay.includes('pancasila') ||
-    hay.includes('sila') ||
-    hay.includes('piagam jakarta') ||
-    hay.includes('bintang emas') ||
-    hay.includes('rantai emas') ||
-    hay.includes('pohon beringin') ||
-    hay.includes('banteng') ||
-    hay.includes('padi & kapas')
-  ) {
-    return 'pancasila_shield';
-  }
-
-  // 21. PKn - Gotong Royong, Aturan Tertib, Hak Kewajiban, Toleransi & ASEAN
-  if (
-    hay.includes('gotong royong') ||
-    hay.includes('aturan tertib') ||
-    hay.includes('hak') ||
-    hay.includes('kewajiban') ||
-    hay.includes('bhinneka') ||
-    hay.includes('toleransi') ||
-    hay.includes('persatuan') ||
-    hay.includes('asean') ||
-    hay.includes('kearifan lokal') ||
-    hay.includes('kebersihan lingkungan') ||
-    hay.includes('tanggung jawab') ||
-    hay.includes('sopan santun')
-  ) {
-    return 'civics_gotong_royong';
-  }
-
-  // 22. Bahasa Indonesia - Huruf Vokal, Huruf Konsonan & Suku Kata A-Z
+  // Bahasa SD
   if (
     hay.includes('huruf vokal') ||
     hay.includes('huruf a-z') ||
-    hay.includes('suku kata') ||
     hay.includes('abjad') ||
     hay.includes('konsonan')
   ) {
     return 'language_alphabet_vocab';
   }
 
-  // 23. Bahasa Indonesia - Dongeng Fabel Hewan, Puisi, Pantun & Cerita Pengalaman
   if (
     hay.includes('fabel') ||
     hay.includes('dongeng') ||
     hay.includes('puisi') ||
     hay.includes('pantun') ||
-    hay.includes('cerita') ||
-    hay.includes('narasi') ||
-    hay.includes('fiksi')
+    hay.includes('cerita')
   ) {
     return 'language_story_fabel';
   }
 
-  // 24. Bahasa Indonesia - Kereta SPOK, Kalimat, Teks Prosedur, Wawancara, Pidato & Formulir
+  // Koding Scratch SD
   if (
-    hay.includes('spok') ||
-    hay.includes('kalimat') ||
-    hay.includes('tanda baca') ||
-    hay.includes('teks') ||
-    hay.includes('pidato') ||
-    hay.includes('wawancara') ||
-    hay.includes('gagasan') ||
-    hay.includes('deskripsi') ||
-    hay.includes('formulir') ||
-    hay.includes('paragraf') ||
-    hay.includes('investigasi')
+    hay.includes('scratch') ||
+    hay.includes('koding balok')
   ) {
-    return 'spok_sentence';
+    return 'informatics_scratch';
   }
-
-  // 25. SMP / SMA Sains Khusus
-  if (hay.includes('dna') || hay.includes('genetika') || hay.includes('kromosom')) return 'dna_helix';
-  if (hay.includes('atom') || hay.includes('bohr')) return 'bohr_atom';
-  if (hay.includes('pythagoras') || hay.includes('hipotenusa')) return 'pythagoras';
-  if (hay.includes('kartesius') || hay.includes('gradien')) return 'cartesian_linear';
-  if (hay.includes('trigonometri') || hay.includes('sin cos')) return 'trigonometry_wave';
-  if (hay.includes('ph ') || hay.includes('asam') || hay.includes('basa')) return 'ph_scale';
-  if (hay.includes('newton') || hay.includes('hukum gerak')) return 'newton_dynamics';
-  if (hay.includes('sejarah') || hay.includes('majapahit') || hay.includes('proklamasi')) return 'history_timeline';
 
   return 'classroom_chalkboard';
 }
@@ -2309,6 +2302,76 @@ export function getTopicStoryScenes(
           highlightText: 'Dasar kalibrasi satelit GPS smartphone & kosmos',
         },
       ];
+    case 'math_exponential_logarithm':
+      return [
+        {
+          chapter: 'Babak 1',
+          title: 'Kurva Pertumbuhan Eksponensial f(x) = aˣ',
+          narration: '📈 Fungsi eksponen f(x) = aˣ (a > 1) mengalami pertumbuhan dahsyat yang melesat tajam ke atas. Kurva selalu melewati titik koordinat (0, 1) karena berapapun dipangkatkan nol bernilai satu!',
+          badge: 'Eksponen f(x) = aˣ',
+          icon: '📈',
+          highlightText: 'Grafik menanjak eksponensial melewati titik (0, 1)',
+        },
+        {
+          chapter: 'Babak 2',
+          title: 'Logaritma Invers & Garis Refleksi y = x',
+          narration: '📐 Logaritma adalah kebalikan dari eksponen! Kurva y = ᵃlog x merupakan pencerminan kurva eksponen terhadap garis putus-putus diagonal y = x, memotong sumbu X tepat di titik (1, 0).',
+          badge: 'Logaritma Invers',
+          icon: '📐',
+          highlightText: 'Pencerminan kurva invers terhadap garis y = x di titik (1, 0)',
+        },
+        {
+          chapter: 'Babak 3',
+          title: 'Sifat Asimtot & Operasi Hitung Logaritma',
+          narration: '⚖️ Kurva eksponen memiliki asimtot datar y = 0, sedangkan logaritma memiliki asimtot tegak x = 0. Operasi logaritma mengubah perkalian menjadi penjumlahan: ᵃlog(b × c) = ᵃlog b + ᵃlog c!',
+          badge: 'Sifat Logaritma',
+          icon: '⚖️',
+          highlightText: 'Asimtot datar y=0, asimtot tegak x=0, ᵃlog(b×c) = ᵃlog b + ᵃlog c',
+        },
+        {
+          chapter: 'Babak 4',
+          title: 'Aplikasi Nyata: Bakteri & Skala Gempa Richter',
+          narration: '🌍 Eksponen dan logaritma mengatur alam semesta! Dari pembelahan sel bakteri dan peluruhan radioaktif hingga pengukuran magnitudo gempa bumi pada skala logaritmik Richter!',
+          badge: 'Dunia Nyata',
+          icon: '🌍',
+          highlightText: 'Pondasi pembelahan bakteri, peluruhan & gempa Richter',
+        },
+      ];
+    case 'data_structures_algorithms':
+      return [
+        {
+          chapter: 'Babak 1',
+          title: 'Struktur Data Linier: Array Indeks [0..n]',
+          narration: '💻 Array adalah barisan sel memori berurutan yang menyimpan elemen bertipe sejenis. Karena memiliki indeks teratur mulai dari 0, data di dalam array dapat diakses seketika dalam waktu konstan O(1)!',
+          badge: 'Array Memori',
+          icon: '💻',
+          highlightText: 'Akses instan indeks 0, 1, 2 dengan efisiensi O(1)',
+        },
+        {
+          chapter: 'Babak 2',
+          title: 'Stack Tumpukan (LIFO) & Queue Antrean (FIFO)',
+          narration: '📚 Stack menganut prinsip LIFO (Last-In-First-Out) seperti tumpukan buku atau tombol Undo aplikasi. Sedangkan Queue menganut FIFO (First-In-First-Out) seperti antrean tiket loket yang tertib!',
+          badge: 'LIFO vs FIFO',
+          icon: '📚',
+          highlightText: 'Stack (Push/Pop LIFO) & Queue (Enqueue/Dequeue FIFO)',
+        },
+        {
+          chapter: 'Babak 3',
+          title: 'Algoritma Rekursi & Kompleksitas Notasi Big-O',
+          narration: '⚡ Fungsi rekursif memanggil dirinya sendiri hingga kondisi henti. Notasi Big-O mengukur efisiensi: Binary Search berorde O(log n) mampu mencari 1 data di antara 4 miliar data hanya dalam 32 langkah!',
+          badge: 'Notasi Big-O',
+          icon: '⚡',
+          highlightText: 'Efisiensi Binary Search O(log n) membelah ruang data dua kali lipat',
+        },
+        {
+          chapter: 'Babak 4',
+          title: 'Kecerdasan Buatan (AI) & Pembelajaran Mesin',
+          narration: '🤖 Machine Learning melatih jaringan saraf tiruan (Neural Network) menemukan pola dari kumpulan data latih. Bobot sinapsis antarneuron terus disempurnakan untuk prediksi masa depan yang akurat!',
+          badge: 'AI & Machine Learning',
+          icon: '🤖',
+          highlightText: 'Jaringan neuron tiruan memperbarui bobot sinapsis dari data latih',
+        },
+      ];
     default: {
       if (topic && topic.title) {
         const p1 = topic.points?.[0] || 'Perhatikan konsep dasar materi ini dengan cermat.';
@@ -3675,6 +3738,157 @@ export function renderDiagramSvg(
           <text x="300" y="272" fill="#cbd5e1" fontSize="11" textAnchor="middle">
             Dilatasi Waktu: Δt = Δt₀ / √(1 - v²/c²)  •  c = 300.000 km/s
           </text>
+        </svg>
+      );
+
+    case 'math_exponential_logarithm':
+      return (
+        <svg viewBox="0 0 600 320" className="w-full h-full select-none">
+          <text x="300" y="32" fill="#f8fafc" fontSize="14" fontWeight="bold" textAnchor="middle">
+            KURVA EKSPONEN y = 2ˣ & LOGARITMA y = ²log x (REFLEKSI y = x)
+          </text>
+          {/* Koordinat Kartesius */}
+          <line x1="70" y1="230" x2="350" y2="230" stroke="#64748b" strokeWidth="2" />
+          <line x1="140" y1="50" x2="140" y2="260" stroke="#64748b" strokeWidth="2" />
+          <text x="345" y="224" fill="#94a3b8" fontSize="10" fontWeight="bold">X</text>
+          <text x="145" y="62" fill="#94a3b8" fontSize="10" fontWeight="bold">Y</text>
+
+          {/* Garis Refleksi y = x */}
+          <line x1="90" y1="280" x2="290" y2="80" stroke="#fde047" strokeWidth="1.5" strokeDasharray="4,4" />
+          <text x="295" y="85" fill="#fde047" fontSize="9" fontWeight="bold">y = x</text>
+
+          {/* Kurva Eksponen y = 2^x (Merah Muda Menanjak Tajam) */}
+          <path d="M 80 228 Q 130 225, 140 215 Q 160 195, 180 155 Q 200 115, 220 55" fill="none" stroke="#ef4444" strokeWidth="3.5" />
+          <circle cx="140" cy="215" r="4.5" fill="#ef4444" />
+          <text x="125" y="210" fill="#fca5a5" fontSize="9" fontWeight="bold">(0, 1)</text>
+          <text x="225" y="60" fill="#ef4444" fontSize="10" fontWeight="bold">y = 2ˣ</text>
+
+          {/* Kurva Logaritma y = log2(x) (Biru Cyan Mendatar) */}
+          <path d="M 145 260 Q 150 200, 155 190 Q 175 170, 215 150 Q 255 130, 315 110" fill="none" stroke="#0284c7" strokeWidth="3.5" />
+          <circle cx="155" cy="190" r="4.5" fill="#0284c7" />
+          <text x="160" y="202" fill="#7dd3fc" fontSize="9" fontWeight="bold">(1, 0)</text>
+          <text x="320" y="115" fill="#0284c7" fontSize="10" fontWeight="bold">y = ²log x</text>
+
+          {/* Panel Formula & Konsep */}
+          <rect x="365" y="55" width="220" height="235" rx="10" fill="#0f172a" stroke="#38bdf8" strokeWidth="2" />
+          <rect x="365" y="55" width="220" height="28" rx="10" fill="#1e293b" stroke="#38bdf8" strokeWidth="1.5" />
+          <text x="475" y="74" fill="#38bdf8" fontSize="11" fontWeight="bold" textAnchor="middle">
+            📖 RUMUS & SIFAT DASAR
+          </text>
+          <g transform="translate(378, 96)">
+            <text x="0" y="14" fill="#fde047" fontSize="10" fontWeight="bold">• Definisi Invers:</text>
+            <text x="10" y="28" fill="#e2e8f0" fontSize="9.5">ᵃlog b = c ⟺ aᶜ = b</text>
+            <text x="0" y="50" fill="#34d399" fontSize="10" fontWeight="bold">• Sifat Perkalian:</text>
+            <text x="10" y="64" fill="#e2e8f0" fontSize="9.5">ᵃlog(b·c) = ᵃlog b + ᵃlog c</text>
+            <text x="0" y="86" fill="#fb923c" fontSize="10" fontWeight="bold">• Sifat Pembagian:</text>
+            <text x="10" y="100" fill="#e2e8f0" fontSize="9.5">ᵃlog(b/c) = ᵃlog b - ᵃlog c</text>
+            <text x="0" y="122" fill="#f472b6" fontSize="10" fontWeight="bold">• Aplikasi Nyata:</text>
+            <text x="10" y="136" fill="#cbd5e1" fontSize="9">Pertumbuhan Bakteri & Skala Richter</text>
+            <text x="10" y="150" fill="#94a3b8" fontSize="8.5">Gempa M7 = 10× lebih kuat dari M6</text>
+          </g>
+        </svg>
+      );
+
+    case 'data_structures_algorithms':
+      return (
+        <svg viewBox="0 0 600 320" className="w-full h-full select-none">
+          <text x="300" y="32" fill="#f8fafc" fontSize="14" fontWeight="bold" textAnchor="middle">
+            STRUKTUR DATA (ARRAY, STACK, QUEUE) & KOMPLEKSITAS BIG-O
+          </text>
+
+          {/* 1. Array Linear Memory */}
+          <g transform="translate(45, 55)">
+            <rect x="0" y="0" width="245" height="70" rx="8" fill="#0f172a" stroke="#38bdf8" strokeWidth="1.5" />
+            <text x="12" y="20" fill="#38bdf8" fontSize="10" fontWeight="bold">Array [0..4] - Akses Instan O(1)</text>
+            {[0, 1, 2, 3, 4].map((i) => (
+              <g key={i} transform={`translate(${16 + i * 44}, 28)`}>
+                <rect x="0" y="0" width="38" height="26" rx="4" fill="#1e293b" stroke="#38bdf8" strokeWidth="1" />
+                <text x="19" y="17" fill="#fde047" fontSize="10" fontWeight="bold" textAnchor="middle">
+                  {[42, 18, 95, 33, 70][i]}
+                </text>
+                <text x="19" y="36" fill="#94a3b8" fontSize="8" textAnchor="middle">[{i}]</text>
+              </g>
+            ))}
+          </g>
+
+          {/* 2. Stack LIFO vs Queue FIFO */}
+          <g transform="translate(45, 145)">
+            {/* Stack */}
+            <rect x="0" y="0" width="115" height="145" rx="8" fill="#0f172a" stroke="#fb923c" strokeWidth="1.5" />
+            <text x="57" y="20" fill="#fb923c" fontSize="9.5" fontWeight="bold" textAnchor="middle">STACK (LIFO)</text>
+            <path d="M 25 32 L 25 110 L 90 110 L 90 32" fill="none" stroke="#64748b" strokeWidth="2" />
+            <rect x="30" y="86" width="55" height="18" rx="3" fill="#334155" />
+            <text x="57" y="99" fill="#f8fafc" fontSize="8.5" textAnchor="middle">Item 1</text>
+            <rect x="30" y="64" width="55" height="18" rx="3" fill="#334155" />
+            <text x="57" y="77" fill="#f8fafc" fontSize="8.5" textAnchor="middle">Item 2</text>
+            <rect x="30" y="42" width="55" height="18" rx="3" fill="#f97316" />
+            <text x="57" y="55" fill="#000000" fontSize="8.5" fontWeight="bold" textAnchor="middle">TOP (Pop)</text>
+            <text x="57" y="132" fill="#fed7aa" fontSize="8" textAnchor="middle">Last-In First-Out</text>
+
+            {/* Queue */}
+            <g transform="translate(130, 0)">
+              <rect x="0" y="0" width="115" height="145" rx="8" fill="#0f172a" stroke="#34d399" strokeWidth="1.5" />
+              <text x="57" y="20" fill="#34d399" fontSize="9.5" fontWeight="bold" textAnchor="middle">QUEUE (FIFO)</text>
+              <rect x="12" y="45" width="90" height="42" rx="4" fill="#1e293b" stroke="#64748b" strokeWidth="1" />
+              <text x="24" y="69" fill="#34d399" fontSize="12">➡</text>
+              <rect x="42" y="53" width="22" height="26" rx="2" fill="#10b981" />
+              <text x="53" y="70" fill="#000000" fontSize="8" fontWeight="bold" textAnchor="middle">Front</text>
+              <rect x="68" y="53" width="22" height="26" rx="2" fill="#059669" />
+              <text x="79" y="70" fill="#ffffff" fontSize="8" textAnchor="middle">Rear</text>
+              <text x="57" y="106" fill="#6ee7b7" fontSize="8" textAnchor="middle">Enqueue ➔ Dequeue</text>
+              <text x="57" y="132" fill="#a7f3d0" fontSize="8" textAnchor="middle">First-In First-Out</text>
+            </g>
+          </g>
+
+          {/* 3. Panel Kanan: Notasi Big-O & AI Machine Learning */}
+          <g transform="translate(315, 55)">
+            <rect x="0" y="0" width="245" height="235" rx="10" fill="#0f172a" stroke="#a855f7" strokeWidth="2" />
+            <rect x="0" y="0" width="245" height="28" rx="10" fill="#1e293b" stroke="#a855f7" strokeWidth="1.5" />
+            <text x="122" y="19" fill="#c084fc" fontSize="10.5" fontWeight="bold" textAnchor="middle">
+              ⚡ NOTASI BIG-O & AI MACHINE LEARNING
+            </text>
+
+            {/* Grafik Big-O */}
+            <g transform="translate(18, 42)">
+              <line x1="0" y1="75" x2="105" y2="75" stroke="#64748b" strokeWidth="1.5" />
+              <line x1="0" y1="0" x2="0" y2="75" stroke="#64748b" strokeWidth="1.5" />
+              <path d="M 0 70 L 100 70" stroke="#22c55e" strokeWidth="2" />
+              <text x="104" y="73" fill="#22c55e" fontSize="7.5" fontWeight="bold">O(1)</text>
+              <path d="M 0 70 Q 50 65, 100 45" stroke="#06b6d4" strokeWidth="2" fill="none" />
+              <text x="104" y="47" fill="#06b6d4" fontSize="7.5" fontWeight="bold">O(log n)</text>
+              <line x1="0" y1="70" x2="80" y2="10" stroke="#eab308" strokeWidth="2" />
+              <text x="84" y="14" fill="#eab308" fontSize="7.5" fontWeight="bold">O(n)</text>
+              <path d="M 0 70 Q 20 60, 40 5" stroke="#ef4444" strokeWidth="2" fill="none" />
+              <text x="44" y="12" fill="#ef4444" fontSize="7.5" fontWeight="bold">O(n²)</text>
+            </g>
+
+            {/* Neural Net AI Node */}
+            <g transform="translate(145, 48)">
+              <circle cx="10" cy="15" r="7" fill="#22c55e" />
+              <circle cx="10" cy="45" r="7" fill="#22c55e" />
+              <circle cx="45" cy="10" r="7" fill="#3b82f6" />
+              <circle cx="45" cy="30" r="7" fill="#3b82f6" />
+              <circle cx="45" cy="50" r="7" fill="#3b82f6" />
+              <circle cx="80" cy="30" r="7" fill="#facc15" />
+              {/* Sinapsis */}
+              <line x1="17" y1="15" x2="38" y2="10" stroke="#64748b" strokeWidth="1" />
+              <line x1="17" y1="15" x2="38" y2="30" stroke="#64748b" strokeWidth="1" />
+              <line x1="17" y1="45" x2="38" y2="30" stroke="#64748b" strokeWidth="1" />
+              <line x1="17" y1="45" x2="38" y2="50" stroke="#64748b" strokeWidth="1" />
+              <line x1="52" y1="30" x2="73" y2="30" stroke="#facc15" strokeWidth="1.5" />
+              <text x="45" y="70" fill="#94a3b8" fontSize="8" textAnchor="middle">Jaringan Neural</text>
+            </g>
+
+            {/* Keterangan */}
+            <g transform="translate(14, 138)">
+              <text x="0" y="12" fill="#fde047" fontSize="9" fontWeight="bold">• Binary Search: O(log n)</text>
+              <text x="8" y="24" fill="#cbd5e1" fontSize="8">Membagi ruang cari menjadi separuh</text>
+              <text x="0" y="42" fill="#a7f3d0" fontSize="9" fontWeight="bold">• Rekursi: Base Case & Loop</text>
+              <text x="8" y="54" fill="#cbd5e1" fontSize="8">Fungsi memanggil dirinya sendiri</text>
+              <text x="0" y="72" fill="#c084fc" fontSize="9" fontWeight="bold">• Machine Learning (Supervised)</text>
+              <text x="8" y="84" fill="#cbd5e1" fontSize="8">Belajar dari data latih & bobot neuron</text>
+            </g>
+          </g>
         </svg>
       );
 

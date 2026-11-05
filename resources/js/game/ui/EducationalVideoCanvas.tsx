@@ -3199,7 +3199,267 @@ export const EducationalVideoCanvas: React.FC<EducationalVideoCanvasProps> = ({
       )}
 
       {/* ==================================================================== */}
-      {/* 43. PAPAN TULIS KELAS CERIA DINAMIS (PANGGUNG EDUKASI 60FPS)         */}
+      {/* 43. MATEMATIKA SMA: FUNGSI EKSPONEN & LOGARITMA (REFLEKSI INVERS)    */}
+      {/* ==================================================================== */}
+      {type === 'math_exponential_logarithm' && (
+        <svg viewBox="0 0 600 320" className="w-full h-full max-h-[320px] select-none">
+          <rect x="6" y="6" width="588" height="308" rx="14" fill="#FFF8EA" stroke="#5C3A21" strokeWidth="3" />
+          <rect x="14" y="14" width="572" height="292" rx="10" fill="#FFFDF7" stroke="#EADBC0" strokeWidth="1.5" />
+
+          {/* Header Kartu Clay */}
+          <g transform="translate(300, 22)">
+            <rect x="-225" y="0" width="450" height="32" rx="8" fill="#FEF08A" stroke="#5C3A21" strokeWidth="2" />
+            <text x="0" y="21" fill="#000000" fontSize="11.5" fontWeight="900" textAnchor="middle">
+              📈 FUNGSI EKSPONEN f(x) = aˣ &amp; LOGARITMA ⁿlog b = c 📉
+            </text>
+          </g>
+
+          {/* Sisi Kiri: Bidang Koordinat Kartesius & Kurva Eksponen-Logaritma */}
+          <g transform="translate(45, 64)">
+            <rect x="0" y="0" width="280" height="220" rx="10" fill="#FFF8EA" stroke="#5C3A21" strokeWidth="2" />
+
+            {/* Grid Halus */}
+            {[40, 80, 120, 160, 200, 240].map((x) => (
+              <line key={`gx-${x}`} x1={x} y1="15" x2={x} y2="205" stroke="#EADBC0" strokeWidth="1" strokeDasharray="2,2" />
+            ))}
+            {[40, 80, 120, 160].map((y) => (
+              <line key={`gy-${y}`} x1="15" y1={y} x2="265" y2={y} stroke="#EADBC0" strokeWidth="1" strokeDasharray="2,2" />
+            ))}
+
+            {/* Sumbu X dan Y */}
+            <line x1="30" y1="165" x2="260" y2="165" stroke="#5C3A21" strokeWidth="2.5" />
+            <line x1="100" y1="20" x2="100" y2="205" stroke="#5C3A21" strokeWidth="2.5" />
+            <text x="255" y="160" fill="#5C3A21" fontSize="9.5" fontWeight="bold">X</text>
+            <text x="105" y="30" fill="#5C3A21" fontSize="9.5" fontWeight="bold">Y</text>
+
+            {/* Garis Refleksi Invers y = x */}
+            <line x1="45" y1="205" x2="230" y2="20" stroke="#D97706" strokeWidth="1.5" strokeDasharray="4,4" />
+            <text x="228" y="32" fill="#D97706" fontSize="8.5" fontWeight="900">y = x (Cermin Invers)</text>
+
+            {/* Kurva Eksponen y = 2^x (Merah Menanjak Tajam) */}
+            <path
+              d="M 40 163 Q 90 162, 100 148 Q 120 120, 140 85 Q 160 50, 180 25"
+              fill="none"
+              stroke="#EF4444"
+              strokeWidth="3.5"
+              strokeLinecap="round"
+            />
+            {/* Titik Potong (0, 1) */}
+            <circle cx="100" cy="148" r="5" fill="#EF4444" stroke="#5C3A21" strokeWidth="1.5" style={{ animation: 'solarPulse 2s infinite' }} />
+            <text x="70" y="145" fill="#DC2626" fontSize="9" fontWeight="900">(0, 1)</text>
+            <text x="185" y="30" fill="#EF4444" fontSize="10" fontWeight="900">y = 2ˣ</text>
+
+            {/* Kurva Logaritma y = log2(x) (Biru Mendatar ke Kanan) */}
+            <path
+              d="M 102 205 Q 103 165, 117 150 Q 152 130, 185 110 Q 220 90, 260 75"
+              fill="none"
+              stroke="#0284C7"
+              strokeWidth="3.5"
+              strokeLinecap="round"
+            />
+            {/* Titik Potong (1, 0) */}
+            <circle cx="117" cy="165" r="5" fill="#0284C7" stroke="#5C3A21" strokeWidth="1.5" style={{ animation: 'solarPulse 2s infinite 0.5s' }} />
+            <text x="122" y="180" fill="#0284C7" fontSize="9" fontWeight="900">(1, 0)</text>
+            <text x="240" y="70" fill="#0284C7" fontSize="10" fontWeight="900">y = ²log x</text>
+
+            {/* Asimtot Datar y = 0 & Asimtot Tegak x = 0 */}
+            <rect x="15" y="188" width="250" height="24" rx="4" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1" />
+            <text x="140" y="204" fill="#5C3A21" fontSize="8" fontWeight="bold" textAnchor="middle">
+              Asimtot Eksponen: y = 0 • Asimtot Logaritma: x = 0
+            </text>
+          </g>
+
+          {/* Sisi Kanan: Panduan Rumus & Aplikasi Dunia Nyata */}
+          <g transform="translate(340, 64)">
+            <rect x="0" y="0" width="230" height="220" rx="10" fill="#FFF8EA" stroke="#5C3A21" strokeWidth="2" />
+            <rect x="0" y="0" width="230" height="26" rx="10" fill="#A8E6CF" stroke="#5C3A21" strokeWidth="1.5" />
+            <text x="115" y="18" fill="#000000" fontSize="10.5" fontWeight="900" textAnchor="middle">
+              📚 RUMUS, SIFAT &amp; APLIKASI
+            </text>
+
+            <g transform="translate(10, 34)">
+              {/* Box 1: Definisi Invers */}
+              <rect x="0" y="0" width="210" height="50" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
+              <text x="10" y="16" fill="#166534" fontSize="9.5" fontWeight="900">1. Definisi Invers Logaritma:</text>
+              <text x="10" y="32" fill="#000000" fontSize="9.5" fontWeight="bold">ᵃlog b = c ⟺ aᶜ = b</text>
+              <text x="10" y="44" fill="#5C3A21" fontSize="8">Contoh: ²log 16 = 4 karena 2⁴ = 16</text>
+
+              {/* Box 2: Sifat Operasi Logaritma */}
+              <rect x="0" y="56" width="210" height="58" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
+              <text x="10" y="16" fill="#D97706" fontSize="9.5" fontWeight="900">2. Sifat Operasi Logaritma:</text>
+              <text x="10" y="30" fill="#000000" fontSize="8.5" fontWeight="bold">• ᵃlog(x · y) = ᵃlog x + ᵃlog y</text>
+              <text x="10" y="42" fill="#000000" fontSize="8.5" fontWeight="bold">• ᵃlog(x / y) = ᵃlog x - ᵃlog y</text>
+              <text x="10" y="54" fill="#5C3A21" fontSize="8">• ᵃlog(xⁿ) = n · ᵃlog x</text>
+
+              {/* Box 3: Penerapan Nyata */}
+              <rect x="0" y="120" width="210" height="58" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
+              <text x="10" y="16" fill="#0284C7" fontSize="9.5" fontWeight="900">3. Aplikasi Sains &amp; Teknologi:</text>
+              <text x="10" y="30" fill="#5C3A21" fontSize="8.5">• 🦠 Bakteri: N(t) = N₀ · 2ᵗ (Eksponensial)</text>
+              <text x="10" y="42" fill="#5C3A21" fontSize="8.5">• 🌍 Gempa Richter: Skala Logaritma Basis 10</text>
+              <text x="10" y="54" fill="#166534" fontSize="8" fontWeight="bold">Gempa M7 sepuluh kali lebih dahsyat dari M6!</text>
+            </g>
+          </g>
+        </svg>
+      )}
+
+      {/* ==================================================================== */}
+      {/* 44. INFORMATIKA SMA: STRUKTUR DATA, BIG-O & KECERDASAN BUATAN (AI)   */}
+      {/* ==================================================================== */}
+      {type === 'data_structures_algorithms' && (
+        <svg viewBox="0 0 600 320" className="w-full h-full max-h-[320px] select-none">
+          <rect x="6" y="6" width="588" height="308" rx="14" fill="#FFF8EA" stroke="#5C3A21" strokeWidth="3" />
+          <rect x="14" y="14" width="572" height="292" rx="10" fill="#FFFDF7" stroke="#EADBC0" strokeWidth="1.5" />
+
+          {/* Header Kartu Clay */}
+          <g transform="translate(300, 22)">
+            <rect x="-235" y="0" width="470" height="32" rx="8" fill="#BAE6FD" stroke="#5C3A21" strokeWidth="2" />
+            <text x="0" y="21" fill="#000000" fontSize="11" fontWeight="900" textAnchor="middle">
+              💻 STRUKTUR DATA (ARRAY/STACK/QUEUE), BIG-O &amp; AI 🤖
+            </text>
+          </g>
+
+          {/* Sisi Kiri: Array Memori & LIFO Stack vs FIFO Queue */}
+          <g transform="translate(38, 64)">
+            {/* 1. Barisan Sel Array Linear */}
+            <rect x="0" y="0" width="280" height="88" rx="10" fill="#FFF8EA" stroke="#5C3A21" strokeWidth="2" />
+            <rect x="0" y="0" width="280" height="24" rx="10" fill="#FFAE6D" stroke="#5C3A21" strokeWidth="1.5" />
+            <text x="140" y="16" fill="#000000" fontSize="9.5" fontWeight="900" textAnchor="middle">
+              1. ARRAY: BLOK MEMORI BERURUTAN (AKSES O(1))
+            </text>
+
+            <g transform="translate(14, 34)">
+              {[0, 1, 2, 3, 4].map((i) => (
+                <g key={i} transform={`translate(${i * 50}, 0)`}>
+                  <rect x="0" y="0" width="46" height="32" rx="5" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
+                  <text x="23" y="20" fill="#000000" fontSize="12" fontWeight="900" textAnchor="middle">
+                    {[42, 18, 95, 33, 77][i]}
+                  </text>
+                  <text x="23" y="44" fill="#5C3A21" fontSize="8.5" fontWeight="bold" textAnchor="middle">
+                    idx [{i}]
+                  </text>
+                </g>
+              ))}
+            </g>
+
+            {/* 2. Stack LIFO vs Queue FIFO */}
+            <g transform="translate(0, 96)">
+              {/* Kotak Stack LIFO */}
+              <rect x="0" y="0" width="134" height="124" rx="10" fill="#FFF8EA" stroke="#5C3A21" strokeWidth="2" />
+              <rect x="0" y="0" width="134" height="22" rx="10" fill="#FEF08A" stroke="#5C3A21" strokeWidth="1.5" />
+              <text x="67" y="15" fill="#000000" fontSize="9" fontWeight="900" textAnchor="middle">
+                STACK (LIFO)
+              </text>
+              {/* Wadah Tabung */}
+              <path d="M 32 30 L 32 95 L 102 95 L 102 30" fill="none" stroke="#5C3A21" strokeWidth="2" />
+              <rect x="36" y="74" width="62" height="18" rx="3" fill="#BAE6FD" stroke="#5C3A21" strokeWidth="1" />
+              <text x="67" y="87" fill="#000000" fontSize="8" fontWeight="bold" textAnchor="middle">Bawah [0]</text>
+              <rect x="36" y="54" width="62" height="18" rx="3" fill="#A8E6CF" stroke="#5C3A21" strokeWidth="1" />
+              <text x="67" y="67" fill="#000000" fontSize="8" fontWeight="bold" textAnchor="middle">Tengah [1]</text>
+              <rect x="36" y="34" width="62" height="18" rx="3" fill="#FFAE6D" stroke="#5C3A21" strokeWidth="1" />
+              <text x="67" y="47" fill="#000000" fontSize="8" fontWeight="bold" textAnchor="middle">TOP (Push/Pop)</text>
+              <text x="67" y="112" fill="#5C3A21" fontSize="7.5" fontWeight="bold" textAnchor="middle">
+                Last-In First-Out (Undo)
+              </text>
+
+              {/* Kotak Queue FIFO */}
+              <g transform="translate(146, 0)">
+                <rect x="0" y="0" width="134" height="124" rx="10" fill="#FFF8EA" stroke="#5C3A21" strokeWidth="2" />
+                <rect x="0" y="0" width="134" height="22" rx="10" fill="#A8E6CF" stroke="#5C3A21" strokeWidth="1.5" />
+                <text x="67" y="15" fill="#000000" fontSize="9" fontWeight="900" textAnchor="middle">
+                  QUEUE (FIFO)
+                </text>
+                {/* Pipa Antrean */}
+                <rect x="14" y="38" width="106" height="42" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
+                <text x="24" y="64" fill="#059669" fontSize="12" fontWeight="900">➡</text>
+                <rect x="42" y="44" width="28" height="30" rx="3" fill="#34D399" stroke="#5C3A21" strokeWidth="1" />
+                <text x="56" y="62" fill="#000000" fontSize="7.5" fontWeight="bold" textAnchor="middle">Front</text>
+                <rect x="74" y="44" width="28" height="30" rx="3" fill="#6EE7B7" stroke="#5C3A21" strokeWidth="1" />
+                <text x="88" y="62" fill="#000000" fontSize="7.5" fontWeight="bold" textAnchor="middle">Rear</text>
+                <text x="67" y="98" fill="#166534" fontSize="8" fontWeight="bold" textAnchor="middle">
+                  Enqueue ➔ Dequeue
+                </text>
+                <text x="67" y="112" fill="#5C3A21" fontSize="7.5" fontWeight="bold" textAnchor="middle">
+                  First-In First-Out (Loket)
+                </text>
+              </g>
+            </g>
+          </g>
+
+          {/* Sisi Kanan: Grafik Kompleksitas Notasi Big-O & Neural Net AI */}
+          <g transform="translate(330, 64)">
+            <rect x="0" y="0" width="232" height="220" rx="10" fill="#FFF8EA" stroke="#5C3A21" strokeWidth="2" />
+
+            {/* Bagian Atas: Kurva Notasi Big-O */}
+            <rect x="0" y="0" width="232" height="24" rx="10" fill="#C084FC" stroke="#5C3A21" strokeWidth="1.5" />
+            <text x="116" y="16" fill="#000000" fontSize="9.5" fontWeight="900" textAnchor="middle">
+              ⚡ NOTASI BIG-O (EFISIENSI WAKTU)
+            </text>
+
+            <g transform="translate(18, 32)">
+              {/* Sumbu Grafik */}
+              <line x1="20" y1="65" x2="195" y2="65" stroke="#5C3A21" strokeWidth="2" />
+              <line x1="20" y1="10" x2="20" y2="65" stroke="#5C3A21" strokeWidth="2" />
+              <text x="195" y="69" fill="#5C3A21" fontSize="7.5" fontWeight="bold">N</text>
+              <text x="20" y="8" fill="#5C3A21" fontSize="7.5" fontWeight="bold">Waktu</text>
+
+              {/* Kurva O(1) Hijau Datar */}
+              <line x1="20" y1="60" x2="180" y2="60" stroke="#16A34A" strokeWidth="2" />
+              <text x="185" y="63" fill="#16A34A" fontSize="7.5" fontWeight="900">O(1)</text>
+
+              {/* Kurva O(log n) Biru Cyan */}
+              <path d="M 20 60 Q 80 55, 175 42" stroke="#0284C7" strokeWidth="2" fill="none" />
+              <text x="180" y="44" fill="#0284C7" fontSize="7.5" fontWeight="900">O(log n)</text>
+
+              {/* Kurva O(n) Kuning Linear */}
+              <line x1="20" y1="60" x2="160" y2="18" stroke="#D97706" strokeWidth="2" />
+              <text x="165" y="20" fill="#D97706" fontSize="7.5" fontWeight="900">O(n)</text>
+
+              {/* Kurva O(n²) Merah Kuadratik */}
+              <path d="M 20 60 Q 55 50, 95 10" stroke="#DC2626" strokeWidth="2" fill="none" />
+              <text x="100" y="14" fill="#DC2626" fontSize="7.5" fontWeight="900">O(n²)</text>
+            </g>
+
+            {/* Bagian Bawah: Kecerdasan Buatan (AI) Neural Network */}
+            <g transform="translate(0, 110)">
+              <rect x="0" y="0" width="232" height="22" fill="#FEF08A" stroke="#5C3A21" strokeWidth="1.5" />
+              <text x="116" y="15" fill="#000000" fontSize="9" fontWeight="900" textAnchor="middle">
+                🤖 KECERDASAN BUATAN &amp; NEURAL NET
+              </text>
+
+              <g transform="translate(18, 30)">
+                {/* Layer 1 Input */}
+                <circle cx="20" cy="15" r="7" fill="#A8E6CF" stroke="#5C3A21" strokeWidth="1.5" />
+                <circle cx="20" cy="45" r="7" fill="#A8E6CF" stroke="#5C3A21" strokeWidth="1.5" />
+                <text x="20" y="68" fill="#5C3A21" fontSize="7" fontWeight="bold" textAnchor="middle">Input Layer</text>
+
+                {/* Layer 2 Hidden */}
+                <circle cx="75" cy="10" r="7" fill="#BAE6FD" stroke="#5C3A21" strokeWidth="1.5" />
+                <circle cx="75" cy="30" r="7" fill="#BAE6FD" stroke="#5C3A21" strokeWidth="1.5" />
+                <circle cx="75" cy="50" r="7" fill="#BAE6FD" stroke="#5C3A21" strokeWidth="1.5" />
+                <text x="75" y="68" fill="#5C3A21" fontSize="7" fontWeight="bold" textAnchor="middle">Hidden Layer</text>
+
+                {/* Layer 3 Output */}
+                <circle cx="130" cy="30" r="8" fill="#FFAE6D" stroke="#5C3A21" strokeWidth="2" style={{ animation: 'solarPulse 2s infinite' }} />
+                <text x="130" y="68" fill="#5C3A21" fontSize="7" fontWeight="bold" textAnchor="middle">Output Prediksi</text>
+
+                {/* Sinapsis Koneksi */}
+                <line x1="27" y1="15" x2="68" y2="10" stroke="#CBD5E1" strokeWidth="1" />
+                <line x1="27" y1="15" x2="68" y2="30" stroke="#CBD5E1" strokeWidth="1" />
+                <line x1="27" y1="45" x2="68" y2="30" stroke="#CBD5E1" strokeWidth="1" />
+                <line x1="27" y1="45" x2="68" y2="50" stroke="#CBD5E1" strokeWidth="1" />
+                <line x1="82" y1="30" x2="122" y2="30" stroke="#F59E0B" strokeWidth="2" />
+              </g>
+
+              <text x="116" y="104" fill="#1E293B" fontSize="7.5" fontWeight="bold" textAnchor="middle">
+                Machine Learning melatih bobot sinapsis dari data
+              </text>
+            </g>
+          </g>
+        </svg>
+      )}
+
+      {/* ==================================================================== */}
+      {/* 45. PAPAN TULIS KELAS CERIA DINAMIS (PANGGUNG EDUKASI 60FPS)         */}
       {/* ==================================================================== */}
       {(type === 'classroom_chalkboard' ||
         type === 'mindmap_general' ||
@@ -3209,6 +3469,8 @@ export const EducationalVideoCanvas: React.FC<EducationalVideoCanvasProps> = ({
           type !== 'math_clock_time' &&
           type !== 'math_multiplication_division' &&
           type !== 'math_data_charts' &&
+          type !== 'math_exponential_logarithm' &&
+          type !== 'data_structures_algorithms' &&
           type !== 'science_plants_growth' &&
           type !== 'science_animals_habitat' &&
           type !== 'science_metamorphosis' &&

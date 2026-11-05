@@ -1636,86 +1636,118 @@ export function renderDiagramSvg(
     case 'math_arithmetic':
       return (
         <svg viewBox="0 0 600 320" className="w-full h-full select-none">
-          <text x="300" y="45" fill="#f8fafc" fontSize="16" fontWeight="bold" textAnchor="middle">
-            PECAHAN VISUAL & BALOK ARITMATIKA
+          <defs>
+            <radialGradient id="staticCrust" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stopColor="#fde047" />
+              <stop offset="65%" stopColor="#f59e0b" />
+              <stop offset="100%" stopColor="#b45309" />
+            </radialGradient>
+          </defs>
+
+          <rect x="0" y="0" width="600" height="320" fill="#0f172a" />
+
+          <text x="300" y="38" fill="#fef08a" fontSize="15" fontWeight="bold" textAnchor="middle">
+            🍕 BELAJAR PECAHAN PIZZA LEZAT (MATEMATIKA CERIA)
           </text>
 
           {/* Pecahan Pizza 1/2 */}
-          <g transform="translate(120, 150)">
-            <circle cx="0" cy="0" r="50" fill="#334155" />
-            <path d="M 0 0 L 0 -50 A 50 50 0 0 1 0 50 Z" fill="#38bdf8" />
-            <circle cx="0" cy="0" r="50" stroke="#38bdf8" strokeWidth="3" fill="none" />
-            <text x="0" y="75" fill="#7dd3fc" fontSize="14" fontWeight="bold" textAnchor="middle">1 / 2 (Setengah)</text>
+          <g transform="translate(110, 145)">
+            <circle cx="0" cy="0" r="52" fill="#78350f" stroke="#451a03" strokeWidth="3" />
+            <path d="M 0 0 L 0 -50 A 50 50 0 0 1 0 50 Z" fill="url(#staticCrust)" stroke="#d97706" strokeWidth="2" />
+            <circle cx="22" cy="-18" r="7" fill="#ef4444" />
+            <circle cx="22" cy="18" r="7" fill="#ef4444" />
+            <rect x="-42" y="62" width="84" height="24" rx="6" fill="#1e1b4b" stroke="#38bdf8" strokeWidth="1.5" />
+            <text x="0" y="78" fill="#7dd3fc" fontSize="12" fontWeight="bold" textAnchor="middle">1 / 2 (Setengah)</text>
           </g>
 
           {/* Pecahan Pizza 1/4 */}
-          <g transform="translate(300, 150)">
-            <circle cx="0" cy="0" r="50" fill="#334155" />
-            <path d="M 0 0 L 50 0 A 50 50 0 0 1 0 50 Z" fill="#ec4899" />
-            <circle cx="0" cy="0" r="50" stroke="#ec4899" strokeWidth="3" fill="none" />
-            <line x1="-50" y1="0" x2="50" y2="0" stroke="#1e293b" strokeWidth="2" />
-            <line x1="0" y1="-50" x2="0" y2="50" stroke="#1e293b" strokeWidth="2" />
-            <text x="0" y="75" fill="#f472b6" fontSize="14" fontWeight="bold" textAnchor="middle">1 / 4 (Seperempat)</text>
+          <g transform="translate(300, 145)">
+            <circle cx="0" cy="0" r="52" fill="#78350f" stroke="#451a03" strokeWidth="3" />
+            <path d="M 0 0 L 50 0 A 50 50 0 0 1 0 50 Z" fill="url(#staticCrust)" stroke="#d97706" strokeWidth="2" />
+            <circle cx="20" cy="20" r="7" fill="#ef4444" />
+            <line x1="-50" y1="0" x2="50" y2="0" stroke="#451a03" strokeWidth="2" strokeDasharray="3,3" />
+            <line x1="0" y1="-50" x2="0" y2="50" stroke="#451a03" strokeWidth="2" strokeDasharray="3,3" />
+            <rect x="-48" y="62" width="96" height="24" rx="6" fill="#1e1b4b" stroke="#f472b6" strokeWidth="1.5" />
+            <text x="0" y="78" fill="#f472b6" fontSize="12" fontWeight="bold" textAnchor="middle">1 / 4 (Seperempat)</text>
           </g>
 
           {/* Pecahan 3/4 */}
-          <g transform="translate(480, 150)">
-            <circle cx="0" cy="0" r="50" fill="#334155" />
-            <path d="M 0 0 L 0 -50 A 50 50 0 1 1 -50 0 Z" fill="#22c55e" />
-            <circle cx="0" cy="0" r="50" stroke="#22c55e" strokeWidth="3" fill="none" />
-            <text x="0" y="75" fill="#4ade80" fontSize="14" fontWeight="bold" textAnchor="middle">3 / 4 (Tiga Perempat)</text>
+          <g transform="translate(490, 145)">
+            <circle cx="0" cy="0" r="52" fill="#78350f" stroke="#451a03" strokeWidth="3" />
+            <path d="M 0 0 L 0 -50 A 50 50 0 1 1 -50 0 Z" fill="url(#staticCrust)" stroke="#d97706" strokeWidth="2" />
+            <circle cx="20" cy="-20" r="7" fill="#ef4444" />
+            <circle cx="20" cy="20" r="7" fill="#ef4444" />
+            <circle cx="-20" cy="20" r="7" fill="#ef4444" />
+            <rect x="-52" y="62" width="104" height="24" rx="6" fill="#1e1b4b" stroke="#4ade80" strokeWidth="1.5" />
+            <text x="0" y="78" fill="#4ade80" fontSize="12" fontWeight="bold" textAnchor="middle">3 / 4 (Tiga Perempat)</text>
           </g>
 
-          {/* Kesimpulan */}
-          <rect x="150" y="250" width="300" height="35" rx="8" fill="#0f172a" stroke="#f59e0b" strokeWidth="1.5" />
-          <text x="300" y="272" fill="#fbbf24" fontSize="12" fontWeight="bold" textAnchor="middle">
-            1/4 + 1/4 = 2/4 = 1/2 (Pecahan Senilai)
-          </text>
+          {/* Kesimpulan Mudah Dipahami */}
+          <g transform="translate(130, 255)">
+            <rect x="0" y="0" width="340" height="42" rx="10" fill="#1e293b" stroke="#f59e0b" strokeWidth="2" />
+            <text x="170" y="26" fill="#fbbf24" fontSize="13" fontWeight="bold" textAnchor="middle">
+              🍕 1/4 + 1/4 = 2/4 = 1/2 (Setengah Loyang Pizza)
+            </text>
+          </g>
         </svg>
       );
 
-    default: // mindmap_general
+    default: // mindmap_general -> diganti Lembar Belajar Ceria Papan Tulis
       return (
         <svg viewBox="0 0 600 320" className="w-full h-full select-none">
-          {/* Node Pusat */}
-          <circle cx="300" cy="150" r="45" fill="#1e1b4b" stroke="#818cf8" strokeWidth="3" />
-          <text x="300" y="148" fill="#c7d2fe" fontSize="12" fontWeight="bold" textAnchor="middle">KONSEP</text>
-          <text x="300" y="162" fill="#a5b4fc" fontSize="10" textAnchor="middle">UTAMA</text>
+          <rect x="10" y="10" width="580" height="300" rx="16" fill="#132e38" stroke="#b45309" strokeWidth="8" />
+          <rect x="18" y="18" width="564" height="284" rx="10" fill="#0f262e" stroke="#1e3a47" strokeWidth="2" />
 
-          {/* Garis Koneksi Neural */}
-          <line x1="300" y1="150" x2="160" y2="80" stroke="#38bdf8" strokeWidth="2" strokeDasharray="3,3" />
-          <line x1="300" y1="150" x2="440" y2="80" stroke="#f59e0b" strokeWidth="2" strokeDasharray="3,3" />
-          <line x1="300" y1="150" x2="160" y2="220" stroke="#10b981" strokeWidth="2" strokeDasharray="3,3" />
-          <line x1="300" y1="150" x2="440" y2="220" stroke="#ec4899" strokeWidth="2" strokeDasharray="3,3" />
+          <line x1="28" y1="72" x2="572" y2="72" stroke="#1e404f" strokeWidth="1.5" strokeDasharray="4,4" />
 
-          {/* 4 Satelit Konsep */}
-          <g transform="translate(160, 80)">
-            <circle cx="0" cy="0" r="32" fill="#0c4a6e" stroke="#38bdf8" strokeWidth="2" />
-            <text x="0" y="-4" fill="#7dd3fc" fontSize="10" fontWeight="bold" textAnchor="middle">Definisi</text>
-            <text x="0" y="10" fill="#e0f2fe" fontSize="8" textAnchor="middle">Dasar</text>
+          <g transform="translate(300, 46)">
+            <text x="0" y="0" fill="#fef08a" fontSize="14" fontWeight="900" textAnchor="middle">
+              🌟 LEMBAR BELAJAR CERIA ANAK PINTAR 🌟
+            </text>
+            <text x="0" y="18" fill="#a5f3fc" fontSize="10" fontWeight="bold" textAnchor="middle">
+              Belajar Mudah, Menyenangkan & Penuh Petualangan di RadenWorld
+            </text>
           </g>
 
-          <g transform="translate(440, 80)">
-            <circle cx="0" cy="0" r="32" fill="#78350f" stroke="#f59e0b" strokeWidth="2" />
-            <text x="0" y="-4" fill="#fde047" fontSize="10" fontWeight="bold" textAnchor="middle">Rumus &</text>
-            <text x="0" y="10" fill="#fef08a" fontSize="8" textAnchor="middle">Formula</text>
+          <g transform="translate(36, 88)">
+            <rect x="0" y="0" width="255" height="92" rx="10" fill="#164e63" stroke="#38bdf8" strokeWidth="2" />
+            <circle cx="28" cy="28" r="16" fill="#0284c7" />
+            <text x="28" y="34" fontSize="15" textAnchor="middle">📖</text>
+            <text x="52" y="24" fill="#38bdf8" fontSize="11" fontWeight="bold">1. Apa Itu?</text>
+            <text x="52" y="38" fill="#e0f2fe" fontSize="9.5" fontWeight="bold">Pengenalan Dasar yang Mudah</text>
+            <text x="14" y="62" fill="#bae6fd" fontSize="9">Memahami konsep lewat hal seru yang</text>
+            <text x="14" y="78" fill="#bae6fd" fontSize="9">sering kita temui di kehidupan sehari-hari!</text>
           </g>
 
-          <g transform="translate(160, 220)">
-            <circle cx="0" cy="0" r="32" fill="#064e3b" stroke="#10b981" strokeWidth="2" />
-            <text x="0" y="-4" fill="#6ee7b7" fontSize="10" fontWeight="bold" textAnchor="middle">Contoh</text>
-            <text x="0" y="10" fill="#a7f3d0" fontSize="8" textAnchor="middle">Nyata</text>
+          <g transform="translate(308, 88)">
+            <rect x="0" y="0" width="255" height="92" rx="10" fill="#713f12" stroke="#f59e0b" strokeWidth="2" />
+            <circle cx="28" cy="28" r="16" fill="#b45309" />
+            <text x="28" y="34" fontSize="15" textAnchor="middle">🔍</text>
+            <text x="52" y="24" fill="#fbbf24" fontSize="11" fontWeight="bold">2. Contoh Nyata</text>
+            <text x="52" y="38" fill="#fef08a" fontSize="9.5" fontWeight="bold">Ada di Sekitar Kita</text>
+            <text x="14" y="62" fill="#fde68a" fontSize="9">Diterapkan pada buah, tanaman,</text>
+            <text x="14" y="78" fill="#fde68a" fontSize="9">hewan lucu, dan kegiatan di sekolah!</text>
           </g>
 
-          <g transform="translate(440, 220)">
-            <circle cx="0" cy="0" r="32" fill="#701a75" stroke="#ec4899" strokeWidth="2" />
-            <text x="0" y="-4" fill="#f472b6" fontSize="10" fontWeight="bold" textAnchor="middle">Fakta &</text>
-            <text x="0" y="10" fill="#fbcfe8" fontSize="8" textAnchor="middle">Kuis</text>
+          <g transform="translate(36, 192)">
+            <rect x="0" y="0" width="255" height="92" rx="10" fill="#064e3b" stroke="#10b981" strokeWidth="2" />
+            <circle cx="28" cy="28" r="16" fill="#047857" />
+            <text x="28" y="34" fontSize="15" textAnchor="middle">💡</text>
+            <text x="52" y="24" fill="#34d399" fontSize="11" fontWeight="bold">3. Tips Pintar</text>
+            <text x="52" y="38" fill="#a7f3d0" fontSize="9.5" fontWeight="bold">Cara Gampang Mengingat</text>
+            <text x="14" y="62" fill="#d1fae5" fontSize="9">Gunakan jembatan keledai dan cerita</text>
+            <text x="14" y="78" fill="#d1fae5" fontSize="9">bergambar agar materi nempel di ingatan!</text>
           </g>
 
-          <text x="300" y="275" fill="#94a3b8" fontSize="11" textAnchor="middle">
-            ✨ Jelajahi materi pelajaran lengkap di ensiklopedia buku perpustakaan!
-          </text>
+          <g transform="translate(308, 192)">
+            <rect x="0" y="0" width="255" height="92" rx="10" fill="#831843" stroke="#f43f5e" strokeWidth="2" />
+            <circle cx="28" cy="28" r="16" fill="#be123c" />
+            <text x="28" y="34" fontSize="15" textAnchor="middle">🎯</text>
+            <text x="52" y="24" fill="#fb7185" fontSize="11" fontWeight="bold">4. Kuis Berhadiah</text>
+            <text x="52" y="38" fill="#fecdd3" fontSize="9.5" fontWeight="bold">Kumpulkan Poin EXP!</text>
+            <text x="14" y="62" fill="#ffe4e6" fontSize="9">Jawab pertanyaan kuis di sebelah kanan</text>
+            <text x="14" y="78" fill="#ffe4e6" fontSize="9">untuk menambah EXP karaktermu!</text>
+          </g>
         </svg>
       );
   }

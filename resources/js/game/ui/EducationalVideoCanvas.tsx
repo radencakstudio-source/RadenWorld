@@ -693,7 +693,400 @@ export const EducationalVideoCanvas: React.FC<EducationalVideoCanvasProps> = ({
       )}
 
       {/* ==================================================================== */}
-      {/* 9. DEFAULT & TIPE LAINNYA (DENGAN ANIMASI AKTIF)                      */}
+      {/* 9. MATEMATIKA SD: PECAHAN PIZZA & ARITMATIKA BERGAMBAR (CERIA & RAMAH ANAK) */}
+      {/* ==================================================================== */}
+      {type === 'math_arithmetic' && (
+        <svg viewBox="0 0 600 320" className="w-full h-full max-h-[320px] select-none">
+          <defs>
+            <radialGradient id="woodenBoard" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stopColor="#92400e" />
+              <stop offset="85%" stopColor="#78350f" />
+              <stop offset="100%" stopColor="#451a03" />
+            </radialGradient>
+            <radialGradient id="pizzaCrust" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stopColor="#fde047" />
+              <stop offset="60%" stopColor="#f59e0b" />
+              <stop offset="90%" stopColor="#d97706" />
+              <stop offset="100%" stopColor="#92400e" />
+            </radialGradient>
+            <radialGradient id="pepperoniGrad" cx="35%" cy="35%" r="65%">
+              <stop offset="0%" stopColor="#ef4444" />
+              <stop offset="70%" stopColor="#dc2626" />
+              <stop offset="100%" stopColor="#991b1b" />
+            </radialGradient>
+            <filter id="goldenSliceGlow">
+              <feGaussianBlur stdDeviation="4" result="glow" />
+              <feMerge>
+                <feMergeNode in="glow" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
+          </defs>
+
+          {/* Latar Dapur Pizzeria Hangat & Papan Kayu */}
+          <rect x="0" y="0" width="600" height="320" fill="#0f172a" />
+
+          {/* Papan Talenan Kayu Pizza */}
+          <circle cx="215" cy="155" r="105" fill="url(#woodenBoard)" stroke="#5c2606" strokeWidth="6" />
+          <rect x="90" y="146" width="30" height="18" rx="4" fill="#78350f" />
+
+          {/* Uap Hangat Pizza Baru Matang */}
+          <g transform="translate(215, 95)" opacity="0.8">
+            <path d="M -20 0 Q -15 -20, -25 -40" stroke="#fef08a" strokeWidth="2.5" fill="none" strokeLinecap="round" style={{ animation: 'vaporFloatUp 2s linear infinite' }} />
+            <path d="M 0 0 Q 8 -22, -2 -45" stroke="#fde047" strokeWidth="3" fill="none" strokeLinecap="round" style={{ animation: 'vaporFloatUp 2.3s linear infinite 0.4s' }} />
+            <path d="M 22 0 Q 30 -18, 18 -42" stroke="#fef08a" strokeWidth="2.5" fill="none" strokeLinecap="round" style={{ animation: 'vaporFloatUp 2s linear infinite 0.8s' }} />
+          </g>
+
+          {/* KONTEN BERDASARKAN BABAK (STEP 0, 1, 2, 3) */}
+          {/* STEP 0: SATU LOYANG UTUH (1/1) */}
+          {step === 0 && (
+            <g transform="translate(215, 155)">
+              {/* Lingkaran Pizza Utuh */}
+              <circle cx="0" cy="0" r="90" fill="url(#pizzaCrust)" stroke="#78350f" strokeWidth="4" />
+              <circle cx="0" cy="0" r="78" fill="#fde047" stroke="#ea580c" strokeWidth="1.5" />
+
+              {/* Topping Keju Meleleh & Pepperoni */}
+              {[
+                { x: -35, y: -25 },
+                { x: 25, y: -35 },
+                { x: 38, y: 22 },
+                { x: -25, y: 35 },
+                { x: 0, y: 0 },
+                { x: -45, y: 8 },
+                { x: 30, y: -2 },
+              ].map((pos, idx) => (
+                <g key={idx} transform={`translate(${pos.x}, ${pos.y})`}>
+                  <circle cx="0" cy="0" r="11" fill="url(#pepperoniGrad)" stroke="#7f1d1d" strokeWidth="1.5" />
+                  <circle cx="-3" cy="-3" r="2.5" fill="#fca5a5" />
+                </g>
+              ))}
+
+              {/* Daun Basil Hijau Segar */}
+              <circle cx="-15" cy="-12" r="4" fill="#15803d" />
+              <circle cx="18" cy="15" r="4.5" fill="#16a34a" />
+              <circle cx="12" cy="-22" r="3.5" fill="#15803d" />
+              <circle cx="-20" cy="18" r="4" fill="#22c55e" />
+
+              {/* Lencana Pecahan 1 Utuh */}
+              <g transform="translate(0, 0)">
+                <rect x="-48" y="-16" width="96" height="32" rx="8" fill="#0f172a" stroke="#f59e0b" strokeWidth="2.5" filter="url(#goldenSliceGlow)" />
+                <text x="0" y="6" fill="#fef08a" fontSize="15" fontWeight="900" textAnchor="middle">1 UTUH</text>
+              </g>
+            </g>
+          )}
+
+          {/* STEP 1: DIPOTONG MENJADI 4 BAGIAN SAMA BESAR (1/4) */}
+          {step === 1 && (
+            <g transform="translate(215, 155)">
+              {/* 3 Potongan yang Tetap di Loyang */}
+              {/* Potongan Kiri Atas */}
+              <path d="M 0 0 L -90 0 A 90 90 0 0 1 0 -90 Z" fill="url(#pizzaCrust)" stroke="#78350f" strokeWidth="2" />
+              <circle cx="-32" cy="-32" r="9" fill="url(#pepperoniGrad)" />
+              <text x="-40" y="-35" fill="#0f172a" fontSize="11" fontWeight="bold">1/4</text>
+
+              {/* Potongan Kiri Bawah */}
+              <path d="M 0 0 L 0 90 A 90 90 0 0 1 -90 0 Z" fill="url(#pizzaCrust)" stroke="#78350f" strokeWidth="2" />
+              <circle cx="-32" cy="32" r="9" fill="url(#pepperoniGrad)" />
+              <text x="-40" y="42" fill="#0f172a" fontSize="11" fontWeight="bold">1/4</text>
+
+              {/* Potongan Kanan Bawah */}
+              <path d="M 0 0 L 90 0 A 90 90 0 0 1 0 90 Z" fill="url(#pizzaCrust)" stroke="#78350f" strokeWidth="2" />
+              <circle cx="32" cy="32" r="9" fill="url(#pepperoniGrad)" />
+              <text x="32" y="42" fill="#0f172a" fontSize="11" fontWeight="bold">1/4</text>
+
+              {/* 1 POTONGAN KANAN ATAS YANG TERANGKAT & BERSINAR (1/4) */}
+              <g style={{ animation: 'sliceHoverAnim 1.8s ease-in-out infinite' }}>
+                <path d="M 0 0 L 0 -90 A 90 90 0 0 1 90 0 Z" fill="#fde047" stroke="#ea580c" strokeWidth="3" filter="url(#goldenSliceGlow)" />
+                <circle cx="32" cy="-32" r="10" fill="url(#pepperoniGrad)" stroke="#7f1d1d" strokeWidth="1.5" />
+                <circle cx="28" cy="-35" r="2.5" fill="#fca5a5" />
+                <circle cx="45" cy="-15" r="4" fill="#15803d" />
+
+                {/* Tag Nilai Pecahan Melayang */}
+                <g transform="translate(50, -50)">
+                  <rect x="-26" y="-14" width="52" height="28" rx="6" fill="#0f172a" stroke="#fde047" strokeWidth="2" />
+                  <text x="0" y="5" fill="#4ade80" fontSize="13" fontWeight="900" textAnchor="middle">1 / 4</text>
+                </g>
+              </g>
+            </g>
+          )}
+
+          {/* STEP 2: PENJUMLAHAN 1/4 + 1/4 = 2/4 = 1/2 */}
+          {step === 2 && (
+            <g transform="translate(215, 155)">
+              {/* Setengah Kiri */}
+              <path d="M 0 0 L 0 -90 A 90 90 0 0 0 0 90 Z" fill="#78350f" opacity="0.6" stroke="#451a03" strokeWidth="2" />
+
+              {/* Setengah Kanan (2 Potong = 1/2) Bersinar Terang */}
+              <g filter="url(#goldenSliceGlow)">
+                <path d="M 0 0 L 0 -90 A 90 90 0 0 1 0 90 Z" fill="url(#pizzaCrust)" stroke="#f59e0b" strokeWidth="3.5" />
+                <line x1="0" y1="0" x2="90" y2="0" stroke="#ea580c" strokeWidth="2" strokeDasharray="4,3" />
+
+                <circle cx="32" cy="-32" r="10" fill="url(#pepperoniGrad)" />
+                <circle cx="32" cy="32" r="10" fill="url(#pepperoniGrad)" />
+                <circle cx="45" cy="0" r="9" fill="url(#pepperoniGrad)" />
+
+                {/* Label 1/4 + 1/4 */}
+                <rect x="18" y="-45" width="46" height="20" rx="5" fill="#0f172a" stroke="#38bdf8" strokeWidth="1.5" />
+                <text x="41" y="-31" fill="#7dd3fc" fontSize="10" fontWeight="bold" textAnchor="middle">1/4 potong</text>
+
+                <rect x="18" y="25" width="46" height="20" rx="5" fill="#0f172a" stroke="#38bdf8" strokeWidth="1.5" />
+                <text x="41" y="39" fill="#7dd3fc" fontSize="10" fontWeight="bold" textAnchor="middle">1/4 potong</text>
+
+                {/* Badge Tengah: 2/4 = 1/2 */}
+                <g transform="translate(70, 0)">
+                  <rect x="-30" y="-16" width="60" height="32" rx="8" fill="#0f172a" stroke="#22c55e" strokeWidth="2" />
+                  <text x="0" y="5" fill="#4ade80" fontSize="13" fontWeight="900" textAnchor="middle">= 1 / 2</text>
+                </g>
+              </g>
+            </g>
+          )}
+
+          {/* STEP 3: BERBAGI ADIL KEPADA TEMAN */}
+          {step === 3 && (
+            <g transform="translate(215, 155)">
+              {/* 4 Piring Lucu Warna-Warni Berisi 1 Potong Pizza Tiap Teman */}
+              <g transform="translate(-55, -55)">
+                <circle cx="0" cy="0" r="32" fill="#0284c7" stroke="#38bdf8" strokeWidth="2.5" />
+                <path d="M 0 0 L -22 0 A 22 22 0 0 1 0 -22 Z" fill="#fde047" stroke="#ea580c" strokeWidth="1.5" />
+                <text x="0" y="16" fill="#e0f2fe" fontSize="9" fontWeight="bold" textAnchor="middle">👦 Budi (1/4)</text>
+              </g>
+
+              <g transform="translate(55, -55)">
+                <circle cx="0" cy="0" r="32" fill="#db2777" stroke="#f472b6" strokeWidth="2.5" />
+                <path d="M 0 0 L 0 -22 A 22 22 0 0 1 22 0 Z" fill="#fde047" stroke="#ea580c" strokeWidth="1.5" />
+                <text x="0" y="16" fill="#fdf2f8" fontSize="9" fontWeight="bold" textAnchor="middle">👧 Siti (1/4)</text>
+              </g>
+
+              <g transform="translate(-55, 55)">
+                <circle cx="0" cy="0" r="32" fill="#16a34a" stroke="#4ade80" strokeWidth="2.5" />
+                <path d="M 0 0 L 0 22 A 22 22 0 0 1 -22 0 Z" fill="#fde047" stroke="#ea580c" strokeWidth="1.5" />
+                <text x="0" y="16" fill="#f0fdf4" fontSize="9" fontWeight="bold" textAnchor="middle">🧒 Edo (1/4)</text>
+              </g>
+
+              <g transform="translate(55, 55)">
+                <circle cx="0" cy="0" r="32" fill="#ea580c" stroke="#fb923c" strokeWidth="2.5" />
+                <path d="M 0 0 L 22 0 A 22 22 0 0 1 0 22 Z" fill="#fde047" stroke="#ea580c" strokeWidth="1.5" />
+                <text x="0" y="16" fill="#fff7ed" fontSize="9" fontWeight="bold" textAnchor="middle">👧 Lani (1/4)</text>
+              </g>
+
+              <circle cx="0" cy="0" r="16" fill="#0f172a" stroke="#f59e0b" strokeWidth="2" />
+              <text x="0" y="4" fill="#fbbf24" fontSize="11" fontWeight="bold" textAnchor="middle">🤝</text>
+            </g>
+          )}
+
+          {/* ================================================================ */}
+          {/* SISI KANAN: PAPAN EDUKASI ANGKA & RUMUS RAMAH ANAK               */}
+          {/* ================================================================ */}
+          <g transform="translate(360, 36)">
+            <rect x="0" y="0" width="225" height="242" rx="14" fill="#0f172a" stroke="#f59e0b" strokeWidth="2.5" />
+
+            {/* Header Papan Rumus */}
+            <rect x="0" y="0" width="225" height="34" rx="14" fill="#1e293b" />
+            <text x="112" y="22" fill="#fbbf24" fontSize="11.5" fontWeight="bold" textAnchor="middle">
+              📚 RUMUS PECAHAN SERU
+            </text>
+
+            {/* Ilustrasi Kotak Pecahan Besar */}
+            <g transform="translate(20, 48)">
+              {/* Pembilang */}
+              <rect x="0" y="0" width="185" height="42" rx="8" fill="#1e1b4b" stroke="#38bdf8" strokeWidth="1.5" />
+              <text x="26" y="27" fill="#38bdf8" fontSize="22" fontWeight="900" textAnchor="middle">
+                {step === 0 ? '1' : step === 1 ? '1' : step === 2 ? '2' : '4'}
+              </text>
+              <text x="52" y="18" fill="#e0f2fe" fontSize="10.5" fontWeight="bold">PEMBILANG (Atas)</text>
+              <text x="52" y="32" fill="#94a3b8" fontSize="8.5">Jumlah potong yang diambil</text>
+
+              {/* Garis Pecahan (Per) */}
+              <line x1="8" y1="48" x2="177" y2="48" stroke="#f59e0b" strokeWidth="3.5" strokeLinecap="round" />
+
+              {/* Penyebut */}
+              <rect x="0" y="54" width="185" height="42" rx="8" fill="#1e1b4b" stroke="#ec4899" strokeWidth="1.5" />
+              <text x="26" y="81" fill="#ec4899" fontSize="22" fontWeight="900" textAnchor="middle">
+                {step === 0 ? '1' : '4'}
+              </text>
+              <text x="52" y="72" fill="#fdf2f8" fontSize="10.5" fontWeight="bold">PENYEBUT (Bawah)</text>
+              <text x="52" y="86" fill="#94a3b8" fontSize="8.5">Total semua potongan pizza</text>
+            </g>
+
+            {/* Kartu Penjelasan Singkat Babak */}
+            <g transform="translate(15, 158)">
+              <rect x="0" y="0" width="195" height="68" rx="8" fill="#1e293b" stroke="#334155" strokeWidth="1" />
+              <text x="10" y="20" fill="#fef08a" fontSize="10.5" fontWeight="bold">
+                {step === 0 && '💡 1 Utuh: Belum Dipotong'}
+                {step === 1 && '💡 1/4: Satu per Empat'}
+                {step === 2 && '💡 2/4 = 1/2: Setengah'}
+                {step === 3 && '💡 Berbagi 4 Teman Rata'}
+              </text>
+              <text x="10" y="38" fill="#cbd5e1" fontSize="9">
+                {step === 0 && 'Satu kue bulat utuh bernilai 1.'}
+                {step === 1 && 'Dipotong 4, ambil 1 bagian pizza.'}
+                {step === 2 && '2 potong sama dengan setengah loyang!'}
+                {step === 3 && 'Setiap anak mendapatkan 1/4 adil!'}
+              </text>
+              <text x="10" y="55" fill="#4ade80" fontSize="8.5" fontWeight="bold">
+                {step === 0 && 'Bentuk Matematika: 1 / 1'}
+                {step === 1 && 'Bentuk Matematika: 1 / 4'}
+                {step === 2 && 'Pecahan Senilai: 2/4 = 1/2'}
+                {step === 3 && 'Hasil: 1/4 + 1/4 + 1/4 + 1/4 = 1'}
+              </text>
+            </g>
+          </g>
+
+          {/* Banner Bawah */}
+          <text x="300" y="306" fill="#94a3b8" fontSize="11" fontWeight="bold" textAnchor="middle">
+            🍕 Video Animasi Edukasi Pecahan Nyata • Perpustakaan RadenWorld
+          </text>
+        </svg>
+      )}
+
+      {/* ==================================================================== */}
+      {/* 10. PANCASILA & PKN SD: GARUDA DENGAN 5 PERISAI LAMBANG SILA        */}
+      {/* ==================================================================== */}
+      {type === 'pancasila_shield' && (
+        <svg viewBox="0 0 600 320" className="w-full h-full max-h-[320px] select-none">
+          <rect x="0" y="0" width="600" height="320" fill="#0f172a" />
+
+          {/* 5 Perisai Sila Pancasila */}
+          <g transform="translate(180, 150)">
+            {/* Sayap Garuda Emas */}
+            <path d="M 0 -80 C -60 -100, -140 -50, -150 20 C -120 40, -80 30, -50 0 Z" fill="#f59e0b" opacity="0.6" />
+            <path d="M 0 -80 C 60 -100, 140 -50, 150 20 C 120 40, 80 30, 50 0 Z" fill="#f59e0b" opacity="0.6" />
+
+            {/* Perisai Jantung Pusat */}
+            <path d="M 0 -70 L 65 -50 L 65 30 Q 0 95, 0 95 Q -65 30, -65 30 L -65 -50 Z" fill="#1e1b4b" stroke="#e2e8f0" strokeWidth="4" />
+
+            {/* Sila 1: Bintang Emas Pusat */}
+            <circle cx="0" cy="0" r="24" fill={step === 0 ? '#fde047' : '#1e293b'} stroke="#f59e0b" strokeWidth="2" />
+            <text x="0" y="6" fontSize="16" textAnchor="middle">⭐</text>
+
+            {/* Sila 2: Rantai Baja (Kanan Bawah) */}
+            <circle cx="34" cy="34" r="16" fill={step === 1 ? '#fde047' : '#1e293b'} stroke="#ea580c" strokeWidth="2" />
+            <text x="34" y="40" fontSize="12" textAnchor="middle">⛓️</text>
+
+            {/* Sila 3: Pohon Beringin (Kanan Atas) */}
+            <circle cx="34" cy="-30" r="16" fill={step === 2 ? '#86efac' : '#1e293b'} stroke="#16a34a" strokeWidth="2" />
+            <text x="34" y="-24" fontSize="12" textAnchor="middle">🌳</text>
+
+            {/* Sila 4: Kepala Banteng (Kiri Atas) */}
+            <circle cx="-34" cy="-30" r="16" fill={step === 3 ? '#fca5a5' : '#1e293b'} stroke="#dc2626" strokeWidth="2" />
+            <text x="-34" y="-24" fontSize="12" textAnchor="middle">🐂</text>
+
+            {/* Sila 5: Padi & Kapas (Kiri Bawah) */}
+            <circle cx="-34" cy="34" r="16" fill={step === 4 ? '#fef08a' : '#1e293b'} stroke="#eab308" strokeWidth="2" />
+            <text x="-34" y="40" fontSize="12" textAnchor="middle">🌾</text>
+          </g>
+
+          {/* Sisi Kanan: Penjelasan Sila Ramah Anak */}
+          <g transform="translate(360, 40)">
+            <rect x="0" y="0" width="225" height="235" rx="14" fill="#1e1b4b" stroke="#f59e0b" strokeWidth="2.5" />
+            <rect x="0" y="0" width="225" height="34" rx="14" fill="#0f172a" />
+            <text x="112" y="22" fill="#fbbf24" fontSize="12" fontWeight="bold" textAnchor="middle">
+              🇮🇩 5 SILA GARUDA PANCASILA
+            </text>
+
+            <g transform="translate(15, 50)" className="space-y-1">
+              {[
+                { no: '1', name: 'Bintang Emas', text: 'Ketuhanan Yang Maha Esa (Berdoa & Taat Ibadah)' },
+                { no: '2', name: 'Rantai Baja', text: 'Kemanusiaan yang Adil & Beradab (Sopan & Kasih Sayang)' },
+                { no: '3', name: 'Pohon Beringin', text: 'Persatuan Indonesia (Rukun Bersama Teman)' },
+                { no: '4', name: 'Kepala Banteng', text: 'Musyawarah & Mufakat (Bicara Baik-Baik)' },
+                { no: '5', name: 'Padi & Kapas', text: 'Keadilan Sosial (Berbagi Adil & Hemat)' },
+              ].map((s, idx) => (
+                <g key={s.no} transform={`translate(0, ${idx * 34})`}>
+                  <rect x="0" y="0" width="195" height="30" rx="6" fill={step === idx ? '#312e81' : '#0f172a'} stroke={step === idx ? '#fbbf24' : '#334155'} strokeWidth="1.5" />
+                  <text x="10" y="16" fill={step === idx ? '#fde047' : '#94a3b8'} fontSize="9.5" fontWeight="bold">Sila {s.no}: {s.name}</text>
+                  <text x="10" y="26" fill={step === idx ? '#e0f2fe' : '#64748b'} fontSize="7.5">{s.text}</text>
+                </g>
+              ))}
+            </g>
+          </g>
+        </svg>
+      )}
+
+      {/* ==================================================================== */}
+      {/* 11. BAHASA INDONESIA SD: KERETA STRUKTUR KALIMAT SPOK                */}
+      {/* ==================================================================== */}
+      {type === 'spok_sentence' && (
+        <svg viewBox="0 0 600 320" className="w-full h-full max-h-[320px] select-none">
+          <rect x="0" y="0" width="600" height="320" fill="#0f172a" />
+
+          {/* Rel Kereta Api Edukasi */}
+          <line x1="20" y1="230" x2="580" y2="230" stroke="#475569" strokeWidth="6" />
+          <line x1="20" y1="242" x2="580" y2="242" stroke="#475569" strokeWidth="6" />
+          {[40, 90, 140, 190, 240, 290, 340, 390, 440, 490, 540].map((rx) => (
+            <line key={rx} x1={rx} y1="224" x2={rx} y2="248" stroke="#94a3b8" strokeWidth="4" />
+          ))}
+
+          {/* Header Kereta Kalimat */}
+          <text x="300" y="45" fill="#fef08a" fontSize="16" fontWeight="bold" textAnchor="middle">
+            🚂 KERETA STRUKTUR KALIMAT PINTAR (S - P - O - K)
+          </text>
+
+          {/* Gerbong 1: Lokomotif SUBJEK (Siapa?) */}
+          <g transform="translate(45, 95)">
+            <rect x="0" y="20" width="115" height="75" rx="10" fill="#0284c7" stroke="#38bdf8" strokeWidth="2.5" />
+            <rect x="75" y="0" width="35" height="30" rx="6" fill="#0369a1" />
+            <text x="57" y="42" fill="#e0f2fe" fontSize="12" fontWeight="900" textAnchor="middle">SUBJEK (S)</text>
+            <text x="57" y="58" fill="#bae6fd" fontSize="9.5" textAnchor="middle">Pelaku Kalimat</text>
+            <rect x="12" y="66" width="91" height="20" rx="4" fill="#0c4a6e" />
+            <text x="57" y="80" fill="#fde047" fontSize="11" fontWeight="bold" textAnchor="middle">🐱 Kucing Lucu</text>
+            {/* Roda */}
+            <circle cx="28" cy="100" r="14" fill="#1e293b" stroke="#94a3b8" strokeWidth="3" />
+            <circle cx="85" cy="100" r="14" fill="#1e293b" stroke="#94a3b8" strokeWidth="3" />
+          </g>
+
+          {/* Sambungan */}
+          <line x1="160" y1="165" x2="180" y2="165" stroke="#f59e0b" strokeWidth="6" />
+
+          {/* Gerbong 2: PREDIKAT (Sedang Apa?) */}
+          <g transform="translate(180, 105)">
+            <rect x="0" y="10" width="115" height="75" rx="10" fill="#16a34a" stroke="#4ade80" strokeWidth="2.5" />
+            <text x="57" y="32" fill="#f0fdf4" fontSize="12" fontWeight="900" textAnchor="middle">PREDIKAT (P)</text>
+            <text x="57" y="48" fill="#bbf7d0" fontSize="9.5" textAnchor="middle">Kata Kerja/Aksi</text>
+            <rect x="12" y="56" width="91" height="20" rx="4" fill="#14532d" />
+            <text x="57" y="70" fill="#fde047" fontSize="11" fontWeight="bold" textAnchor="middle">🐟 Makan</text>
+            <circle cx="28" cy="90" r="14" fill="#1e293b" stroke="#94a3b8" strokeWidth="3" />
+            <circle cx="85" cy="90" r="14" fill="#1e293b" stroke="#94a3b8" strokeWidth="3" />
+          </g>
+
+          <line x1="295" y1="165" x2="315" y2="165" stroke="#f59e0b" strokeWidth="6" />
+
+          {/* Gerbong 3: OBJEK (Apa yang Dikenai?) */}
+          <g transform="translate(315, 105)">
+            <rect x="0" y="10" width="115" height="75" rx="10" fill="#ea580c" stroke="#fb923c" strokeWidth="2.5" />
+            <text x="57" y="32" fill="#fff7ed" fontSize="12" fontWeight="900" textAnchor="middle">OBJEK (O)</text>
+            <text x="57" y="48" fill="#fed7aa" fontSize="9.5" textAnchor="middle">Benda Korban</text>
+            <rect x="12" y="56" width="91" height="20" rx="4" fill="#7c2d12" />
+            <text x="57" y="70" fill="#fde047" fontSize="11" fontWeight="bold" textAnchor="middle">🍽️ Ikan Goreng</text>
+            <circle cx="28" cy="90" r="14" fill="#1e293b" stroke="#94a3b8" strokeWidth="3" />
+            <circle cx="85" cy="90" r="14" fill="#1e293b" stroke="#94a3b8" strokeWidth="3" />
+          </g>
+
+          <line x1="430" y1="165" x2="450" y2="165" stroke="#f59e0b" strokeWidth="6" />
+
+          {/* Gerbong 4: KETERANGAN (Di mana / Kapan?) */}
+          <g transform="translate(450, 105)">
+            <rect x="0" y="10" width="115" height="75" rx="10" fill="#9333ea" stroke="#c084fc" strokeWidth="2.5" />
+            <text x="57" y="32" fill="#faf5ff" fontSize="12" fontWeight="900" textAnchor="middle">KETERANGAN (K)</text>
+            <text x="57" y="48" fill="#e9d5ff" fontSize="9.5" textAnchor="middle">Tempat / Waktu</text>
+            <rect x="12" y="56" width="91" height="20" rx="4" fill="#581c87" />
+            <text x="57" y="70" fill="#fde047" fontSize="10" fontWeight="bold" textAnchor="middle">🏡 Di Dapur Pagi Ini</text>
+            <circle cx="28" cy="90" r="14" fill="#1e293b" stroke="#94a3b8" strokeWidth="3" />
+            <circle cx="85" cy="90" r="14" fill="#1e293b" stroke="#94a3b8" strokeWidth="3" />
+          </g>
+
+          {/* Kesimpulan Kalimat Utuh */}
+          <g transform="translate(150, 260)">
+            <rect x="0" y="0" width="300" height="36" rx="10" fill="#1e1b4b" stroke="#f59e0b" strokeWidth="2" />
+            <text x="150" y="23" fill="#fef08a" fontSize="12" fontWeight="bold" textAnchor="middle">
+              ✨ "Kucing lucu makan ikan goreng di dapur."
+            </text>
+          </g>
+        </svg>
+      )}
+
+      {/* ==================================================================== */}
+      {/* 12. DEFAULT FALLBACK: PAPAN TULIS KELAS CERIA RAMAH ANAK SD          */}
       {/* ==================================================================== */}
       {type !== 'photosynthesis' &&
         type !== 'water_cycle' &&
@@ -702,40 +1095,88 @@ export const EducationalVideoCanvas: React.FC<EducationalVideoCanvasProps> = ({
         type !== 'bohr_atom' &&
         type !== 'pythagoras' &&
         type !== 'blood_circulation' &&
-        type !== 'newton_dynamics' && (
-          <svg viewBox="0 0 600 320" className="w-full h-full max-h-[320px]">
-            {/* Koneksi Sinapsis Elektrik */}
-            <g transform="translate(300, 160)">
-              <line x1="0" y1="0" x2="-140" y2="-75" stroke="#38bdf8" strokeWidth="3.5" strokeDasharray="6,6" style={{ animation: 'dashStream 0.8s linear infinite' }} />
-              <line x1="0" y1="0" x2="140" y2="-75" stroke="#f59e0b" strokeWidth="3.5" strokeDasharray="6,6" style={{ animation: 'dashStream 0.8s linear infinite' }} />
-              <line x1="0" y1="0" x2="-140" y2="75" stroke="#10b981" strokeWidth="3.5" strokeDasharray="6,6" style={{ animation: 'dashStream 0.8s linear infinite' }} />
-              <line x1="0" y1="0" x2="140" y2="75" stroke="#ec4899" strokeWidth="3.5" strokeDasharray="6,6" style={{ animation: 'dashStream 0.8s linear infinite' }} />
+        type !== 'newton_dynamics' &&
+        type !== 'math_arithmetic' &&
+        type !== 'pancasila_shield' &&
+        type !== 'spok_sentence' && (
+          <svg viewBox="0 0 600 320" className="w-full h-full max-h-[320px] select-none">
+            {/* Bingkai Papan Tulis Kayu & Latar Papan Hijau Hangat */}
+            <rect x="10" y="10" width="580" height="300" rx="16" fill="#132e38" stroke="#b45309" strokeWidth="8" />
+            <rect x="18" y="18" width="564" height="284" rx="10" fill="#0f262e" stroke="#1e3a47" strokeWidth="2" />
 
-              <circle cx="0" cy="0" r="48" fill="#1e1b4b" stroke="#818cf8" strokeWidth="3.5" style={{ animation: 'solarPulse 2s infinite' }} />
-              <text x="0" y="-3" fill="#c7d2fe" fontSize="13" fontWeight="extrabold" textAnchor="middle">KONSEP</text>
-              <text x="0" y="14" fill="#a5b4fc" fontSize="10" fontWeight="bold" textAnchor="middle">UTAMA 🧠</text>
+            {/* Garis Kisi Kapur Halus */}
+            <line x1="28" y1="72" x2="572" y2="72" stroke="#1e404f" strokeWidth="1.5" strokeDasharray="4,4" />
 
-              <g transform="translate(-140, -75)">
-                <circle cx="0" cy="0" r="34" fill="#0c4a6e" stroke="#38bdf8" strokeWidth="2.5" />
-                <text x="0" y="4" fill="#bae6fd" fontSize="10.5" fontWeight="bold" textAnchor="middle">Definisi</text>
-              </g>
-              <g transform="translate(140, -75)">
-                <circle cx="0" cy="0" r="34" fill="#78350f" stroke="#f59e0b" strokeWidth="2.5" />
-                <text x="0" y="4" fill="#fde047" fontSize="10.5" fontWeight="bold" textAnchor="middle">Rumus</text>
-              </g>
-              <g transform="translate(-140, 75)">
-                <circle cx="0" cy="0" r="34" fill="#064e3b" stroke="#10b981" strokeWidth="2.5" />
-                <text x="0" y="4" fill="#a7f3d0" fontSize="10.5" fontWeight="bold" textAnchor="middle">Contoh</text>
-              </g>
-              <g transform="translate(140, 75)">
-                <circle cx="0" cy="0" r="34" fill="#701a75" stroke="#ec4899" strokeWidth="2.5" />
-                <text x="0" y="4" fill="#fbcfe8" fontSize="10.5" fontWeight="bold" textAnchor="middle">Kuis 🎯</text>
-              </g>
+            {/* Header Papan Tulis Ceria */}
+            <g transform="translate(300, 46)">
+              <text x="0" y="0" fill="#fef08a" fontSize="14" fontWeight="900" textAnchor="middle">
+                🌟 LEMBAR BELAJAR CERIA ANAK PINTAR 🌟
+              </text>
+              <text x="0" y="18" fill="#a5f3fc" fontSize="10" fontWeight="bold" textAnchor="middle">
+                Belajar Mudah, Menyenangkan & Penuh Petualangan di RadenWorld
+              </text>
             </g>
 
-            <text x="300" y="295" fill="#94a3b8" fontSize="12" textAnchor="middle">
-              ✨ Video Animasi Edukasi Ilmiah 60 FPS • Perpustakaan RadenWorld
-            </text>
+            {/* 4 Kartu Edukasi Bergambar Berwarna-Warni */}
+            {/* Kartu 1: Cerita Pengenalan */}
+            <g transform="translate(36, 88)">
+              <rect x="0" y="0" width="255" height="92" rx="10" fill="#164e63" stroke="#38bdf8" strokeWidth="2" />
+              <circle cx="28" cy="28" r="16" fill="#0284c7" />
+              <text x="28" y="34" fontSize="15" textAnchor="middle">📖</text>
+              <text x="52" y="24" fill="#38bdf8" fontSize="11" fontWeight="bold">1. Apa Itu?</text>
+              <text x="52" y="38" fill="#e0f2fe" fontSize="9.5" fontWeight="bold">Pengenalan Dasar yang Mudah</text>
+              <text x="14" y="62" fill="#bae6fd" fontSize="9">
+                Memahami konsep lewat hal seru yang
+              </text>
+              <text x="14" y="78" fill="#bae6fd" fontSize="9">
+                sering kita temui di kehidupan sehari-hari!
+              </text>
+            </g>
+
+            {/* Kartu 2: Contoh Nyata di Sekitar */}
+            <g transform="translate(308, 88)">
+              <rect x="0" y="0" width="255" height="92" rx="10" fill="#713f12" stroke="#f59e0b" strokeWidth="2" />
+              <circle cx="28" cy="28" r="16" fill="#b45309" />
+              <text x="28" y="34" fontSize="15" textAnchor="middle">🔍</text>
+              <text x="52" y="24" fill="#fbbf24" fontSize="11" fontWeight="bold">2. Contoh Nyata</text>
+              <text x="52" y="38" fill="#fef08a" fontSize="9.5" fontWeight="bold">Ada di Sekitar Kita</text>
+              <text x="14" y="62" fill="#fde68a" fontSize="9">
+                Diterapkan pada buah, tanaman,
+              </text>
+              <text x="14" y="78" fill="#fde68a" fontSize="9">
+                hewan lucu, dan kegiatan di sekolah!
+              </text>
+            </g>
+
+            {/* Kartu 3: Tips Cepat & Rumus Gampang */}
+            <g transform="translate(36, 192)">
+              <rect x="0" y="0" width="255" height="92" rx="10" fill="#064e3b" stroke="#10b981" strokeWidth="2" />
+              <circle cx="28" cy="28" r="16" fill="#047857" />
+              <text x="28" y="34" fontSize="15" textAnchor="middle">💡</text>
+              <text x="52" y="24" fill="#34d399" fontSize="11" fontWeight="bold">3. Tips Pintar</text>
+              <text x="52" y="38" fill="#a7f3d0" fontSize="9.5" fontWeight="bold">Cara Gampang Mengingat</text>
+              <text x="14" y="62" fill="#d1fae5" fontSize="9">
+                Gunakan jembatan keledai dan cerita
+              </text>
+              <text x="14" y="78" fill="#d1fae5" fontSize="9">
+                bergambar agar materi nempel di ingatan!
+              </text>
+            </g>
+
+            {/* Kartu 4: Misi Kuis Berhadiah */}
+            <g transform="translate(308, 192)">
+              <rect x="0" y="0" width="255" height="92" rx="10" fill="#831843" stroke="#f43f5e" strokeWidth="2" />
+              <circle cx="28" cy="28" r="16" fill="#be123c" />
+              <text x="28" y="34" fontSize="15" textAnchor="middle">🎯</text>
+              <text x="52" y="24" fill="#fb7185" fontSize="11" fontWeight="bold">4. Kuis Berhadiah</text>
+              <text x="52" y="38" fill="#fecdd3" fontSize="9.5" fontWeight="bold">Kumpulkan Poin EXP!</text>
+              <text x="14" y="62" fill="#ffe4e6" fontSize="9">
+                Jawab pertanyaan kuis di sebelah kanan
+              </text>
+              <text x="14" y="78" fill="#ffe4e6" fontSize="9">
+                untuk menambah EXP karaktermu!
+              </text>
+            </g>
           </svg>
         )}
     </div>

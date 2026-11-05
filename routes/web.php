@@ -105,7 +105,7 @@ Route::get('/api/tts', function (\Illuminate\Http\Request $request) {
 
     if ($httpCode === 200 && !empty($audioData) && strlen($audioData) > 500) {
         @file_put_contents($cacheFile, $audioData);
-        return response($audioData, 200, [
+        return response()->file($cacheFile, [
             'Content-Type' => 'audio/mpeg',
             'Cache-Control' => 'public, max-age=604800, immutable',
             'Access-Control-Allow-Origin' => '*',

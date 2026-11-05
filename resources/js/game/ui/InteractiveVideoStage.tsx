@@ -125,10 +125,13 @@ export const InteractiveVideoStage: React.FC<InteractiveVideoStageProps> = ({
     return unsub;
   }, [narrator]);
 
+  const lastSpokenStepRef = useRef<number>(-1);
+
   // Reset playback saat topik berganti
   useEffect(() => {
     setPlaybackTime(0);
     setActiveStep(0);
+    lastSpokenStepRef.current = -1;
     narrator.stop();
   }, [topic.id, narrator]);
 
@@ -143,23 +146,30 @@ export const InteractiveVideoStage: React.FC<InteractiveVideoStageProps> = ({
     }
   }, [playbackTime, totalSteps, sceneDuration, activeStep]);
 
-  // Interval timer pemutar video
+  // Interval timer pemutar video (murni tanpa memanggil side-effect di dalam updater)
   useEffect(() => {
     if (!isPlaying) return;
 
     const intervalTime = Math.max(200, 1000 / playbackSpeed);
     const interval = setInterval(() => {
       setPlaybackTime((prev) => {
-        if (prev >= totalDuration) {
-          onTogglePlay();
+        const next = prev + 1;
+        if (next >= totalDuration) {
           return totalDuration;
         }
-        return prev + 1;
+        return next;
       });
     }, intervalTime);
 
     return () => clearInterval(interval);
-  }, [isPlaying, totalDuration, playbackSpeed, onTogglePlay]);
+  }, [isPlaying, totalDuration, playbackSpeed]);
+
+  // Handle otomatis pause saat video selesai totalDuration (di luar loop setState)
+  useEffect(() => {
+    if (isPlaying && playbackTime >= totalDuration) {
+      onTogglePlay();
+    }
+  }, [isPlaying, playbackTime, totalDuration, onTogglePlay]);
 
   // --------------------------------------------------------------------------
   // 3. VOICE NARRATOR AUTO-SPEAK PADA SETIAP SCENE
@@ -173,19 +183,18 @@ export const InteractiveVideoStage: React.FC<InteractiveVideoStageProps> = ({
     [currentScene, narrator]
   );
 
-  // Bacakan saat scene berganti atau saat Play ditekan
+  // Bacakan saat scene berganti secara dinamis saat video berputar
   useEffect(() => {
     if (isPlaying && isVoiceEnabled) {
-      speakCurrentScene();
-    }
-  }, [activeStep, isPlaying, isVoiceEnabled, speakCurrentScene]);
-
-  // Hentikan suara jika jeda
-  useEffect(() => {
-    if (!isPlaying) {
+      if (lastSpokenStepRef.current !== activeStep) {
+        lastSpokenStepRef.current = activeStep;
+        speakCurrentScene(false);
+      }
+    } else if (!isPlaying) {
       narrator.stop();
+      lastSpokenStepRef.current = -1;
     }
-  }, [isPlaying, narrator]);
+  }, [activeStep, isPlaying, isVoiceEnabled, speakCurrentScene, narrator]);
 
   // --------------------------------------------------------------------------
   // 4. INTERAKSI LANGSUNG DI DALAM VIDEO (STATE SIMULASI NYATA)
@@ -282,15 +291,17 @@ export const InteractiveVideoStage: React.FC<InteractiveVideoStageProps> = ({
   // Toggle Play dengan aktivasi suara langsung dari user gesture
   const handleTogglePlayWithVoice = useCallback(() => {
     if (!isPlaying) {
+      lastSpokenStepRef.current = activeStep;
       onTogglePlay();
       if (isVoiceEnabled) {
         speakCurrentScene(true);
       }
     } else {
+      lastSpokenStepRef.current = -1;
       onTogglePlay();
       narrator.stop();
     }
-  }, [isPlaying, onTogglePlay, isVoiceEnabled, speakCurrentScene, narrator]);
+  }, [isPlaying, onTogglePlay, isVoiceEnabled, activeStep, speakCurrentScene, narrator]);
 
   // Navigasi Babak
   const jumpToStep = (targetStep: number) => {
@@ -298,6 +309,7 @@ export const InteractiveVideoStage: React.FC<InteractiveVideoStageProps> = ({
     const targetTime = targetStep * sceneDuration;
     setPlaybackTime(targetTime);
     setActiveStep(targetStep);
+    lastSpokenStepRef.current = targetStep;
     if (isVoiceEnabled) {
       const nextScene = storyScenes[targetStep];
       if (nextScene) {

@@ -191,6 +191,11 @@ export class VoiceNarratorService {
     const cleaned = this.cleanText(text);
     if (!cleaned) return;
 
+    // Jika sedang memutar teks yang sama dan bukan force, jangan interupsi pemutaran
+    if (!options?.force && this.isSpeaking && this.lastSpokenText === cleaned) {
+      return;
+    }
+
     this.stop(); // Hentikan audio sebelumnya
     this.isCancelled = false;
     this.lastSpokenText = cleaned;
@@ -232,13 +237,17 @@ export class VoiceNarratorService {
       this.currentAudio = audio;
 
       audio.onended = () => {
-        if (!this.isCancelled) {
+        if (!this.isCancelled && this.currentAudio === audio) {
           this.currentQueueIndex++;
           this.playNextAudioChunk(onEnd);
         }
       };
 
       audio.onerror = (e) => {
+        // Jika audio sudah dibatalkan atau digantikan oleh instance baru, abaikan
+        if (this.isCancelled || this.currentAudio !== audio) {
+          return;
+        }
         console.warn(
           '[VoiceNarratorService] Audio /api/tts gagal, fallback ke SpeechSynthesis lokal...',
           e
@@ -249,6 +258,9 @@ export class VoiceNarratorService {
       const playPromise = audio.play();
       if (playPromise !== undefined) {
         playPromise.catch((err) => {
+          if (this.isCancelled || this.currentAudio !== audio) {
+            return;
+          }
           if (err.name === 'NotAllowedError') {
             console.warn(
               '[VoiceNarratorService] Browser membatasi pemutaran otomatis (perlu klik pengguna).'
@@ -260,8 +272,10 @@ export class VoiceNarratorService {
         });
       }
     } catch (err) {
-      console.warn('[VoiceNarratorService] Pengecualian audio elemen:', err);
-      this.fallbackToSpeechSynthesis(onEnd);
+      if (!this.isCancelled) {
+        console.warn('[VoiceNarratorService] Pengecualian audio elemen:', err);
+        this.fallbackToSpeechSynthesis(onEnd);
+      }
     }
   }
 
@@ -323,14 +337,18 @@ export class VoiceNarratorService {
     this.audioQueue = [];
     this.currentQueueIndex = 0;
 
-    // Hentikan audio online MP3
+    // Hentikan audio online MP3 dengan pelepasan event handler yang aman
     if (this.currentAudio) {
-      try {
-        this.currentAudio.pause();
-        this.currentAudio.currentTime = 0;
-        this.currentAudio.src = '';
-      } catch {}
+      const audioToClean = this.currentAudio;
       this.currentAudio = null;
+      audioToClean.onended = null;
+      audioToClean.onerror = null;
+      audioToClean.oncanplay = null;
+      try {
+        audioToClean.pause();
+        audioToClean.removeAttribute('src');
+        audioToClean.load();
+      } catch {}
     }
 
     // Hentikan speechSynthesis lokal

@@ -476,7 +476,10 @@ export const InteractiveVideoStage: React.FC<InteractiveVideoStageProps> = ({
                 <div className="flex items-center gap-1.5 min-w-0">
                   <span className="text-xs">{currentScene.icon || '📖'}</span>
                   <span className="text-[10px] sm:text-[11px] font-bold text-black uppercase tracking-wide truncate">
-                    {currentScene.chapter}: {currentScene.title}
+                    {currentScene.title}
+                  </span>
+                  <span className="clay-badge-secondary px-1.5 py-0.5 text-[9px] font-bold text-black shrink-0">
+                    Bagian {activeStep + 1}/{totalSteps}
                   </span>
                   {isSpeaking && (
                     <span className="inline-flex items-center gap-1 px-1.5 py-0.5 clay-badge-primary text-[9px] font-bold text-black animate-pulse">
@@ -811,7 +814,7 @@ export const InteractiveVideoStage: React.FC<InteractiveVideoStageProps> = ({
                 className="px-2 py-1 clay-btn-primary text-black text-[10.5px] font-bold flex items-center gap-1 shadow-sm hover:scale-105 transition-all"
                 title="Buka Kuis Interaktif Berhadiah EXP di Panel Kanan"
               >
-                <span className="animate-bounce">🎯</span>
+                <span>🎯</span>
                 <span>Kuis EXP</span>
               </button>
             )}

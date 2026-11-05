@@ -184,31 +184,49 @@ export const HUD: React.FC<HUDProps> = React.memo(({
   }, [stats.inHouse]);
 
   React.useEffect(() => {
-    const handleCount = (count: number) => setServerPlayerCount(count);
+    const handleCount = (count: number) => {
+      if (typeof count === 'number' && count > 0) {
+        setServerPlayerCount(count);
+      }
+    };
     const handlePlayers = (list: IPlayerData[]) => {
       setServerPlayers(list);
       if (list && list.length > 0) {
         setServerPlayerCount(list.length);
       }
     };
+    const handleStats = (stats: Record<string, number>) => {
+      const clean = cleanServerCode(serverCode);
+      const sCount = stats[clean];
+      if (typeof sCount === 'number' && sCount > 0) {
+        setServerPlayerCount(sCount);
+      }
+    };
 
     EventBus.on('player-count-updated', handleCount);
     EventBus.on('server-players-updated', handlePlayers);
+    EventBus.on('server-stats-updated', handleStats);
 
     try {
       const net = NetworkManager.getInstance();
+      const currentCount = net.getServerPlayerCount();
+      if (currentCount > 0) {
+        setServerPlayerCount(currentCount);
+      }
       const currentList = net.getServerPlayers();
       if (currentList && currentList.length > 0) {
         setServerPlayers(currentList);
-        setServerPlayerCount(currentList.length);
       }
+      net.requestServerStats();
+      net.requestServerPlayers();
     } catch (e) {}
 
     return () => {
       EventBus.off('player-count-updated', handleCount);
       EventBus.off('server-players-updated', handlePlayers);
+      EventBus.off('server-stats-updated', handleStats);
     };
-  }, []);
+  }, [serverCode]);
 
   const [customMarker, setCustomMarker] = React.useState<IMapMarker | null>(() => {
     try {
@@ -647,7 +665,8 @@ export const HUD: React.FC<HUDProps> = React.memo(({
             onClick={() => {
               sound.playClick();
               try {
-                NetworkManager.getInstance().requestRoomPlayers();
+                NetworkManager.getInstance().requestServerPlayers();
+                NetworkManager.getInstance().requestServerStats();
               } catch (e) {}
               setIsServerUsersModalOpen(true);
             }}

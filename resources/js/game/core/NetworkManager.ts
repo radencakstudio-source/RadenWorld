@@ -392,17 +392,69 @@ export class NetworkManager {
     this.connect(customUrl);
   }
 
-  /** Daftar pemain aktif di server saat ini */
-  private serverPlayers: Map<string, IPlayerData> = new Map();
+  /** Membersihkan dan menormalisasi kode server */
+  public cleanServerCode(code?: string | null): string {
+    if (!code) return 'Asia 1';
+    const upper = code.toUpperCase();
+    if (upper.includes('ASIA-2') || upper.includes('ASIA 2')) return 'Asia 2';
+    if (upper.includes('ASIA-3') || upper.includes('ASIA 3')) return 'Asia 3';
+    if (upper.includes('ASIA-4') || upper.includes('ASIA 4')) return 'Asia 4';
+    return 'Asia 1';
+  }
 
+  /** Daftar pemain aktif di room/area lokal saat ini (untuk Phaser Scene rendering) */
+  private roomPlayers: Map<string, IPlayerData> = new Map();
+
+  /** Daftar seluruh pemain aktif di realm server channel saat ini (untuk HUD & Modal Server) */
+  private channelPlayers: Map<string, IPlayerData> = new Map();
+
+  /** Jumlah pemain aktif di server channel saat ini */
+  private channelPlayerCount: number = 1;
+
+  /** Alias untuk backward compatibility */
+  private get serverPlayers(): Map<string, IPlayerData> {
+    return this.roomPlayers;
+  }
+
+  /** Mengambil seluruh pemain yang online di server channel saat ini (lintas ruangan) */
   public getServerPlayers(): IPlayerData[] {
-    return Array.from(this.serverPlayers.values());
+    if (this.channelPlayers.size > 0) {
+      return Array.from(this.channelPlayers.values());
+    }
+    return Array.from(this.roomPlayers.values());
+  }
+
+  /** Mengambil pemain yang ada di satu ruangan lokal saja */
+  public getRoomPlayers(): IPlayerData[] {
+    return Array.from(this.roomPlayers.values());
+  }
+
+  /** Mengambil total pemain aktif di server channel saat ini */
+  public getServerPlayerCount(): number {
+    const clean = this.cleanServerCode(this.currentServerCode);
+    const statCount = this.serverStats[clean];
+    return Math.max(statCount || 0, this.channelPlayerCount, this.channelPlayers.size, 1);
+  }
+
+  private emitRoomPlayersUpdated(): void {
+    const list = Array.from(this.roomPlayers.values());
+    EventBus.emit('room-players-updated', list);
+    // Jika data server channel belum tiba, gunakan data room sebagai fallback minimal
+    if (this.channelPlayers.size === 0) {
+      EventBus.emit('server-players-updated', list);
+      EventBus.emit('player-count-updated', Math.max(1, list.length));
+    }
+  }
+
+  private emitChannelPlayersUpdated(): void {
+    const list = Array.from(this.channelPlayers.values());
+    EventBus.emit('server-players-updated', list);
+    EventBus.emit('player-count-updated', Math.max(1, this.channelPlayerCount, list.length));
   }
 
   private emitServerPlayersUpdated(): void {
-    const list = Array.from(this.serverPlayers.values());
-    EventBus.emit('server-players-updated', list);
-    EventBus.emit('player-count-updated', Math.max(1, list.length));
+    this.emitRoomPlayersUpdated();
+    this.emitChannelPlayersUpdated();
   }
 
   private bindSocketListeners(): void {
@@ -426,11 +478,30 @@ export class NetworkManager {
     this.socket.off('player:followed_by');
     this.socket.off('player:unfollowed_by');
     this.socket.off('server:stats');
+    this.socket.off('server:players_list');
 
     this.socket.on('server:stats', (stats: Record<string, number>) => {
       if (stats && typeof stats === 'object') {
         this.serverStats = { ...this.serverStats, ...stats };
         EventBus.emit('server-stats-updated', this.serverStats);
+
+        const clean = this.cleanServerCode(this.currentServerCode);
+        if (typeof stats[clean] === 'number' && stats[clean] > 0) {
+          this.channelPlayerCount = Math.max(stats[clean], this.channelPlayers.size, 1);
+          EventBus.emit('player-count-updated', this.channelPlayerCount);
+        }
+      }
+    });
+
+    this.socket.on('server:players_list', (data: { serverCode: string; players: IPlayerData[]; count: number }) => {
+      if (!data) return;
+      const myClean = this.cleanServerCode(this.currentServerCode);
+      const incomingClean = this.cleanServerCode(data.serverCode);
+      if (myClean === incomingClean && Array.isArray(data.players)) {
+        this.channelPlayers.clear();
+        data.players.forEach((p) => this.channelPlayers.set(p.id, p));
+        this.channelPlayerCount = Math.max(data.count || 0, data.players.length, 1);
+        this.emitChannelPlayersUpdated();
       }
     });
 
@@ -455,26 +526,31 @@ export class NetworkManager {
     });
 
     this.socket.on('world:init', (data: IWorldInitData) => {
-      this.serverPlayers.clear();
+      this.roomPlayers.clear();
       if (data.selfPlayer) {
-        this.serverPlayers.set(data.selfPlayer.id, data.selfPlayer);
+        this.roomPlayers.set(data.selfPlayer.id, data.selfPlayer);
+        this.channelPlayers.set(data.selfPlayer.id, data.selfPlayer);
       }
       if (Array.isArray(data.players)) {
-        data.players.forEach((p) => this.serverPlayers.set(p.id, p));
+        data.players.forEach((p) => this.roomPlayers.set(p.id, p));
       }
-      this.emitServerPlayersUpdated();
+      this.emitRoomPlayersUpdated();
+      this.requestServerStats();
+      this.requestServerPlayers();
       this.listeners.worldInit.forEach((cb) => cb(data));
     });
 
     this.socket.on('room:players', (data: { room: string; players: IPlayerData[] }) => {
       const myId = this.getSocketId();
-      const me = myId ? this.serverPlayers.get(myId) : null;
-      this.serverPlayers.clear();
-      if (me) this.serverPlayers.set(me.id, me);
+      const me = myId ? this.roomPlayers.get(myId) : null;
+      this.roomPlayers.clear();
+      if (me) this.roomPlayers.set(me.id, me);
       if (Array.isArray(data.players)) {
-        data.players.forEach((p) => this.serverPlayers.set(p.id, p));
+        data.players.forEach((p) => this.roomPlayers.set(p.id, p));
       }
-      this.emitServerPlayersUpdated();
+      this.emitRoomPlayersUpdated();
+      this.requestServerStats();
+      this.requestServerPlayers();
       this.listeners.worldInit.forEach((cb) => cb({
         selfId: this.getSocketId() || '',
         selfPlayer: null as any,
@@ -485,19 +561,29 @@ export class NetworkManager {
     });
 
     this.socket.on('player:joined', (player: IPlayerData) => {
-      this.serverPlayers.set(player.id, player);
-      this.emitServerPlayersUpdated();
+      this.roomPlayers.set(player.id, player);
+      this.channelPlayers.set(player.id, player);
+      this.emitRoomPlayersUpdated();
+      this.emitChannelPlayersUpdated();
+      this.requestServerStats();
       this.listeners.playerJoined.forEach((cb) => cb(player));
     });
 
     this.socket.on('player:updated', (data: { id: string; name?: string; avatar?: IAvatarCustomization; role?: string; isSuperAdmin?: boolean }) => {
-      const existing = this.serverPlayers.get(data.id);
-      if (existing) {
-        if (data.name) existing.name = data.name;
-        if (data.avatar) existing.avatar = data.avatar;
-        if (data.role) existing.role = data.role;
-        if (typeof data.isSuperAdmin === 'boolean') existing.isSuperAdmin = data.isSuperAdmin;
-        this.emitServerPlayersUpdated();
+      const existingRoom = this.roomPlayers.get(data.id);
+      if (existingRoom) {
+        if (data.name) existingRoom.name = data.name;
+        if (data.avatar) existingRoom.avatar = data.avatar;
+        if (data.role) existingRoom.role = data.role;
+        if (typeof data.isSuperAdmin === 'boolean') existingRoom.isSuperAdmin = data.isSuperAdmin;
+      }
+      const existingChannel = this.channelPlayers.get(data.id);
+      if (existingChannel) {
+        if (data.name) existingChannel.name = data.name;
+        if (data.avatar) existingChannel.avatar = data.avatar;
+        if (data.role) existingChannel.role = data.role;
+        if (typeof data.isSuperAdmin === 'boolean') existingChannel.isSuperAdmin = data.isSuperAdmin;
+        this.emitChannelPlayersUpdated();
       }
       EventBus.emit('remote-player-updated', data);
     });
@@ -507,8 +593,11 @@ export class NetworkManager {
     });
 
     this.socket.on('player:left', (data) => {
-      this.serverPlayers.delete(data.id);
-      this.emitServerPlayersUpdated();
+      this.roomPlayers.delete(data.id);
+      this.channelPlayers.delete(data.id);
+      this.emitRoomPlayersUpdated();
+      this.emitChannelPlayersUpdated();
+      this.requestServerStats();
       this.listeners.playerLeft.forEach((cb) => cb(data));
     });
 
@@ -614,7 +703,15 @@ export class NetworkManager {
       if (direction) this.lastJoinData.direction = direction;
     }
     if (!this.socket || !this.isConnected) return;
-    this.socket.emit('player:switch_room', { room: targetRoom, x, y, direction });
+    this.socket.emit('player:switch_room', {
+      room: targetRoom,
+      x,
+      y,
+      direction,
+      serverCode: this.currentServerCode,
+    });
+    this.requestServerStats();
+    this.requestServerPlayers();
   }
 
   /**
@@ -630,10 +727,11 @@ export class NetworkManager {
     }
 
     // Bersihkan daftar pemain remote dari server sebelumnya
-    this.serverPlayers.clear();
+    this.roomPlayers.clear();
+    this.channelPlayers.clear();
     const myId = this.getSocketId() || 'local-me';
     if (this.lastJoinData) {
-      this.serverPlayers.set(myId, {
+      const myPlayerData: IPlayerData = {
         id: myId,
         name: this.lastJoinData.name,
         avatar: this.lastJoinData.avatar,
@@ -646,9 +744,13 @@ export class NetworkManager {
         level: 1,
         role: this.lastJoinData.role,
         isSuperAdmin: this.lastJoinData.isSuperAdmin,
-      });
+        serverCode: this.currentServerCode,
+      };
+      this.roomPlayers.set(myId, myPlayerData);
+      this.channelPlayers.set(myId, myPlayerData);
     }
-    this.emitServerPlayersUpdated();
+    this.emitRoomPlayersUpdated();
+    this.emitChannelPlayersUpdated();
 
     if (!this.socket || !this.isConnected) return;
     this.socket.emit('player:switch_room', {
@@ -656,9 +758,11 @@ export class NetworkManager {
       x: this.lastJoinData?.x,
       y: this.lastJoinData?.y,
       direction: this.lastJoinData?.direction || 'down',
+      serverCode: this.currentServerCode,
     });
     this.requestRoomPlayers();
     this.requestServerStats();
+    this.requestServerPlayers();
   }
 
   /** Statistik jumlah pemain real-time per server channel */
@@ -677,6 +781,12 @@ export class NetworkManager {
   public requestServerStats(): void {
     if (!this.socket || !this.isConnected) return;
     this.socket.emit('server:request_stats');
+  }
+
+  /** Meminta daftar seluruh pemain yang aktif di realm server channel saat ini */
+  public requestServerPlayers(): void {
+    if (!this.socket || !this.isConnected) return;
+    this.socket.emit('server:request_players_list', { serverCode: this.currentServerCode });
   }
 
   /**
@@ -704,7 +814,7 @@ export class NetworkManager {
     const isSuper = isSuperAdmin || role === 'super_admin' || name.toUpperCase() === 'RADEN';
 
     const myId = this.getSocketId() || 'local-me';
-    this.serverPlayers.set(myId, {
+    const myData: IPlayerData = {
       id: myId,
       name,
       avatar,
@@ -719,8 +829,12 @@ export class NetworkManager {
       isSuperAdmin: isSuper,
       gold: typeof gold === 'number' ? gold : (isSuper ? 999999 : 2500),
       diamonds: typeof diamonds === 'number' ? diamonds : (isSuper ? 99999 : 50),
-    });
-    this.emitServerPlayersUpdated();
+      serverCode: this.currentServerCode,
+    };
+    this.roomPlayers.set(myId, myData);
+    this.channelPlayers.set(myId, myData);
+    this.emitRoomPlayersUpdated();
+    this.emitChannelPlayersUpdated();
 
     if (!this.socket || !this.isConnected) return;
     const authToken = (typeof window !== 'undefined' ? localStorage.getItem('raden_auth_token') : '') || '';
@@ -728,6 +842,7 @@ export class NetworkManager {
       name,
       avatar,
       room: targetRoom,
+      serverCode: this.currentServerCode,
       authToken,
       role: isSuper ? 'super_admin' : (role || 'player'),
       isSuperAdmin: isSuper,
@@ -737,6 +852,8 @@ export class NetworkManager {
       gold: typeof gold === 'number' ? gold : (isSuper ? 999999 : 2500),
       diamonds: typeof diamonds === 'number' ? diamonds : (isSuper ? 99999 : 50),
     });
+    this.requestServerStats();
+    this.requestServerPlayers();
   }
 
   /**

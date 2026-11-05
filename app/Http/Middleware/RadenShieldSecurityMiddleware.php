@@ -21,10 +21,12 @@ class RadenShieldSecurityMiddleware
         $uri = $request->getRequestUri();
 
         // 1. Blokir Exploit PHP CGI Argument Injection (CVE-2024-4577)
-        if (
-            preg_match('/(%ad|%AD|\xad|-d|-s|auto_prepend_file|allow_url_include)/i', $queryString) ||
-            preg_match('/(%ad|%AD|\xad)/i', $uri)
-        ) {
+        // CVE-2024-4577 memanfaatkan soft-hyphen (%ad / 0xAD) atau injeksi argumen CLI (auto_prepend_file, allow_url_include)
+        $hasSoftHyphen = preg_match('/(%ad|\xad)/i', $queryString) || preg_match('/(%ad|\xad)/i', $uri);
+        $hasCgiRcePayload = preg_match('/(auto_prepend_file|auto_append_file|allow_url_include|disable_functions)/i', $queryString);
+        $hasCliArgumentInjection = preg_match('/^[-+]([a-z]|d[\s+]|s[\s+])/i', $queryString);
+
+        if ($hasSoftHyphen || $hasCgiRcePayload || $hasCliArgumentInjection) {
             return response()->json([
                 'status' => 'blocked',
                 'message' => '🛡️ RadenShield Security Alert: Malicious request blocked (CVE-2024-4577 mitigation).',

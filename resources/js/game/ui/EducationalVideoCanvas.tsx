@@ -11,7 +11,7 @@
  * ============================================================================
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import { VisualDiagramType } from './LibraryTopicVisualizer';
 import { ILibraryTopicItem } from '../data/library/SdLibraryData';
 
@@ -31,6 +31,23 @@ export const EducationalVideoCanvas: React.FC<EducationalVideoCanvasProps> = ({
   topic,
 }) => {
   const playClass = isPlaying ? 'anim-running' : 'anim-paused';
+
+  // --------------------------------------------------------------------------
+  // STATE INTERAKTIF SISWA (PANGGUNG SIMULATOR EDUKASI RADENWORLD)
+  // --------------------------------------------------------------------------
+  // 1. Matematika SMA: Eksponen & Logaritma
+  const [expX, setExpX] = useState<number>(2);
+  const [logPropTab, setLogPropTab] = useState<'kali' | 'bagi' | 'pangkat'>('kali');
+  const [bacterialHours, setBacterialHours] = useState<number>(2);
+  const [richterMagnitude, setRichterMagnitude] = useState<number>(6);
+  const [realWorldSimMode, setRealWorldSimMode] = useState<'bakteri' | 'gempa'>('bakteri');
+
+  // 2. Informatika SMA: Struktur Data & Algoritma
+  const [activeArrayIdx, setActiveArrayIdx] = useState<number>(2);
+  const [stackItems, setStackItems] = useState<string[]>(['Buku A', 'Buku B', 'Buku C']);
+  const [queueItems, setQueueItems] = useState<string[]>(['Siswa 1', 'Siswa 2', 'Siswa 3']);
+  const [searchStep, setSearchStep] = useState<number>(0);
+  const [aiPulse, setAiPulse] = useState<boolean>(false);
 
   return (
     <div className={`relative w-full h-full flex items-center justify-center overflow-hidden ${playClass}`}>
@@ -3199,264 +3216,703 @@ export const EducationalVideoCanvas: React.FC<EducationalVideoCanvasProps> = ({
       )}
 
       {/* ==================================================================== */}
-      {/* 43. MATEMATIKA SMA: FUNGSI EKSPONEN & LOGARITMA (REFLEKSI INVERS)    */}
+      {/* 43. MATEMATIKA SMA: FUNGSI EKSPONEN & LOGARITMA (SIMULATOR INTERAKTIF) */}
       {/* ==================================================================== */}
-      {type === 'math_exponential_logarithm' && (
-        <svg viewBox="0 0 600 320" className="w-full h-full max-h-[320px] select-none">
-          <rect x="6" y="6" width="588" height="308" rx="14" fill="#FFF8EA" stroke="#5C3A21" strokeWidth="3" />
-          <rect x="14" y="14" width="572" height="292" rx="10" fill="#FFFDF7" stroke="#EADBC0" strokeWidth="1.5" />
+      {type === 'math_exponential_logarithm' && (() => {
+        // Koordinat dinamis kurva eksponen & logaritma berdasarkan expX (0, 1, 2, 3)
+        const originX = 85;
+        const originY = 165;
+        const scaleX = 35;
+        const scaleY = 18;
 
-          {/* Header Kartu Clay */}
-          <g transform="translate(300, 22)">
-            <rect x="-225" y="0" width="450" height="32" rx="8" fill="#FEF08A" stroke="#5C3A21" strokeWidth="2" />
-            <text x="0" y="21" fill="#000000" fontSize="11.5" fontWeight="900" textAnchor="middle">
-              📈 FUNGSI EKSPONEN f(x) = aˣ &amp; LOGARITMA ⁿlog b = c 📉
-            </text>
-          </g>
+        const curExpYVal = Math.pow(2, expX);
+        const expPtX = originX + expX * scaleX;
+        const expPtY = Math.max(25, originY - curExpYVal * scaleY);
 
-          {/* Sisi Kiri: Bidang Koordinat Kartesius & Kurva Eksponen-Logaritma */}
-          <g transform="translate(45, 64)">
-            <rect x="0" y="0" width="280" height="220" rx="10" fill="#FFF8EA" stroke="#5C3A21" strokeWidth="2" />
+        const logPtX = Math.min(265, originX + curExpYVal * scaleX * 0.58);
+        const logPtY = originY - expX * scaleY;
 
-            {/* Grid Halus */}
-            {[40, 80, 120, 160, 200, 240].map((x) => (
-              <line key={`gx-${x}`} x1={x} y1="15" x2={x} y2="205" stroke="#EADBC0" strokeWidth="1" strokeDasharray="2,2" />
-            ))}
-            {[40, 80, 120, 160].map((y) => (
-              <line key={`gy-${y}`} x1="15" y1={y} x2="265" y2={y} stroke="#EADBC0" strokeWidth="1" strokeDasharray="2,2" />
-            ))}
+        return (
+          <div className="relative w-full h-full max-h-[320px] select-none flex flex-col items-center justify-center p-1.5">
+            <svg viewBox="0 0 600 320" className="w-full h-full">
+              <rect x="6" y="6" width="588" height="308" rx="14" fill="#FFF8EA" stroke="#5C3A21" strokeWidth="3" />
+              <rect x="14" y="14" width="572" height="292" rx="10" fill="#FFFDF7" stroke="#EADBC0" strokeWidth="1.5" />
 
-            {/* Sumbu X dan Y */}
-            <line x1="30" y1="165" x2="260" y2="165" stroke="#5C3A21" strokeWidth="2.5" />
-            <line x1="100" y1="20" x2="100" y2="205" stroke="#5C3A21" strokeWidth="2.5" />
-            <text x="255" y="160" fill="#5C3A21" fontSize="9.5" fontWeight="bold">X</text>
-            <text x="105" y="30" fill="#5C3A21" fontSize="9.5" fontWeight="bold">Y</text>
+              {/* Header Kartu Clay */}
+              <g transform="translate(300, 20)">
+                <rect x="-230" y="0" width="460" height="30" rx="8" fill="#FEF08A" stroke="#5C3A21" strokeWidth="2" />
+                <text x="0" y="19" fill="#000000" fontSize="11" fontWeight="900" textAnchor="middle">
+                  📈 FUNGSI EKSPONEN f(x) = aˣ &amp; LOGARITMA ᵃlog x = y 📉
+                </text>
+              </g>
 
-            {/* Garis Refleksi Invers y = x */}
-            <line x1="45" y1="205" x2="230" y2="20" stroke="#D97706" strokeWidth="1.5" strokeDasharray="4,4" />
-            <text x="228" y="32" fill="#D97706" fontSize="8.5" fontWeight="900">y = x (Cermin Invers)</text>
+              {/* Sisi Kiri: Bidang Koordinat Kartesius & Kurva Dinamis Interaktif */}
+              <g transform="translate(24, 56)">
+                <rect x="0" y="0" width="270" height="236" rx="10" fill="#FFF8EA" stroke="#5C3A21" strokeWidth="2" />
 
-            {/* Kurva Eksponen y = 2^x (Merah Menanjak Tajam) */}
-            <path
-              d="M 40 163 Q 90 162, 100 148 Q 120 120, 140 85 Q 160 50, 180 25"
-              fill="none"
-              stroke="#EF4444"
-              strokeWidth="3.5"
-              strokeLinecap="round"
-            />
-            {/* Titik Potong (0, 1) */}
-            <circle cx="100" cy="148" r="5" fill="#EF4444" stroke="#5C3A21" strokeWidth="1.5" style={{ animation: 'solarPulse 2s infinite' }} />
-            <text x="70" y="145" fill="#DC2626" fontSize="9" fontWeight="900">(0, 1)</text>
-            <text x="185" y="30" fill="#EF4444" fontSize="10" fontWeight="900">y = 2ˣ</text>
+                {/* Garis Grid Halus */}
+                {[40, 85, 120, 155, 190, 225].map((x) => (
+                  <line key={`gx-${x}`} x1={x} y1="15" x2={x} y2="215" stroke="#E5D5BA" strokeWidth="1" strokeDasharray="3,3" />
+                ))}
+                {[45, 85, 125, 165, 205].map((y) => (
+                  <line key={`gy-${y}`} x1="15" y1={y} x2="255" y2={y} stroke="#E5D5BA" strokeWidth="1" strokeDasharray="3,3" />
+                ))}
 
-            {/* Kurva Logaritma y = log2(x) (Biru Mendatar ke Kanan) */}
-            <path
-              d="M 102 205 Q 103 165, 117 150 Q 152 130, 185 110 Q 220 90, 260 75"
-              fill="none"
-              stroke="#0284C7"
-              strokeWidth="3.5"
-              strokeLinecap="round"
-            />
-            {/* Titik Potong (1, 0) */}
-            <circle cx="117" cy="165" r="5" fill="#0284C7" stroke="#5C3A21" strokeWidth="1.5" style={{ animation: 'solarPulse 2s infinite 0.5s' }} />
-            <text x="122" y="180" fill="#0284C7" fontSize="9" fontWeight="900">(1, 0)</text>
-            <text x="240" y="70" fill="#0284C7" fontSize="10" fontWeight="900">y = ²log x</text>
+                {/* Sumbu X dan Y */}
+                <line x1="25" y1={originY} x2="255" y2={originY} stroke="#5C3A21" strokeWidth="2.5" />
+                <line x1={originX} y1="20" x2={originX} y2="225" stroke="#5C3A21" strokeWidth="2.5" />
+                <polygon points="257,165 250,161 250,169" fill="#5C3A21" />
+                <polygon points="85,18 81,25 89,25" fill="#5C3A21" />
+                <text x="250" y="158" fill="#5C3A21" fontSize="9" fontWeight="900">X</text>
+                <text x="92" y="26" fill="#5C3A21" fontSize="9" fontWeight="900">Y</text>
+                <text x="76" y="177" fill="#5C3A21" fontSize="8" fontWeight="bold">0</text>
 
-            {/* Asimtot Datar y = 0 & Asimtot Tegak x = 0 */}
-            <rect x="15" y="188" width="250" height="24" rx="4" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1" />
-            <text x="140" y="204" fill="#5C3A21" fontSize="8" fontWeight="bold" textAnchor="middle">
-              Asimtot Eksponen: y = 0 • Asimtot Logaritma: x = 0
-            </text>
-          </g>
+                {/* Garis Cermin Diagonal y = x (Invers) */}
+                <line x1="35" y1="215" x2="245" y2="25" stroke="#D97706" strokeWidth="1.5" strokeDasharray="4,4" />
+                <text x="225" y="38" fill="#D97706" fontSize="8.5" fontWeight="900" textAnchor="end">y = x (Cermin)</text>
 
-          {/* Sisi Kanan: Panduan Rumus & Aplikasi Dunia Nyata */}
-          <g transform="translate(340, 64)">
-            <rect x="0" y="0" width="230" height="220" rx="10" fill="#FFF8EA" stroke="#5C3A21" strokeWidth="2" />
-            <rect x="0" y="0" width="230" height="26" rx="10" fill="#A8E6CF" stroke="#5C3A21" strokeWidth="1.5" />
-            <text x="115" y="18" fill="#000000" fontSize="10.5" fontWeight="900" textAnchor="middle">
-              📚 RUMUS, SIFAT &amp; APLIKASI
-            </text>
+                {/* Kurva Eksponen y = 2^x (Merah Terang) */}
+                <path
+                  d="M 30 163 Q 75 162, 85 147 Q 105 125, 120 95 Q 145 50, 165 24"
+                  fill="none"
+                  stroke="#DC2626"
+                  strokeWidth="3.5"
+                  strokeLinecap="round"
+                />
+                <text x="160" y="18" fill="#DC2626" fontSize="9.5" fontWeight="900">y = 2ˣ</text>
 
-            <g transform="translate(10, 34)">
-              {/* Box 1: Definisi Invers */}
-              <rect x="0" y="0" width="210" height="50" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
-              <text x="10" y="16" fill="#166534" fontSize="9.5" fontWeight="900">1. Definisi Invers Logaritma:</text>
-              <text x="10" y="32" fill="#000000" fontSize="9.5" fontWeight="bold">ᵃlog b = c ⟺ aᶜ = b</text>
-              <text x="10" y="44" fill="#5C3A21" fontSize="8">Contoh: ²log 16 = 4 karena 2⁴ = 16</text>
+                {/* Kurva Logaritma y = ²log x (Biru Langit) */}
+                <path
+                  d="M 87 225 Q 90 180, 105 155 Q 135 132, 175 112 Q 215 96, 255 84"
+                  fill="none"
+                  stroke="#0284C7"
+                  strokeWidth="3.5"
+                  strokeLinecap="round"
+                />
+                <text x="255" y="78" fill="#0284C7" fontSize="9.5" fontWeight="900" textAnchor="end">y = ²log x</text>
 
-              {/* Box 2: Sifat Operasi Logaritma */}
-              <rect x="0" y="56" width="210" height="58" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
-              <text x="10" y="16" fill="#D97706" fontSize="9.5" fontWeight="900">2. Sifat Operasi Logaritma:</text>
-              <text x="10" y="30" fill="#000000" fontSize="8.5" fontWeight="bold">• ᵃlog(x · y) = ᵃlog x + ᵃlog y</text>
-              <text x="10" y="42" fill="#000000" fontSize="8.5" fontWeight="bold">• ᵃlog(x / y) = ᵃlog x - ᵃlog y</text>
-              <text x="10" y="54" fill="#5C3A21" fontSize="8">• ᵃlog(xⁿ) = n · ᵃlog x</text>
+                {/* Garis Pantul Refleksi Invers Antar Titik Aktif */}
+                <line
+                  x1={expPtX}
+                  y1={expPtY}
+                  x2={logPtX}
+                  y2={logPtY}
+                  stroke="#F59E0B"
+                  strokeWidth="1.5"
+                  strokeDasharray="2,2"
+                />
 
-              {/* Box 3: Penerapan Nyata */}
-              <rect x="0" y="120" width="210" height="58" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
-              <text x="10" y="16" fill="#0284C7" fontSize="9.5" fontWeight="900">3. Aplikasi Sains &amp; Teknologi:</text>
-              <text x="10" y="30" fill="#5C3A21" fontSize="8.5">• 🦠 Bakteri: N(t) = N₀ · 2ᵗ (Eksponensial)</text>
-              <text x="10" y="42" fill="#5C3A21" fontSize="8.5">• 🌍 Gempa Richter: Skala Logaritma Basis 10</text>
-              <text x="10" y="54" fill="#166534" fontSize="8" fontWeight="bold">Gempa M7 sepuluh kali lebih dahsyat dari M6!</text>
-            </g>
-          </g>
-        </svg>
-      )}
+                {/* Titik Eksponen Aktif (Merah) */}
+                <circle
+                  cx={expPtX}
+                  cy={expPtY}
+                  r="6"
+                  fill="#EF4444"
+                  stroke="#FFFFFF"
+                  strokeWidth="2"
+                  style={{ animation: 'solarPulse 1.8s infinite' }}
+                />
+                {/* Titik Logaritma Aktif (Biru) */}
+                <circle
+                  cx={logPtX}
+                  cy={logPtY}
+                  r="6"
+                  fill="#0284C7"
+                  stroke="#FFFFFF"
+                  strokeWidth="2"
+                  style={{ animation: 'solarPulse 1.8s infinite 0.4s' }}
+                />
+
+                {/* Label Koordinat Aktif */}
+                <rect x={expPtX - 32} y={expPtY - 20} width="64" height="15" rx="4" fill="#DC2626" />
+                <text x={expPtX} y={expPtY - 9} fill="#FFFFFF" fontSize="8" fontWeight="bold" textAnchor="middle">
+                  ({expX}, {curExpYVal})
+                </text>
+
+                <rect x={logPtX - 32} y={logPtY + 8} width="64" height="15" rx="4" fill="#0284C7" />
+                <text x={logPtX} y={logPtY + 19} fill="#FFFFFF" fontSize="8" fontWeight="bold" textAnchor="middle">
+                  ({curExpYVal}, {expX})
+                </text>
+
+                {/* Keterangan Asimtot Bawah */}
+                <rect x="8" y="212" width="254" height="18" rx="4" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1" />
+                <text x="135" y="224" fill="#5C3A21" fontSize="7.5" fontWeight="bold" textAnchor="middle">
+                  Asimtot Eksponen: y = 0 • Asimtot Logaritma: x = 0
+                </text>
+              </g>
+
+              {/* Sisi Kanan: Panel Interaktif Sesuai Babak (ForeignObject Lega & Responsif) */}
+              <foreignObject x="306" y="56" width="272" height="236">
+                <div
+                  className="w-full h-full flex flex-col justify-between bg-[#FFF8EA] rounded-xl border-2 border-[#5C3A21] p-2.5 overflow-hidden text-black font-sans shadow-sm"
+                  onClick={(e) => e.stopPropagation()}
+                  onPointerDown={(e) => e.stopPropagation()}
+                >
+                  {/* BABAK 1 (step === 0): EKSPLORASI EKSPONEN 2^x */}
+                  {step === 0 && (
+                    <div className="flex flex-col h-full justify-between gap-1.5">
+                      <div className="bg-[#FEF08A] border border-[#5C3A21] rounded-lg px-2 py-1 text-center">
+                        <span className="text-[10px] font-black uppercase text-black">
+                          Uji Pertumbuhan Eksponensial (2ˣ)
+                        </span>
+                      </div>
+
+                      {/* Tombol Pemilih Nilai X */}
+                      <div className="flex items-center justify-between gap-1">
+                        <span className="text-[9px] font-bold text-black">Pilih Nilai x:</span>
+                        <div className="flex gap-1">
+                          {[0, 1, 2, 3].map((val) => (
+                            <button
+                              key={val}
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setExpX(val);
+                              }}
+                              className={`px-2 py-0.5 rounded text-[10px] font-black border transition-all ${
+                                expX === val
+                                  ? 'bg-[#EF4444] text-white border-[#5C3A21] scale-105 shadow-sm'
+                                  : 'bg-white text-black border-[#5C3A21]/40 hover:bg-[#FFAE6D]/30'
+                              }`}
+                            >
+                              x = {val}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Kotak Hasil Perhitungan */}
+                      <div className="bg-white border-2 border-[#5C3A21] rounded-lg p-2 text-center shadow-inner">
+                        <div className="text-[9px] font-bold text-[#5C3A21]">HASIL PERHITUNGAN:</div>
+                        <div className="text-base font-black text-[#DC2626] my-0.5">
+                          f({expX}) = 2^{expX} = <span className="underline decoration-wavy">{curExpYVal}</span>
+                        </div>
+                        <div className="text-[9px] font-bold text-black">
+                          Titik Koordinat: <span className="bg-[#FEE2E2] text-[#DC2626] px-1.5 py-0.5 rounded font-black">({expX}, {curExpYVal})</span>
+                        </div>
+                      </div>
+
+                      {/* Penjelasan Ringkas & Lega */}
+                      <div className="bg-[#FFFDF7] border border-[#5C3A21]/40 rounded-lg p-1.5 text-[8.5px] leading-tight space-y-1">
+                        <p className="font-bold text-[#166534]">
+                          🌱 <strong>Karakteristik Kunci:</strong>
+                        </p>
+                        <p className="text-black">• Selalu memotong sumbu Y di titik <strong>(0, 1)</strong> karena berapapun dipangkatkan 0 bernilai 1.</p>
+                        <p className="text-black">• Grafik melesat ke atas tanpa batas, mendekati sumbu X tanpa pernah menyentuhnya (Asimtot datar y = 0).</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* BABAK 2 (step === 1): INVERS & LOGARITMA */}
+                  {step === 1 && (
+                    <div className="flex flex-col h-full justify-between gap-1.5">
+                      <div className="bg-[#BAE6FD] border border-[#5C3A21] rounded-lg px-2 py-1 text-center">
+                        <span className="text-[10px] font-black uppercase text-black">
+                          Cermin Invers Logaritma: ᵃlog b = c ⟺ aᶜ = b
+                        </span>
+                      </div>
+
+                      {/* Tombol Uji Titik Cermin */}
+                      <div className="space-y-1">
+                        <span className="text-[9px] font-bold text-black block">Pilih Pasangan Cermin (a, b) ↔ (b, a):</span>
+                        <div className="grid grid-cols-2 gap-1">
+                          {[
+                            { x: 0, label: '(0, 1) ↔ (1, 0)' },
+                            { x: 1, label: '(1, 2) ↔ (2, 1)' },
+                            { x: 2, label: '(2, 4) ↔ (4, 2)' },
+                            { x: 3, label: '(3, 8) ↔ (8, 3)' },
+                          ].map((item) => (
+                            <button
+                              key={item.x}
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setExpX(item.x);
+                              }}
+                              className={`px-1.5 py-1 rounded text-[8.5px] font-bold border transition-all ${
+                                expX === item.x
+                                  ? 'bg-[#0284C7] text-white border-[#5C3A21] font-black'
+                                  : 'bg-white text-black border-[#5C3A21]/40 hover:bg-[#BAE6FD]/40'
+                              }`}
+                            >
+                              {item.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Kotak Hubungan Invers */}
+                      <div className="bg-white border-2 border-[#5C3A21] rounded-lg p-2 text-center">
+                        <div className="text-[8.5px] font-bold text-[#5C3A21]">HUBUNGAN DUA FUNGSI:</div>
+                        <div className="text-xs font-black text-black mt-0.5">
+                          <span className="text-[#DC2626]">2^{expX} = {curExpYVal}</span>
+                          <span className="text-[#D97706] mx-1.5">⟺</span>
+                          <span className="text-[#0284C7]">²log({curExpYVal}) = {expX}</span>
+                        </div>
+                      </div>
+
+                      {/* Edukasi Konsep */}
+                      <div className="bg-[#FFFDF7] border border-[#5C3A21]/40 rounded-lg p-1.5 text-[8.5px] leading-tight text-black">
+                        💡 <strong>Makna Invers:</strong> Logaritma membalik pertanyaan eksponen. Jika 2 pangkat berapa sama dengan {curExpYVal}? Jawabannya adalah <strong>{expX}</strong>!
+                      </div>
+                    </div>
+                  )}
+
+                  {/* BABAK 3 (step === 2): 3 SIFAT UTAMA LOGARITMA */}
+                  {step === 2 && (
+                    <div className="flex flex-col h-full justify-between gap-1.5">
+                      <div className="bg-[#FFAE6D] border border-[#5C3A21] rounded-lg px-2 py-1 text-center">
+                        <span className="text-[10px] font-black uppercase text-black">
+                          Sifat Operasi Logaritma
+                        </span>
+                      </div>
+
+                      {/* 3 Tab Sifat */}
+                      <div className="flex gap-1 justify-center">
+                        {(['kali', 'bagi', 'pangkat'] as const).map((tab) => (
+                          <button
+                            key={tab}
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setLogPropTab(tab);
+                            }}
+                            className={`flex-1 py-1 rounded text-[9px] font-black uppercase border transition-all ${
+                              logPropTab === tab
+                                ? 'bg-[#5C3A21] text-white border-[#5C3A21]'
+                                : 'bg-white text-black border-[#5C3A21]/40 hover:bg-[#FEF08A]'
+                            }`}
+                          >
+                            {tab === 'kali' ? '1. Kali' : tab === 'bagi' ? '2. Bagi' : '3. Pangkat'}
+                          </button>
+                        ))}
+                      </div>
+
+                      {/* Konten Tab Terpilih */}
+                      <div className="bg-white border-2 border-[#5C3A21] rounded-lg p-2 text-center shadow-inner">
+                        {logPropTab === 'kali' && (
+                          <div>
+                            <div className="text-[10px] font-black text-[#166534]">
+                              ᵃlog(x · y) = ᵃlog x + ᵃlog y
+                            </div>
+                            <div className="text-[9px] font-bold text-black mt-1 bg-[#F0FDF4] p-1 rounded border border-[#166534]/30">
+                              ²log(4 × 8) = ²log 4 + ²log 8 = 2 + 3 = <span className="text-[#166534] font-black">5</span>
+                            </div>
+                            <div className="text-[7.5px] text-[#5C3A21] mt-0.5">(Terbukti karena 4 × 8 = 32, dan 2⁵ = 32)</div>
+                          </div>
+                        )}
+                        {logPropTab === 'bagi' && (
+                          <div>
+                            <div className="text-[10px] font-black text-[#0284C7]">
+                              ᵃlog(x / y) = ᵃlog x - ᵃlog y
+                            </div>
+                            <div className="text-[9px] font-bold text-black mt-1 bg-[#F0F9FF] p-1 rounded border border-[#0284C7]/30">
+                              ²log(16 / 4) = ²log 16 - ²log 4 = 4 - 2 = <span className="text-[#0284C7] font-black">2</span>
+                            </div>
+                            <div className="text-[7.5px] text-[#5C3A21] mt-0.5">(Terbukti karena 16 / 4 = 4, dan 2² = 4)</div>
+                          </div>
+                        )}
+                        {logPropTab === 'pangkat' && (
+                          <div>
+                            <div className="text-[10px] font-black text-[#D97706]">
+                              ᵃlog(xⁿ) = n · ᵃlog x
+                            </div>
+                            <div className="text-[9px] font-bold text-black mt-1 bg-[#FFFBEB] p-1 rounded border border-[#D97706]/30">
+                              ²log(2⁵) = 5 · ²log 2 = 5 · 1 = <span className="text-[#D97706] font-black">5</span>
+                            </div>
+                            <div className="text-[7.5px] text-[#5C3A21] mt-0.5">(Pangkat di dalam angka bisa maju ke depan)</div>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="bg-[#FFFDF7] border border-[#5C3A21]/40 rounded-lg p-1 text-[8px] leading-tight text-center text-black">
+                        ⚡ <strong>Tips Ujian:</strong> Operasi kali berubah jadi penjumlahan, bagi berubah jadi pengurangan!
+                      </div>
+                    </div>
+                  )}
+
+                  {/* BABAK 4 (step >= 3): APLIKASI DUNIA NYATA */}
+                  {step >= 3 && (
+                    <div className="flex flex-col h-full justify-between gap-1.5">
+                      <div className="bg-[#A8E6CF] border border-[#5C3A21] rounded-lg px-2 py-0.5 text-center">
+                        <span className="text-[10px] font-black uppercase text-black">
+                          Aplikasi Dunia Nyata (Sains &amp; Gempa)
+                        </span>
+                      </div>
+
+                      {/* Pemilih Mode Simulasi */}
+                      <div className="flex gap-1">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setRealWorldSimMode('bakteri');
+                          }}
+                          className={`flex-1 py-0.5 rounded text-[8.5px] font-bold border ${
+                            realWorldSimMode === 'bakteri'
+                              ? 'bg-[#166534] text-white border-[#5C3A21]'
+                              : 'bg-white text-black border-[#5C3A21]/40'
+                          }`}
+                        >
+                          🦠 Bakteri (Eksponen)
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setRealWorldSimMode('gempa');
+                          }}
+                          className={`flex-1 py-0.5 rounded text-[8.5px] font-bold border ${
+                            realWorldSimMode === 'gempa'
+                              ? 'bg-[#B45309] text-white border-[#5C3A21]'
+                              : 'bg-white text-black border-[#5C3A21]/40'
+                          }`}
+                        >
+                          🌍 Gempa (Logaritma)
+                        </button>
+                      </div>
+
+                      {/* Simulasi Bakteri */}
+                      {realWorldSimMode === 'bakteri' && (
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between text-[8px] font-bold text-black">
+                            <span>Waktu Pembelahan:</span>
+                            <div className="flex gap-1">
+                              {[1, 2, 3, 4].map((h) => (
+                                <button
+                                  key={h}
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setBacterialHours(h);
+                                  }}
+                                  className={`px-1.5 py-0.5 rounded text-[8px] font-black border ${
+                                    bacterialHours === h ? 'bg-[#166534] text-white' : 'bg-white text-black'
+                                  }`}
+                                >
+                                  {h} Jam
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                          <div className="bg-white border-2 border-[#5C3A21] rounded p-1.5 text-center">
+                            <div className="text-[8px] text-[#5C3A21] font-bold">Populasi N(t) = 100 × 2ᵗ:</div>
+                            <div className="text-sm font-black text-[#166534]">
+                              {100 * Math.pow(2, bacterialHours)} Bakteri
+                            </div>
+                            <div className="text-[7.5px] text-black">Dari 100 awal, membelah {Math.pow(2, bacterialHours)}x lipat!</div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Simulasi Gempa Richter */}
+                      {realWorldSimMode === 'gempa' && (
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between text-[8px] font-bold text-black">
+                            <span>Kekuatan Skala:</span>
+                            <div className="flex gap-1">
+                              {[5, 6, 7, 8].map((m) => (
+                                <button
+                                  key={m}
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setRichterMagnitude(m);
+                                  }}
+                                  className={`px-1.5 py-0.5 rounded text-[8px] font-black border ${
+                                    richterMagnitude === m ? 'bg-[#DC2626] text-white' : 'bg-white text-black'
+                                  }`}
+                                >
+                                  M {m}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                          <div className="bg-white border-2 border-[#5C3A21] rounded p-1.5 text-center">
+                            <div className="text-[8px] text-[#5C3A21] font-bold">Skala Logaritma Basis 10:</div>
+                            <div className="text-xs font-black text-[#DC2626]">
+                              {Math.pow(10, richterMagnitude - 5)}× Lebih Kuat dari M5
+                            </div>
+                            <div className="text-[7.5px] text-black">Tiap naik 1 skala, getaran tanah naik 10x lipat!</div>
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="bg-[#FFFDF7] border border-[#5C3A21]/40 rounded p-1 text-[8px] text-center text-black font-bold">
+                        🎯 Logaritma membantu ilmuwan memetakan data raksasa dalam skala manusiawi.
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </foreignObject>
+            </svg>
+          </div>
+        );
+      })()}
 
       {/* ==================================================================== */}
-      {/* 44. INFORMATIKA SMA: STRUKTUR DATA, BIG-O & KECERDASAN BUATAN (AI)   */}
+      {/* 44. INFORMATIKA SMA: STRUKTUR DATA, BIG-O & AI (SIMULATOR INTERAKTIF) */}
       {/* ==================================================================== */}
-      {type === 'data_structures_algorithms' && (
-        <svg viewBox="0 0 600 320" className="w-full h-full max-h-[320px] select-none">
-          <rect x="6" y="6" width="588" height="308" rx="14" fill="#FFF8EA" stroke="#5C3A21" strokeWidth="3" />
-          <rect x="14" y="14" width="572" height="292" rx="10" fill="#FFFDF7" stroke="#EADBC0" strokeWidth="1.5" />
+      {type === 'data_structures_algorithms' && (() => {
+        const arrayData = [
+          { val: 42, type: 'int', mem: '0x100' },
+          { val: 18, type: 'int', mem: '0x104' },
+          { val: 95, type: 'int', mem: '0x108' },
+          { val: 33, type: 'int', mem: '0x10C' },
+          { val: 77, type: 'int', mem: '0x110' },
+        ];
 
-          {/* Header Kartu Clay */}
-          <g transform="translate(300, 22)">
-            <rect x="-235" y="0" width="470" height="32" rx="8" fill="#BAE6FD" stroke="#5C3A21" strokeWidth="2" />
-            <text x="0" y="21" fill="#000000" fontSize="11" fontWeight="900" textAnchor="middle">
-              💻 STRUKTUR DATA (ARRAY/STACK/QUEUE), BIG-O &amp; AI 🤖
-            </text>
-          </g>
+        return (
+          <div className="relative w-full h-full max-h-[320px] select-none flex flex-col items-center justify-center p-1.5">
+            <svg viewBox="0 0 600 320" className="w-full h-full">
+              <rect x="6" y="6" width="588" height="308" rx="14" fill="#FFF8EA" stroke="#5C3A21" strokeWidth="3" />
+              <rect x="14" y="14" width="572" height="292" rx="10" fill="#FFFDF7" stroke="#EADBC0" strokeWidth="1.5" />
 
-          {/* Sisi Kiri: Array Memori & LIFO Stack vs FIFO Queue */}
-          <g transform="translate(38, 64)">
-            {/* 1. Barisan Sel Array Linear */}
-            <rect x="0" y="0" width="280" height="88" rx="10" fill="#FFF8EA" stroke="#5C3A21" strokeWidth="2" />
-            <rect x="0" y="0" width="280" height="24" rx="10" fill="#FFAE6D" stroke="#5C3A21" strokeWidth="1.5" />
-            <text x="140" y="16" fill="#000000" fontSize="9.5" fontWeight="900" textAnchor="middle">
-              1. ARRAY: BLOK MEMORI BERURUTAN (AKSES O(1))
-            </text>
+              {/* Header Kartu Clay */}
+              <g transform="translate(300, 20)">
+                <rect x="-235" y="0" width="470" height="30" rx="8" fill="#BAE6FD" stroke="#5C3A21" strokeWidth="2" />
+                <text x="0" y="19" fill="#000000" fontSize="11" fontWeight="900" textAnchor="middle">
+                  💻 STRUKTUR DATA (ARRAY/STACK/QUEUE), BIG-O &amp; AI 🤖
+                </text>
+              </g>
 
-            <g transform="translate(14, 34)">
-              {[0, 1, 2, 3, 4].map((i) => (
-                <g key={i} transform={`translate(${i * 50}, 0)`}>
-                  <rect x="0" y="0" width="46" height="32" rx="5" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
-                  <text x="23" y="20" fill="#000000" fontSize="12" fontWeight="900" textAnchor="middle">
-                    {[42, 18, 95, 33, 77][i]}
-                  </text>
-                  <text x="23" y="44" fill="#5C3A21" fontSize="8.5" fontWeight="bold" textAnchor="middle">
-                    idx [{i}]
-                  </text>
+              {/* Sisi Kiri: Visual Struktur Data Dinamis */}
+              <g transform="translate(24, 56)">
+                {/* Visual Array Linear */}
+                <rect x="0" y="0" width="270" height="110" rx="10" fill="#FFF8EA" stroke="#5C3A21" strokeWidth="2" />
+                <rect x="0" y="0" width="270" height="24" rx="10" fill="#FFAE6D" stroke="#5C3A21" strokeWidth="1.5" />
+                <text x="135" y="16" fill="#000000" fontSize="9" fontWeight="900" textAnchor="middle">
+                  1. ARRAY: AKSES MEMORI LANGSUNG O(1)
+                </text>
+
+                {/* Sel Array Interaktif */}
+                <g transform="translate(15, 34)">
+                  {arrayData.map((item, idx) => (
+                    <g
+                      key={idx}
+                      transform={`translate(${idx * 48}, 0)`}
+                      className="cursor-pointer"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setActiveArrayIdx(idx);
+                      }}
+                    >
+                      <rect
+                        x="0"
+                        y="0"
+                        width="44"
+                        height="40"
+                        rx="6"
+                        fill={activeArrayIdx === idx ? '#FEF08A' : '#FFFDF7'}
+                        stroke={activeArrayIdx === idx ? '#DC2626' : '#5C3A21'}
+                        strokeWidth={activeArrayIdx === idx ? 2.5 : 1.5}
+                      />
+                      <text x="22" y="24" fill="#000000" fontSize="13" fontWeight="900" textAnchor="middle">
+                        {item.val}
+                      </text>
+                      <text x="22" y="52" fill="#5C3A21" fontSize="8" fontWeight="bold" textAnchor="middle">
+                        [{idx}]
+                      </text>
+                      <text x="22" y="63" fill="#64748B" fontSize="6.5" textAnchor="middle">
+                        {item.mem}
+                      </text>
+                    </g>
+                  ))}
                 </g>
-              ))}
-            </g>
 
-            {/* 2. Stack LIFO vs Queue FIFO */}
-            <g transform="translate(0, 96)">
-              {/* Kotak Stack LIFO */}
-              <rect x="0" y="0" width="134" height="124" rx="10" fill="#FFF8EA" stroke="#5C3A21" strokeWidth="2" />
-              <rect x="0" y="0" width="134" height="22" rx="10" fill="#FEF08A" stroke="#5C3A21" strokeWidth="1.5" />
-              <text x="67" y="15" fill="#000000" fontSize="9" fontWeight="900" textAnchor="middle">
-                STACK (LIFO)
-              </text>
-              {/* Wadah Tabung */}
-              <path d="M 32 30 L 32 95 L 102 95 L 102 30" fill="none" stroke="#5C3A21" strokeWidth="2" />
-              <rect x="36" y="74" width="62" height="18" rx="3" fill="#BAE6FD" stroke="#5C3A21" strokeWidth="1" />
-              <text x="67" y="87" fill="#000000" fontSize="8" fontWeight="bold" textAnchor="middle">Bawah [0]</text>
-              <rect x="36" y="54" width="62" height="18" rx="3" fill="#A8E6CF" stroke="#5C3A21" strokeWidth="1" />
-              <text x="67" y="67" fill="#000000" fontSize="8" fontWeight="bold" textAnchor="middle">Tengah [1]</text>
-              <rect x="36" y="34" width="62" height="18" rx="3" fill="#FFAE6D" stroke="#5C3A21" strokeWidth="1" />
-              <text x="67" y="47" fill="#000000" fontSize="8" fontWeight="bold" textAnchor="middle">TOP (Push/Pop)</text>
-              <text x="67" y="112" fill="#5C3A21" fontSize="7.5" fontWeight="bold" textAnchor="middle">
-                Last-In First-Out (Undo)
-              </text>
+                {/* Stack LIFO vs Queue FIFO */}
+                <g transform="translate(0, 118)">
+                  {/* Container Stack */}
+                  <rect x="0" y="0" width="130" height="118" rx="10" fill="#FFF8EA" stroke="#5C3A21" strokeWidth="2" />
+                  <rect x="0" y="0" width="130" height="20" rx="10" fill="#FEF08A" stroke="#5C3A21" strokeWidth="1.5" />
+                  <text x="65" y="14" fill="#000000" fontSize="8.5" fontWeight="900" textAnchor="middle">
+                    STACK (LIFO)
+                  </text>
+                  <path d="M 30 28 L 30 92 L 100 92 L 100 28" fill="none" stroke="#5C3A21" strokeWidth="2" />
+                  {stackItems.slice(0, 3).map((item, idx) => (
+                    <g key={idx} transform={`translate(34, ${72 - idx * 20})`}>
+                      <rect x="0" y="0" width="62" height="17" rx="3" fill={idx === stackItems.length - 1 ? '#FFAE6D' : '#BAE6FD'} stroke="#5C3A21" strokeWidth="1" />
+                      <text x="31" y="12" fill="#000000" fontSize="7.5" fontWeight="bold" textAnchor="middle">{item}</text>
+                    </g>
+                  ))}
+                  <text x="65" y="108" fill="#5C3A21" fontSize="7" fontWeight="bold" textAnchor="middle">Top = Push &amp; Pop</text>
 
-              {/* Kotak Queue FIFO */}
-              <g transform="translate(146, 0)">
-                <rect x="0" y="0" width="134" height="124" rx="10" fill="#FFF8EA" stroke="#5C3A21" strokeWidth="2" />
-                <rect x="0" y="0" width="134" height="22" rx="10" fill="#A8E6CF" stroke="#5C3A21" strokeWidth="1.5" />
-                <text x="67" y="15" fill="#000000" fontSize="9" fontWeight="900" textAnchor="middle">
-                  QUEUE (FIFO)
-                </text>
-                {/* Pipa Antrean */}
-                <rect x="14" y="38" width="106" height="42" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
-                <text x="24" y="64" fill="#059669" fontSize="12" fontWeight="900">➡</text>
-                <rect x="42" y="44" width="28" height="30" rx="3" fill="#34D399" stroke="#5C3A21" strokeWidth="1" />
-                <text x="56" y="62" fill="#000000" fontSize="7.5" fontWeight="bold" textAnchor="middle">Front</text>
-                <rect x="74" y="44" width="28" height="30" rx="3" fill="#6EE7B7" stroke="#5C3A21" strokeWidth="1" />
-                <text x="88" y="62" fill="#000000" fontSize="7.5" fontWeight="bold" textAnchor="middle">Rear</text>
-                <text x="67" y="98" fill="#166534" fontSize="8" fontWeight="bold" textAnchor="middle">
-                  Enqueue ➔ Dequeue
-                </text>
-                <text x="67" y="112" fill="#5C3A21" fontSize="7.5" fontWeight="bold" textAnchor="middle">
-                  First-In First-Out (Loket)
-                </text>
-              </g>
-            </g>
-          </g>
-
-          {/* Sisi Kanan: Grafik Kompleksitas Notasi Big-O & Neural Net AI */}
-          <g transform="translate(330, 64)">
-            <rect x="0" y="0" width="232" height="220" rx="10" fill="#FFF8EA" stroke="#5C3A21" strokeWidth="2" />
-
-            {/* Bagian Atas: Kurva Notasi Big-O */}
-            <rect x="0" y="0" width="232" height="24" rx="10" fill="#C084FC" stroke="#5C3A21" strokeWidth="1.5" />
-            <text x="116" y="16" fill="#000000" fontSize="9.5" fontWeight="900" textAnchor="middle">
-              ⚡ NOTASI BIG-O (EFISIENSI WAKTU)
-            </text>
-
-            <g transform="translate(18, 32)">
-              {/* Sumbu Grafik */}
-              <line x1="20" y1="65" x2="195" y2="65" stroke="#5C3A21" strokeWidth="2" />
-              <line x1="20" y1="10" x2="20" y2="65" stroke="#5C3A21" strokeWidth="2" />
-              <text x="195" y="69" fill="#5C3A21" fontSize="7.5" fontWeight="bold">N</text>
-              <text x="20" y="8" fill="#5C3A21" fontSize="7.5" fontWeight="bold">Waktu</text>
-
-              {/* Kurva O(1) Hijau Datar */}
-              <line x1="20" y1="60" x2="180" y2="60" stroke="#16A34A" strokeWidth="2" />
-              <text x="185" y="63" fill="#16A34A" fontSize="7.5" fontWeight="900">O(1)</text>
-
-              {/* Kurva O(log n) Biru Cyan */}
-              <path d="M 20 60 Q 80 55, 175 42" stroke="#0284C7" strokeWidth="2" fill="none" />
-              <text x="180" y="44" fill="#0284C7" fontSize="7.5" fontWeight="900">O(log n)</text>
-
-              {/* Kurva O(n) Kuning Linear */}
-              <line x1="20" y1="60" x2="160" y2="18" stroke="#D97706" strokeWidth="2" />
-              <text x="165" y="20" fill="#D97706" fontSize="7.5" fontWeight="900">O(n)</text>
-
-              {/* Kurva O(n²) Merah Kuadratik */}
-              <path d="M 20 60 Q 55 50, 95 10" stroke="#DC2626" strokeWidth="2" fill="none" />
-              <text x="100" y="14" fill="#DC2626" fontSize="7.5" fontWeight="900">O(n²)</text>
-            </g>
-
-            {/* Bagian Bawah: Kecerdasan Buatan (AI) Neural Network */}
-            <g transform="translate(0, 110)">
-              <rect x="0" y="0" width="232" height="22" fill="#FEF08A" stroke="#5C3A21" strokeWidth="1.5" />
-              <text x="116" y="15" fill="#000000" fontSize="9" fontWeight="900" textAnchor="middle">
-                🤖 KECERDASAN BUATAN &amp; NEURAL NET
-              </text>
-
-              <g transform="translate(18, 30)">
-                {/* Layer 1 Input */}
-                <circle cx="20" cy="15" r="7" fill="#A8E6CF" stroke="#5C3A21" strokeWidth="1.5" />
-                <circle cx="20" cy="45" r="7" fill="#A8E6CF" stroke="#5C3A21" strokeWidth="1.5" />
-                <text x="20" y="68" fill="#5C3A21" fontSize="7" fontWeight="bold" textAnchor="middle">Input Layer</text>
-
-                {/* Layer 2 Hidden */}
-                <circle cx="75" cy="10" r="7" fill="#BAE6FD" stroke="#5C3A21" strokeWidth="1.5" />
-                <circle cx="75" cy="30" r="7" fill="#BAE6FD" stroke="#5C3A21" strokeWidth="1.5" />
-                <circle cx="75" cy="50" r="7" fill="#BAE6FD" stroke="#5C3A21" strokeWidth="1.5" />
-                <text x="75" y="68" fill="#5C3A21" fontSize="7" fontWeight="bold" textAnchor="middle">Hidden Layer</text>
-
-                {/* Layer 3 Output */}
-                <circle cx="130" cy="30" r="8" fill="#FFAE6D" stroke="#5C3A21" strokeWidth="2" style={{ animation: 'solarPulse 2s infinite' }} />
-                <text x="130" y="68" fill="#5C3A21" fontSize="7" fontWeight="bold" textAnchor="middle">Output Prediksi</text>
-
-                {/* Sinapsis Koneksi */}
-                <line x1="27" y1="15" x2="68" y2="10" stroke="#CBD5E1" strokeWidth="1" />
-                <line x1="27" y1="15" x2="68" y2="30" stroke="#CBD5E1" strokeWidth="1" />
-                <line x1="27" y1="45" x2="68" y2="30" stroke="#CBD5E1" strokeWidth="1" />
-                <line x1="27" y1="45" x2="68" y2="50" stroke="#CBD5E1" strokeWidth="1" />
-                <line x1="82" y1="30" x2="122" y2="30" stroke="#F59E0B" strokeWidth="2" />
+                  {/* Container Queue */}
+                  <g transform="translate(140, 0)">
+                    <rect x="0" y="0" width="130" height="118" rx="10" fill="#FFF8EA" stroke="#5C3A21" strokeWidth="2" />
+                    <rect x="0" y="0" width="130" height="20" rx="10" fill="#A8E6CF" stroke="#5C3A21" strokeWidth="1.5" />
+                    <text x="65" y="14" fill="#000000" fontSize="8.5" fontWeight="900" textAnchor="middle">
+                      QUEUE (FIFO)
+                    </text>
+                    <rect x="12" y="35" width="106" height="42" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
+                    <text x="18" y="60" fill="#059669" fontSize="11" fontWeight="900">➡</text>
+                    {queueItems.slice(0, 2).map((item, idx) => (
+                      <g key={idx} transform={`translate(${35 + idx * 38}, 40)`}>
+                        <rect x="0" y="0" width="34" height="32" rx="4" fill={idx === 0 ? '#34D399' : '#93C5FD'} stroke="#5C3A21" strokeWidth="1" />
+                        <text x="17" y="18" fill="#000000" fontSize="7" fontWeight="bold" textAnchor="middle">{item}</text>
+                        <text x="17" y="27" fill="#5C3A21" fontSize="6" textAnchor="middle">{idx === 0 ? 'Front' : 'Rear'}</text>
+                      </g>
+                    ))}
+                    <text x="65" y="94" fill="#166534" fontSize="7" fontWeight="bold" textAnchor="middle">Masuk Belakang (Enqueue)</text>
+                    <text x="65" y="108" fill="#166534" fontSize="7" fontWeight="bold" textAnchor="middle">Keluar Depan (Dequeue)</text>
+                  </g>
+                </g>
               </g>
 
-              <text x="116" y="104" fill="#1E293B" fontSize="7.5" fontWeight="bold" textAnchor="middle">
-                Machine Learning melatih bobot sinapsis dari data
-              </text>
-            </g>
-          </g>
-        </svg>
-      )}
+              {/* Sisi Kanan: Panel Interaktif Sesuai Babak (ForeignObject) */}
+              <foreignObject x="306" y="56" width="272" height="236">
+                <div
+                  className="w-full h-full flex flex-col justify-between bg-[#FFF8EA] rounded-xl border-2 border-[#5C3A21] p-2.5 overflow-hidden text-black font-sans shadow-sm"
+                  onClick={(e) => e.stopPropagation()}
+                  onPointerDown={(e) => e.stopPropagation()}
+                >
+                  {/* STEP 0: ARRAY MEMORI */}
+                  {step === 0 && (
+                    <div className="flex flex-col h-full justify-between gap-1.5">
+                      <div className="bg-[#FFAE6D] border border-[#5C3A21] rounded px-2 py-0.5 text-center">
+                        <span className="text-[10px] font-black uppercase text-black">Akses Memori Array O(1)</span>
+                      </div>
+                      <div className="bg-white border-2 border-[#5C3A21] rounded-lg p-2 text-center">
+                        <div className="text-[8px] font-bold text-[#5C3A21]">Elemen Terpilih:</div>
+                        <div className="text-base font-black text-[#DC2626]">
+                          array[{activeArrayIdx}] = {arrayData[activeArrayIdx]?.val}
+                        </div>
+                        <div className="text-[8.5px] font-bold text-black">
+                          Alamat RAM: <span className="font-mono bg-yellow-100 px-1 rounded">{arrayData[activeArrayIdx]?.mem}</span>
+                        </div>
+                      </div>
+                      <div className="bg-[#FFFDF7] border border-[#5C3A21]/40 rounded p-1.5 text-[8.5px] leading-tight space-y-1">
+                        <p className="font-bold text-[#166534]">⚡ Kenapa O(1) Super Cepat?</p>
+                        <p className="text-black">Komputer menghitung alamat instan dengan rumus: <code>Alamat = Basis + (Index × Ukuran)</code> tanpa perlu mencari satu per satu!</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* STEP 1: INTERAKTIF STACK & QUEUE */}
+                  {step === 1 && (
+                    <div className="flex flex-col h-full justify-between gap-1.5">
+                      <div className="bg-[#FEF08A] border border-[#5C3A21] rounded px-2 py-0.5 text-center">
+                        <span className="text-[10px] font-black uppercase text-black">Simulasi Stack &amp; Queue</span>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between text-[8px] font-bold">
+                          <span>Aksi Stack (LIFO):</span>
+                          <div className="flex gap-1">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (stackItems.length < 3) setStackItems([...stackItems, `Buku ${String.fromCharCode(65 + stackItems.length)}`]);
+                              }}
+                              className="px-2 py-0.5 rounded bg-[#FFAE6D] border border-[#5C3A21] font-black text-[8px]"
+                            >
+                              + Push
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (stackItems.length > 1) setStackItems(stackItems.slice(0, -1));
+                              }}
+                              className="px-2 py-0.5 rounded bg-white border border-[#5C3A21] font-black text-[8px]"
+                            >
+                              - Pop
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between text-[8px] font-bold pt-1 border-t border-[#5C3A21]/20">
+                          <span>Aksi Queue (FIFO):</span>
+                          <div className="flex gap-1">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (queueItems.length < 3) setQueueItems([...queueItems, `Siswa ${queueItems.length + 1}`]);
+                              }}
+                              className="px-2 py-0.5 rounded bg-[#A8E6CF] border border-[#5C3A21] font-black text-[8px]"
+                            >
+                              + Enqueue
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (queueItems.length > 1) setQueueItems(queueItems.slice(1));
+                              }}
+                              className="px-2 py-0.5 rounded bg-white border border-[#5C3A21] font-black text-[8px]"
+                            >
+                              - Dequeue
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="bg-[#FFFDF7] border border-[#5C3A21]/40 rounded p-1.5 text-[8px] leading-tight text-black">
+                        • <strong>Stack:</strong> Terakhir masuk pertama keluar (Contoh: Fitur Undo Ctrl+Z).<br />
+                        • <strong>Queue:</strong> Pertama datang pertama dilayani (Contoh: Antrean Cetak Printer).
+                      </div>
+                    </div>
+                  )}
+
+                  {/* STEP 2: NOTASI BIG-O */}
+                  {step === 2 && (
+                    <div className="flex flex-col h-full justify-between gap-1.5">
+                      <div className="bg-[#C084FC] border border-[#5C3A21] rounded px-2 py-0.5 text-center">
+                        <span className="text-[10px] font-black uppercase text-white">Efisiensi Algoritma (Big-O)</span>
+                      </div>
+                      <div className="bg-white border-2 border-[#5C3A21] rounded-lg p-2 text-center">
+                        <div className="text-[8.5px] font-bold text-[#5C3A21]">Peringkat Kecepatan Terbaik:</div>
+                        <div className="text-[9.5px] font-black text-[#166534] mt-0.5">
+                          O(1) &gt; O(log n) &gt; O(n) &gt; O(n²)
+                        </div>
+                      </div>
+                      <div className="bg-[#FFFDF7] border border-[#5C3A21]/40 rounded p-1.5 text-[8px] leading-tight space-y-1">
+                        <p className="text-[#16A34A] font-bold">• O(1): Konstan (Akses index array)</p>
+                        <p className="text-[#0284C7] font-bold">• O(log n): Sangat Cepat (Binary Search)</p>
+                        <p className="text-[#D97706] font-bold">• O(n): Linear (Looping cari nama)</p>
+                        <p className="text-[#DC2626] font-bold">• O(n²): Lambat (Nested loop perbandingan)</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* STEP 3: KECERDASAN BUATAN & NEURAL NET */}
+                  {step >= 3 && (
+                    <div className="flex flex-col h-full justify-between gap-1.5">
+                      <div className="bg-[#BAE6FD] border border-[#5C3A21] rounded px-2 py-0.5 text-center">
+                        <span className="text-[10px] font-black uppercase text-black">Kecerdasan Buatan (AI)</span>
+                      </div>
+                      <div className="bg-white border-2 border-[#5C3A21] rounded-lg p-2 text-center">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setAiPulse(true);
+                            setTimeout(() => setAiPulse(false), 1200);
+                          }}
+                          className={`w-full py-1.5 rounded font-black text-[9px] border transition-all ${
+                            aiPulse
+                              ? 'bg-[#FEF08A] text-[#DC2626] border-[#DC2626] scale-105 shadow'
+                              : 'bg-[#A8E6CF] text-[#166534] border-[#5C3A21] hover:bg-[#86efac]'
+                          }`}
+                        >
+                          {aiPulse ? '⚡ Sinapsis Menembakkan Bobot!' : '▶ Picu Inferensi Neural Net'}
+                        </button>
+                      </div>
+                      <div className="bg-[#FFFDF7] border border-[#5C3A21]/40 rounded p-1.5 text-[8px] leading-tight text-black space-y-1">
+                        <p className="font-bold text-[#0284C7]">🧠 Cara Kerja Jaringan Saraf Tiruan:</p>
+                        <p>1. <strong>Input Layer:</strong> Menerima data mentah (piksel gambar/teks).</p>
+                        <p>2. <strong>Hidden Layer:</strong> Menghitung kombinasi bobot &amp; fungsi aktivasi.</p>
+                        <p>3. <strong>Output Layer:</strong> Menghasilkan prediksi keputusan probabilitas.</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </foreignObject>
+            </svg>
+          </div>
+        );
+      })()}
 
       {/* ==================================================================== */}
       {/* 45. PAPAN TULIS KELAS CERIA DINAMIS (PANGGUNG EDUKASI 60FPS)         */}

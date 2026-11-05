@@ -447,9 +447,6 @@ export const LibraryMaterialsModal: React.FC<LibraryMaterialsModalProps> = ({
                       >
                         <span>{tab.icon}</span>
                         <span className="truncate">{tab.label}</span>
-                        {tab.page === 2 && !readTopics.has(activeTopic.id) && (
-                          <span className="w-2 h-2 rounded-full bg-red-500 animate-ping shrink-0" />
-                        )}
                       </button>
                     ))}
                   </div>
@@ -499,7 +496,7 @@ export const LibraryMaterialsModal: React.FC<LibraryMaterialsModalProps> = ({
                       {/* Teaser Ajakan Mengerjakan Kuis Interaktif */}
                       <div className="clay-card p-3 bg-[#FEF08A]/70 border-2 border-[#5C3A21] flex flex-wrap items-center justify-between gap-2 shadow-sm">
                         <div className="flex items-center gap-2">
-                          <span className="text-xl animate-bounce">🎯</span>
+                          <span className="text-xl">🎯</span>
                           <div>
                             <div className="text-xs font-bold text-black uppercase">
                               Sudah Paham Materinya?
@@ -544,7 +541,7 @@ export const LibraryMaterialsModal: React.FC<LibraryMaterialsModalProps> = ({
                       <div className="p-3.5 clay-card space-y-3 border-2 border-[#5C3A21] shadow-md">
                         <div className="flex items-center justify-between gap-2 flex-wrap">
                           <div className="flex items-center gap-1.5">
-                            <span className="text-base animate-bounce">🎯</span>
+                            <span className="text-base">🎯</span>
                             <span className="text-xs font-black text-black uppercase tracking-wide">
                               TANTANGAN KUIS BERHADIAH EXP
                             </span>

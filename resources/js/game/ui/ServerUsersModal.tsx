@@ -50,6 +50,16 @@ export const ServerUsersModal: React.FC<ServerUsersModalProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const sound = SoundManager.getInstance();
 
+  React.useEffect(() => {
+    if (isOpen) {
+      try {
+        const net = NetworkManager.getInstance();
+        net.requestServerStats();
+        net.requestServerPlayers();
+      } catch (e) {}
+    }
+  }, [isOpen]);
+
   const allPlayers = useMemo(() => {
     const list: (IPlayerData & { isMe?: boolean })[] = [];
     const myNameClean = (currentUserName || '')
@@ -266,12 +276,20 @@ export const ServerUsersModal: React.FC<ServerUsersModalProps> = ({
                         )}
                       </div>
 
-                      <div className="flex items-center gap-1.5 text-[10px] font-bold text-black mt-0.5">
+                      <div className="flex items-center gap-1.5 text-[10px] font-bold text-black mt-0.5 flex-wrap">
                         <span>Lv. {player.level || 1}</span>
                         <span>•</span>
                         <span>
                           {player.avatar?.gender === 'female' ? 'Perempuan' : 'Laki-Laki'}
                         </span>
+                        {player.location && (
+                          <>
+                            <span>•</span>
+                            <span className="text-[#166534] bg-[#A8E6CF]/60 border border-[#166534]/30 px-1.5 py-0.5 rounded font-black text-[9px]">
+                              {player.location}
+                            </span>
+                          </>
+                        )}
                       </div>
                     </div>
                   </div>

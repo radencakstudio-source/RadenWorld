@@ -164,6 +164,69 @@ const io = new Server(httpServer, {
 /** Database memori (In-Memory Map) penyimpan seluruh pemain yang aktif */
 const players = new Map();
 
+/** Membersihkan dan menormalisasi kode server */
+function cleanServerCode(code) {
+  if (!code) return 'Asia 1';
+  const upper = String(code).toUpperCase();
+  if (upper.includes('ASIA-2') || upper.includes('ASIA 2')) return 'Asia 2';
+  if (upper.includes('ASIA-3') || upper.includes('ASIA 3')) return 'Asia 3';
+  if (upper.includes('ASIA-4') || upper.includes('ASIA 4')) return 'Asia 4';
+  return 'Asia 1';
+}
+
+/** Menentukan server channel pemain */
+function determineServerCode(player, data) {
+  if (data?.serverCode) {
+    return cleanServerCode(data.serverCode);
+  }
+  if (player?.serverCode) {
+    return cleanServerCode(player.serverCode);
+  }
+  const room = (data?.room || player?.room || '').toLowerCase();
+  if (room.includes('asia-2')) return 'Asia 2';
+  if (room.includes('asia-3')) return 'Asia 3';
+  if (room.includes('asia-4')) return 'Asia 4';
+  return 'Asia 1';
+}
+
+/** Mengonversi room id menjadi nama lokasi yang ramah untuk pemain */
+function getFriendlyLocationName(room) {
+  if (!room) return 'Dunia Bebas (World)';
+  const r = String(room).toLowerCase();
+  if (r.startsWith('world')) return 'Dunia Bebas (World)';
+  if (r.startsWith('library') || r.startsWith('perpustakaan')) return 'Perpustakaan 📚';
+  if (r.startsWith('cafe') || r.startsWith('kafe')) return 'Kafe Kucing ☕';
+  if (r.startsWith('school-sd') || r.startsWith('gedung_sd')) return 'Gedung SD 🎒';
+  if (r.startsWith('school-smp') || r.startsWith('gedung_smp')) return 'Gedung SMP 📘';
+  if (r.startsWith('school-sma') || r.startsWith('gedung_sma')) return 'Gedung SMA 🎓';
+  if (r.startsWith('house-')) return 'Rumah Pribadi 🏡';
+  if (r.startsWith('admin-')) return 'Portal Admin 🛡️';
+  return 'Menjelajah';
+}
+
+/** Mengambil seluruh pemain yang online di realm server channel tertentu (termasuk yang di kafe, perpus, rumah) */
+function getServerPlayers(targetServerCode) {
+  const code = cleanServerCode(targetServerCode);
+  const list = [];
+  for (const p of players.values()) {
+    const pCode = p.serverCode || determineServerCode(p);
+    if (pCode === code) {
+      list.push({
+        id: p.id,
+        name: p.name,
+        role: p.role,
+        isSuperAdmin: p.isSuperAdmin,
+        avatar: p.avatar,
+        level: p.level || 1,
+        location: getFriendlyLocationName(p.room),
+        room: p.room,
+        serverCode: pCode,
+      });
+    }
+  }
+  return list;
+}
+
 /** Menghitung jumlah pemain aktif secara real-time di tiap realm server */
 function getRealServerStats() {
   const stats = {
@@ -174,13 +237,9 @@ function getRealServerStats() {
     total: players.size,
   };
   for (const p of players.values()) {
-    const room = (p.room || '').toLowerCase();
-    if (room.includes('asia-2')) {
-      stats['Asia 2']++;
-    } else if (room.includes('asia-3')) {
-      stats['Asia 3']++;
-    } else if (room.includes('asia-4')) {
-      stats['Asia 4']++;
+    const code = p.serverCode || determineServerCode(p);
+    if (stats[code] !== undefined) {
+      stats[code]++;
     } else {
       stats['Asia 1']++;
     }
@@ -189,7 +248,18 @@ function getRealServerStats() {
 }
 
 function broadcastServerStats() {
-  io.emit('server:stats', getRealServerStats());
+  const stats = getRealServerStats();
+  io.emit('server:stats', stats);
+
+  // Broadcast daftar seluruh pemain per server channel (Asia 1, Asia 2, Asia 3, Asia 4)
+  for (const code of ['Asia 1', 'Asia 2', 'Asia 3', 'Asia 4']) {
+    const list = getServerPlayers(code);
+    io.emit('server:players_list', {
+      serverCode: code,
+      players: list,
+      count: list.length,
+    });
+  }
 }
 
 /** Daftar monster penjelajah open world (dihapus sesuai permintaan pengguna, diganti NPC di sisi klien) */
@@ -260,10 +330,13 @@ io.on('connection', (socket) => {
     const initialRoom = data?.room || 'world';
     socket.join(initialRoom);
 
+    const playerServerCode = determineServerCode(null, data);
+
     const player = {
       id: socket.id,
       name: playerName,
       room: initialRoom,
+      serverCode: playerServerCode,
       role: isSuperAdmin ? 'super_admin' : (data.role || 'player'),
       isSuperAdmin: isSuperAdmin,
       avatar: data.avatar || {
@@ -299,7 +372,7 @@ io.on('connection', (socket) => {
     // Siarkan ke seluruh pemain lain di room yang sama
     socket.to(initialRoom).emit('player:joined', player);
 
-    console.log(`[Player] ${player.name} (${player.avatar.gender}) [ROLE: ${player.role}] [ROOM: ${initialRoom}] pos=(${player.x}, ${player.y}) bergabung. Online: ${players.size}`);
+    console.log(`[Player] ${player.name} (${player.avatar.gender}) [ROLE: ${player.role}] [SERVER: ${player.serverCode}] [ROOM: ${initialRoom}] pos=(${player.x}, ${player.y}) bergabung. Online: ${players.size}`);
     broadcastServerStats();
   });
 
@@ -311,13 +384,19 @@ io.on('connection', (socket) => {
     const oldRoom = player.room || 'world';
     const newRoom = data?.room || 'world';
 
+    if (data?.serverCode) {
+      player.serverCode = cleanServerCode(data.serverCode);
+    } else if (!player.serverCode) {
+      player.serverCode = determineServerCode(player, data);
+    }
+
     if (typeof data?.x === 'number' && !isNaN(data.x)) player.x = data.x;
     if (typeof data?.y === 'number' && !isNaN(data.y)) player.y = data.y;
     if (data?.direction) player.direction = data.direction;
     player.isMoving = false;
 
     if (oldRoom !== newRoom) {
-      console.log(`[Room] ${player.name} (${socket.id}) berpindah dari [${oldRoom}] ke [${newRoom}]`);
+      console.log(`[Room] ${player.name} (${socket.id}) berpindah dari [${oldRoom}] ke [${newRoom}] [SERVER: ${player.serverCode}]`);
 
       // Tinggalkan room lama dan beri tahu pemain di room lama bahwa karakter ini pergi
       socket.leave(oldRoom);
@@ -338,6 +417,18 @@ io.on('connection', (socket) => {
     socket.emit('room:players', {
       room: newRoom,
       players: playersInNewRoom
+    });
+  });
+
+  // Event permintaan daftar seluruh pemain di realm server channel aktif
+  socket.on('server:request_players_list', (data) => {
+    const player = players.get(socket.id);
+    const code = cleanServerCode(data?.serverCode || player?.serverCode);
+    const list = getServerPlayers(code);
+    socket.emit('server:players_list', {
+      serverCode: code,
+      players: list,
+      count: list.length,
     });
   });
 

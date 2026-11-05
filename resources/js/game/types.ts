@@ -27,6 +27,8 @@ export interface IPlayerData {
   isSuperAdmin?: boolean;
   gold?: number;
   diamonds?: number;
+  location?: string;
+  serverCode?: string;
 }
 
 export interface IMonsterData {

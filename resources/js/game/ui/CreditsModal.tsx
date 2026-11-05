@@ -52,7 +52,7 @@ const developersList: DeveloperCredit[] = [
     badgeType: 'clay-badge-primary',
     bg: 'bg-[#FFAE6D]',
     subtitle: 'Arsitektur Game, Sistem Jaringan Realtime & Core Engine',
-    desc: 'Merancang arsitektur sistem penuh, sinkronisasi WebSocket Socket.io, integrasi database Laravel & engine Phaser 3, sistem kamera cerdas, serta audio spasial interaktif.',
+    desc: 'Merancang arsitektur sistem penuh, sinkronisasi WebSocket Socket.io, integrasi database Laravel & engine Phaser, sistem kamera cerdas, serta audio spasial interaktif.',
   },
   {
     name: 'Ananda Putri Salsabila',
@@ -392,9 +392,9 @@ export const CreditsModal: React.FC<CreditsModalProps> = ({ isOpen, onClose }) =
                   <Layers className="w-3.5 h-3.5 stroke-[2.5]" />
                 </div>
                 <div className="min-w-0">
-                  <div className="font-bold text-[11px] text-black">Phaser 3 & PixiJS 8</div>
+                  <div className="font-bold text-[11px] text-black">Phaser & PixiJS</div>
                   <div className="text-[9.5px] text-black/75 leading-tight mt-0.5">
-                    Engine 2D dunia terbuka, kamera dinamis, animasi gerak & WebGL antialiasing.
+                    Engine dunia terbuka, kamera dinamis, animasi gerak & WebGL antialiasing.
                   </div>
                 </div>
               </div>
@@ -404,7 +404,7 @@ export const CreditsModal: React.FC<CreditsModalProps> = ({ isOpen, onClose }) =
                   <Cpu className="w-3.5 h-3.5 stroke-[2.5]" />
                 </div>
                 <div className="min-w-0">
-                  <div className="font-bold text-[11px] text-black">Laravel 12 & PHP 8.2+</div>
+                  <div className="font-bold text-[11px] text-black">Laravel & PHP</div>
                   <div className="text-[9.5px] text-black/75 leading-tight mt-0.5">
                     API backend aman dengan RadenShield, proteksi sesi, dan basis data akun pemain.
                   </div>
@@ -418,7 +418,7 @@ export const CreditsModal: React.FC<CreditsModalProps> = ({ isOpen, onClose }) =
                 <div className="min-w-0">
                   <div className="font-bold text-[11px] text-black">Node.js & Socket.io</div>
                   <div className="text-[9.5px] text-black/75 leading-tight mt-0.5">
-                    Multiplayer realtime, sinkronisasi posisi 20 Hz, chat global & suara proximity.
+                    Multiplayer realtime, sinkronisasi posisi, chat global & suara proximity.
                   </div>
                 </div>
               </div>
@@ -428,7 +428,7 @@ export const CreditsModal: React.FC<CreditsModalProps> = ({ isOpen, onClose }) =
                   <Sparkles className="w-3.5 h-3.5 stroke-[2.5]" />
                 </div>
                 <div className="min-w-0">
-                  <div className="font-bold text-[11px] text-black">React 19 & Tailwind CSS</div>
+                  <div className="font-bold text-[11px] text-black">React & Tailwind CSS</div>
                   <div className="text-[9.5px] text-black/75 leading-tight mt-0.5">
                     Antarmuka Cozycore Clay-Pixel responsif, modal interaktif, dan sound manager.
                   </div>

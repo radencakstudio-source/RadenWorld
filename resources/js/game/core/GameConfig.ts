@@ -29,7 +29,7 @@ export function createGameConfig(parentContainerId: string = 'game-container'): 
     parent: parentContainerId,
     width: window.innerWidth,
     height: window.innerHeight,
-    resolution: dpr,
+    ...(dpr > 1 ? ({ resolution: dpr } as any) : {}),
     backgroundColor: '#0b0f19',
     physics: {
       default: 'arcade',

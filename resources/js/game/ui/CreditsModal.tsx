@@ -3,13 +3,33 @@
  * FILE: resources/js/game/ui/CreditsModal.tsx
  * ============================================================================
  * FUNGSI UTAMA:
- * Modal Penghargaan & Pembuat Game (Credits Screen) bergaya Cozycore Clay-Pixel.
+ * Layar Penghargaan & Kredit Resmi Permainan (Authentic Game Credits Screen).
+ * Dibuat oleh Mahasiswa Institut Teknologi dan Bisnis Ahmad Dahlan Lamongan.
+ * Dilengkapi mode gulir sinematik otomatis (Cinematic Auto-Scroll Roll) layaknya
+ * credit title film & video game profesional dengan kontrol Play / Pause / Reset.
  * ============================================================================
  */
 
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { SoundManager } from '../core/SoundManager';
-import { X, Award, Code, Sparkles, Heart, Crown, Layers, Cpu } from 'lucide-react';
+import {
+  X,
+  Award,
+  Crown,
+  Code,
+  Layers,
+  Cpu,
+  Sparkles,
+  Heart,
+  GraduationCap,
+  Users,
+  Play,
+  Pause,
+  RotateCcw,
+  MapPin,
+  ShieldCheck,
+  Star,
+} from 'lucide-react';
 
 interface CreditsModalProps {
   isOpen: boolean;
@@ -18,124 +38,548 @@ interface CreditsModalProps {
 
 export const CreditsModal: React.FC<CreditsModalProps> = ({ isOpen, onClose }) => {
   const sound = SoundManager.getInstance();
+  const scrollContainerRef = useRef<HTMLDivElement | null>(null);
+  const [isAutoScrolling, setIsAutoScrolling] = useState<boolean>(false);
+  const animationFrameRef = useRef<number | null>(null);
+
+  // Otomatis reset scroll saat modal dibuka
+  useEffect(() => {
+    if (isOpen) {
+      if (scrollContainerRef.current) {
+        scrollContainerRef.current.scrollTop = 0;
+      }
+      setIsAutoScrolling(false);
+    } else {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
+      }
+    }
+  }, [isOpen]);
+
+  // Efek Gulir Sinematik Otomatis (Cinematic Credit Roll)
+  useEffect(() => {
+    if (!isAutoScrolling) {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
+      }
+      return;
+    }
+
+    const scrollStep = () => {
+      const el = scrollContainerRef.current;
+      if (el) {
+        // Jika sudah mencapai batas bawah, hentikan auto scroll
+        if (el.scrollTop + el.clientHeight >= el.scrollHeight - 2) {
+          setIsAutoScrolling(false);
+          return;
+        }
+        el.scrollTop += 0.85; // Kecepatan membaca santai sinematik
+      }
+      animationFrameRef.current = requestAnimationFrame(scrollStep);
+    };
+
+    animationFrameRef.current = requestAnimationFrame(scrollStep);
+
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
+      }
+    };
+  }, [isAutoScrolling]);
+
+  // Jeda auto scroll saat interaksi sentuhan atau mouse wheel manual
+  const handleUserManualScroll = () => {
+    if (isAutoScrolling) {
+      setIsAutoScrolling(false);
+    }
+  };
+
+  const handleToggleAutoScroll = () => {
+    sound.playClick();
+    setIsAutoScrolling((prev) => !prev);
+  };
+
+  const handleResetScroll = () => {
+    sound.playClick();
+    setIsAutoScrolling(false);
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
 
   if (!isOpen) return null;
 
   return (
-    <div className="ui-modal-backdrop">
-      <div className="clay-panel landscape-compact-modal w-full max-w-md max-h-[92dvh] flex flex-col overflow-hidden text-black">
-        {/* Header */}
-        <div className="clay-header landscape-compact-header px-4 py-3 flex items-center justify-between gap-3 shrink-0">
+    <div className="ui-modal-backdrop animate-fade-in">
+      <div className="clay-panel landscape-compact-modal w-full max-w-xl max-h-[92dvh] flex flex-col overflow-hidden text-black shadow-2xl">
+        {/* HEADER MODAL */}
+        <div className="clay-header landscape-compact-header px-3.5 sm:px-5 py-2.5 sm:py-3 flex items-center justify-between gap-3 shrink-0">
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-9 h-9 rounded-lg bg-[#FFF8EA] border-2 border-[#5C3A21] flex items-center justify-center text-black shrink-0">
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-[#FFAE6D] border-2 border-[#5C3A21] flex items-center justify-center text-black shrink-0">
               <Award className="w-4 h-4 stroke-[2.5]" />
             </div>
             <div className="min-w-0">
-              <h2 className="text-sm sm:text-base font-bold text-black truncate">Kredit & Pengembang</h2>
-              <p className="text-[10px] sm:text-xs text-black truncate">Kreator di balik RadenWorld</p>
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={() => {
-              sound.playClick();
-              onClose();
-            }}
-            className="clay-btn-neutral w-8 h-8 flex items-center justify-center shrink-0 text-black"
-            title="Tutup"
-          >
-            <X className="w-4 h-4 stroke-[2.5]" />
-          </button>
-        </div>
-
-        {/* Scrollable Credits Content */}
-        <div className="landscape-compact-body p-4 space-y-3 overflow-y-auto flex-1 min-h-0 text-xs custom-scrollbar">
-          {/* Main Creator Highlight */}
-          <div className="clay-card-secondary p-4 text-center space-y-1.5">
-            <div className="inline-flex p-2 rounded-lg bg-[#FFF8EA] text-black border-2 border-[#5C3A21]">
-              <Crown className="w-5 h-5 stroke-[2.5]" />
-            </div>
-            <div>
-              <h3 className="text-sm sm:text-base font-bold text-black">Raden</h3>
-              <p className="text-black font-bold text-[11px] mt-0.5">
-                Kreator Utama, Arsitek Dunia & Game Director
+              <h2 className="text-xs sm:text-sm md:text-base font-bold text-black uppercase tracking-wide truncate">
+                KREDIT RESMI PERMAINAN
+              </h2>
+              <p className="text-[9.5px] sm:text-xs text-black/80 truncate">
+                Institut Teknologi dan Bisnis Ahmad Dahlan Lamongan
               </p>
             </div>
-            <p className="text-[11px] text-black leading-relaxed">
-              "Menciptakan dunia 2D open world interaktif yang menghubungkan para petualang di seluruh penjuru."
+          </div>
+
+          <div className="flex items-center gap-1.5 shrink-0">
+            {/* Tombol Play/Pause Gulir Otomatis */}
+            <button
+              type="button"
+              onClick={handleToggleAutoScroll}
+              className={`px-2.5 py-1 text-[10px] sm:text-xs font-bold rounded-lg border-2 border-[#5C3A21] flex items-center gap-1 transition-all ${
+                isAutoScrolling ? 'clay-btn-secondary animate-pulse' : 'clay-btn-neutral'
+              }`}
+              title={isAutoScrolling ? 'Jeda Gulir Sinematik' : 'Putar Gulir Sinematik'}
+            >
+              {isAutoScrolling ? (
+                <>
+                  <Pause className="w-3 h-3 fill-current" />
+                  <span className="hidden sm:inline">JEDA</span>
+                </>
+              ) : (
+                <>
+                  <Play className="w-3 h-3 fill-current" />
+                  <span className="hidden sm:inline">PUTAR ROLL</span>
+                </>
+              )}
+            </button>
+
+            {/* Tombol Rewind / Ke Atas */}
+            <button
+              type="button"
+              onClick={handleResetScroll}
+              className="clay-btn-neutral w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center text-black shrink-0"
+              title="Kembali ke Atas"
+            >
+              <RotateCcw className="w-3.5 h-3.5 stroke-[2.5]" />
+            </button>
+
+            {/* Tombol Tutup */}
+            <button
+              type="button"
+              onClick={() => {
+                sound.playClick();
+                onClose();
+              }}
+              className="clay-btn-neutral w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center text-black shrink-0"
+              title="Tutup Kredit"
+            >
+              <X className="w-4 h-4 stroke-[2.5]" />
+            </button>
+          </div>
+        </div>
+
+        {/* BODY KREDIT BERGAYA GAME BERKUALITAS TINGGI */}
+        <div
+          ref={scrollContainerRef}
+          onWheel={handleUserManualScroll}
+          onTouchStart={handleUserManualScroll}
+          className="landscape-compact-body p-3.5 sm:p-5 space-y-4 overflow-y-auto flex-1 min-h-0 text-xs custom-scrollbar bg-[#FFF8EA]/50"
+        >
+          {/* TITLE CARD & HERO PRESENTATION */}
+          <div className="clay-card-secondary p-4 sm:p-5 text-center space-y-2 relative overflow-hidden border-2 border-[#5C3A21]">
+            <div className="inline-flex items-center justify-center p-2.5 rounded-xl bg-[#FFF8EA] text-black border-2 border-[#5C3A21] shadow-sm">
+              <Sparkles className="w-6 h-6 stroke-[2.5] text-[#FFAE6D]" />
+            </div>
+
+            <div>
+              <div className="text-[10px] sm:text-xs font-bold tracking-widest uppercase text-black/75">
+                KARYA SIMULASI MULTIPLAYER 2D
+              </div>
+              <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-black tracking-wide leading-tight mt-0.5">
+                RADENWORLD
+              </h1>
+              <div className="inline-block clay-badge-neutral px-2.5 py-0.5 text-[9px] sm:text-[10px] font-bold text-black mt-1">
+                Karya Tugas Kuliah • Rekayasa Game Interaktif
+              </div>
+            </div>
+
+            <p className="text-[11px] sm:text-xs text-black/85 leading-relaxed max-w-lg mx-auto pt-1 font-medium">
+              Sebuah karya permainan simulasi dunia terbuka interaktif yang menggabungkan eksplorasi,
+              interaksi sosial, edukasi terpadu, dan teknologi multi-agen modern.
             </p>
           </div>
 
-          {/* Development Team & Tech Stack */}
+          {/* DEDIKASI & TUJUAN PENGEMBANGAN GAME */}
+          <div className="clay-card p-3.5 sm:p-4 space-y-2 border-2 border-[#5C3A21] bg-[#FFF8EA]">
+            <div className="flex items-center gap-2 text-black">
+              <div className="p-1.5 rounded-lg bg-[#FFAE6D] border-2 border-[#5C3A21] text-black shrink-0">
+                <Heart className="w-4 h-4 stroke-[2.5]" />
+              </div>
+              <h3 className="font-bold text-xs sm:text-sm uppercase tracking-wide">
+                Misi & Tujuan Pembuatan Game
+              </h3>
+            </div>
+
+            <div className="p-3 rounded-lg bg-[#FFFDF7] border border-[#5C3A21]/30 text-[11px] sm:text-xs text-black leading-relaxed space-y-2">
+              <p>
+                Game <strong>RadenWorld</strong> ini dibuat oleh mahasiswa{' '}
+                <strong>Institut Teknologi dan Bisnis Ahmad Dahlan Lamongan</strong> sebagai wujud nyata karya
+                tugas perkuliahan inovatif.
+              </p>
+              <p className="font-medium text-[#5C3A21]">
+                "Dibuat untuk mencerdaskan anak bangsa melalui simulasi edukatif, mempererat persahabatan,
+                serta menjadi wadah positif untuk berkenalan dan berinteraksi dengan semua orang dari berbagai penjuru tanah air."
+              </p>
+            </div>
+          </div>
+
+          {/* TIM PENGEMBANG UTAMA (GAME DEVELOPERS) */}
           <div className="space-y-2.5">
-            <div className="clay-card flex items-start gap-3 p-3">
-              <div className="p-2 rounded-lg bg-[#FFAE6D] border-2 border-[#5C3A21] text-black shrink-0">
-                <Code className="w-4 h-4 stroke-[2.5]" />
+            <div className="flex items-center justify-between px-1">
+              <div className="flex items-center gap-1.5 text-xs font-bold text-black uppercase">
+                <Users className="w-4 h-4 stroke-[2.5]" />
+                <span>Tim Pengembang (Game Creators)</span>
               </div>
-              <div className="min-w-0">
-                <div className="font-bold text-black">Pemrograman & Arsitektur OOP</div>
-                <p className="text-[11px] text-black mt-0.5 leading-relaxed">
-                  TypeScript murni dengan pola desain Entity-Component, NetworkManager Singleton, dan Event-Driven Bus.
+              <span className="clay-badge-secondary px-2 py-0.5 text-[9px] font-bold text-black">
+                ITB-ADL TEAM
+              </span>
+            </div>
+
+            {/* PENGEMBANG 1: R Moch Mahardika Digdaya Cakra Diponegoro */}
+            <div className="clay-card p-3.5 flex items-start gap-3 border-2 border-[#5C3A21]">
+              <div className="w-10 h-10 rounded-xl bg-[#FFAE6D] border-2 border-[#5C3A21] flex items-center justify-center text-black shrink-0 shadow-sm">
+                <Crown className="w-5 h-5 stroke-[2.5]" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center justify-between gap-1 flex-wrap">
+                  <h4 className="text-xs sm:text-sm font-bold text-black">
+                    R Moch Mahardika Digdaya Cakra Diponegoro
+                  </h4>
+                  <span className="clay-badge-primary px-1.5 py-0.5 text-[8.5px] sm:text-[9px] font-bold text-black">
+                    LEAD GAME DIRECTOR
+                  </span>
+                </div>
+                <div className="text-[10px] sm:text-[11px] font-bold text-[#5C3A21] mt-0.5">
+                  Arsitektur Game, Sistem Jaringan Realtime & Core Engine
+                </div>
+                <p className="text-[10px] sm:text-[11px] text-black/80 mt-1 leading-relaxed">
+                  Merancang arsitektur sistem penuh, sinkronisasi WebSocket Socket.io, integrasi database Laravel &
+                  engine Phaser 3, sistem kamera cerdas, serta audio spasial interaktif.
                 </p>
               </div>
             </div>
 
-            <div className="clay-card flex items-start gap-3 p-3">
-              <div className="p-2 rounded-lg bg-[#FFAE6D] border-2 border-[#5C3A21] text-black shrink-0">
-                <Layers className="w-4 h-4 stroke-[2.5]" />
+            {/* PENGEMBANG 2: Ananda Putri Salsabila */}
+            <div className="clay-card p-3.5 flex items-start gap-3 border-2 border-[#5C3A21]">
+              <div className="w-10 h-10 rounded-xl bg-[#A8E6CF] border-2 border-[#5C3A21] flex items-center justify-center text-black shrink-0 shadow-sm">
+                <Sparkles className="w-5 h-5 stroke-[2.5]" />
               </div>
-              <div className="min-w-0">
-                <div className="font-bold text-black">2D Game Engines</div>
-                <p className="text-[11px] text-black mt-0.5 leading-relaxed">
-                  <strong>Phaser 3</strong> (Peta Open World, Kamera Lerp, Fisika) & <strong>PixiJS 8</strong> (WebGL Graphics & Partikel).
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center justify-between gap-1 flex-wrap">
+                  <h4 className="text-xs sm:text-sm font-bold text-black">
+                    Ananda Putri Salsabila
+                  </h4>
+                  <span className="clay-badge-secondary px-1.5 py-0.5 text-[8.5px] sm:text-[9px] font-bold text-black">
+                    CREATIVE & UI/UX DESIGN
+                  </span>
+                </div>
+                <div className="text-[10px] sm:text-[11px] font-bold text-[#5C3A21] mt-0.5">
+                  Desain Lingkungan Dunia, Antarmuka Cozycore & Aset Visual
+                </div>
+                <p className="text-[10px] sm:text-[11px] text-black/80 mt-1 leading-relaxed">
+                  Menyusun konsep visual antarmuka Clay-Pixel, tata letak peta terbuka, estetika interior sekolah &
+                  perpustakaan terpadu, serta perancangan pengalaman pengguna yang ramah di segala perangkat.
                 </p>
               </div>
             </div>
 
-            <div className="clay-card flex items-start gap-3 p-3">
-              <div className="p-2 rounded-lg bg-[#FFAE6D] border-2 border-[#5C3A21] text-black shrink-0">
-                <Cpu className="w-4 h-4 stroke-[2.5]" />
+            {/* PENGEMBANG 3: Nanda Eka Susanto */}
+            <div className="clay-card p-3.5 flex items-start gap-3 border-2 border-[#5C3A21]">
+              <div className="w-10 h-10 rounded-xl bg-[#FFAE6D] border-2 border-[#5C3A21] flex items-center justify-center text-black shrink-0 shadow-sm">
+                <Code className="w-5 h-5 stroke-[2.5]" />
               </div>
-              <div className="min-w-0">
-                <div className="font-bold text-black">Backend & Jaringan Realtime</div>
-                <p className="text-[11px] text-black mt-0.5 leading-relaxed">
-                  <strong>Laravel 12</strong> (PHP API & Database) dipadukan dengan <strong>Node.js + Socket.io</strong> untuk sinkronisasi posisi dan obrolan global.
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center justify-between gap-1 flex-wrap">
+                  <h4 className="text-xs sm:text-sm font-bold text-black">
+                    Nanda Eka Susanto
+                  </h4>
+                  <span className="clay-badge-primary px-1.5 py-0.5 text-[8.5px] sm:text-[9px] font-bold text-black">
+                    GAMEPLAY & QA ENGINEER
+                  </span>
+                </div>
+                <div className="text-[10px] sm:text-[11px] font-bold text-[#5C3A21] mt-0.5">
+                  Logika Mekanika Permainan, Optimasi Kinerja & Pengujian Sistem
+                </div>
+                <p className="text-[10px] sm:text-[11px] text-black/80 mt-1 leading-relaxed">
+                  Mengembangkan mekanika interaksi karakter, sistem inventori tas, responsivitas kontrol sentuh mobile &
+                  keyboard PC, serta pengujian stabilitas game pada berbagai kondisi perangkat.
                 </p>
               </div>
             </div>
 
-            <div className="clay-card flex items-start gap-3 p-3">
-              <div className="p-2 rounded-lg bg-[#FFAE6D] border-2 border-[#5C3A21] text-black shrink-0">
-                <Sparkles className="w-4 h-4 stroke-[2.5]" />
+            {/* PENGEMBANG 4: Adib Syauqilillah */}
+            <div className="clay-card p-3.5 flex items-start gap-3 border-2 border-[#5C3A21]">
+              <div className="w-10 h-10 rounded-xl bg-[#A8E6CF] border-2 border-[#5C3A21] flex items-center justify-center text-black shrink-0 shadow-sm">
+                <Layers className="w-5 h-5 stroke-[2.5]" />
               </div>
-              <div className="min-w-0">
-                <div className="font-bold text-black">Desain Aset & Cozycore UI</div>
-                <p className="text-[11px] text-black mt-0.5 leading-relaxed">
-                  React 19, Tailwind CSS, Lucide Icons, dan Sprite Pixel/Vektor 2D di folder <span className="clay-badge-secondary px-1.5 py-0.5">public/assets</span>.
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center justify-between gap-1 flex-wrap">
+                  <h4 className="text-xs sm:text-sm font-bold text-black">
+                    Adib Syauqilillah
+                  </h4>
+                  <span className="clay-badge-secondary px-1.5 py-0.5 text-[8.5px] sm:text-[9px] font-bold text-black">
+                    GAME DESIGN & NETWORK
+                  </span>
+                </div>
+                <div className="text-[10px] sm:text-[11px] font-bold text-[#5C3A21] mt-0.5">
+                  Perancangan Desain Game & Keseimbangan Jaringan Multiplayer
+                </div>
+                <p className="text-[10px] sm:text-[11px] text-black/80 mt-1 leading-relaxed">
+                  Merancang keseimbangan sistem permainan (game balancing), integrasi protokol transmisi data real-time,
+                  serta koordinasi interaksi sosial antar-pemain di dunia terbuka.
+                </p>
+              </div>
+            </div>
+
+            {/* PENGEMBANG 5: Putri Intania Meylisa */}
+            <div className="clay-card p-3.5 flex items-start gap-3 border-2 border-[#5C3A21]">
+              <div className="w-10 h-10 rounded-xl bg-[#FFAE6D] border-2 border-[#5C3A21] flex items-center justify-center text-black shrink-0 shadow-sm">
+                <Sparkles className="w-5 h-5 stroke-[2.5]" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center justify-between gap-1 flex-wrap">
+                  <h4 className="text-xs sm:text-sm font-bold text-black">
+                    Putri Intania Meylisa
+                  </h4>
+                  <span className="clay-badge-primary px-1.5 py-0.5 text-[8.5px] sm:text-[9px] font-bold text-black">
+                    NARRATIVE & ENVIRONMENT
+                  </span>
+                </div>
+                <div className="text-[10px] sm:text-[11px] font-bold text-[#5C3A21] mt-0.5">
+                  Desain Lingkungan Tematik, Narasi Dialog & Suasana Dunia
+                </div>
+                <p className="text-[10px] sm:text-[11px] text-black/80 mt-1 leading-relaxed">
+                  Menyusun naskah dialog interaktif edukasi, tata letak interior tematik (perpustakaan, kafe, sekolah),
+                  dan pemilihan palet warna yang menghadirkan pengalaman bermain yang menenangkan.
+                </p>
+              </div>
+            </div>
+
+            {/* PENGEMBANG 6: Wahyu Dwi Kurniawan */}
+            <div className="clay-card p-3.5 flex items-start gap-3 border-2 border-[#5C3A21]">
+              <div className="w-10 h-10 rounded-xl bg-[#A8E6CF] border-2 border-[#5C3A21] flex items-center justify-center text-black shrink-0 shadow-sm">
+                <Cpu className="w-5 h-5 stroke-[2.5]" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center justify-between gap-1 flex-wrap">
+                  <h4 className="text-xs sm:text-sm font-bold text-black">
+                    Wahyu Dwi Kurniawan
+                  </h4>
+                  <span className="clay-badge-secondary px-1.5 py-0.5 text-[8.5px] sm:text-[9px] font-bold text-black">
+                    BACKEND & INFRASTRUCTURE
+                  </span>
+                </div>
+                <div className="text-[10px] sm:text-[11px] font-bold text-[#5C3A21] mt-0.5">
+                  Arsitektur Basis Data, API Keamanan & Keandalan Server
+                </div>
+                <p className="text-[10px] sm:text-[11px] text-black/80 mt-1 leading-relaxed">
+                  Mengembangkan endpoint RESTful API Laravel, skema database relasional akun & inventori, serta
+                  penerapan protokol keamanan RadenShield untuk stabilitas server jangka panjang.
+                </p>
+              </div>
+            </div>
+
+            {/* PENGEMBANG 7: Rossy Pramudya */}
+            <div className="clay-card p-3.5 flex items-start gap-3 border-2 border-[#5C3A21]">
+              <div className="w-10 h-10 rounded-xl bg-[#FFAE6D] border-2 border-[#5C3A21] flex items-center justify-center text-black shrink-0 shadow-sm">
+                <Heart className="w-5 h-5 stroke-[2.5]" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center justify-between gap-1 flex-wrap">
+                  <h4 className="text-xs sm:text-sm font-bold text-black">
+                    Rossy Pramudya
+                  </h4>
+                  <span className="clay-badge-primary px-1.5 py-0.5 text-[8.5px] sm:text-[9px] font-bold text-black">
+                    AUDIO & ASSET SPECIALIST
+                  </span>
+                </div>
+                <div className="text-[10px] sm:text-[11px] font-bold text-[#5C3A21] mt-0.5">
+                  Desain Suara Spasial, Efek Audio Retro & Kurasi Aset Game
+                </div>
+                <p className="text-[10px] sm:text-[11px] text-black/80 mt-1 leading-relaxed">
+                  Mengintegrasikan sistem Web Audio API, efek suara retro (SFX langkah kaki, debu, lonceng sekolah),
+                  serta kurasi aset sprite 2D agar serasi dengan identitas visual permainan.
+                </p>
+              </div>
+            </div>
+
+            {/* PENGEMBANG 8: Fania Adilatus Shofira */}
+            <div className="clay-card p-3.5 flex items-start gap-3 border-2 border-[#5C3A21]">
+              <div className="w-10 h-10 rounded-xl bg-[#A8E6CF] border-2 border-[#5C3A21] flex items-center justify-center text-black shrink-0 shadow-sm">
+                <ShieldCheck className="w-5 h-5 stroke-[2.5]" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center justify-between gap-1 flex-wrap">
+                  <h4 className="text-xs sm:text-sm font-bold text-black">
+                    Fania Adilatus Shofira
+                  </h4>
+                  <span className="clay-badge-secondary px-1.5 py-0.5 text-[8.5px] sm:text-[9px] font-bold text-black">
+                    QA & USABILITY RESEARCH
+                  </span>
+                </div>
+                <div className="text-[10px] sm:text-[11px] font-bold text-[#5C3A21] mt-0.5">
+                  Riset Kegunaan Pengguna, Pengujian Kualitas & Analisis Interaksi
+                </div>
+                <p className="text-[10px] sm:text-[11px] text-black/80 mt-1 leading-relaxed">
+                  Menjalankan skenario pengujian fungsional pada berbagai peramban web dan resolusi gawai, memastikan
+                  alur orientasi pemain baru berjalan intuitif, edukatif, dan bebas kendala.
                 </p>
               </div>
             </div>
           </div>
 
-          {/* Dedication */}
-          <div className="clay-card p-3 text-center text-[11px] text-black font-bold flex items-center justify-center gap-2">
-            <Heart className="w-4 h-4 text-black shrink-0 stroke-[2.5]" />
-            <span>Dibuat dengan dedikasi penuh untuk komunitas gamer Indonesia.</span>
+          {/* AFILIASI KAMPUS & INSTITUSI AKADEMIK */}
+          <div className="clay-card p-3.5 sm:p-4 space-y-2 border-2 border-[#5C3A21]">
+            <div className="flex items-center gap-2">
+              <div className="p-1.5 rounded-lg bg-[#A8E6CF] border-2 border-[#5C3A21] text-black shrink-0">
+                <GraduationCap className="w-4 h-4 stroke-[2.5]" />
+              </div>
+              <h3 className="font-bold text-xs sm:text-sm uppercase tracking-wide text-black">
+                Afiliasi Akademik & Perguruan Tinggi
+              </h3>
+            </div>
+
+            <div className="p-3 rounded-lg bg-[#FFFDF7] border border-[#5C3A21]/30 space-y-1.5 text-black">
+              <div className="font-bold text-xs sm:text-sm text-black flex items-center gap-1.5">
+                <span>Institut Teknologi dan Bisnis Ahmad Dahlan Lamongan</span>
+              </div>
+              <div className="flex items-center gap-1.5 text-[10px] sm:text-[11px] text-black/80">
+                <MapPin className="w-3.5 h-3.5 shrink-0 stroke-[2.5] text-[#FFAE6D]" />
+                <span>Lamongan, Jawa Timur, Indonesia</span>
+              </div>
+              <p className="text-[10px] sm:text-[11px] text-black/75 pt-0.5">
+                Proyek Tugas Kuliah Mata Kuliah Pengembangan Aplikasi & Game Interaktif Berbasis Web.
+              </p>
+            </div>
+          </div>
+
+          {/* TEKNOLOGI & ARSITEKTUR ENGINE (TECH STACK) */}
+          <div className="space-y-2">
+            <div className="flex items-center gap-1.5 text-xs font-bold text-black uppercase px-1">
+              <Layers className="w-4 h-4 stroke-[2.5]" />
+              <span>Teknologi & Engine Permainan</span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div className="clay-card p-2.5 flex items-start gap-2.5">
+                <div className="p-1.5 rounded-lg bg-[#FFAE6D] border-2 border-[#5C3A21] text-black shrink-0">
+                  <Layers className="w-3.5 h-3.5 stroke-[2.5]" />
+                </div>
+                <div className="min-w-0">
+                  <div className="font-bold text-[11px] text-black">Phaser 3 & PixiJS 8</div>
+                  <div className="text-[9.5px] text-black/75 leading-tight mt-0.5">
+                    Engine 2D dunia terbuka, kamera dinamis, animasi gerak & WebGL antialiasing.
+                  </div>
+                </div>
+              </div>
+
+              <div className="clay-card p-2.5 flex items-start gap-2.5">
+                <div className="p-1.5 rounded-lg bg-[#FFAE6D] border-2 border-[#5C3A21] text-black shrink-0">
+                  <Cpu className="w-3.5 h-3.5 stroke-[2.5]" />
+                </div>
+                <div className="min-w-0">
+                  <div className="font-bold text-[11px] text-black">Laravel 12 & PHP 8.2+</div>
+                  <div className="text-[9.5px] text-black/75 leading-tight mt-0.5">
+                    API backend aman dengan RadenShield, proteksi sesi, dan basis data akun pemain.
+                  </div>
+                </div>
+              </div>
+
+              <div className="clay-card p-2.5 flex items-start gap-2.5">
+                <div className="p-1.5 rounded-lg bg-[#A8E6CF] border-2 border-[#5C3A21] text-black shrink-0">
+                  <Code className="w-3.5 h-3.5 stroke-[2.5]" />
+                </div>
+                <div className="min-w-0">
+                  <div className="font-bold text-[11px] text-black">Node.js & Socket.io</div>
+                  <div className="text-[9.5px] text-black/75 leading-tight mt-0.5">
+                    Multiplayer realtime, sinkronisasi posisi 20 Hz, chat global & suara proximity.
+                  </div>
+                </div>
+              </div>
+
+              <div className="clay-card p-2.5 flex items-start gap-2.5">
+                <div className="p-1.5 rounded-lg bg-[#A8E6CF] border-2 border-[#5C3A21] text-black shrink-0">
+                  <Sparkles className="w-3.5 h-3.5 stroke-[2.5]" />
+                </div>
+                <div className="min-w-0">
+                  <div className="font-bold text-[11px] text-black">React 19 & Tailwind CSS</div>
+                  <div className="text-[9.5px] text-black/75 leading-tight mt-0.5">
+                    Antarmuka Cozycore Clay-Pixel responsif, modal interaktif, dan sound manager.
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* UCAPAN TERIMA KASIH (SPECIAL THANKS) */}
+          <div className="clay-card p-3.5 text-center space-y-1.5 border-2 border-[#5C3A21]">
+            <div className="flex items-center justify-center gap-1.5 text-xs font-bold text-black uppercase">
+              <Star className="w-3.5 h-3.5 fill-[#FFAE6D] text-black" />
+              <span>Ucapan Terima Kasih Khusus (Special Thanks)</span>
+              <Star className="w-3.5 h-3.5 fill-[#FFAE6D] text-black" />
+            </div>
+            <p className="text-[10.5px] sm:text-[11px] text-black/85 leading-relaxed">
+              Dosen Pembimbing Tugas Kuliah • Sivitas Akademika ITB Ahmad Dahlan Lamongan •
+              Keluarga & Teman-Teman Seperjuangan • Komunitas Open-Source • Dan Kamu yang Telah Menjadi Bagian dari Dunia RadenWorld!
+            </p>
+          </div>
+
+          {/* END CARD / FINALE BANNER */}
+          <div className="clay-card-secondary p-4 text-center space-y-1 border-2 border-[#5C3A21] bg-[#FFAE6D]/30">
+            <div className="text-xs sm:text-sm font-bold uppercase tracking-wider text-black">
+              ★ TERIMA KASIH TELAH BERMAIN ★
+            </div>
+            <div className="text-[10px] text-black/80 font-medium">
+              "Terus Belajar, Berbagi Kebaikan, dan Mencerdaskan Anak Bangsa!"
+            </div>
+            <div className="text-[9px] text-black/60 pt-1 font-bold">
+              © 2026 RadenWorld. Hak Cipta Dilindungi Undang-Undang.
+            </div>
           </div>
         </div>
 
-        {/* Close Button */}
-        <div className="px-4 py-3 border-t-2 border-[#5C3A21] bg-[#FFF8EA] shrink-0">
-          <button
-            type="button"
-            onClick={() => {
-              sound.playClick();
-              onClose();
-            }}
-            className="clay-btn-primary w-full py-2.5 text-xs font-bold text-black uppercase"
-          >
-            Tutup
-          </button>
+        {/* FOOTER ACTIONS */}
+        <div className="px-3.5 sm:px-5 py-2.5 sm:py-3 border-t-2 border-[#5C3A21] bg-[#FFF8EA] flex items-center justify-between gap-2 shrink-0">
+          <div className="flex items-center gap-2">
+            <span className="clay-badge-neutral text-[9px] sm:text-[10px] font-bold px-2 py-0.5 text-black">
+              ITB AHMAD DAHLAN LAMONGAN
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleToggleAutoScroll}
+              className={`px-3 py-1.5 text-xs font-bold uppercase rounded-lg border-2 border-[#5C3A21] flex items-center gap-1.5 ${
+                isAutoScrolling ? 'clay-btn-secondary' : 'clay-btn-neutral'
+              }`}
+            >
+              {isAutoScrolling ? <Pause className="w-3.5 h-3.5 fill-current" /> : <Play className="w-3.5 h-3.5 fill-current" />}
+              <span>{isAutoScrolling ? 'Jeda' : 'Putar Sinematik'}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                sound.playClick();
+                onClose();
+              }}
+              className="clay-btn-primary px-4 sm:px-6 py-1.5 text-xs font-bold text-black uppercase"
+            >
+              Tutup
+            </button>
+          </div>
         </div>
       </div>
     </div>

@@ -54,7 +54,7 @@
     Header set X-Frame-Options "SAMEORIGIN"
     Header set X-XSS-Protection "1; mode=block"
     Header set Referrer-Policy "strict-origin-when-cross-origin"
-    Header set Permissions-Policy "camera=(), microphone=(), geolocation=(self)"
+    Header set Permissions-Policy "camera=(), microphone=*, geolocation=(self)"
 
     <FilesMatch "\.(ico|jpe?g|png|gif|webp|svg|ogg|mp3|wav|woff2?|css|js)$">
         Header set Cache-Control "max-age=31536000, public"

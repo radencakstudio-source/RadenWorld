@@ -18,6 +18,12 @@ export default defineConfig({
         strictPort: true,
         cors: true,
         origin: 'http://127.0.0.1:5173',
+        proxy: {
+            '/api': {
+                target: 'http://127.0.0.1:8000',
+                changeOrigin: true,
+            },
+        },
         watch: {
             ignored: ['**/storage/framework/views/**', '**/storage/framework/cache/**'],
         },

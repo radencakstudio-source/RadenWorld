@@ -2044,6 +2044,10 @@ export const GameApp: React.FC = () => {
               isOpen={isGuideOpen}
               onClose={() => setIsGuideOpen(false)}
               controlMode={settings.controlMode}
+              onOpenSettings={() => {
+                setIsGuideOpen(false);
+                setInGameSettingsOpen(true);
+              }}
             />
           )}
 

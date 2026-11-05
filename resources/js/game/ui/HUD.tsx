@@ -827,7 +827,7 @@ export const HUD: React.FC<HUDProps> = React.memo(({
       </div>
 
       {/* ==================================================================== */}
-      {/* 2. BOTTOM BAR (KHUSUS PC)                                            */}
+      {/* 2. BOTTOM BAR (TOMBOL INTERAKSI PC JIKA TERSEDIA)                     */}
       {/* ==================================================================== */}
       <div className="flex items-end justify-between w-full pointer-events-none">
         <div className="pointer-events-auto flex flex-col items-start gap-2 select-none">
@@ -835,40 +835,11 @@ export const HUD: React.FC<HUDProps> = React.memo(({
             <button
               type="button"
               onClick={onTriggerInteraction}
-              className="clay-btn-primary flex items-center gap-2 px-3.5 py-2 text-black font-bold text-xs uppercase"
+              className="clay-btn-primary flex items-center gap-2 px-3.5 py-2 text-black font-bold text-xs uppercase shadow-md"
             >
               <Zap className="w-3.5 h-3.5 fill-black text-black" />
               <span>{interactionPrompt}</span>
             </button>
-          )}
-
-          {!isMobile && (
-            <div className="clay-panel px-2.5 py-2 grid grid-cols-2 gap-x-3 gap-y-1 text-[9px] font-bold text-black pointer-events-none">
-              <div className="flex items-center gap-1">
-                <span className="clay-badge-secondary px-1 py-0 text-[8px]">WASD</span>
-                <span>Jalan</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <span className="clay-badge-secondary px-1 py-0 text-[8px]">F</span>
-                <span>Mancing</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <span className="clay-badge-secondary px-1 py-0 text-[8px]">E</span>
-                <span>Interaksi</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <span className="clay-badge-secondary px-1 py-0 text-[8px]">B</span>
-                <span>Tas</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <span className="clay-badge-secondary px-1 py-0 text-[8px]">SPASI</span>
-                <span>Lompat</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <span className="clay-badge-secondary px-1 py-0 text-[8px]">1-6</span>
-                <span>Hotbar</span>
-              </div>
-            </div>
           )}
         </div>
       </div>

@@ -7,6 +7,7 @@
  * Dibuat oleh Mahasiswa Institut Teknologi dan Bisnis Ahmad Dahlan Lamongan.
  * Dilengkapi mode gulir sinematik otomatis (Cinematic Auto-Scroll Roll) layaknya
  * credit title film & video game profesional dengan kontrol Play / Pause / Reset.
+ * Menggunakan icon profil / orang untuk seluruh pengembang dalam daftar kredit.
  * ============================================================================
  */
 
@@ -15,7 +16,6 @@ import { SoundManager } from '../core/SoundManager';
 import {
   X,
   Award,
-  Crown,
   Code,
   Layers,
   Cpu,
@@ -23,11 +23,11 @@ import {
   Heart,
   GraduationCap,
   Users,
+  User,
   Play,
   Pause,
   RotateCcw,
   MapPin,
-  ShieldCheck,
   Star,
 } from 'lucide-react';
 
@@ -35,6 +35,82 @@ interface CreditsModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
+
+interface DeveloperCredit {
+  name: string;
+  role: string;
+  badgeType: string;
+  bg: string;
+  subtitle: string;
+  desc: string;
+}
+
+const developersList: DeveloperCredit[] = [
+  {
+    name: 'R Moch Mahardika Digdaya Cakra Diponegoro',
+    role: 'LEAD GAME DIRECTOR',
+    badgeType: 'clay-badge-primary',
+    bg: 'bg-[#FFAE6D]',
+    subtitle: 'Arsitektur Game, Sistem Jaringan Realtime & Core Engine',
+    desc: 'Merancang arsitektur sistem penuh, sinkronisasi WebSocket Socket.io, integrasi database Laravel & engine Phaser 3, sistem kamera cerdas, serta audio spasial interaktif.',
+  },
+  {
+    name: 'Ananda Putri Salsabila',
+    role: 'CREATIVE & UI/UX DESIGN',
+    badgeType: 'clay-badge-secondary',
+    bg: 'bg-[#A8E6CF]',
+    subtitle: 'Desain Lingkungan Dunia, Antarmuka Cozycore & Aset Visual',
+    desc: 'Menyusun konsep visual antarmuka Clay-Pixel, tata letak peta terbuka, estetika interior sekolah & perpustakaan terpadu, serta perancangan pengalaman pengguna yang ramah di segala perangkat.',
+  },
+  {
+    name: 'Nanda Eka Susanto',
+    role: 'GAMEPLAY & QA ENGINEER',
+    badgeType: 'clay-badge-primary',
+    bg: 'bg-[#FFAE6D]',
+    subtitle: 'Logika Mekanika Permainan, Optimasi Kinerja & Pengujian Sistem',
+    desc: 'Mengembangkan mekanika interaksi karakter, sistem inventori tas, responsivitas kontrol sentuh mobile & keyboard PC, serta pengujian stabilitas game pada berbagai kondisi perangkat.',
+  },
+  {
+    name: 'Adib Syauqilillah',
+    role: 'GAME DESIGN & NETWORK',
+    badgeType: 'clay-badge-secondary',
+    bg: 'bg-[#A8E6CF]',
+    subtitle: 'Perancangan Desain Game & Keseimbangan Jaringan Multiplayer',
+    desc: 'Merancang keseimbangan sistem permainan (game balancing), integrasi protokol transmisi data real-time, serta koordinasi interaksi sosial antar-pemain di dunia terbuka.',
+  },
+  {
+    name: 'Putri Intania Meylisa',
+    role: 'NARRATIVE & ENVIRONMENT',
+    badgeType: 'clay-badge-primary',
+    bg: 'bg-[#FFAE6D]',
+    subtitle: 'Desain Lingkungan Tematik, Narasi Dialog & Suasana Dunia',
+    desc: 'Menyusun naskah dialog interaktif edukasi, tata letak interior tematik (perpustakaan, kafe, sekolah), dan pemilihan palet warna yang menghadirkan pengalaman bermain yang menenangkan.',
+  },
+  {
+    name: 'Wahyu Dwi Kurniawan',
+    role: 'BACKEND & INFRASTRUCTURE',
+    badgeType: 'clay-badge-secondary',
+    bg: 'bg-[#A8E6CF]',
+    subtitle: 'Arsitektur Basis Data, API Keamanan & Keandalan Server',
+    desc: 'Mengembangkan endpoint RESTful API Laravel, skema database relasional akun & inventori, serta penerapan protokol keamanan RadenShield untuk stabilitas server jangka panjang.',
+  },
+  {
+    name: 'Rossy Pramudya',
+    role: 'AUDIO & ASSET SPECIALIST',
+    badgeType: 'clay-badge-primary',
+    bg: 'bg-[#FFAE6D]',
+    subtitle: 'Desain Suara Spasial, Efek Audio Retro & Kurasi Aset Game',
+    desc: 'Mengintegrasikan sistem Web Audio API, efek suara retro (SFX langkah kaki, debu, lonceng sekolah), serta kurasi aset sprite 2D agar serasi dengan identitas visual permainan.',
+  },
+  {
+    name: 'Fania Adilatus Shofira',
+    role: 'QA & USABILITY RESEARCH',
+    badgeType: 'clay-badge-secondary',
+    bg: 'bg-[#A8E6CF]',
+    subtitle: 'Riset Kegunaan Pengguna, Pengujian Kualitas & Analisis Interaksi',
+    desc: 'Menjalankan skenario pengujian fungsional pada berbagai peramban web dan resolusi gawai, memastikan alur orientasi pemain baru berjalan intuitif, edukatif, dan bebas kendala.',
+  },
+];
 
 export const CreditsModal: React.FC<CreditsModalProps> = ({ isOpen, onClose }) => {
   const sound = SoundManager.getInstance();
@@ -70,7 +146,6 @@ export const CreditsModal: React.FC<CreditsModalProps> = ({ isOpen, onClose }) =
     const scrollStep = () => {
       const el = scrollContainerRef.current;
       if (el) {
-        // Jika sudah mencapai batas bawah, hentikan auto scroll
         if (el.scrollTop + el.clientHeight >= el.scrollHeight - 2) {
           setIsAutoScrolling(false);
           return;
@@ -234,7 +309,7 @@ export const CreditsModal: React.FC<CreditsModalProps> = ({ isOpen, onClose }) =
             </div>
           </div>
 
-          {/* TIM PENGEMBANG UTAMA (GAME DEVELOPERS) */}
+          {/* TIM PENGEMBANG UTAMA (GAME DEVELOPERS) DENGAN ICON PROFIL / ORANG */}
           <div className="space-y-2.5">
             <div className="flex items-center justify-between px-1">
               <div className="flex items-center gap-1.5 text-xs font-bold text-black uppercase">
@@ -242,200 +317,40 @@ export const CreditsModal: React.FC<CreditsModalProps> = ({ isOpen, onClose }) =
                 <span>Tim Pengembang (Game Creators)</span>
               </div>
               <span className="clay-badge-secondary px-2 py-0.5 text-[9px] font-bold text-black">
-                ITB-ADL TEAM
+                8 DEVELOPERS • ITB-ADL
               </span>
             </div>
 
-            {/* PENGEMBANG 1: R Moch Mahardika Digdaya Cakra Diponegoro */}
-            <div className="clay-card p-3.5 flex items-start gap-3 border-2 border-[#5C3A21]">
-              <div className="w-10 h-10 rounded-xl bg-[#FFAE6D] border-2 border-[#5C3A21] flex items-center justify-center text-black shrink-0 shadow-sm">
-                <Crown className="w-5 h-5 stroke-[2.5]" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center justify-between gap-1 flex-wrap">
-                  <h4 className="text-xs sm:text-sm font-bold text-black">
-                    R Moch Mahardika Digdaya Cakra Diponegoro
-                  </h4>
-                  <span className="clay-badge-primary px-1.5 py-0.5 text-[8.5px] sm:text-[9px] font-bold text-black">
-                    LEAD GAME DIRECTOR
-                  </span>
-                </div>
-                <div className="text-[10px] sm:text-[11px] font-bold text-[#5C3A21] mt-0.5">
-                  Arsitektur Game, Sistem Jaringan Realtime & Core Engine
-                </div>
-                <p className="text-[10px] sm:text-[11px] text-black/80 mt-1 leading-relaxed">
-                  Merancang arsitektur sistem penuh, sinkronisasi WebSocket Socket.io, integrasi database Laravel &
-                  engine Phaser 3, sistem kamera cerdas, serta audio spasial interaktif.
-                </p>
-              </div>
-            </div>
+            {/* DAFTAR 8 PENGEMBANG DENGAN ICON ORANG / PROFILE */}
+            <div className="space-y-2.5">
+              {developersList.map((dev, idx) => (
+                <div key={idx} className="clay-card p-3.5 flex items-start gap-3 border-2 border-[#5C3A21]">
+                  {/* ICON PROFILE / ORANG */}
+                  <div
+                    className={`w-10 h-10 rounded-xl ${dev.bg} border-2 border-[#5C3A21] flex items-center justify-center text-black shrink-0 shadow-sm`}
+                    title={`Profil: ${dev.name}`}
+                  >
+                    <User className="w-5 h-5 stroke-[2.5]" />
+                  </div>
 
-            {/* PENGEMBANG 2: Ananda Putri Salsabila */}
-            <div className="clay-card p-3.5 flex items-start gap-3 border-2 border-[#5C3A21]">
-              <div className="w-10 h-10 rounded-xl bg-[#A8E6CF] border-2 border-[#5C3A21] flex items-center justify-center text-black shrink-0 shadow-sm">
-                <Sparkles className="w-5 h-5 stroke-[2.5]" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center justify-between gap-1 flex-wrap">
-                  <h4 className="text-xs sm:text-sm font-bold text-black">
-                    Ananda Putri Salsabila
-                  </h4>
-                  <span className="clay-badge-secondary px-1.5 py-0.5 text-[8.5px] sm:text-[9px] font-bold text-black">
-                    CREATIVE & UI/UX DESIGN
-                  </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between gap-1 flex-wrap">
+                      <h4 className="text-xs sm:text-sm font-bold text-black">
+                        {dev.name}
+                      </h4>
+                      <span className={`${dev.badgeType} px-1.5 py-0.5 text-[8.5px] sm:text-[9px] font-bold text-black`}>
+                        {dev.role}
+                      </span>
+                    </div>
+                    <div className="text-[10px] sm:text-[11px] font-bold text-[#5C3A21] mt-0.5">
+                      {dev.subtitle}
+                    </div>
+                    <p className="text-[10px] sm:text-[11px] text-black/80 mt-1 leading-relaxed">
+                      {dev.desc}
+                    </p>
+                  </div>
                 </div>
-                <div className="text-[10px] sm:text-[11px] font-bold text-[#5C3A21] mt-0.5">
-                  Desain Lingkungan Dunia, Antarmuka Cozycore & Aset Visual
-                </div>
-                <p className="text-[10px] sm:text-[11px] text-black/80 mt-1 leading-relaxed">
-                  Menyusun konsep visual antarmuka Clay-Pixel, tata letak peta terbuka, estetika interior sekolah &
-                  perpustakaan terpadu, serta perancangan pengalaman pengguna yang ramah di segala perangkat.
-                </p>
-              </div>
-            </div>
-
-            {/* PENGEMBANG 3: Nanda Eka Susanto */}
-            <div className="clay-card p-3.5 flex items-start gap-3 border-2 border-[#5C3A21]">
-              <div className="w-10 h-10 rounded-xl bg-[#FFAE6D] border-2 border-[#5C3A21] flex items-center justify-center text-black shrink-0 shadow-sm">
-                <Code className="w-5 h-5 stroke-[2.5]" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center justify-between gap-1 flex-wrap">
-                  <h4 className="text-xs sm:text-sm font-bold text-black">
-                    Nanda Eka Susanto
-                  </h4>
-                  <span className="clay-badge-primary px-1.5 py-0.5 text-[8.5px] sm:text-[9px] font-bold text-black">
-                    GAMEPLAY & QA ENGINEER
-                  </span>
-                </div>
-                <div className="text-[10px] sm:text-[11px] font-bold text-[#5C3A21] mt-0.5">
-                  Logika Mekanika Permainan, Optimasi Kinerja & Pengujian Sistem
-                </div>
-                <p className="text-[10px] sm:text-[11px] text-black/80 mt-1 leading-relaxed">
-                  Mengembangkan mekanika interaksi karakter, sistem inventori tas, responsivitas kontrol sentuh mobile &
-                  keyboard PC, serta pengujian stabilitas game pada berbagai kondisi perangkat.
-                </p>
-              </div>
-            </div>
-
-            {/* PENGEMBANG 4: Adib Syauqilillah */}
-            <div className="clay-card p-3.5 flex items-start gap-3 border-2 border-[#5C3A21]">
-              <div className="w-10 h-10 rounded-xl bg-[#A8E6CF] border-2 border-[#5C3A21] flex items-center justify-center text-black shrink-0 shadow-sm">
-                <Layers className="w-5 h-5 stroke-[2.5]" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center justify-between gap-1 flex-wrap">
-                  <h4 className="text-xs sm:text-sm font-bold text-black">
-                    Adib Syauqilillah
-                  </h4>
-                  <span className="clay-badge-secondary px-1.5 py-0.5 text-[8.5px] sm:text-[9px] font-bold text-black">
-                    GAME DESIGN & NETWORK
-                  </span>
-                </div>
-                <div className="text-[10px] sm:text-[11px] font-bold text-[#5C3A21] mt-0.5">
-                  Perancangan Desain Game & Keseimbangan Jaringan Multiplayer
-                </div>
-                <p className="text-[10px] sm:text-[11px] text-black/80 mt-1 leading-relaxed">
-                  Merancang keseimbangan sistem permainan (game balancing), integrasi protokol transmisi data real-time,
-                  serta koordinasi interaksi sosial antar-pemain di dunia terbuka.
-                </p>
-              </div>
-            </div>
-
-            {/* PENGEMBANG 5: Putri Intania Meylisa */}
-            <div className="clay-card p-3.5 flex items-start gap-3 border-2 border-[#5C3A21]">
-              <div className="w-10 h-10 rounded-xl bg-[#FFAE6D] border-2 border-[#5C3A21] flex items-center justify-center text-black shrink-0 shadow-sm">
-                <Sparkles className="w-5 h-5 stroke-[2.5]" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center justify-between gap-1 flex-wrap">
-                  <h4 className="text-xs sm:text-sm font-bold text-black">
-                    Putri Intania Meylisa
-                  </h4>
-                  <span className="clay-badge-primary px-1.5 py-0.5 text-[8.5px] sm:text-[9px] font-bold text-black">
-                    NARRATIVE & ENVIRONMENT
-                  </span>
-                </div>
-                <div className="text-[10px] sm:text-[11px] font-bold text-[#5C3A21] mt-0.5">
-                  Desain Lingkungan Tematik, Narasi Dialog & Suasana Dunia
-                </div>
-                <p className="text-[10px] sm:text-[11px] text-black/80 mt-1 leading-relaxed">
-                  Menyusun naskah dialog interaktif edukasi, tata letak interior tematik (perpustakaan, kafe, sekolah),
-                  dan pemilihan palet warna yang menghadirkan pengalaman bermain yang menenangkan.
-                </p>
-              </div>
-            </div>
-
-            {/* PENGEMBANG 6: Wahyu Dwi Kurniawan */}
-            <div className="clay-card p-3.5 flex items-start gap-3 border-2 border-[#5C3A21]">
-              <div className="w-10 h-10 rounded-xl bg-[#A8E6CF] border-2 border-[#5C3A21] flex items-center justify-center text-black shrink-0 shadow-sm">
-                <Cpu className="w-5 h-5 stroke-[2.5]" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center justify-between gap-1 flex-wrap">
-                  <h4 className="text-xs sm:text-sm font-bold text-black">
-                    Wahyu Dwi Kurniawan
-                  </h4>
-                  <span className="clay-badge-secondary px-1.5 py-0.5 text-[8.5px] sm:text-[9px] font-bold text-black">
-                    BACKEND & INFRASTRUCTURE
-                  </span>
-                </div>
-                <div className="text-[10px] sm:text-[11px] font-bold text-[#5C3A21] mt-0.5">
-                  Arsitektur Basis Data, API Keamanan & Keandalan Server
-                </div>
-                <p className="text-[10px] sm:text-[11px] text-black/80 mt-1 leading-relaxed">
-                  Mengembangkan endpoint RESTful API Laravel, skema database relasional akun & inventori, serta
-                  penerapan protokol keamanan RadenShield untuk stabilitas server jangka panjang.
-                </p>
-              </div>
-            </div>
-
-            {/* PENGEMBANG 7: Rossy Pramudya */}
-            <div className="clay-card p-3.5 flex items-start gap-3 border-2 border-[#5C3A21]">
-              <div className="w-10 h-10 rounded-xl bg-[#FFAE6D] border-2 border-[#5C3A21] flex items-center justify-center text-black shrink-0 shadow-sm">
-                <Heart className="w-5 h-5 stroke-[2.5]" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center justify-between gap-1 flex-wrap">
-                  <h4 className="text-xs sm:text-sm font-bold text-black">
-                    Rossy Pramudya
-                  </h4>
-                  <span className="clay-badge-primary px-1.5 py-0.5 text-[8.5px] sm:text-[9px] font-bold text-black">
-                    AUDIO & ASSET SPECIALIST
-                  </span>
-                </div>
-                <div className="text-[10px] sm:text-[11px] font-bold text-[#5C3A21] mt-0.5">
-                  Desain Suara Spasial, Efek Audio Retro & Kurasi Aset Game
-                </div>
-                <p className="text-[10px] sm:text-[11px] text-black/80 mt-1 leading-relaxed">
-                  Mengintegrasikan sistem Web Audio API, efek suara retro (SFX langkah kaki, debu, lonceng sekolah),
-                  serta kurasi aset sprite 2D agar serasi dengan identitas visual permainan.
-                </p>
-              </div>
-            </div>
-
-            {/* PENGEMBANG 8: Fania Adilatus Shofira */}
-            <div className="clay-card p-3.5 flex items-start gap-3 border-2 border-[#5C3A21]">
-              <div className="w-10 h-10 rounded-xl bg-[#A8E6CF] border-2 border-[#5C3A21] flex items-center justify-center text-black shrink-0 shadow-sm">
-                <ShieldCheck className="w-5 h-5 stroke-[2.5]" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center justify-between gap-1 flex-wrap">
-                  <h4 className="text-xs sm:text-sm font-bold text-black">
-                    Fania Adilatus Shofira
-                  </h4>
-                  <span className="clay-badge-secondary px-1.5 py-0.5 text-[8.5px] sm:text-[9px] font-bold text-black">
-                    QA & USABILITY RESEARCH
-                  </span>
-                </div>
-                <div className="text-[10px] sm:text-[11px] font-bold text-[#5C3A21] mt-0.5">
-                  Riset Kegunaan Pengguna, Pengujian Kualitas & Analisis Interaksi
-                </div>
-                <p className="text-[10px] sm:text-[11px] text-black/80 mt-1 leading-relaxed">
-                  Menjalankan skenario pengujian fungsional pada berbagai peramban web dan resolusi gawai, memastikan
-                  alur orientasi pemain baru berjalan intuitif, edukatif, dan bebas kendala.
-                </p>
-              </div>
+              ))}
             </div>
           </div>
 

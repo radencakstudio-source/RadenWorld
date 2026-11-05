@@ -82,7 +82,7 @@
         }, { passive: false });
 
         // Auto-Purge Old Cache & Self-Healing Service Worker Update
-        const APP_BUILD_VER = 'radenworld-static-v15';
+        const APP_BUILD_VER = 'radenworld-static-v16';
         try {
             if (localStorage.getItem('raden_sw_ver') !== APP_BUILD_VER) {
                 localStorage.setItem('raden_sw_ver', APP_BUILD_VER);

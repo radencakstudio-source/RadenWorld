@@ -58,6 +58,7 @@ export interface InteractiveVideoStageProps {
   hasNextTopic?: boolean;
   isFullscreen?: boolean;
   onToggleFullscreen?: () => void;
+  onOpenQuiz?: () => void;
 }
 
 export const InteractiveVideoStage: React.FC<InteractiveVideoStageProps> = ({
@@ -72,6 +73,7 @@ export const InteractiveVideoStage: React.FC<InteractiveVideoStageProps> = ({
   hasNextTopic = false,
   isFullscreen = false,
   onToggleFullscreen,
+  onOpenQuiz,
 }) => {
   const sound = SoundManager.getInstance();
   const narrator = VoiceNarratorService.getInstance();
@@ -794,8 +796,24 @@ export const InteractiveVideoStage: React.FC<InteractiveVideoStageProps> = ({
             })}
           </div>
 
-          {/* Navigasi Antar Bab / Topik Kurikulum */}
+          {/* Navigasi Antar Bab / Topik Kurikulum & Tombol Pintas Kuis */}
           <div className="flex items-center gap-1">
+            {onOpenQuiz && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  sound.playClick();
+                  onOpenQuiz();
+                }}
+                className="px-2 py-1 clay-btn-primary text-black text-[10.5px] font-bold flex items-center gap-1 shadow-sm hover:scale-105 transition-all"
+                title="Buka Kuis Interaktif Berhadiah EXP di Panel Kanan"
+              >
+                <span className="animate-bounce">🎯</span>
+                <span>Kuis EXP</span>
+              </button>
+            )}
+
             {hasPrevTopic && onPrevTopic && (
               <button
                 type="button"

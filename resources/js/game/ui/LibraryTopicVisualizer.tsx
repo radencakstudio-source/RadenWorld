@@ -468,57 +468,654 @@ export function getTopicStoryScenes(
     funFact?: string;
   }
 ): ITopicStoryScene[] {
-  // Jika topic diberikan secara eksplisit, buatkan 4 Babak Narasi yang 100% SPESIFIK & SESUAI DENGAN MATERI TOPIK TERSEBUT!
-  if (topic && topic.title) {
-    const p1 = topic.points?.[0] || 'Memahami konsep dasar secara bertahap dengan contoh nyata di sekitar kita.';
-    const p2 = topic.points?.[1] || 'Mengamati langkah-langkah penting untuk melatih kecermatan dan keterampilan.';
-    const fact = topic.funFact || 'Belajar dengan riang gembira dan penuh rasa ingin tahu membuat ingatan semakin tajam!';
-
-    let catIcon = '📖';
-    if (type.startsWith('math_')) catIcon = '🔢';
-    else if (type.startsWith('science_') || type === 'photosynthesis' || type === 'water_cycle' || type === 'solar_system') catIcon = '🔬';
-    else if (type.startsWith('civics_') || type === 'pancasila_shield') catIcon = '🇮🇩';
-    else if (type === 'english_kids') catIcon = '🌐';
-    else if (type === 'art_culture_jawa') catIcon = '🎨';
-    else if (type.startsWith('informatics_') || type === 'flowchart_logic') catIcon = '💻';
-
-    return [
-      {
-        chapter: 'Babak 1',
-        title: topic.badge ? `Konsep ${topic.badge}` : topic.title,
-        narration: `🌟 ${topic.summary || topic.title}`,
-        badge: topic.badge || 'Konsep Dasar',
-        icon: catIcon,
-        highlightText: topic.title,
-      },
-      {
-        chapter: 'Babak 2',
-        title: 'Pemahaman & Ciri Kunci',
-        narration: `🔍 ${p1}`,
-        badge: 'Tahap 1',
-        icon: '💡',
-        highlightText: p1.length > 40 ? p1.slice(0, 38) + '...' : p1,
-      },
-      {
-        chapter: 'Babak 3',
-        title: topic.keyFormulaOrConcept ? 'Rumus & Kunci Pemahaman' : 'Penerapan & Contoh Nyata',
-        narration: `🚀 ${p2}`,
-        badge: topic.keyFormulaOrConcept ? 'Kunci Utama' : 'Tahap 2',
-        icon: '🎯',
-        highlightText: topic.keyFormulaOrConcept || (p2.length > 40 ? p2.slice(0, 38) + '...' : p2),
-      },
-      {
-        chapter: 'Babak 4',
-        title: 'Fakta Seru & Praktik Nyata',
-        narration: `🎉 ${fact}`,
-        badge: 'Wawasan Pintar',
-        icon: '✨',
-        highlightText: 'Wawasan bermanfaat sehari-hari',
-      },
-    ];
-  }
-
   switch (type) {
+    case 'math_counting':
+      return [
+        {
+          chapter: 'Babak 1',
+          title: 'Mengenal Angka 1 sampai 3',
+          narration: '🍎 Halo teman pintar! Perhatikan 10 kartu angka pastel di layar. Kita mulai berhitung dari angka 1 sampai 3! Lihat buah apel segar di keranjang yang berbaris rapi!',
+          badge: 'Bilangan 1 - 3',
+          icon: '🍎',
+          highlightText: 'Menghubungkan angka dengan benda nyata',
+        },
+        {
+          chapter: 'Babak 2',
+          title: 'Menghitung Lanjut 4 sampai 6',
+          narration: '🍊 Sekarang kita lanjut berhitung angka 4 sampai 6! Lihat buah panen di keranjang bertambah banyak, melambangkan jumlah benda nyata di sekitarmu!',
+          badge: 'Bilangan 4 - 6',
+          icon: '🍊',
+          highlightText: 'Jumlah benda bertambah banyak',
+        },
+        {
+          chapter: 'Babak 3',
+          title: 'Kelinci di Garis Bilangan 7-10',
+          narration: '🐇 Perhatikan kelinci lucu yang melompat di atas garis bilangan! Semakin melompat ke kanan menuju angka 7 sampai 10, jumlahnya semakin bertambah besar!',
+          badge: 'Garis Bilangan',
+          icon: '🐇',
+          highlightText: 'Urutan bilangan makin ke kanan makin besar',
+        },
+        {
+          chapter: 'Babak 4',
+          title: '10 Apel Panen Sempurna!',
+          narration: '🎉 Luar biasa! Sepuluh apel panen sudah terkumpul penuh. Kamu sudah menguasai bilangan cacah 1 sampai 10 dengan sempurna! Siap untuk tantangan kuis!',
+          badge: 'Tuntas Juara',
+          icon: '🌟',
+          highlightText: 'Kuasai angka 1 sampai 10',
+        },
+      ];
+
+    case 'math_addition_subtraction':
+      return [
+        {
+          chapter: 'Babak 1',
+          title: 'Penjumlahan Menggabungkan Benda',
+          narration: '➕ Penjumlahan adalah menggabungkan benda! Lihat di layar, piring kiri berisi 3 buah apel, dan piring kanan berisi 2 buah jeruk segar.',
+          badge: 'Konsep Tambah (+)',
+          icon: '🍎',
+          highlightText: 'Penggabungan dua kelompok benda',
+        },
+        {
+          chapter: 'Babak 2',
+          title: 'Menghitung Total Hasil Tambah',
+          narration: '🧺 Ketika kedua piring digabungkan ke keranjang tengah, jumlah buah menjadi 3 ditambah 2 sama dengan 5 buah panen yang manis!',
+          badge: '3 + 2 = 5',
+          icon: '🧺',
+          highlightText: 'Hasil penggabungan bertambah banyak',
+        },
+        {
+          chapter: 'Babak 3',
+          title: 'Pengurangan Mengambil Bagian',
+          narration: '➖ Sekarang perhatikan pengurangan! Jika kamu memiliki 5 buah, lalu 2 buah dimakan kelinci lucu, sisanya menjadi 3 buah utuh!',
+          badge: '5 - 2 = 3',
+          icon: '🐇',
+          highlightText: 'Pengurangan membuat jumlah berkurang',
+        },
+        {
+          chapter: 'Babak 4',
+          title: 'Kunci Cepat Operasi Hitung',
+          narration: '🎯 Kuncinya sangat mudah: tanda tambah berarti benda bertambah banyak, tanda kurang berarti benda berkurang. Hebat sekali!',
+          badge: 'Kunci Pintar',
+          icon: '🎯',
+          highlightText: 'Lancar berhitung tambah dan kurang',
+        },
+      ];
+
+    case 'math_geometry_shapes':
+      return [
+        {
+          chapter: 'Babak 1',
+          title: 'Persegi & 4 Sisi Rapi',
+          narration: '📐 Ayo amati bangun datar di layar! Pertama ada Persegi dengan 4 sisi sama panjang dan 4 sudut siku-siku rapi seperti jendela kamarmu!',
+          badge: 'Persegi (Bujur Sangkar)',
+          icon: '🟦',
+          highlightText: '4 sisi sama panjang & 4 sudut siku-siku',
+        },
+        {
+          chapter: 'Babak 2',
+          title: 'Segitiga Kokoh Tiga Sudut',
+          narration: '🔺 Kedua ada Segitiga dengan 3 sisi kokoh dan 3 sudut, seperti potongan kue lezat atau atap rumah panggung tradisional!',
+          badge: 'Segitiga',
+          icon: '🔺',
+          highlightText: '3 sisi dan 3 sudut lancip/siku-siku',
+        },
+        {
+          chapter: 'Babak 3',
+          title: 'Lingkaran Mulus Tanpa Sudut',
+          narration: '🔵 Ketiga ada Lingkaran mulus tanpa sudut siku-siku, melengkung sempurna seperti roda gerobak dan koin uang saku!',
+          badge: 'Lingkaran',
+          icon: '🔵',
+          highlightText: 'Garis lengkung tertutup dengan titik pusat',
+        },
+        {
+          chapter: 'Babak 4',
+          title: 'Mengenal Bentuk di Sekitar Kita',
+          narration: '✨ Sekarang kamu bisa mengenali aneka bentuk geometri pada buku, meja, dan bangunan di seluruh penjuru desa RadenWorld!',
+          badge: 'Wawasan Nyata',
+          icon: '✨',
+          highlightText: 'Bentuk geometri ada di kehidupan nyata',
+        },
+      ];
+
+    case 'math_clock_time':
+      return [
+        {
+          chapter: 'Babak 1',
+          title: 'Mengenal Jarum Jam & Menit',
+          narration: '⏰ Tik-tok! Amati jam dinding kayu ceria di layar. Jarum pendek berwarna cokelat menunjukkan Jam, dan jarum panjang biru menunjukkan Menit.',
+          badge: 'Jarum Jam & Menit',
+          icon: '⏰',
+          highlightText: 'Jarum pendek = Jam, Jarum panjang = Menit',
+        },
+        {
+          chapter: 'Babak 2',
+          title: 'Membaca Jam Tepat (O\'Clock)',
+          narration: '🕒 Ketika jarum panjang berada tepat di angka 12, dan jarum pendek di angka 7, itu berarti tepat pukul 07.00 pagi, saatnya bersiap belajar!',
+          badge: 'Pukul 07.00 Pagi',
+          icon: '🕒',
+          highlightText: 'Jarum panjang di 12 = waktu tepat',
+        },
+        {
+          chapter: 'Babak 3',
+          title: 'Hitungan Menit & Durasi Waktu',
+          narration: '⏳ Satu putaran penuh jarum menit adalah 60 menit atau 1 jam. Sedangkan satu hari penuh berputar dua kali menjadi 24 jam!',
+          badge: '1 Jam = 60 Menit',
+          icon: '⏳',
+          highlightText: '60 detik = 1 menit, 60 menit = 1 jam',
+        },
+        {
+          chapter: 'Babak 4',
+          title: 'Disiplin Waktu Anak Hebat',
+          narration: '🌟 Menghargai waktu membuat kita menjadi anak berprestasi, selalu tepat waktu belajar, beribadah, dan beristirahat cukup!',
+          badge: 'Disiplin Juara',
+          icon: '🌟',
+          highlightText: 'Disiplin waktu kunci kesuksesan',
+        },
+      ];
+
+    case 'math_multiplication_division':
+      return [
+        {
+          chapter: 'Babak 1',
+          title: 'Perkalian Penjumlahan Berulang',
+          narration: '✖️ Perkalian adalah penjumlahan berulang yang cepat! Lihat 3 toples permen manis yang berjejer rapi di atas meja kayu.',
+          badge: 'Konsep Kali (×)',
+          icon: '🍬',
+          highlightText: 'Penjumlahan berulang kelompok benda',
+        },
+        {
+          chapter: 'Babak 2',
+          title: '3 Toples × 4 Permen = 12',
+          narration: '🍬 Setiap toples berisi 4 butir permen. Berarti 3 dikali 4 sama dengan 4 ditambah 4 ditambah 4, hasilnya 12 butir permen!',
+          badge: '3 × 4 = 12',
+          icon: '🍬',
+          highlightText: 'Hitung cepat kelipatan bilangan',
+        },
+        {
+          chapter: 'Babak 3',
+          title: 'Pembagian Membagi Sama Rata',
+          narration: '➗ Sedangkan Pembagian adalah membagi sama rata secara adil! 12 permen dibagikan ke 3 anak, masing-masing mendapat 4 permen manis!',
+          badge: '12 ÷ 3 = 4',
+          icon: '⚖️',
+          highlightText: 'Pembagian adil sama banyak',
+        },
+        {
+          chapter: 'Babak 4',
+          title: 'Keadilan Berbagi Sehari-Hari',
+          narration: '🤝 Konsep matematika ini melatih kita untuk selalu jujur dan adil saat berbagi rezeki dan makanan kepada sesama teman!',
+          badge: 'Keadilan Luhur',
+          icon: '🤝',
+          highlightText: 'Berhitung cermat dan berbagi adil',
+        },
+      ];
+
+    case 'math_data_charts':
+      return [
+        {
+          chapter: 'Babak 1',
+          title: 'Mengenal Diagram Batang',
+          narration: '📊 Lihat diagram batang warna-warni yang tumbuh di layar! Setiap batang mewakili jumlah data hasil pengamatan nyata.',
+          badge: 'Diagram Batang',
+          icon: '📊',
+          highlightText: 'Visualisasi data grafik batang vertikal',
+        },
+        {
+          chapter: 'Babak 2',
+          title: 'Membaca Data Tertinggi & Terendah',
+          narration: '📈 Batang hijau paling tinggi menunjukkan buah apel yang paling disukai siswa, sedangkan batang jingga menunjukkan buah jeruk.',
+          badge: 'Data Favorit',
+          icon: '📈',
+          highlightText: 'Batang tertinggi = frekuensi terbanyak',
+        },
+        {
+          chapter: 'Babak 3',
+          title: 'Sumbu Data & Skala Angka',
+          narration: '📏 Sumbu tegak menunjukkan angka jumlah frekuensi, dan sumbu mendatar menunjukkan nama jenis buah atau kategori barang.',
+          badge: 'Sumbu X & Y',
+          icon: '📏',
+          highlightText: 'Sumbu vertikal frekuensi, horizontal kategori',
+        },
+        {
+          chapter: 'Babak 4',
+          title: 'Pintar Menganalisis Informasi',
+          narration: '💡 Dengan diagram batang, membaca data statistik menjadi super cepat, jelas, dan sangat mudah dipahami hanya dalam sekali lihat!',
+          badge: 'Analisis Cerdas',
+          icon: '💡',
+          highlightText: 'Data teratur mudah dianalisis',
+        },
+      ];
+
+    case 'science_plants_growth':
+      return [
+        {
+          chapter: 'Babak 1',
+          title: 'Benih Kecil Mulai Tertanam',
+          narration: '🌱 Petualangan dimulai dari sebiji benih kecil di dalam tanah yang gembur. Sirami dengan air bersih dan biarkan ia menyerap kelembapan.',
+          badge: 'Benih Tertanam',
+          icon: '🌱',
+          highlightText: 'Kebutuhan tanah gembur & air bersih',
+        },
+        {
+          chapter: 'Babak 2',
+          title: 'Berkecambah & Tumbuh Akar',
+          narration: '💧 Butiran air meresap, membuat benih berkecambah! Akar putih mulai menembus tanah ke bawah mencari air dan mineral subur.',
+          badge: 'Perkecambahan',
+          icon: '💧',
+          highlightText: 'Akar tumbuh ke bawah menyerap nutrisi',
+        },
+        {
+          chapter: 'Babak 3',
+          title: 'Batang & Daun Hijau Muncul',
+          narration: '🌿 Batang hijau tumbuh ke atas menembus permukaan tanah menyambut sinar mentari, lalu membuka daun-daun kecil yang segar!',
+          badge: 'Tunas Daun',
+          icon: '🌿',
+          highlightText: 'Batang naik menuju sinar matahari',
+        },
+        {
+          chapter: 'Babak 4',
+          title: 'Bunga Mekar & Berbuah Lezat',
+          narration: '🌸 Tanaman kini berbunga indah dan menghasilkan buah lezat. Rawatlah tanaman di sekitarmu agar bumi tetap asri dan sejuk!',
+          badge: 'Bunga & Buah',
+          icon: '🌸',
+          highlightText: 'Tanaman dewasa menghasilkan oksigen & buah',
+        },
+      ];
+
+    case 'science_animals_habitat':
+      return [
+        {
+          chapter: 'Babak 1',
+          title: 'Habitat Hewan Darat',
+          narration: '🐾 Alam semesta terbagi menjadi 3 tempat tinggal utama hewan! Pertama, habitat Darat tempat singa, sapi, dan kelinci berjalan.',
+          badge: 'Habitat Darat',
+          icon: '🦁',
+          highlightText: 'Hewan bernapas dengan paru-paru di daratan',
+        },
+        {
+          chapter: 'Babak 2',
+          title: 'Habitat Hewan Air',
+          narration: '🐟 Kedua, habitat Air tempat ikan, lumba-lumba, dan kepiting berenang bebas di danau air tawar maupun samudra asin.',
+          badge: 'Habitat Air',
+          icon: '🐟',
+          highlightText: 'Hewan bernapas dengan insang di perairan',
+        },
+        {
+          chapter: 'Babak 3',
+          title: 'Habitat Hewan Udara',
+          narration: '🦅 Ketiga, habitat Udara tempat burung elang dan burung gereja membentangkan sayapnya melayang anggun di angkasa.',
+          badge: 'Habitat Angkasa',
+          icon: '🦅',
+          highlightText: 'Burung beradaptasi dengan pundi-pundi udara',
+        },
+        {
+          chapter: 'Babak 4',
+          title: 'Adaptasi Sempurna di Alam',
+          narration: '🌏 Setiap hewan memiliki ciri tubuh khusus yang sempurna agar dapat bertahan hidup dan mencari makan di habitat aslinya!',
+          badge: 'Harmoni Alam',
+          icon: '🌏',
+          highlightText: 'Ciri khusus hewan sesuai tempat tinggal',
+        },
+      ];
+
+    case 'science_metamorphosis':
+      return [
+        {
+          chapter: 'Babak 1',
+          title: 'Telur Kecil di Balik Daun',
+          narration: '🥚 Keajaiban metamorfosis sempurna! Dimulai dari sebutir telur mungil yang menempel dengan aman di balik daun tanaman hijau.',
+          badge: 'Fase Telur',
+          icon: '🥚',
+          highlightText: 'Tahap awal telur menempel pada daun',
+        },
+        {
+          chapter: 'Babak 2',
+          title: 'Ulat Lapar Makan Daun',
+          narration: '🐛 Telur menetas menjadi ulat lapar yang rajin memakan daun untuk mengumpulkan energi dan nutrisi pertumbuhan tubuhnya.',
+          badge: 'Fase Larva (Ulat)',
+          icon: '🐛',
+          highlightText: 'Larva mengumpulkan cadangan nutrisi',
+        },
+        {
+          chapter: 'Babak 3',
+          title: 'Kepompong yang Tenang Berpuasa',
+          narration: '🍃 Ulat membungkus dirinya menjadi kepompong yang tenang, mengalami perubahan sel-sel tubuh yang luar biasa di dalamnya!',
+          badge: 'Fase Pupa',
+          icon: '🍃',
+          highlightText: 'Transformasi biologis di dalam kepompong',
+        },
+        {
+          chapter: 'Babak 4',
+          title: 'Kupu-Kupu Bersayap Indah!',
+          narration: '🦋 Kepompong terbuka! Muncullah kupu-kupu bersayap elok warna-warni yang terbang anggun menghisap madu nektar bunga!',
+          badge: 'Imago Sempurna',
+          icon: '🦋',
+          highlightText: 'Kupu-kupu dewasa membantu penyerbukan',
+        },
+      ];
+
+    case 'science_food_chain':
+      return [
+        {
+          chapter: 'Babak 1',
+          title: 'Produsen: Padi & Tumbuhan Hijau',
+          narration: '🌾 Rantai makanan dimulai dari Produsen! Tumbuhan padi hijau mengolah energi sinar matahari menjadi makanan melalui fotosintesis.',
+          badge: 'Produsen',
+          icon: '🌾',
+          highlightText: 'Tumbuhan menghasilkan energi makanan sendiri',
+        },
+        {
+          chapter: 'Babak 2',
+          title: 'Konsumen 1: Belalang & Tikus',
+          narration: '🦗 Tumbuhan dimakan oleh Konsumen Tingkat 1, yaitu belalang dan hewan herbivora yang membutuhkan energi dari daun padi.',
+          badge: 'Konsumen 1',
+          icon: '🦗',
+          highlightText: 'Hewan pemakan tumbuhan (herbivora)',
+        },
+        {
+          chapter: 'Babak 3',
+          title: 'Konsumen Puncak: Burung Elang',
+          narration: '🦅 Katak memakan belalang, lalu dimakan ular, dan di puncak ada Burung Elang karnivora perkasa dengan cakar tajam!',
+          badge: 'Konsumen Puncak',
+          icon: '🦅',
+          highlightText: 'Predator puncak menjaga populasi ekosistem',
+        },
+        {
+          chapter: 'Babak 4',
+          title: 'Pengurai Jamur Menyehatkan Tanah',
+          narration: '🍄 Ketika predator mati, jamur pengurai menguraikan jasadnya kembali menjadi zat hara subur bagi tanah sawah. Ekosistem seimbang!',
+          badge: 'Dekomposer',
+          icon: '🍄',
+          highlightText: 'Dekomposer mengembalikan nutrisi ke tanah',
+        },
+      ];
+
+    case 'science_matter_states':
+      return [
+        {
+          chapter: 'Babak 1',
+          title: 'Zat Padat Bentuk Tetap',
+          narration: '🧊 Tiga wujud zat di alam! Pertama Zat Padat seperti es batu yang memiliki bentuk dan volume tetap tidak berubah saat dipindahkan.',
+          badge: 'Zat Padat',
+          icon: '🧊',
+          highlightText: 'Partikel tersusun rapat & bentuk tetap',
+        },
+        {
+          chapter: 'Babak 2',
+          title: 'Zat Cair Mengalir',
+          narration: '💧 Kedua Zat Cair seperti air minum segar yang mengalir, bentuknya berubah mengikuti wadah tetapi volumenya tetap sama!',
+          badge: 'Zat Cair',
+          icon: '💧',
+          highlightText: 'Mengalir & bentuk mengikuti bentuk wadah',
+        },
+        {
+          chapter: 'Babak 3',
+          title: 'Zat Gas Memenuhi Ruangan',
+          narration: '💨 Ketiga Zat Gas seperti uap air mendidih yang partikelnya bergerak bebas ke segala arah mengisi seluruh ruangan wadah!',
+          badge: 'Zat Gas',
+          icon: '💨',
+          highlightText: 'Bentuk & volume berubah bebas memenuhi wadah',
+        },
+        {
+          chapter: 'Babak 4',
+          title: 'Perubahan Wujud Karena Suhu',
+          narration: '🌡️ Suhu mengubah wujud zat: es padat mencair menjadi air, dan jika dipanaskan terus akan menguap menjadi gas uap air!',
+          badge: 'Mencair & Menguap',
+          icon: '🌡️',
+          highlightText: 'Kalor mengubah padat, cair, dan gas',
+        },
+      ];
+
+    case 'science_human_body':
+      return [
+        {
+          chapter: 'Babak 1',
+          title: 'Mata Penglihatan & Telinga',
+          narration: '👁️ Tubuh kita dianugerahi 5 indra luar biasa! Mata untuk melihat warna dunia, dan Telinga untuk mendengar suara merdu di sekitarmu.',
+          badge: 'Mata & Telinga',
+          icon: '👁️',
+          highlightText: 'Penglihatan visual & pendengaran audio',
+        },
+        {
+          chapter: 'Babak 2',
+          title: 'Hidung Penciuman & Lidah Pengecap',
+          narration: '👃 Hidung untuk membau aroma sedap masakan, dan Lidah untuk mengecap rasa manis, asin, gurih, dan asam pada makanan sehat.',
+          badge: 'Hidung & Lidah',
+          icon: '👃',
+          highlightText: 'Penciuman aroma & pengecapan aneka rasa',
+        },
+        {
+          chapter: 'Babak 3',
+          title: 'Kulit Peraba Sensitif',
+          narration: '✋ Kulit sebagai indra peraba yang merasakan hangat sinar mentari, dinginnya es, serta lembutnya bulu hewan peliharaanmu.',
+          badge: 'Kulit Peraba',
+          icon: '✋',
+          highlightText: 'Sentuhan, suhu, dan tekanan permukaan',
+        },
+        {
+          chapter: 'Babak 4',
+          title: 'Merawat Anugerah Kesehatan Tubuh',
+          narration: '✨ Panca indra adalah anugerah Tuhan yang sangat berharga. Rawatlah kebersihan dan kesehatan tubuhmu dengan rajin mandi dan makan bergizi!',
+          badge: 'Kesehatan Tubuh',
+          icon: '✨',
+          highlightText: 'Syukuri & rawat kesehatan panca indra',
+        },
+      ];
+
+    case 'language_alphabet_vocab':
+      return [
+        {
+          chapter: 'Babak 1',
+          title: '5 Huruf Vokal A, I, U, E, O',
+          narration: '🔤 Kunci membaca dan menulis bahasa Indonesia! Ada 5 huruf vokal utama: A, I, U, E, dan O yang memberikan suara pada kata.',
+          badge: 'Huruf Vokal',
+          icon: '🔤',
+          highlightText: 'Vokal utama: A, I, U, E, O',
+        },
+        {
+          chapter: 'Babak 2',
+          title: 'Menggabungkan Huruf Jadi Suku Kata',
+          narration: '🐱 Huruf konsonan bergabung dengan vokal membentuk suku kata: K-U berbunyi KU, C-I-N-G berbunyi CING, menjadi kata KUCING!',
+          badge: 'Suku Kata',
+          icon: '🐱',
+          highlightText: 'Penggabungan konsonan dan vokal',
+        },
+        {
+          chapter: 'Babak 3',
+          title: 'Menyusun Kata Menjadi Makna',
+          narration: '📚 Menyusun suku kata menjadi kata yang bermakna melatih otak kita untuk berpikir logis, runtut, dan berbicara santun.',
+          badge: 'Kosakata Kaya',
+          icon: '📚',
+          highlightText: 'Kosakata membentuk kalimat bermakna',
+        },
+        {
+          chapter: 'Babak 4',
+          title: 'Membaca Membuka Cakrawala Dunia',
+          narration: '✨ Rajin membaca buku memperkaya kosakata dan wawasanmu, membuka pintu jendela ilmu pengetahuan di seluruh semesta!',
+          badge: 'Gemar Membaca',
+          icon: '✨',
+          highlightText: 'Buku adalah jendela ilmu pengetahuan',
+        },
+      ];
+
+    case 'language_story_fabel':
+      return [
+        {
+          chapter: 'Babak 1',
+          title: 'Mengenal Dongeng Fabel Hewan',
+          narration: '📖 Dongeng fabel adalah cerita seru di mana tokoh hewan dapat berbicara, berpikir, dan bertingkah laku layaknya manusia bijak!',
+          badge: 'Dongeng Fabel',
+          icon: '📖',
+          highlightText: 'Kisah fiksi bertokoh satwa bijaksana',
+        },
+        {
+          chapter: 'Babak 2',
+          title: 'Kancil yang Cerdik Berpikir',
+          narration: '🦊 Tokoh Kancil yang cerdik mengajarkan kita untuk selalu menggunakan akal pikiran yang pintar dan tenang saat menghadapi kesulitan.',
+          badge: 'Akal Pintar',
+          icon: '🦊',
+          highlightText: 'Kecerdikan memecahkan rintangan sulit',
+        },
+        {
+          chapter: 'Babak 3',
+          title: 'Kejujuran Nilai Paling Luhur',
+          narration: '🐊 Namun kepintaran tidak boleh digunakan untuk mencelakai atau menipu teman. Kejujuran adalah mahkota kemuliaan sejati!',
+          badge: 'Kejujuran Mulia',
+          icon: '💎',
+          highlightText: 'Kejujuran di atas segalanya',
+        },
+        {
+          chapter: 'Babak 4',
+          title: 'Pesan Moral Dalam Kehidupan',
+          narration: '💖 Setiap cerita fabel menyimpan pesan moral berharga agar kita tumbuh menjadi anak yang berbudi pekerti luhur dan disayangi semua orang!',
+          badge: 'Budi Pekerti',
+          icon: '💖',
+          highlightText: 'Pesan moral membentuk karakter unggul',
+        },
+      ];
+
+    case 'english_kids':
+      return [
+        {
+          chapter: 'Babak 1',
+          title: 'Friendly Greetings & Say Hello!',
+          narration: '🌍 Welcome to English learning! Let\'s start with friendly greetings: Good morning, Good afternoon, and Hello my dear friends!',
+          badge: 'Greetings',
+          icon: '👋',
+          highlightText: 'Good morning & Hello friends',
+        },
+        {
+          chapter: 'Babak 2',
+          title: 'Colorful Everyday Words',
+          narration: '🍎 Learn everyday colors: Apple is red, Sky is blue, and Sun is bright yellow! Colors make our world cheerful and bright!',
+          badge: 'Colors & Objects',
+          icon: '🍎',
+          highlightText: 'Red apple, Blue sky, Yellow sun',
+        },
+        {
+          chapter: 'Babak 3',
+          title: 'Counting Numbers 1 to 10',
+          narration: '🔢 Let\'s count together: One, Two, Three, Four, Five, Six, Seven, Eight, Nine, Ten! Counting in English is very easy!',
+          badge: 'Numbers 1 - 10',
+          icon: '🔢',
+          highlightText: 'Count smoothly from 1 to 10',
+        },
+        {
+          chapter: 'Babak 4',
+          title: 'Speak English Confidently',
+          narration: '🎉 Practice speaking English every day, and you will be able to make friends with children from all over the world!',
+          badge: 'Global Friends',
+          icon: '🎉',
+          highlightText: 'Practice English cheerfully every day',
+        },
+      ];
+
+    case 'art_culture_jawa':
+      return [
+        {
+          chapter: 'Babak 1',
+          title: 'Mahakarya Seni Wayang Kulit',
+          narration: '🎭 Warisan adi luhung Nusantara! Seni Wayang Kulit memadukan keindahan bayangan kelir, tatahan kulit kerbau, dan gamelan merdu.',
+          badge: 'Wayang Kulit',
+          icon: '🎭',
+          highlightText: 'Seni pertunjukan bayangan adiluhung',
+        },
+        {
+          chapter: 'Babak 2',
+          title: 'Keindahan Batik Canting Tradisional',
+          narration: '👘 Seni Batik Nusantara digoreskan dengan canting dan malam cair, membentuk motif sarat makna filosofis dan doa keselamatan.',
+          badge: 'Batik Canting',
+          icon: '👘',
+          highlightText: 'Goresan malam canting bernilai tinggi',
+        },
+        {
+          chapter: 'Babak 3',
+          title: 'Harmoni Suara Musik Gamelan',
+          narration: '🎵 Irama tabuhan kendang, saron, dan gong yang selaras melambangkan harmoni kebersamaan dalam hidup bermasyarakat yang damai.',
+          badge: 'Gamelan Harmoni',
+          icon: '🎵',
+          highlightText: 'Harmoni nada mencerminkan kerukunan',
+        },
+        {
+          chapter: 'Babak 4',
+          title: 'Banggakan Budaya Luhur Nusantara',
+          narration: '🇮🇩 Lestarikan budaya adiluhung warisan nenek moyang kita agar bangsa Indonesia senantiasa berkarakter mulia dan bermartabat!',
+          badge: 'Cinta Budaya',
+          icon: '🇮🇩',
+          highlightText: 'Lestarikan warisan budaya Indonesia',
+        },
+      ];
+
+    case 'informatics_scratch':
+      return [
+        {
+          chapter: 'Babak 1',
+          title: 'Koding Balok Komputer Ceria',
+          narration: '💻 Selamat datang di dunia koding komputer! Koding seperti menyusun balok lego instruksi langkah demi langkah secara logis.',
+          badge: 'Koding Balok',
+          icon: '💻',
+          highlightText: 'Instruksi bertahap logika algoritma',
+        },
+        {
+          chapter: 'Babak 2',
+          title: 'Balok Gerak Mengatur Animasi',
+          narration: '🧩 Balok biru "Gerak 10 Langkah" memerintahkan karakter kucing melangkah maju di atas panggung layar dengan ceria!',
+          badge: 'Gerak 10 Langkah',
+          icon: '🧩',
+          highlightText: 'Perintah aksi gerakan objek di layar',
+        },
+        {
+          chapter: 'Babak 3',
+          title: 'Balok Pengulangan & Logika',
+          narration: '🔁 Balok kuning "Ulangi Selamanya" membuat gerakan animasi terus berputar mulus tanpa henti sesuai aturan program!',
+          badge: 'Looping (Perulangan)',
+          icon: '🔁',
+          highlightText: 'Perulangan instruksi otomatis',
+        },
+        {
+          chapter: 'Babak 4',
+          title: 'Ciptakan Game & Karyamu Sendiri!',
+          narration: '🚀 Dengan belajar koding sejak dini, kamu bisa menciptakan game edukasi, animasi seru, dan aplikasi karyamu sendiri di RadenWorld!',
+          badge: 'Kreator Masa Depan',
+          icon: '🚀',
+          highlightText: 'Ciptakan karya teknologi masa depan',
+        },
+      ];
+
+    case 'civics_gotong_royong':
+      return [
+        {
+          chapter: 'Babak 1',
+          title: 'Tradisi Mulia Gotong Royong',
+          narration: '🤝 Berat sama dipikul, ringan sama dijinjing! Gotong royong adalah tradisi mulia bangsa Indonesia sejak zaman dahulu kala.',
+          badge: 'Gotong Royong',
+          icon: '🤝',
+          highlightText: 'Kerja sama tulus saling membantu',
+        },
+        {
+          chapter: 'Babak 2',
+          title: 'Kerja Bakti di Lingkungan Warga',
+          narration: '🧹 Warga desa bekerja bakti bersama membersihkan selokan, memperbaiki jalan, dan menata lingkungan agar tetap asri dan sehat.',
+          badge: 'Kerja Bakti',
+          icon: '🧹',
+          highlightText: 'Bahu-membahu menjaga kebersihan desa',
+        },
+        {
+          chapter: 'Babak 3',
+          title: 'Beban Berat Terasa Ringan',
+          narration: '🏡 Pekerjaan yang berat dan sulit menjadi cepat selesai dan terasa ringan jika dikerjakan bersama-sama dengan hati riang gembira!',
+          badge: 'Ringan Bersama',
+          icon: '🏡',
+          highlightText: 'Kebersamaan mempermudah pekerjaan sulit',
+        },
+        {
+          chapter: 'Babak 4',
+          title: 'Kerukunan & Persatuan Abadi',
+          narration: '💖 Gotong royong menumbuhkan rasa persaudaraan yang erat dan kerukunan abadi di lingkungan tempat tinggal kita!',
+          badge: 'Persatuan Kokoh',
+          icon: '💖',
+          highlightText: 'Persatuan kokoh bangsa Indonesia',
+        },
+      ];
     case 'photosynthesis':
       return [
         {
@@ -1114,7 +1711,50 @@ export function getTopicStoryScenes(
           highlightText: 'Berhitung & berbagi secara adil',
         },
       ];
-    default:
+    default: {
+      if (topic && topic.title) {
+        const p1 = topic.points?.[0] || 'Perhatikan konsep dasar materi ini dengan cermat.';
+        const p2 = topic.points?.[1] || 'Amati langkah-langkah dan contoh penerapannya.';
+        const p3 = topic.points?.[2] || 'Gunakan tips cerdas agar kamu cepat paham dan tidak mudah keliru.';
+        const tips = topic.keyFormulaOrConcept ? `Kunci rumus praktisnya: ${topic.keyFormulaOrConcept}. ` : '';
+        const fact = topic.funFact || 'Memahami materi ini membuat karaktermu semakin bijaksana dan berprestasi di sekolah!';
+
+        return [
+          {
+            chapter: 'Babak 1',
+            title: `Pengenalan: ${topic.title}`,
+            narration: `🌟 Halo murid pintar! Hari ini kita mempelajari topik penting: ${topic.title}. ${topic.summary} Perhatikan kartu pertama di papan tulis!`,
+            badge: topic.badge || 'Konsep Dasar',
+            icon: '📖',
+            highlightText: topic.title,
+          },
+          {
+            chapter: 'Babak 2',
+            title: 'Ciri Utama & Contoh Nyata',
+            narration: `🔍 Sekarang amati kartu kedua yang disorot gurumu! ${p1} ${topic.points?.[1] ? 'Ingat juga: ' + p2 : ''}`,
+            badge: 'Contoh Nyata',
+            icon: '🔍',
+            highlightText: p1.length > 40 ? p1.slice(0, 38) + '...' : p1,
+          },
+          {
+            chapter: 'Babak 3',
+            title: topic.keyFormulaOrConcept ? 'Kunci Rumus & Tips Pintar' : 'Langkah Penyelesaian Mudah',
+            narration: `💡 Cermati kartu ketiga tentang tips pintar! ${tips}${p3}`,
+            badge: 'Tips Cepat',
+            icon: '💡',
+            highlightText: topic.keyFormulaOrConcept || (p2.length > 40 ? p2.slice(0, 38) + '...' : p2),
+          },
+          {
+            chapter: 'Babak 4',
+            title: 'Fakta Seru & Tantangan Kuis',
+            narration: `🎯 Luar biasa! Tahukah kamu: ${fact} Sekarang giliranmu, jawab tantangan kuis di panel sebelah kanan untuk membuktikan kehebatanmu dan raih poin EXP!`,
+            badge: 'Misi Kuis EXP',
+            icon: '🎯',
+            highlightText: 'Jawab kuis berhadiah EXP',
+          },
+        ];
+      }
+
       return [
         {
           chapter: 'Babak 1',
@@ -1149,6 +1789,7 @@ export function getTopicStoryScenes(
           highlightText: 'Wawasan berharga untuk berinovasi',
         },
       ];
+    }
   }
 }
 

@@ -1547,7 +1547,7 @@ export const EducationalVideoCanvas: React.FC<EducationalVideoCanvasProps> = ({
       )}
 
       {/* ==================================================================== */}
-      {/* 23. PAPAN TULIS KELAS CERIA DINAMIS (DEFAULT CLAY/CHALKBOARD)         */}
+      {/* 23. PAPAN TULIS KELAS CERIA DINAMIS (PANGGUNG EDUKASI 60FPS)         */}
       {/* ==================================================================== */}
       {(type === 'classroom_chalkboard' ||
         type === 'mindmap_general' ||
@@ -1575,62 +1575,135 @@ export const EducationalVideoCanvas: React.FC<EducationalVideoCanvasProps> = ({
           type !== 'solar_system')) && (
         <svg viewBox="0 0 600 320" className="w-full h-full max-h-[320px] select-none">
           {/* Bingkai Papan Kayu Chunky RadenWorld */}
-          <rect x="6" y="6" width="588" height="308" rx="14" fill="#FFF8EA" stroke="#5C3A21" strokeWidth="3" />
-          <rect x="14" y="14" width="572" height="292" rx="10" fill="#FFF8EA" stroke="#EADBC0" strokeWidth="2" />
+          <rect x="6" y="6" width="588" height="308" rx="14" fill="#FFF8EA" stroke="#5C3A21" strokeWidth="3.5" />
+          <rect x="14" y="14" width="572" height="292" rx="10" fill="#FFFDF7" stroke="#EADBC0" strokeWidth="2" />
+
+          {/* Hiasan Bintang & Sparkles Berkelap-Kelip di Sudut */}
+          <text x="25" y="32" fontSize="14" style={{ animation: 'solarPulse 1.8s infinite' }}>✨</text>
+          <text x="565" y="32" fontSize="14" style={{ animation: 'solarPulse 2.2s infinite' }}>🌟</text>
+          <text x="25" y="300" fontSize="14" style={{ animation: 'solarPulse 2s infinite' }}>⭐</text>
+          <text x="565" y="300" fontSize="14" style={{ animation: 'solarPulse 1.5s infinite' }}>✨</text>
 
           {/* Header Dinamis Berdasarkan Topik */}
-          <g transform="translate(300, 36)">
-            <rect x="-200" y="0" width="400" height="34" rx="8" fill="#FFAE6D" stroke="#5C3A21" strokeWidth="2" />
-            <text x="0" y="22" fill="#000000" fontSize="12" fontWeight="900" textAnchor="middle">
+          <g transform="translate(300, 24)">
+            <rect x="-210" y="0" width="420" height="32" rx="8" fill="#FFAE6D" stroke="#5C3A21" strokeWidth="2.5" />
+            <text x="0" y="21" fill="#000000" fontSize="11.5" fontWeight="900" textAnchor="middle">
               🌟 {topic?.title ? topic.title.toUpperCase() : 'LEMBAR BELAJAR CERIA RADENWORLD'} 🌟
             </text>
-            <text x="0" y="48" fill="#5C3A21" fontSize="10" fontWeight="bold" textAnchor="middle">
-              {topic?.badge ? `Topik: ${topic.badge} • Kelas: ${topic.gradeName || 'Sekolah Dasar'}` : 'Belajar Mudah & Menyenangkan di RadenWorld'}
+            <text x="0" y="44" fill="#5C3A21" fontSize="9.5" fontWeight="bold" textAnchor="middle">
+              {topic?.badge ? `Topik: ${topic.badge} • ${topic.gradeName || 'Sekolah'} • ${topic.subjectName || 'Pelajaran'}` : 'Belajar Mudah & Menyenangkan di RadenWorld'}
             </text>
           </g>
 
-          {/* 4 Kartu Edukasi Bergaya Claymorphism RadenWorld */}
-          {/* Kartu 1: Pengenalan */}
-          <g transform="translate(36, 100)">
-            <rect x="0" y="0" width="255" height="88" rx="8" fill="#FFF8EA" stroke="#5C3A21" strokeWidth="2" />
-            <rect x="0" y="0" width="255" height="26" rx="8" fill="#BAE6FD" stroke="#5C3A21" strokeWidth="1.5" />
-            <text x="12" y="18" fill="#000000" fontSize="10.5" fontWeight="bold">📖 1. Konsep Dasar</text>
-            <text x="14" y="44" fill="#000000" fontSize="9" fontWeight="bold">Pengenalan Materi</text>
-            <text x="14" y="62" fill="#5C3A21" fontSize="8.5">
-              {topic?.summary ? (topic.summary.length > 50 ? topic.summary.slice(0, 48) + '...' : topic.summary) : 'Memahami konsep lewat contoh nyata di sekitar!'}
+          {/* 4 Kartu Edukasi Bergaya Claymorphism Interaktif Sesuai Step Video */}
+          {/* Kartu 1: Pengenalan Konsep Dasar */}
+          <g transform="translate(32, 78)">
+            <rect
+              x="0"
+              y="0"
+              width="262"
+              height="96"
+              rx="10"
+              fill={step === 0 ? '#E0F2FE' : '#FFF8EA'}
+              stroke={step === 0 ? '#0284C7' : '#5C3A21'}
+              strokeWidth={step === 0 ? '3.5' : '2'}
+              style={step === 0 ? { transformOrigin: '131px 48px', animation: 'solarPulse 2s infinite' } : undefined}
+            />
+            <rect x="0" y="0" width="262" height="26" rx="10" fill={step === 0 ? '#38BDF8' : '#BAE6FD'} stroke="#5C3A21" strokeWidth="1.5" />
+            <text x="12" y="18" fill="#000000" fontSize="10.5" fontWeight="900">
+              📖 1. Konsep Dasar {step === 0 && '▶ SEDANG DIJELASKAN'}
+            </text>
+            <text x="14" y="44" fill="#000000" fontSize="9.5" fontWeight="bold">Pengenalan Inti</text>
+            <text x="14" y="60" fill="#1E293B" fontSize="8.5" fontWeight="medium">
+              {topic?.summary ? topic.summary.slice(0, 48) : 'Memahami konsep dasar secara bertahap.'}
+            </text>
+            <text x="14" y="74" fill="#5C3A21" fontSize="8">
+              {topic?.summary && topic.summary.length > 48 ? topic.summary.slice(48, 95) + '...' : 'Amati analogi nyata di sekitarmu!'}
             </text>
           </g>
 
-          {/* Kartu 2: Contoh Nyata */}
-          <g transform="translate(308, 100)">
-            <rect x="0" y="0" width="255" height="88" rx="8" fill="#FFF8EA" stroke="#5C3A21" strokeWidth="2" />
-            <rect x="0" y="0" width="255" height="26" rx="8" fill="#FFAE6D" stroke="#5C3A21" strokeWidth="1.5" />
-            <text x="12" y="18" fill="#000000" fontSize="10.5" fontWeight="bold">🔍 2. Contoh Nyata</text>
-            <text x="14" y="44" fill="#000000" fontSize="9" fontWeight="bold">Ada di Kehidupan</text>
-            <text x="14" y="62" fill="#5C3A21" fontSize="8.5">
-              {topic?.points?.[0] ? (topic.points[0].length > 50 ? topic.points[0].slice(0, 48) + '...' : topic.points[0]) : 'Diterapkan pada benda dan kegiatan nyata!'}
+          {/* Kartu 2: Contoh Nyata & Pengamatan */}
+          <g transform="translate(306, 78)">
+            <rect
+              x="0"
+              y="0"
+              width="262"
+              height="96"
+              rx="10"
+              fill={step === 1 ? '#FFEDD5' : '#FFF8EA'}
+              stroke={step === 1 ? '#EA580C' : '#5C3A21'}
+              strokeWidth={step === 1 ? '3.5' : '2'}
+              style={step === 1 ? { transformOrigin: '131px 48px', animation: 'solarPulse 2s infinite' } : undefined}
+            />
+            <rect x="0" y="0" width="262" height="26" rx="10" fill={step === 1 ? '#FB923C' : '#FFAE6D'} stroke="#5C3A21" strokeWidth="1.5" />
+            <text x="12" y="18" fill="#000000" fontSize="10.5" fontWeight="900">
+              🔍 2. Contoh Nyata {step === 1 && '▶ SEDANG DIJELASKAN'}
+            </text>
+            <text x="14" y="44" fill="#000000" fontSize="9.5" fontWeight="bold">Ciri & Fenomena</text>
+            <text x="14" y="60" fill="#1E293B" fontSize="8.5" fontWeight="medium">
+              {topic?.points?.[0] ? topic.points[0].slice(0, 48) : 'Diterapkan pada benda dan kegiatan nyata.'}
+            </text>
+            <text x="14" y="74" fill="#5C3A21" fontSize="8">
+              {topic?.points?.[0] && topic.points[0].length > 48 ? topic.points[0].slice(48, 95) + '...' : 'Pola yang teratur mudah diamati!'}
             </text>
           </g>
 
-          {/* Kartu 3: Tips Pintar & Rumus */}
-          <g transform="translate(36, 202)">
-            <rect x="0" y="0" width="255" height="88" rx="8" fill="#FFF8EA" stroke="#5C3A21" strokeWidth="2" />
-            <rect x="0" y="0" width="255" height="26" rx="8" fill="#A8E6CF" stroke="#5C3A21" strokeWidth="1.5" />
-            <text x="12" y="18" fill="#000000" fontSize="10.5" fontWeight="bold">💡 3. Tips Kunci</text>
-            <text x="14" y="44" fill="#000000" fontSize="9" fontWeight="bold">Kunci Pemahaman</text>
-            <text x="14" y="62" fill="#5C3A21" fontSize="8.5">
-              {topic?.keyFormulaOrConcept || (topic?.points?.[1] ? topic.points[1].slice(0, 48) : 'Gunakan jembatan keledai dan cerita bergambar!')}
+          {/* Kartu 3: Tips Pintar & Rumus Cepat */}
+          <g transform="translate(32, 186)">
+            <rect
+              x="0"
+              y="0"
+              width="262"
+              height="96"
+              rx="10"
+              fill={step === 2 ? '#D1FAE5' : '#FFF8EA'}
+              stroke={step === 2 ? '#059669' : '#5C3A21'}
+              strokeWidth={step === 2 ? '3.5' : '2'}
+              style={step === 2 ? { transformOrigin: '131px 48px', animation: 'solarPulse 2s infinite' } : undefined}
+            />
+            <rect x="0" y="0" width="262" height="26" rx="10" fill={step === 2 ? '#34D399' : '#A8E6CF'} stroke="#5C3A21" strokeWidth="1.5" />
+            <text x="12" y="18" fill="#000000" fontSize="10.5" fontWeight="900">
+              💡 3. Tips Rumus Pintar {step === 2 && '▶ SEDANG DIJELASKAN'}
+            </text>
+            <text x="14" y="44" fill="#000000" fontSize="9.5" fontWeight="bold">Kunci Hafalan Cepat</text>
+            <text x="14" y="60" fill="#065F46" fontSize="8.5" fontWeight="bold">
+              {topic?.keyFormulaOrConcept ? topic.keyFormulaOrConcept.slice(0, 48) : (topic?.points?.[1] ? topic.points[1].slice(0, 48) : 'Gunakan trik jembatan keledai!')}
+            </text>
+            <text x="14" y="74" fill="#5C3A21" fontSize="8">
+              {topic?.keyFormulaOrConcept && topic.keyFormulaOrConcept.length > 48 ? topic.keyFormulaOrConcept.slice(48, 95) + '...' : 'Membantumu menjawab soal ujian dengan cepat!'}
             </text>
           </g>
 
-          {/* Kartu 4: Fakta & Kuis */}
-          <g transform="translate(308, 202)">
-            <rect x="0" y="0" width="255" height="88" rx="8" fill="#FFF8EA" stroke="#5C3A21" strokeWidth="2" />
-            <rect x="0" y="0" width="255" height="26" rx="8" fill="#FEF08A" stroke="#5C3A21" strokeWidth="1.5" />
-            <text x="12" y="18" fill="#000000" fontSize="10.5" fontWeight="bold">🎯 4. Misi Kuis EXP</text>
-            <text x="14" y="44" fill="#000000" fontSize="9" fontWeight="bold">Uji Pengetahuanmu</text>
-            <text x="14" y="62" fill="#5C3A21" fontSize="8.5">
-              Jawab kuis di tab sebelah kanan untuk mendapatkan EXP karaktermu!
+          {/* Kartu 4: Misi Kuis EXP Interaktif */}
+          <g transform="translate(306, 186)">
+            <rect
+              x="0"
+              y="0"
+              width="262"
+              height="96"
+              rx="10"
+              fill={step === 3 ? '#FEF9C3' : '#FFF8EA'}
+              stroke={step === 3 ? '#CA8A04' : '#5C3A21'}
+              strokeWidth={step === 3 ? '3.5' : '2'}
+              style={step === 3 ? { transformOrigin: '131px 48px', animation: 'solarPulse 2s infinite' } : undefined}
+            />
+            <rect x="0" y="0" width="262" height="26" rx="10" fill={step === 3 ? '#FACC15' : '#FEF08A'} stroke="#5C3A21" strokeWidth="1.5" />
+            <text x="12" y="18" fill="#000000" fontSize="10.5" fontWeight="900">
+              🎯 4. Misi Kuis EXP {step === 3 && '▶ TANTANGAN AKTIF!'}
+            </text>
+            <text x="14" y="44" fill="#000000" fontSize="9.5" fontWeight="bold">Tantangan Uji Kemampuan</text>
+            <text x="14" y="60" fill="#1E293B" fontSize="8.5" fontWeight="bold">
+              {topic?.quiz?.question ? `❓ "${topic.quiz.question.slice(0, 46)}..."` : 'Jawab kuis berhadiah EXP!'}
+            </text>
+            <text x="14" y="76" fill="#059669" fontSize="8" fontWeight="bold">
+              👉 Klik tab "Kuis Interaktif" di kanan untuk menjawab (+EXP)!
+            </text>
+          </g>
+
+          {/* Baris Status Bawah: Indikator Babak Interaktif */}
+          <g transform="translate(300, 296)">
+            <text x="0" y="0" fill="#5C3A21" fontSize="9.5" fontWeight="bold" textAnchor="middle">
+              🎬 Babak {step + 1} dari 4 • Panggung Edukasi Interaktif 60 FPS RadenWorld
             </text>
           </g>
         </svg>

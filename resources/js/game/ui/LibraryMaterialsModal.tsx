@@ -95,6 +95,10 @@ export const LibraryMaterialsModal: React.FC<LibraryMaterialsModalProps> = ({
   const [currentDescPage, setCurrentDescPage] = useState<number>(1);
   const totalDescPages = 3;
 
+  // Interactive Quiz State
+  const [selectedQuizOption, setSelectedQuizOption] = useState<number | null>(null);
+  const [isQuizCorrect, setIsQuizCorrect] = useState<boolean | null>(null);
+
   // --------------------------------------------------------------------------
   // 2. INISIALISASI & RESPONSIVE PROPS
   // --------------------------------------------------------------------------
@@ -197,6 +201,12 @@ export const LibraryMaterialsModal: React.FC<LibraryMaterialsModalProps> = ({
       null
     );
   }, [selectedTopicId, currentSubjectTopics]);
+
+  // Reset status kuis saat materi bab berganti
+  useEffect(() => {
+    setSelectedQuizOption(null);
+    setIsQuizCorrect(null);
+  }, [activeTopic?.id]);
 
   // Hasil pencarian cepat lintas kurikulum
   const searchResults = useMemo(() => {
@@ -396,6 +406,7 @@ export const LibraryMaterialsModal: React.FC<LibraryMaterialsModalProps> = ({
                   }
                   isFullscreen={isFullscreen}
                   onToggleFullscreen={() => setIsFullscreen((p) => !p)}
+                  onOpenQuiz={() => setCurrentDescPage(2)}
                 />
               </div>
 
@@ -418,8 +429,8 @@ export const LibraryMaterialsModal: React.FC<LibraryMaterialsModalProps> = ({
                   {/* 3 Tab Navigasi Lembar Belajar Ceria */}
                   <div className="grid grid-cols-3 gap-1.5 p-1 bg-[#FFFDF7] rounded-lg border border-[#5C3A21]/30">
                     {[
-                      { page: 1, icon: '📖', label: 'Penjelasan' },
-                      { page: 2, icon: '💡', label: 'Kuis & Tips' },
+                      { page: 1, icon: '📖', label: 'Materi & Tips' },
+                      { page: 2, icon: '🎯', label: 'Kuis (+EXP)' },
                       { page: 3, icon: '🌟', label: 'Fakta Seru' },
                     ].map((tab) => (
                       <button
@@ -437,13 +448,16 @@ export const LibraryMaterialsModal: React.FC<LibraryMaterialsModalProps> = ({
                       >
                         <span>{tab.icon}</span>
                         <span className="truncate">{tab.label}</span>
+                        {tab.page === 2 && !readTopics.has(activeTopic.id) && (
+                          <span className="w-2 h-2 rounded-full bg-red-500 animate-ping shrink-0" />
+                        )}
                       </button>
                     ))}
                   </div>
 
-                  {/* HALAMAN 1: PENJELASAN UTAMA */}
+                  {/* HALAMAN 1: MATERI LENGKAP & TIPS CEPAT */}
                   {currentDescPage === 1 && (
-                    <div className="space-y-2.5 text-black">
+                    <div className="space-y-3 text-black">
                       <div className="clay-card p-3 border-2 border-[#5C3A21]">
                         <p className="text-xs sm:text-sm leading-relaxed font-bold text-black">
                           {activeTopic.summary}
@@ -451,8 +465,9 @@ export const LibraryMaterialsModal: React.FC<LibraryMaterialsModalProps> = ({
                       </div>
 
                       <div className="space-y-1.5">
-                        <h4 className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-black">
-                          Pokok Pemahaman Materi:
+                        <h4 className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-black flex items-center gap-1">
+                          <span>📌</span>
+                          <span>Pokok Pemahaman Materi:</span>
                         </h4>
                         <ul className="space-y-1.5">
                           {activeTopic.points.map((pt, pIdx) => (
@@ -463,62 +478,186 @@ export const LibraryMaterialsModal: React.FC<LibraryMaterialsModalProps> = ({
                               <span className="w-5 h-5 clay-badge-cocoa text-white flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">
                                 {pIdx + 1}
                               </span>
-                              <span className="text-black">{pt}</span>
+                              <span className="text-black font-medium">{pt}</span>
                             </li>
                           ))}
                         </ul>
                       </div>
-                    </div>
-                  )}
 
-                  {/* HALAMAN 2: KUNCI PINTAR & TANTANGAN KUIS */}
-                  {currentDescPage === 2 && (
-                    <div className="space-y-2.5 text-black">
+                      {/* Kunci Pintar & Tips Rumus Cepat Langsung Tampil di Halaman 1 */}
                       {activeTopic.keyFormulaOrConcept && (
-                        <div className="p-3 clay-card-primary text-black space-y-1">
-                          <div className="flex items-center gap-1.5 text-[10.5px] font-bold text-black uppercase">
-                            <span>💡</span>
+                        <div className="p-3 clay-card-primary text-black space-y-1.5 border-2 border-[#5C3A21] shadow-sm">
+                          <div className="flex items-center gap-1.5 text-[11px] font-black text-black uppercase tracking-wide">
+                            <span className="text-sm">💡</span>
                             <span>KUNCI PINTAR & TIPS RUMUS CEPAT:</span>
                           </div>
-                          <div className="text-xs sm:text-sm font-bold text-black bg-[#FFF8EA] p-2 rounded border border-[#5C3A21]/40 overflow-x-auto">
+                          <div className="text-xs sm:text-sm font-bold text-black bg-[#FFF8EA] p-2.5 rounded-lg border-2 border-[#5C3A21] overflow-x-auto shadow-inner">
                             {activeTopic.keyFormulaOrConcept}
                           </div>
                         </div>
                       )}
 
-                      <div className="p-3.5 clay-card space-y-2.5">
+                      {/* Teaser Ajakan Mengerjakan Kuis Interaktif */}
+                      <div className="clay-card p-3 bg-[#FEF08A]/70 border-2 border-[#5C3A21] flex flex-wrap items-center justify-between gap-2 shadow-sm">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xl animate-bounce">🎯</span>
+                          <div>
+                            <div className="text-xs font-bold text-black uppercase">
+                              Sudah Paham Materinya?
+                            </div>
+                            <div className="text-[10px] text-[#5C3A21] font-medium">
+                              Uji kemampuanmu di Kuis Interaktif dan raih bonus +{activeSchool === 'sma' ? 50 : activeSchool === 'smp' ? 35 : 20} EXP!
+                            </div>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            sound.playClick();
+                            setCurrentDescPage(2);
+                          }}
+                          className="px-3 py-1.5 clay-btn-primary text-xs font-bold text-black flex items-center gap-1 shadow-sm hover:scale-105 transition-all"
+                        >
+                          <span>Kerjakan Kuis Sekarang</span>
+                          <span>▶</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* HALAMAN 2: TANTANGAN KUIS INTERAKTIF PLAYABLE */}
+                  {currentDescPage === 2 && (
+                    <div className="space-y-3 text-black">
+                      {/* Tips Rumus Cepat Sebagai Bantuan Kuis */}
+                      {activeTopic.keyFormulaOrConcept && (
+                        <div className="p-2.5 clay-card-secondary text-black space-y-1 border-2 border-[#5C3A21]">
+                          <div className="flex items-center gap-1 text-[10.5px] font-bold text-black uppercase">
+                            <span>💡</span>
+                            <span>Bantuan Kunci Rumus:</span>
+                          </div>
+                          <div className="text-xs font-bold text-black bg-[#FFF8EA] p-2 rounded border border-[#5C3A21]/30">
+                            {activeTopic.keyFormulaOrConcept}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Wadah Panggung Kuis Interaktif */}
+                      <div className="p-3.5 clay-card space-y-3 border-2 border-[#5C3A21] shadow-md">
                         <div className="flex items-center justify-between gap-2 flex-wrap">
                           <div className="flex items-center gap-1.5">
-                            <span className="text-base">🎯</span>
-                            <span className="text-xs font-bold text-black uppercase">
+                            <span className="text-base animate-bounce">🎯</span>
+                            <span className="text-xs font-black text-black uppercase tracking-wide">
                               TANTANGAN KUIS BERHADIAH EXP
                             </span>
                           </div>
-                          <span className="px-2 py-0.5 clay-badge-secondary text-black text-[10px] font-bold">
-                            Ujian Sekolah Raden
+                          <span className="px-2 py-0.5 clay-badge-primary text-black text-[10px] sm:text-xs font-bold">
+                            +{activeSchool === 'sma' ? 50 : activeSchool === 'smp' ? 35 : 20} EXP
                           </span>
                         </div>
 
-                        <div className="text-xs sm:text-sm font-bold text-black clay-badge-neutral p-3 rounded-lg leading-relaxed">
-                          ❓ "{activeTopic.quiz.question}"
+                        {/* Pertanyaan Kuis */}
+                        <div className="text-xs sm:text-sm font-bold text-black clay-card-secondary p-3 rounded-lg leading-relaxed border-2 border-[#5C3A21]">
+                          ❓ {activeTopic.quiz.question}
                         </div>
 
-                        <div className="text-xs text-black clay-card-secondary p-3 space-y-1.5 rounded-lg border-2 border-[#5C3A21]">
-                          <div className="font-bold text-green-900 flex items-center gap-1">
-                            <span>✅ Jawaban Benar:</span>
-                            <span className="text-black">
-                              {
-                                activeTopic.quiz.options[
-                                  activeTopic.quiz.answerIndex
-                                ]
+                        {/* Pilihan Jawaban A, B, C (Bisa Diklik Langsung) */}
+                        <div className="space-y-2">
+                          {activeTopic.quiz.options.map((option, optIdx) => {
+                            const isSelected = selectedQuizOption === optIdx;
+                            const isCorrectAnswer = optIdx === activeTopic.quiz.answerIndex;
+                            const hasAnswered = selectedQuizOption !== null;
+
+                            let btnStyle = 'clay-btn-neutral text-black hover:border-[#FFAE6D]';
+                            let iconBadge = String.fromCharCode(65 + optIdx); // A, B, C, D
+
+                            if (hasAnswered) {
+                              if (isCorrectAnswer) {
+                                btnStyle =
+                                  'bg-[#A8E6CF] text-black border-2 border-green-700 font-bold scale-[1.01] shadow-md';
+                                iconBadge = '✅';
+                              } else if (isSelected) {
+                                btnStyle =
+                                  'bg-[#FFD3B6] text-black border-2 border-red-500 line-through';
+                                iconBadge = '❌';
                               }
-                            </span>
-                          </div>
-                          <div className="text-black leading-relaxed pt-1 border-t border-[#5C3A21]/20">
-                            💡 <strong>Penjelasan Mudah:</strong>{' '}
-                            {activeTopic.quiz.explanation}
-                          </div>
+                            } else if (isSelected) {
+                              btnStyle = 'clay-btn-primary text-black font-bold';
+                            }
+
+                            return (
+                              <button
+                                key={optIdx}
+                                type="button"
+                                disabled={hasAnswered && isQuizCorrect === true}
+                                onClick={() => {
+                                  sound.playClick();
+                                  setSelectedQuizOption(optIdx);
+                                  const correct = optIdx === activeTopic.quiz.answerIndex;
+                                  setIsQuizCorrect(correct);
+                                  if (correct) {
+                                    sound.playSuccess();
+                                    handleMarkAsRead();
+                                  } else {
+                                    sound.playError();
+                                  }
+                                }}
+                                className={`w-full p-2.5 sm:p-3 text-left rounded-lg text-xs sm:text-sm flex items-center gap-2.5 transition-all ${btnStyle}`}
+                              >
+                                <span className="w-6 h-6 rounded-md bg-[#FFF8EA] border-2 border-[#5C3A21] flex items-center justify-center font-bold text-xs shrink-0 text-black">
+                                  {iconBadge}
+                                </span>
+                                <span className="font-semibold text-black leading-snug">
+                                  {option}
+                                </span>
+                              </button>
+                            );
+                          })}
                         </div>
+
+                        {/* Feedback Hasil Kuis & Penjelasan Pembahasan */}
+                        {selectedQuizOption !== null && (
+                          <div className="space-y-2 pt-2 border-t-2 border-[#5C3A21]/20">
+                            {isQuizCorrect ? (
+                              <div className="p-2.5 rounded-lg bg-[#A8E6CF] border-2 border-green-700 flex items-center justify-between gap-2 shadow-sm animate-pulse">
+                                <div className="flex items-center gap-1.5 text-xs sm:text-sm font-bold text-green-950">
+                                  <span>🎉</span>
+                                  <span>JAWABAN BENAR! EXP Berhasil Didapatkan!</span>
+                                </div>
+                                <span className="px-2 py-0.5 clay-badge-cocoa text-white text-[10px] font-bold">
+                                  +{activeSchool === 'sma' ? 50 : activeSchool === 'smp' ? 35 : 20} EXP
+                                </span>
+                              </div>
+                            ) : (
+                              <div className="p-2.5 rounded-lg bg-[#FFD3B6] border-2 border-red-500 flex items-center justify-between gap-2">
+                                <div className="text-xs font-bold text-red-950">
+                                  ❌ Jawaban masih kurang tepat. Coba pilih opsi lain ya!
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    sound.playClick();
+                                    setSelectedQuizOption(null);
+                                    setIsQuizCorrect(null);
+                                  }}
+                                  className="px-2 py-1 clay-btn-neutral text-black text-[10.5px] font-bold shrink-0"
+                                >
+                                  🔄 Coba Lagi
+                                </button>
+                              </div>
+                            )}
+
+                            {/* Kotak Pembahasan */}
+                            <div className="text-xs text-black clay-card-secondary p-3 space-y-1 rounded-lg border-2 border-[#5C3A21]">
+                              <div className="font-bold text-black flex items-center gap-1">
+                                <span>💡</span>
+                                <span>Pembahasan Mudah:</span>
+                              </div>
+                              <p className="text-black/95 leading-relaxed font-medium">
+                                {activeTopic.quiz.explanation}
+                              </p>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}

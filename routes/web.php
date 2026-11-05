@@ -521,7 +521,15 @@ Route::post('/api/auth/login', function (\Illuminate\Http\Request $request) {
             ->orWhere('name', $login)
             ->first();
 
-        // Khusus Akun Super Admin: jika belum ada di database, buat langsung
+        // Dukung alias username 'raden' untuk akun Super Admin resmi RadencakStudio
+        if (!$user && in_array(strtolower($login), ['raden', 'radencakstudio', 'radencakstudio@gmail.com'], true)) {
+            $user = \App\Models\User::where('email', 'radencakstudio@gmail.com')
+                ->orWhere('name', 'RadencakStudio')
+                ->orWhere('name', 'raden')
+                ->first();
+        }
+
+        // Khusus Akun Super Admin: jika belum ada sama sekali di database, buat langsung
         if (!$user && (strtolower($login) === 'radencakstudio@gmail.com' || strtolower($login) === 'raden')) {
             $user = \App\Models\User::create([
                 'name' => 'raden',

@@ -186,6 +186,15 @@ export class VoiceNarratorService {
       onEnd?: () => void;
     }
   ): void {
+    // Jika user secara manual meminta suara (force), otomatis pastikan status suara aktif
+    if (options?.force && !this.isEnabled) {
+      this.isEnabled = true;
+      try {
+        localStorage.setItem('raden_voice_narrator_enabled', 'true');
+      } catch {}
+      this.notifyListeners();
+    }
+
     if (!this.isEnabled && !options?.force) return;
 
     const cleaned = this.cleanText(text);

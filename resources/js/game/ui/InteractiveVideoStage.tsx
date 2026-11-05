@@ -168,8 +168,16 @@ export const InteractiveVideoStage: React.FC<InteractiveVideoStageProps> = ({
   useEffect(() => {
     if (isPlaying && playbackTime >= totalDuration) {
       onTogglePlay();
+      narrator.stop();
     }
-  }, [isPlaying, playbackTime, totalDuration, onTogglePlay]);
+  }, [isPlaying, playbackTime, totalDuration, onTogglePlay, narrator]);
+
+  // Hentikan suara saat komponen panggung video unmount
+  useEffect(() => {
+    return () => {
+      narrator.stop();
+    };
+  }, [narrator]);
 
   // --------------------------------------------------------------------------
   // 3. VOICE NARRATOR AUTO-SPEAK PADA SETIAP SCENE
@@ -190,11 +198,8 @@ export const InteractiveVideoStage: React.FC<InteractiveVideoStageProps> = ({
         lastSpokenStepRef.current = activeStep;
         speakCurrentScene(false);
       }
-    } else if (!isPlaying) {
-      narrator.stop();
-      lastSpokenStepRef.current = -1;
     }
-  }, [activeStep, isPlaying, isVoiceEnabled, speakCurrentScene, narrator]);
+  }, [activeStep, isPlaying, isVoiceEnabled, speakCurrentScene]);
 
   // --------------------------------------------------------------------------
   // 4. INTERAKSI LANGSUNG DI DALAM VIDEO (STATE SIMULASI NYATA)
@@ -482,12 +487,16 @@ export const InteractiveVideoStage: React.FC<InteractiveVideoStageProps> = ({
                   onClick={(e) => {
                     e.stopPropagation();
                     sound.playClick();
+                    if (!isVoiceEnabled) {
+                      narrator.setVoiceEnabled(true);
+                    }
+                    lastSpokenStepRef.current = activeStep;
                     speakCurrentScene(true);
                   }}
                   className={`px-2 py-0.5 text-[9.5px] sm:text-[10px] font-bold text-black shrink-0 flex items-center gap-1 shadow-sm transition-all ${
-                    isSpeaking ? 'clay-btn-primary' : 'clay-btn-secondary'
+                    isSpeaking ? 'clay-btn-primary animate-pulse' : 'clay-btn-secondary'
                   }`}
-                  title="Dengarkan Suara Penjelasan Ini"
+                  title="Dengarkan / Ulangi Suara Penjelasan Babak Ini"
                 >
                   <Volume2 className="w-3 h-3 text-black" />
                   <span>{isSpeaking ? 'Ulangi Suara' : 'Dengarkan'}</span>

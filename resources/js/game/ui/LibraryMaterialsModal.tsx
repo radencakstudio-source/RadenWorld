@@ -245,19 +245,21 @@ export const LibraryMaterialsModal: React.FC<LibraryMaterialsModalProps> = ({
   }, [activeTopic]);
 
   const diagramType = useMemo(() => {
-    if (!activeTopic) return 'mindmap_general';
+    if (!activeTopic) return 'classroom_chalkboard';
     return detectDiagramType({
       id: activeTopic.id,
       name: activeTopic.title,
+      title: activeTopic.title,
       badge: activeTopic.badge,
       subtitle: activeTopic.summary,
+      category: activeTopic.subjectCategory || activeTopic.subjectName,
       points: activeTopic.points,
     });
   }, [activeTopic]);
 
   const storyScenes = useMemo(() => {
-    return getTopicStoryScenes(diagramType);
-  }, [diagramType]);
+    return getTopicStoryScenes(diagramType, activeTopic);
+  }, [diagramType, activeTopic]);
 
   useEffect(() => {
     if (storyScenes.length > 0) {
@@ -501,6 +503,7 @@ export const LibraryMaterialsModal: React.FC<LibraryMaterialsModalProps> = ({
                       step={activeSceneStep}
                       isPlaying={isPlaying}
                       playbackSpeed={playbackSpeed}
+                      topic={activeTopic}
                     />
                   </div>
 

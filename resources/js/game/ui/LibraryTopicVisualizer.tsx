@@ -49,53 +49,402 @@ import {
 import { SoundManager } from '../core/SoundManager';
 
 export type VisualDiagramType =
+  // Matematika
+  | 'math_counting'
+  | 'math_addition_subtraction'
+  | 'math_geometry_shapes'
+  | 'math_clock_time'
+  | 'math_arithmetic'
+  | 'math_multiplication_division'
+  | 'math_data_charts'
+  // IPA / Sains
+  | 'science_plants_growth'
+  | 'science_animals_habitat'
+  | 'science_metamorphosis'
+  | 'science_food_chain'
+  | 'science_matter_states'
+  | 'science_human_body'
   | 'photosynthesis'
   | 'water_cycle'
   | 'solar_system'
   | 'cell_structure'
   | 'dna_helix'
+  | 'bohr_atom'
   | 'pythagoras'
   | 'cartesian_linear'
   | 'trigonometry_wave'
-  | 'bohr_atom'
   | 'ph_scale'
   | 'newton_dynamics'
-  | 'pancasila_shield'
-  | 'spok_sentence'
-  | 'history_timeline'
   | 'blood_circulation'
+  // Kewarganegaraan & PKn
+  | 'pancasila_shield'
+  | 'civics_gotong_royong'
+  // Bahasa & Sastra
+  | 'language_alphabet_vocab'
+  | 'spok_sentence'
+  | 'language_story_fabel'
+  // Bahasa Inggris
+  | 'english_kids'
+  // Seni Budaya & Muatan Lokal
+  | 'art_culture_jawa'
+  // Informatika & Komputasi
+  | 'informatics_scratch'
   | 'flowchart_logic'
-  | 'math_arithmetic'
+  | 'history_timeline'
+  // Default Fallback
+  | 'classroom_chalkboard'
   | 'mindmap_general';
 
 export function detectDiagramType(subject: {
   id?: string;
   name?: string;
+  title?: string;
   badge?: string;
   subtitle?: string;
+  category?: string;
   points?: string[];
 }): VisualDiagramType {
-  const hay = `${subject.id || ''} ${subject.name || ''} ${subject.badge || ''} ${subject.subtitle || ''} ${(subject.points || []).join(' ')}`.toLowerCase();
+  const hay = `${subject.id || ''} ${subject.name || ''} ${subject.title || ''} ${subject.badge || ''} ${subject.subtitle || ''} ${subject.category || ''} ${(subject.points || []).join(' ')}`.toLowerCase();
 
-  if (hay.includes('fotosintesis') || hay.includes('klorofil') || hay.includes('daun hijau') || hay.includes('tumbuhan')) return 'photosynthesis';
-  if (hay.includes('siklus air') || hay.includes('hujan') || hay.includes('kondensasi') || hay.includes('evaporasi') || hay.includes('awan')) return 'water_cycle';
-  if (hay.includes('tata surya') || hay.includes('planet') || hay.includes('matahari') || hay.includes('orbit') || hay.includes('saturnus') || hay.includes('jupiter')) return 'solar_system';
-  if (hay.includes('dna') || hay.includes('genetika') || hay.includes('pewarisan sifat') || hay.includes('kromosom')) return 'dna_helix';
-  if (hay.includes('struktur sel') || hay.includes('mitokondria') || hay.includes('nukleus') || hay.includes('organel') || (hay.includes('sel ') && hay.includes('hewan'))) return 'cell_structure';
-  if (hay.includes('pythagoras') || hay.includes('segitiga') || hay.includes('hipotenusa') || hay.includes('dalil')) return 'pythagoras';
-  if (hay.includes('kartesius') || hay.includes('persamaan linear') || hay.includes('garis lurus') || hay.includes('gradien') || hay.includes('plsv')) return 'cartesian_linear';
-  if (hay.includes('trigonometri') || hay.includes('sin cos') || hay.includes('gelombang') || hay.includes('sinus') || hay.includes('kosinus')) return 'trigonometry_wave';
-  if (hay.includes('atom') || hay.includes('bohr') || hay.includes('elektron') || hay.includes('foton') || hay.includes('proton')) return 'bohr_atom';
-  if (hay.includes('ph ') || hay.includes('asam') || hay.includes('basa') || hay.includes('titrasi') || hay.includes('larutan')) return 'ph_scale';
-  if (hay.includes('newton') || hay.includes('vektor') || hay.includes('kinematika') || hay.includes('hukum gerak') || hay.includes('gesek')) return 'newton_dynamics';
-  if (hay.includes('pancasila') || hay.includes('sila') || hay.includes('garuda') || hay.includes('uud') || hay.includes('banteng')) return 'pancasila_shield';
-  if (hay.includes('spok') || hay.includes('kalimat') || hay.includes('paragraf') || hay.includes('subjek') || hay.includes('puisi') || hay.includes('cerita')) return 'spok_sentence';
-  if (hay.includes('sejarah') || hay.includes('majapahit') || hay.includes('sriwijaya') || hay.includes('proklamasi') || hay.includes('nusantara') || hay.includes('kerajaan')) return 'history_timeline';
-  if (hay.includes('jantung') || hay.includes('peredaran darah') || hay.includes('arteri') || hay.includes('pencernaan') || hay.includes('organ tubuh')) return 'blood_circulation';
-  if (hay.includes('algoritma') || hay.includes('flowchart') || hay.includes('python') || hay.includes('koding') || hay.includes('informatika') || hay.includes('siber')) return 'flowchart_logic';
-  if (hay.includes('pecahan') || hay.includes('hitung') || hay.includes('bilangan') || hay.includes('kpk') || hay.includes('fpb') || hay.includes('perkalian') || hay.includes('matematika')) return 'math_arithmetic';
+  // 1. Bahasa Inggris (Seluruh Materi English)
+  if (
+    hay.includes('bahasa inggris') ||
+    hay.includes('english') ||
+    hay.includes('greetings') ||
+    hay.includes('past tense') ||
+    hay.includes('prepositions') ||
+    hay.includes('classroom objects') ||
+    hay.includes('telling time') ||
+    hay.includes('body parts') ||
+    hay.includes('comparative')
+  ) {
+    return 'english_kids';
+  }
 
-  return 'mindmap_general';
+  // 2. Informatika & Scratch Koding
+  if (
+    hay.includes('scratch') ||
+    hay.includes('koding') ||
+    hay.includes('hardware') ||
+    hay.includes('cyber') ||
+    hay.includes('komputer') ||
+    hay.includes('algoritma') ||
+    hay.includes('kata sandi') ||
+    hay.includes('perangkat keras')
+  ) {
+    return 'informatics_scratch';
+  }
+
+  // 3. Seni Budaya, Prakarya, Wayang & Bahasa Jawa
+  if (
+    hay.includes('batik') ||
+    hay.includes('wayang') ||
+    hay.includes('aksara jawa') ||
+    hay.includes('warna primer') ||
+    hay.includes('tembang') ||
+    hay.includes('birama') ||
+    hay.includes('tangga nada') ||
+    hay.includes('patung') ||
+    hay.includes('kolase') ||
+    hay.includes('mozaik') ||
+    hay.includes('montase') ||
+    hay.includes('pandhawa') ||
+    hay.includes('hanuman') ||
+    hay.includes('kewan')
+  ) {
+    return 'art_culture_jawa';
+  }
+
+  // 4. Matematika - Jam Analog & Satuan Waktu
+  if (
+    hay.includes('jam analog') ||
+    hay.includes('membaca jam') ||
+    hay.includes('pukul ') ||
+    hay.includes('menit') ||
+    hay.includes('detik') ||
+    (hay.includes('waktu') && !hay.includes('garis waktu'))
+  ) {
+    return 'math_clock_time';
+  }
+
+  // 5. Matematika - Bangun Datar, Keliling, Luas & Pengukuran Panjang Baku
+  if (
+    hay.includes('bangun datar') ||
+    hay.includes('keliling') ||
+    hay.includes('luas bangun') ||
+    hay.includes('lingkaran') ||
+    hay.includes('bangun ruang') ||
+    hay.includes('persegi') ||
+    hay.includes('segitiga') ||
+    hay.includes('pengukuran panjang') ||
+    hay.includes('satuan baku') ||
+    hay.includes('cm & m') ||
+    hay.includes('tabung') ||
+    hay.includes('prisma') ||
+    hay.includes('kerucut')
+  ) {
+    return 'math_geometry_shapes';
+  }
+
+  // 6. Matematika - Pecahan Sederhana, Campuran, Desimal & Persen
+  if (
+    hay.includes('pecahan') ||
+    hay.includes('desimal') ||
+    hay.includes('persen') ||
+    hay.includes('pembilang') ||
+    hay.includes('penyebut')
+  ) {
+    return 'math_arithmetic';
+  }
+
+  // 7. Matematika - Bilangan Cacah 1-10, 1-20 & Nilai Tempat (Satuan, Puluhan, Ratusan)
+  if (
+    hay.includes('bilangan cacah 1') ||
+    hay.includes('angka 1-10') ||
+    hay.includes('nilai tempat') ||
+    hay.includes('bilangan cacah 21') ||
+    hay.includes('membilang') ||
+    hay.includes('cacah')
+  ) {
+    return 'math_counting';
+  }
+
+  // 8. Matematika - Penjumlahan, Pengurangan & Bilangan Negatif
+  if (
+    hay.includes('penjumlahan') ||
+    hay.includes('pengurangan') ||
+    hay.includes('tambah') ||
+    hay.includes('kurang') ||
+    hay.includes('bersusun') ||
+    hay.includes('bilangan negatif') ||
+    hay.includes('garis bilangan')
+  ) {
+    return 'math_addition_subtraction';
+  }
+
+  // 9. Matematika - Perkalian, Pembagian, KPK & FPB
+  if (
+    hay.includes('perkalian') ||
+    hay.includes('pembagian') ||
+    hay.includes('kpk') ||
+    hay.includes('fpb')
+  ) {
+    return 'math_multiplication_division';
+  }
+
+  // 10. Matematika - Diagram Batang, Data Statistik, Skala & Taksiran
+  if (
+    hay.includes('diagram batang') ||
+    hay.includes('statistik') ||
+    hay.includes('skala peta') ||
+    hay.includes('taksiran') ||
+    hay.includes('pembulatan') ||
+    hay.includes('kecepatan') ||
+    hay.includes('debit') ||
+    hay.includes('denah')
+  ) {
+    return 'math_data_charts';
+  }
+
+  // 11. IPA - Tata Surya, Planet, Rotasi & Revolusi Bumi
+  if (
+    hay.includes('tata surya') ||
+    hay.includes('planet') ||
+    hay.includes('rotasi') ||
+    hay.includes('revolusi bumi') ||
+    hay.includes('gerhana') ||
+    hay.includes('saturnus') ||
+    hay.includes('jupiter') ||
+    hay.includes('merkurius')
+  ) {
+    return 'solar_system';
+  }
+
+  // 12. IPA - Siklus Air, Cuaca, Awan & Hujan
+  if (
+    hay.includes('siklus air') ||
+    hay.includes('cuaca') ||
+    hay.includes('hujan') ||
+    hay.includes('kondensasi') ||
+    hay.includes('evaporasi') ||
+    hay.includes('awan') ||
+    hay.includes('presipitasi')
+  ) {
+    return 'water_cycle';
+  }
+
+  // 13. IPA - Fotosintesis Daun Hijau
+  if (
+    hay.includes('fotosintesis') ||
+    hay.includes('klorofil') ||
+    hay.includes('dapur ajaib daun')
+  ) {
+    return 'photosynthesis';
+  }
+
+  // 14. IPA - Bagian Tumbuhan, Bunga Sempurna, Biji & Vegetatif
+  if (
+    hay.includes('bagian tumbuhan') ||
+    hay.includes('bunga sempurna') ||
+    hay.includes('tanaman') ||
+    hay.includes('vegetatif') ||
+    hay.includes('penyerbukan') ||
+    hay.includes('tumbuhan') ||
+    hay.includes('daun hijau')
+  ) {
+    return 'science_plants_growth';
+  }
+
+  // 15. IPA - Daur Hidup & Metamorfosis Kupu-Kupu
+  if (
+    hay.includes('metamorfosis') ||
+    hay.includes('daur hidup') ||
+    hay.includes('kupu-kupu') ||
+    hay.includes('kepompong')
+  ) {
+    return 'science_metamorphosis';
+  }
+
+  // 16. IPA - Rantai Makanan & Jaring-Jaring Ekosistem
+  if (
+    hay.includes('rantai makanan') ||
+    hay.includes('jaring-jaring') ||
+    hay.includes('ekosistem') ||
+    hay.includes('herbivora') ||
+    hay.includes('karnivora')
+  ) {
+    return 'science_food_chain';
+  }
+
+  // 17. IPA - Hewan, Habitat & Perkembangbiakan (Ovipar/Vivipar)
+  if (
+    hay.includes('hewan') ||
+    hay.includes('habitat') ||
+    hay.includes('amfibi') ||
+    hay.includes('perkembangbiakan hewan') ||
+    hay.includes('ovipar') ||
+    hay.includes('vivipar') ||
+    hay.includes('peliharaan')
+  ) {
+    return 'science_animals_habitat';
+  }
+
+  // 18. IPA - Wujud Benda (Padat, Cair, Gas) & Macam Gaya Energi
+  if (
+    hay.includes('wujud benda') ||
+    hay.includes('mencair') ||
+    hay.includes('membeku') ||
+    hay.includes('energi') ||
+    hay.includes('padat') ||
+    hay.includes('macam gaya') ||
+    hay.includes('gaya gesek') ||
+    hay.includes('gaya gravitasi') ||
+    hay.includes('magnet') ||
+    hay.includes('listrik')
+  ) {
+    return 'science_matter_states';
+  }
+
+  // 19. IPA - Panca Indra, Anggota Tubuh & Organ Manusia (Pernapasan, Pencernaan, Jantung)
+  if (
+    hay.includes('panca indra') ||
+    hay.includes('anggota tubuh') ||
+    hay.includes('pernapasan') ||
+    hay.includes('paru-paru') ||
+    hay.includes('pencernaan') ||
+    hay.includes('jantung') ||
+    hay.includes('peredaran darah') ||
+    hay.includes('darah') ||
+    hay.includes('organ tubuh')
+  ) {
+    return 'science_human_body';
+  }
+
+  // 20. PKn - Simbol Garuda & 5 Sila Pancasila
+  if (
+    hay.includes('garuda') ||
+    hay.includes('pancasila') ||
+    hay.includes('sila') ||
+    hay.includes('piagam jakarta') ||
+    hay.includes('bintang emas') ||
+    hay.includes('rantai emas') ||
+    hay.includes('pohon beringin') ||
+    hay.includes('banteng') ||
+    hay.includes('padi & kapas')
+  ) {
+    return 'pancasila_shield';
+  }
+
+  // 21. PKn - Gotong Royong, Aturan Tertib, Hak Kewajiban, Toleransi & ASEAN
+  if (
+    hay.includes('gotong royong') ||
+    hay.includes('aturan tertib') ||
+    hay.includes('hak') ||
+    hay.includes('kewajiban') ||
+    hay.includes('bhinneka') ||
+    hay.includes('toleransi') ||
+    hay.includes('persatuan') ||
+    hay.includes('asean') ||
+    hay.includes('kearifan lokal') ||
+    hay.includes('kebersihan lingkungan') ||
+    hay.includes('tanggung jawab') ||
+    hay.includes('sopan santun')
+  ) {
+    return 'civics_gotong_royong';
+  }
+
+  // 22. Bahasa Indonesia - Huruf Vokal, Huruf Konsonan & Suku Kata A-Z
+  if (
+    hay.includes('huruf vokal') ||
+    hay.includes('huruf a-z') ||
+    hay.includes('suku kata') ||
+    hay.includes('abjad') ||
+    hay.includes('konsonan')
+  ) {
+    return 'language_alphabet_vocab';
+  }
+
+  // 23. Bahasa Indonesia - Dongeng Fabel Hewan, Puisi, Pantun & Cerita Pengalaman
+  if (
+    hay.includes('fabel') ||
+    hay.includes('dongeng') ||
+    hay.includes('puisi') ||
+    hay.includes('pantun') ||
+    hay.includes('cerita') ||
+    hay.includes('narasi') ||
+    hay.includes('fiksi')
+  ) {
+    return 'language_story_fabel';
+  }
+
+  // 24. Bahasa Indonesia - Kereta SPOK, Kalimat, Teks Prosedur, Wawancara, Pidato & Formulir
+  if (
+    hay.includes('spok') ||
+    hay.includes('kalimat') ||
+    hay.includes('tanda baca') ||
+    hay.includes('teks') ||
+    hay.includes('pidato') ||
+    hay.includes('wawancara') ||
+    hay.includes('gagasan') ||
+    hay.includes('deskripsi') ||
+    hay.includes('formulir') ||
+    hay.includes('paragraf') ||
+    hay.includes('investigasi')
+  ) {
+    return 'spok_sentence';
+  }
+
+  // 25. SMP / SMA Sains Khusus
+  if (hay.includes('dna') || hay.includes('genetika') || hay.includes('kromosom')) return 'dna_helix';
+  if (hay.includes('atom') || hay.includes('bohr')) return 'bohr_atom';
+  if (hay.includes('pythagoras') || hay.includes('hipotenusa')) return 'pythagoras';
+  if (hay.includes('kartesius') || hay.includes('gradien')) return 'cartesian_linear';
+  if (hay.includes('trigonometri') || hay.includes('sin cos')) return 'trigonometry_wave';
+  if (hay.includes('ph ') || hay.includes('asam') || hay.includes('basa')) return 'ph_scale';
+  if (hay.includes('newton') || hay.includes('hukum gerak')) return 'newton_dynamics';
+  if (hay.includes('sejarah') || hay.includes('majapahit') || hay.includes('proklamasi')) return 'history_timeline';
+
+  return 'classroom_chalkboard';
 }
 
 export interface ITopicStoryScene {
@@ -107,7 +456,68 @@ export interface ITopicStoryScene {
   highlightText: string;
 }
 
-export function getTopicStoryScenes(type: VisualDiagramType): ITopicStoryScene[] {
+export function getTopicStoryScenes(
+  type: VisualDiagramType,
+  topic?: {
+    id?: string;
+    title?: string;
+    summary?: string;
+    badge?: string;
+    points?: string[];
+    keyFormulaOrConcept?: string;
+    funFact?: string;
+  }
+): ITopicStoryScene[] {
+  // Jika topic diberikan secara eksplisit, buatkan 4 Babak Narasi yang 100% SPESIFIK & SESUAI DENGAN MATERI TOPIK TERSEBUT!
+  if (topic && topic.title) {
+    const p1 = topic.points?.[0] || 'Memahami konsep dasar secara bertahap dengan contoh nyata di sekitar kita.';
+    const p2 = topic.points?.[1] || 'Mengamati langkah-langkah penting untuk melatih kecermatan dan keterampilan.';
+    const fact = topic.funFact || 'Belajar dengan riang gembira dan penuh rasa ingin tahu membuat ingatan semakin tajam!';
+
+    let catIcon = '📖';
+    if (type.startsWith('math_')) catIcon = '🔢';
+    else if (type.startsWith('science_') || type === 'photosynthesis' || type === 'water_cycle' || type === 'solar_system') catIcon = '🔬';
+    else if (type.startsWith('civics_') || type === 'pancasila_shield') catIcon = '🇮🇩';
+    else if (type === 'english_kids') catIcon = '🌐';
+    else if (type === 'art_culture_jawa') catIcon = '🎨';
+    else if (type.startsWith('informatics_') || type === 'flowchart_logic') catIcon = '💻';
+
+    return [
+      {
+        chapter: 'Babak 1',
+        title: topic.badge ? `Konsep ${topic.badge}` : topic.title,
+        narration: `🌟 ${topic.summary || topic.title}`,
+        badge: topic.badge || 'Konsep Dasar',
+        icon: catIcon,
+        highlightText: topic.title,
+      },
+      {
+        chapter: 'Babak 2',
+        title: 'Pemahaman & Ciri Kunci',
+        narration: `🔍 ${p1}`,
+        badge: 'Tahap 1',
+        icon: '💡',
+        highlightText: p1.length > 40 ? p1.slice(0, 38) + '...' : p1,
+      },
+      {
+        chapter: 'Babak 3',
+        title: topic.keyFormulaOrConcept ? 'Rumus & Kunci Pemahaman' : 'Penerapan & Contoh Nyata',
+        narration: `🚀 ${p2}`,
+        badge: topic.keyFormulaOrConcept ? 'Kunci Utama' : 'Tahap 2',
+        icon: '🎯',
+        highlightText: topic.keyFormulaOrConcept || (p2.length > 40 ? p2.slice(0, 38) + '...' : p2),
+      },
+      {
+        chapter: 'Babak 4',
+        title: 'Fakta Seru & Praktik Nyata',
+        narration: `🎉 ${fact}`,
+        badge: 'Wawasan Pintar',
+        icon: '✨',
+        highlightText: 'Wawasan bermanfaat sehari-hari',
+      },
+    ];
+  }
+
   switch (type) {
     case 'photosynthesis':
       return [

@@ -244,7 +244,7 @@ export const LibraryMaterialsModal: React.FC<LibraryMaterialsModalProps> = ({
         'raden_library_read_topics',
         JSON.stringify(Array.from(nextSet))
       );
-    } catch {}
+    } catch { }
 
     const expBonus =
       activeSchool === 'sma' ? 50 : activeSchool === 'smp' ? 35 : 20;
@@ -440,11 +440,10 @@ export const LibraryMaterialsModal: React.FC<LibraryMaterialsModalProps> = ({
                           sound.playClick();
                           setCurrentDescPage(tab.page);
                         }}
-                        className={`py-1.5 px-1 sm:px-2 text-[10.5px] sm:text-xs font-bold rounded-md flex items-center justify-center gap-1 transition-all ${
-                          currentDescPage === tab.page
-                            ? 'clay-btn-primary text-black shadow-sm'
-                            : 'clay-btn-neutral text-black/70 hover:text-black'
-                        }`}
+                        className={`py-1.5 px-1 sm:px-2 text-[10.5px] sm:text-xs font-bold rounded-md flex items-center justify-center gap-1 transition-all ${currentDescPage === tab.page
+                          ? 'clay-btn-primary text-black shadow-sm'
+                          : 'clay-btn-neutral text-black/70 hover:text-black'
+                          }`}
                       >
                         <span>{tab.icon}</span>
                         <span className="truncate">{tab.label}</span>
@@ -698,11 +697,10 @@ export const LibraryMaterialsModal: React.FC<LibraryMaterialsModalProps> = ({
                     <button
                       type="button"
                       onClick={handleMarkAsRead}
-                      className={`px-3 py-1.5 text-xs font-bold flex items-center gap-1.5 ${
-                        isRead
-                          ? 'clay-badge-secondary text-black'
-                          : 'clay-btn-primary text-black'
-                      }`}
+                      className={`px-3 py-1.5 text-xs font-bold flex items-center gap-1.5 ${isRead
+                        ? 'clay-badge-secondary text-black'
+                        : 'clay-btn-primary text-black'
+                        }`}
                     >
                       {isRead ? (
                         <>
@@ -717,8 +715,8 @@ export const LibraryMaterialsModal: React.FC<LibraryMaterialsModalProps> = ({
                             {activeSchool === 'sma'
                               ? 50
                               : activeSchool === 'smp'
-                              ? 35
-                              : 20}{' '}
+                                ? 35
+                                : 20}{' '}
                             EXP)
                           </span>
                         </>
@@ -835,11 +833,10 @@ export const LibraryMaterialsModal: React.FC<LibraryMaterialsModalProps> = ({
                           setViewStep('select_subject');
                         }
                       }}
-                      className={`px-2.5 py-1 text-xs font-bold flex items-center gap-1 transition-all ${
-                        isCurrent
-                          ? 'clay-btn-primary text-black'
-                          : 'clay-btn-neutral text-black'
-                      }`}
+                      className={`px-2.5 py-1 text-xs font-bold flex items-center gap-1 transition-all ${isCurrent
+                        ? 'clay-btn-primary text-black'
+                        : 'clay-btn-neutral text-black'
+                        }`}
                     >
                       <span>{lvl.icon}</span>
                       <span>{lvl.badge}</span>
@@ -864,11 +861,10 @@ export const LibraryMaterialsModal: React.FC<LibraryMaterialsModalProps> = ({
                         sound.playClick();
                         setActiveGradeKey(gradeInfo.key);
                       }}
-                      className={`px-2.5 py-1 text-xs font-bold shrink-0 ${
-                        isSelected
-                          ? 'clay-btn-secondary text-black'
-                          : 'clay-btn-neutral text-black'
-                      }`}
+                      className={`px-2.5 py-1 text-xs font-bold shrink-0 ${isSelected
+                        ? 'clay-btn-secondary text-black'
+                        : 'clay-btn-neutral text-black'
+                        }`}
                     >
                       {gradeInfo.label}
                     </button>
@@ -963,8 +959,8 @@ export const LibraryMaterialsModal: React.FC<LibraryMaterialsModalProps> = ({
                           {activeSchool === 'sd'
                             ? '🎒'
                             : activeSchool === 'smp'
-                            ? '🏫'
-                            : '🏛️'}
+                              ? '🏫'
+                              : '🏛️'}
                         </span>
                         <div className="min-w-0">
                           <div className="text-xs sm:text-sm font-bold text-black uppercase truncate">
@@ -1121,11 +1117,10 @@ export const LibraryMaterialsModal: React.FC<LibraryMaterialsModalProps> = ({
                               setCurrentDescPage(1);
                               setViewStep('material_detail');
                             }}
-                            className={`p-3.5 clay-card cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:translate-y-[-2px] transition-all border-2 ${
-                              isCurrentActive
-                                ? 'border-[#FFAE6D] bg-[#FFF8EA]'
-                                : 'border-[#5C3A21]'
-                            }`}
+                            className={`p-3.5 clay-card cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:translate-y-[-2px] transition-all border-2 ${isCurrentActive
+                              ? 'border-[#FFAE6D] bg-[#FFF8EA]'
+                              : 'border-[#5C3A21]'
+                              }`}
                           >
                             <div className="flex items-start gap-3 flex-1 min-w-0">
                               <div className="w-10 h-10 clay-badge-primary flex flex-col items-center justify-center text-black shrink-0 shadow-sm">

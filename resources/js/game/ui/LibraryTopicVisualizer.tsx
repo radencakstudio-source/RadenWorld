@@ -76,6 +76,9 @@ export type VisualDiagramType =
   | 'ph_scale'
   | 'newton_dynamics'
   | 'blood_circulation'
+  | 'pressure_pascal'
+  | 'electric_circuit'
+  | 'wave_sound'
   // Kewarganegaraan & PKn
   | 'pancasila_shield'
   | 'civics_gotong_royong'
@@ -105,6 +108,163 @@ export function detectDiagramType(subject: {
   points?: string[];
 }): VisualDiagramType {
   const hay = `${subject.id || ''} ${subject.name || ''} ${subject.title || ''} ${subject.badge || ''} ${subject.subtitle || ''} ${subject.category || ''} ${(subject.points || []).join(' ')}`.toLowerCase();
+
+  // ==========================================================================
+  // PRIORITAS UTAMA: TOPIK SPESIFIK SMP / SAINS LANJUTAN
+  // ==========================================================================
+  // A. Matematika SMP - Aljabar, Persamaan Linear (PLSV, SPLDV), Koordinat Kartesius & Fungsi Kuadrat
+  if (
+    hay.includes('aljabar') ||
+    hay.includes('plsv') ||
+    hay.includes('ptlsv') ||
+    hay.includes('spldv') ||
+    hay.includes('suku sejenis') ||
+    hay.includes('variabel') ||
+    hay.includes('koefisien') ||
+    hay.includes('konstanta') ||
+    hay.includes('kartesius') ||
+    hay.includes('gradien') ||
+    hay.includes('fungsi kuadrat') ||
+    hay.includes('persamaan kuadrat') ||
+    hay.includes('persamaan linear')
+  ) {
+    return 'cartesian_linear';
+  }
+
+  // B. Matematika SMP - Teorema Pythagoras & Tripel Pythagoras
+  if (
+    hay.includes('pythagoras') ||
+    hay.includes('hipotenusa') ||
+    hay.includes('segitiga siku-siku') ||
+    hay.includes('tripel pythagoras') ||
+    hay.includes('triple pythagoras')
+  ) {
+    return 'pythagoras';
+  }
+
+  // C. IPA SMP - Organisasi Kehidupan: Struktur Sel, Organel, Nukleus & Mitokondria
+  if (
+    hay.includes('struktur sel') ||
+    hay.includes('organisasi kehidupan') ||
+    hay.includes('sel hewan') ||
+    hay.includes('sel tumbuhan') ||
+    hay.includes('organel') ||
+    hay.includes('nukleus') ||
+    hay.includes('mitokondria') ||
+    hay.includes('mikroskop') ||
+    hay.includes('pembelahan sel')
+  ) {
+    return 'cell_structure';
+  }
+
+  // D. IPA Fisika SMP - Tekanan Zat, Hukum Pascal, Tekanan Hidrostatis & Bejana Hidrolik
+  if (
+    hay.includes('tekanan zat') ||
+    hay.includes('hukum pascal') ||
+    hay.includes('hidrostatis') ||
+    hay.includes('bejana berhubungan') ||
+    hay.includes('archimedes') ||
+    hay.includes('dongkrak hidrolik') ||
+    hay.includes('tekanan zat padat') ||
+    hay.includes('tekanan cair')
+  ) {
+    return 'pressure_pascal';
+  }
+
+  // E. IPA Biologi SMP - Sistem Peredaran Darah Manusia, Jantung 4 Ruang & Pembuluh Darah
+  if (
+    hay.includes('peredaran darah') ||
+    hay.includes('jantung') ||
+    hay.includes('golongan darah') ||
+    hay.includes('aorta') ||
+    hay.includes('serambi') ||
+    hay.includes('bilik jantung') ||
+    hay.includes('eritrosit') ||
+    hay.includes('leukosit') ||
+    hay.includes('trombosit')
+  ) {
+    return 'blood_circulation';
+  }
+
+  // F. IPA Fisika SMP - Listrik Dinamis, Statis, Hukum Ohm & Rangkaian Seri-Paralel
+  if (
+    hay.includes('listrik dinamis') ||
+    hay.includes('listrik statis') ||
+    hay.includes('hukum ohm') ||
+    hay.includes('rangkaian seri') ||
+    hay.includes('rangkaian paralel') ||
+    hay.includes('hukum coulomb') ||
+    hay.includes('kemagnetan') ||
+    hay.includes('induksi elektromagnetik') ||
+    hay.includes('trafo') ||
+    hay.includes('arus listrik') ||
+    hay.includes('hambatan listrik')
+  ) {
+    return 'electric_circuit';
+  }
+
+  // G. IPA Fisika SMP - Getaran, Gelombang, Bunyi, Resonansi & Frekuensi
+  if (
+    hay.includes('getaran') ||
+    hay.includes('gelombang') ||
+    hay.includes('resonansi') ||
+    hay.includes('amplitudo') ||
+    hay.includes('cepat rambat') ||
+    (hay.includes('bunyi') && !hay.includes('pancasila'))
+  ) {
+    return 'wave_sound';
+  }
+
+  // H. IPA Fisika SMP - Hukum Newton, Dinamika Gerak & Gaya
+  if (
+    hay.includes('hukum newton') ||
+    hay.includes('kelembaman') ||
+    hay.includes('gaya dorong') ||
+    hay.includes('gaya aksi reaksi') ||
+    hay.includes('f = m')
+  ) {
+    return 'newton_dynamics';
+  }
+
+  // I. IPA Biologi SMP - Pewarisan Sifat: Hukum Mendel, DNA & Genetika
+  if (
+    hay.includes('pewarisan sifat') ||
+    hay.includes('hukum mendel') ||
+    hay.includes('genetika') ||
+    hay.includes('dna') ||
+    hay.includes('kromosom')
+  ) {
+    return 'dna_helix';
+  }
+
+  // J. Informatika SMP - Berpikir Komputasional, Flowchart Logika, Jaringan & Database
+  if (
+    hay.includes('berpikir komputasional') ||
+    hay.includes('dekomposisi') ||
+    hay.includes('abstraksi') ||
+    hay.includes('flowchart') ||
+    hay.includes('pseudocode') ||
+    hay.includes('jaringan komputer') ||
+    hay.includes('topologi') ||
+    hay.includes('ip address') ||
+    hay.includes('basis data') ||
+    hay.includes('database') ||
+    hay.includes('keamanan siber') ||
+    hay.includes('cybersecurity')
+  ) {
+    return 'flowchart_logic';
+  }
+
+  // K. Sejarah & Garis Waktu SMP
+  if (
+    hay.includes('praaksara') ||
+    hay.includes('kebangkitan nasional') ||
+    hay.includes('sumpah pemuda') ||
+    hay.includes('zaman logam') ||
+    hay.includes('paleolitikum')
+  ) {
+    return 'history_timeline';
+  }
 
   // 1. Bahasa Inggris (Seluruh Materi English)
   if (
@@ -1711,6 +1871,111 @@ export function getTopicStoryScenes(
           highlightText: 'Berhitung & berbagi secara adil',
         },
       ];
+    case 'pressure_pascal':
+      return [
+        {
+          chapter: 'Babak 1',
+          title: 'Konsep Tekanan Zat (P = F / A)',
+          narration: '📦 Tekanan zat padat adalah gaya tekan (F) dibagi luas bidang sentuh (A). Semakin runcing atau sempit ujung benda seperti paku, tekanannya semakin besar menembus kayu!',
+          badge: 'Tekanan Zat',
+          icon: '📦',
+          highlightText: 'Tekanan P sebanding gaya dan berbanding terbalik luas A',
+        },
+        {
+          chapter: 'Babak 2',
+          title: 'Hukum Pascal & Bejana Berhubungan',
+          narration: '💧 Blaise Pascal menemukan bahwa tekanan zat cair dalam ruang tertutup diteruskan ke segala arah secara merata tanpa berkurang sedikit pun.',
+          badge: 'Hukum Pascal',
+          icon: '💧',
+          highlightText: 'Tekanan zat cair merata ke segala arah',
+        },
+        {
+          chapter: 'Babak 3',
+          title: 'Prinsip Kerja Dongkrak Hidrolik',
+          narration: '🚗 Dengan memberikan gaya kecil (F1) pada piston kecil (A1), cairan hidrolik meneruskan gaya hingga mampu mengangkat mobil berat di piston besar (A2) karena F1/A1 = F2/A2!',
+          badge: 'Dongkrak Hidrolik',
+          icon: '🚗',
+          highlightText: 'Gaya kecil mampu mengangkat mobil ton berat',
+        },
+        {
+          chapter: 'Babak 4',
+          title: 'Penerapan Rem Cakram & Alat Berat',
+          narration: '🚜 Dari sistem rem cakram sepeda motor, rem hidrolik mobil, hingga lengan ekskavator proyek raksasa, hukum Pascal membantu peradaban modern bekerja efisien!',
+          badge: 'Teknologi Hidrolik',
+          icon: '🚜',
+          highlightText: 'Pondasi rem kendaraan & alat berat konstruksi',
+        },
+      ];
+    case 'electric_circuit':
+      return [
+        {
+          chapter: 'Babak 1',
+          title: 'Sumber Energi Baterai & Saklar',
+          narration: '🔋 Baterai menyimpan beda potensial tegangan volt. Ketika saklar emas ditutup, terbentuk rangkaian sirkuit tertutup dan elektron mulai mengalir.',
+          badge: 'Sumber Baterai',
+          icon: '🔋',
+          highlightText: 'Beda potensial tegangan volt & saklar tertutup',
+        },
+        {
+          chapter: 'Babak 2',
+          title: 'Aliran Elektron & Kuat Arus (I)',
+          narration: '⚡ Elektron mengalir berputar melalui kawat tembaga. Kuat arus (I) diukur dalam satuan Ampere, menyatakan banyaknya muatan listrik yang meluncur setiap detik.',
+          badge: 'Kuat Arus (I)',
+          icon: '⚡',
+          highlightText: 'Aliran partikel elektron dalam kawat tembaga',
+        },
+        {
+          chapter: 'Babak 3',
+          title: 'Hukum Ohm (V = I × R)',
+          narration: '💡 George Ohm merumuskan bahwa tegangan (V) sama dengan kuat arus (I) dikali hambatan resistor (R). Semakin besar hambatan, arus yang mengalir akan mengecil.',
+          badge: 'Hukum Ohm',
+          icon: '📐',
+          highlightText: 'Formula Hukum Ohm: V = I dikali R',
+        },
+        {
+          chapter: 'Babak 4',
+          title: 'Bohlam Pijar & Rangkaian Sehari-Hari',
+          narration: '💡 Lampu pijar berpendar menyala terang mengubah energi listrik menjadi cahaya dan kehangatan. Di rumah kita, peralatan listrik dipasang secara paralel agar bekerja mandiri!',
+          badge: 'Lampu Pijar',
+          icon: '💡',
+          highlightText: 'Energi listrik menjadi pancaran cahaya terang',
+        },
+      ];
+    case 'wave_sound':
+      return [
+        {
+          chapter: 'Babak 1',
+          title: 'Getaran Harmonis & Titik Setimbang',
+          narration: '〰️ Getaran adalah gerak bolak-balik suatu benda secara teratur melewati titik kesetimbangan. Contohnya ayunan bandul dan petikan senar gitar.',
+          badge: 'Getaran Harmonis',
+          icon: '〰️',
+          highlightText: 'Gerak bolak-balik melewati titik kesetimbangan',
+        },
+        {
+          chapter: 'Babak 2',
+          title: 'Gelombang Transversal (Bukit & Lembah)',
+          narration: '🌊 Gelombang transversal merambatkan energi dengan arah getar tegak lurus arah rambat. Satu gelombang penuh terdiri atas satu bukit puncak dan satu lembah!',
+          badge: 'Pola Gelombang',
+          icon: '🌊',
+          highlightText: 'Satu bukit puncak ditambah satu lembah penuh',
+        },
+        {
+          chapter: 'Babak 3',
+          title: 'Frekuensi & Cepat Rambat (v = λ × f)',
+          narration: '📏 Panjang satu gelombang disimbolkan lambda (λ), dan banyaknya getaran per detik disebut frekuensi (f) dalam Hertz. Cepat rambat gelombang adalah v = λ dikali f!',
+          badge: 'Cepat Rambat',
+          icon: '📏',
+          highlightText: 'Rumus gelombang: cepat rambat v = lambda dikali frekuensi f',
+        },
+        {
+          chapter: 'Babak 4',
+          title: 'Resonansi Suara & Nada Musik Indah',
+          narration: '🎵 Gelombang bunyi merambat melalui molekul udara menggetarkan gendang telinga. Resonansi akustik menghasilkan alunan musik yang merdu dan dinikmati semua orang!',
+          badge: 'Akustik Musik',
+          icon: '🎵',
+          highlightText: 'Resonansi akustik & getaran merdu alat musik',
+        },
+      ];
     default: {
       if (topic && topic.title) {
         const p1 = topic.points?.[0] || 'Perhatikan konsep dasar materi ini dengan cermat.';
@@ -2740,6 +3005,106 @@ export function renderDiagramSvg(
               🍕 1/4 + 1/4 = 2/4 = 1/2 (Setengah Loyang Pizza)
             </text>
           </g>
+        </svg>
+      );
+
+    case 'pressure_pascal':
+      return (
+        <svg viewBox="0 0 600 320" className="w-full h-full select-none">
+          <text x="300" y="42" fill="#f8fafc" fontSize="15" fontWeight="bold" textAnchor="middle">
+            TEKANAN ZAT & HUKUM PASCAL (DONGKRAK HIDROLIK)
+          </text>
+          {/* Bejana U Hidrolik */}
+          <path d="M 120 100 L 120 230 Q 120 260, 160 260 L 440 260 Q 480 260, 480 230 L 480 100 L 410 100 L 410 210 Q 410 220, 390 220 L 210 220 Q 190 220, 190 210 L 190 100 Z" fill="#0284c7" fillOpacity="0.4" stroke="#38bdf8" strokeWidth="3" />
+          {/* Piston Kecil A1 */}
+          <rect x="125" y="140" width="60" height="20" rx="4" fill="#f59e0b" stroke="#fbbf24" strokeWidth="2" />
+          <line x1="155" y1="80" x2="155" y2="135" stroke="#ef4444" strokeWidth="4" />
+          <polygon points="155,140 148,125 162,125" fill="#ef4444" />
+          <text x="155" y="70" fill="#f87171" fontSize="12" fontWeight="bold" textAnchor="middle">F₁ (Gaya Kecil)</text>
+          <text x="155" y="175" fill="#fde047" fontSize="10" textAnchor="middle">Luas A₁</text>
+          {/* Piston Besar A2 */}
+          <rect x="415" y="110" width="60" height="20" rx="4" fill="#10b981" stroke="#34d399" strokeWidth="2" />
+          <line x1="445" y1="105" x2="445" y2="60" stroke="#10b981" strokeWidth="4" />
+          <polygon points="445,55 438,70 452,70" fill="#10b981" />
+          <text x="445" y="50" fill="#34d399" fontSize="12" fontWeight="bold" textAnchor="middle">F₂ (Gaya Besar 🚗)</text>
+          <text x="445" y="145" fill="#a7f3d0" fontSize="10" textAnchor="middle">Luas A₂</text>
+          {/* Kotak Formula */}
+          <rect x="210" y="85" width="180" height="55" rx="8" fill="#0f172a" stroke="#38bdf8" strokeWidth="1.5" />
+          <text x="300" y="108" fill="#38bdf8" fontSize="13" fontWeight="bold" textAnchor="middle">F₁ / A₁ = F₂ / A₂</text>
+          <text x="300" y="128" fill="#94a3b8" fontSize="10" textAnchor="middle">Tekanan P₁ = P₂ Teruskan Rata</text>
+        </svg>
+      );
+
+    case 'electric_circuit':
+      return (
+        <svg viewBox="0 0 600 320" className="w-full h-full select-none">
+          <text x="300" y="38" fill="#f8fafc" fontSize="15" fontWeight="bold" textAnchor="middle">
+            RANGKAIAN LISTRIK DINAMIS & HUKUM OHM (V = I · R)
+          </text>
+          {/* Sirkuit Tertutup */}
+          <rect x="100" y="70" width="400" height="170" rx="10" fill="none" stroke="#ca8a04" strokeWidth="4" />
+          {/* Baterai Kiri */}
+          <g transform="translate(100, 155)">
+            <rect x="-14" y="-30" width="28" height="60" rx="4" fill="#1e293b" stroke="#f59e0b" strokeWidth="2" />
+            <line x1="-14" y1="-8" x2="14" y2="-8" stroke="#ef4444" strokeWidth="4" />
+            <line x1="-8" y1="12" x2="8" y2="12" stroke="#38bdf8" strokeWidth="3" />
+            <text x="-25" y="-12" fill="#ef4444" fontSize="14" fontWeight="bold">+</text>
+            <text x="-25" y="20" fill="#38bdf8" fontSize="14" fontWeight="bold">-</text>
+            <text x="0" y="45" fill="#fde047" fontSize="10" textAnchor="middle">Baterai (V)</text>
+          </g>
+          {/* Saklar Atas */}
+          <g transform="translate(300, 70)">
+            <circle cx="-30" cy="0" r="5" fill="#fbbf24" />
+            <circle cx="30" cy="0" r="5" fill="#fbbf24" />
+            <line x1="-28" y1="0" x2="26" y2="0" stroke="#4ade80" strokeWidth="3.5" />
+            <text x="0" y="-12" fill="#4ade80" fontSize="10" fontWeight="bold" textAnchor="middle">Saklar ON (Tertutup)</text>
+          </g>
+          {/* Resistor Bawah */}
+          <g transform="translate(300, 240)">
+            <rect x="-40" y="-12" width="80" height="24" rx="4" fill="#334155" stroke="#94a3b8" strokeWidth="1.5" />
+            <text x="0" y="4" fill="#f8fafc" fontSize="10" fontWeight="bold" textAnchor="middle">Resistor (R)</text>
+          </g>
+          {/* Lampu Kanan */}
+          <g transform="translate(500, 155)">
+            <circle cx="0" cy="0" r="24" fill="#fef08a" stroke="#eab308" strokeWidth="3" />
+            <text x="0" y="6" fontSize="20" textAnchor="middle">💡</text>
+            <text x="0" y="42" fill="#fef08a" fontSize="10" fontWeight="bold" textAnchor="middle">Lampu Menyala</text>
+          </g>
+          {/* Formula */}
+          <rect x="220" y="130" width="160" height="50" rx="8" fill="#0f172a" stroke="#38bdf8" strokeWidth="1.5" />
+          <text x="300" y="152" fill="#38bdf8" fontSize="13" fontWeight="bold" textAnchor="middle">V = I × R</text>
+          <text x="300" y="169" fill="#94a3b8" fontSize="9.5" textAnchor="middle">Arus I (Ampere) • Tegangan V</text>
+        </svg>
+      );
+
+    case 'wave_sound':
+      return (
+        <svg viewBox="0 0 600 320" className="w-full h-full select-none">
+          <text x="300" y="40" fill="#f8fafc" fontSize="15" fontWeight="bold" textAnchor="middle">
+            GETARAN, GELOMBANG TRANSVERSAL & BUNYI
+          </text>
+          {/* Garis Kesetimbangan */}
+          <line x1="60" y1="160" x2="540" y2="160" stroke="#475569" strokeWidth="1.5" strokeDasharray="4,4" />
+          <text x="545" y="164" fill="#94a3b8" fontSize="10">Setimbang</text>
+          {/* Gelombang Sinus Transversal */}
+          <path d="M 80 160 Q 140 80, 200 160 T 320 160 T 440 160 T 520 160" fill="none" stroke="#38bdf8" strokeWidth="4" />
+          {/* Puncak & Lembah */}
+          <circle cx="140" cy="80" r="5" fill="#f43f5e" />
+          <text x="140" y="68" fill="#fb7185" fontSize="11" fontWeight="bold" textAnchor="middle">Puncak Bukit</text>
+          <circle cx="260" cy="240" r="5" fill="#34d399" />
+          <text x="260" y="260" fill="#6ee7b7" fontSize="11" fontWeight="bold" textAnchor="middle">Dasar Lembah</text>
+          {/* Garis Ukur Amplitudo */}
+          <line x1="140" y1="80" x2="140" y2="160" stroke="#f43f5e" strokeWidth="2" strokeDasharray="3,3" />
+          <text x="155" y="125" fill="#fb7185" fontSize="10">Amplitudo (A)</text>
+          {/* Garis Ukur Lambda */}
+          <line x1="80" y1="210" x2="320" y2="210" stroke="#fbbf24" strokeWidth="2" />
+          <polygon points="80,210 90,206 90,214" fill="#fbbf24" />
+          <polygon points="320,210 310,206 310,214" fill="#fbbf24" />
+          <text x="200" y="202" fill="#fde047" fontSize="11" fontWeight="bold" textAnchor="middle">1 Panjang Gelombang (λ)</text>
+          {/* Kotak Formula */}
+          <rect x="370" y="85" width="170" height="55" rx="8" fill="#0f172a" stroke="#38bdf8" strokeWidth="1.5" />
+          <text x="455" y="108" fill="#38bdf8" fontSize="13" fontWeight="bold" textAnchor="middle">v = λ × f</text>
+          <text x="455" y="126" fill="#94a3b8" fontSize="10" textAnchor="middle">Cepat Rambat = Lambda × Frek</text>
         </svg>
       );
 

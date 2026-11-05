@@ -187,7 +187,8 @@ export const InteractiveVideoStage: React.FC<InteractiveVideoStageProps> = ({
   const speakCurrentScene = useCallback(
     (force = false) => {
       if (!currentScene) return;
-      const textToSpeak = `${currentScene.chapter}: ${currentScene.title}. ${currentScene.narration}`;
+      // Jangan membacakan 'Babak 1, Babak 2' secara robotik, langsung judul dan narasi alami
+      const textToSpeak = `${currentScene.title}. ${currentScene.narration}`;
       narrator.speak(textToSpeak, { force });
     },
     [currentScene, narrator]
@@ -320,7 +321,8 @@ export const InteractiveVideoStage: React.FC<InteractiveVideoStageProps> = ({
     if (isVoiceEnabled) {
       const nextScene = storyScenes[targetStep];
       if (nextScene) {
-        const text = `${nextScene.chapter}: ${nextScene.title}. ${nextScene.narration}`;
+        // Langsung bacakan judul dan narasi tanpa awalan babak robotik
+        const text = `${nextScene.title}. ${nextScene.narration}`;
         narrator.speak(text, { force: true });
       }
     }

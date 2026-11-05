@@ -103,6 +103,10 @@ export class VoiceNarratorService {
     if (!rawText) return '';
 
     return rawText
+      // Bersihkan penyebutan nomor babak agar suara narator lebih alami dan mengalir
+      .replace(/\bBabak\s+\d+\s*[:\-–—]?\s*/gi, '')
+      .replace(/\bBabak\s+ke-\d+\s*[:\-–—]?\s*/gi, '')
+      .replace(/\bBabak\s+selanjutnya\s*[:\-–—]?\s*/gi, '')
       // Bersihkan emoji Unicode
       .replace(/[\u{1F300}-\u{1FAD6}]/gu, '')
       .replace(/[\u{1F900}-\u{1F9FF}]/gu, '')

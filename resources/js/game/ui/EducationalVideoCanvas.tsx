@@ -112,6 +112,29 @@ export const EducationalVideoCanvas: React.FC<EducationalVideoCanvasProps> = ({
           50% { transform: translateX(-18px); }
           100% { transform: translateX(0); }
         }
+        @keyframes heartBeat {
+          0%, 100% { transform: scale(1); }
+          15% { transform: scale(1.08); }
+          30% { transform: scale(0.97); }
+          45% { transform: scale(1.05); }
+        }
+        @keyframes electronFlow {
+          0% { stroke-dashoffset: 40; }
+          100% { stroke-dashoffset: 0; }
+        }
+        @keyframes hydroFloat {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-7px); }
+        }
+        @keyframes balanceTilt {
+          0%, 100% { transform: rotate(0deg); }
+          30% { transform: rotate(-2.5deg); }
+          70% { transform: rotate(2.5deg); }
+        }
+        @keyframes flowPulse {
+          0%, 100% { opacity: 0.4; }
+          50% { opacity: 1; }
+        }
       `}</style>
 
       {/* ==================================================================== */}
@@ -1547,7 +1570,950 @@ export const EducationalVideoCanvas: React.FC<EducationalVideoCanvasProps> = ({
       )}
 
       {/* ==================================================================== */}
-      {/* 23. PAPAN TULIS KELAS CERIA DINAMIS (PANGGUNG EDUKASI 60FPS)         */}
+      {/* 23. ALJABAR: TIMBANGAN NERACA DUA LENGAN & KOORDINAT KARTESIUS        */}
+      {/* ==================================================================== */}
+      {type === 'cartesian_linear' && (
+        <svg viewBox="0 0 600 320" className="w-full h-full max-h-[320px] select-none">
+          <rect x="6" y="6" width="588" height="308" rx="14" fill="#FFF8EA" stroke="#5C3A21" strokeWidth="3" />
+          <rect x="14" y="14" width="572" height="292" rx="10" fill="#FFFDF7" stroke="#EADBC0" strokeWidth="1.5" />
+
+          {/* Header Kartu Clay */}
+          <g transform="translate(300, 22)">
+            <rect x="-210" y="0" width="420" height="32" rx="8" fill="#FFAE6D" stroke="#5C3A21" strokeWidth="2" />
+            <text x="0" y="21" fill="#000000" fontSize="12" fontWeight="900" textAnchor="middle">
+              ⚖️ ALJABAR, PERSAMAAN LINEAR & TIMBANGAN NERACA 📈
+            </text>
+          </g>
+
+          {/* Sisi Kiri: Timbangan Neraca Keseimbangan Aljabar (x + 3 = 7) */}
+          <g transform="translate(160, 155)">
+            {/* Tiang Neraca Kayu */}
+            <rect x="-8" y="-10" width="16" height="110" rx="4" fill="#D4A373" stroke="#5C3A21" strokeWidth="2.5" />
+            <polygon points="-45,100 45,100 25,80 -25,80" fill="#D4A373" stroke="#5C3A21" strokeWidth="2" />
+            {/* Poros Neraca */}
+            <circle cx="0" cy="-10" r="12" fill="#FEF08A" stroke="#5C3A21" strokeWidth="2.5" />
+            <text x="0" y="-6" fontSize="10" textAnchor="middle">⚖️</text>
+
+            {/* Balok Lengan Bergerak (Seimbang atau Berayun Halus) */}
+            <g style={{ transformOrigin: '0px -10px', animation: 'balanceTilt 4s ease-in-out infinite' }}>
+              <line x1="-120" y1="-10" x2="120" y2="-10" stroke="#5C3A21" strokeWidth="5" strokeLinecap="round" />
+
+              {/* Tali & Piringan Kiri: Kotak Misteri x + 3 */}
+              <line x1="-110" y1="-10" x2="-110" y2="35" stroke="#5C3A21" strokeWidth="2" />
+              <path d="M -140 35 L -80 35 L -90 48 L -130 48 Z" fill="#FFAE6D" stroke="#5C3A21" strokeWidth="2" />
+              {/* Kotak Misteri [ x ] */}
+              <rect x="-135" y="8" width="24" height="24" rx="5" fill={step === 0 ? '#FEF08A' : '#FFAE6D'} stroke="#5C3A21" strokeWidth="2" />
+              <text x="-123" y="24" fill="#000000" fontSize="13" fontWeight="900" textAnchor="middle">x</text>
+              {/* 3 Balok Angka (+3) */}
+              {[0, 1, 2].map((bi) => (
+                <rect key={bi} x={-104 + bi * 8} y="14" width="7" height="18" rx="2" fill="#A8E6CF" stroke="#5C3A21" strokeWidth="1.5" />
+              ))}
+              <text x="-110" y="62" fill="#000000" fontSize="9.5" fontWeight="bold" textAnchor="middle">Kiri: x + 3</text>
+
+              {/* Tali & Piringan Kanan: 7 Balok Angka */}
+              <line x1="110" y1="-10" x2="110" y2="35" stroke="#5C3A21" strokeWidth="2" />
+              <path d="M 80 35 L 140 35 L 130 48 L 90 48 Z" fill="#A8E6CF" stroke="#5C3A21" strokeWidth="2" />
+              {/* 7 Balok Angka (=7) */}
+              {[0, 1, 2, 3, 4, 5, 6].map((bi) => (
+                <rect key={bi} x={85 + bi * 7} y="14" width="6" height="18" rx="2" fill="#A8E6CF" stroke="#5C3A21" strokeWidth="1.5" />
+              ))}
+              <text x="110" y="62" fill="#000000" fontSize="9.5" fontWeight="bold" textAnchor="middle">Kanan: 7</text>
+            </g>
+
+            <rect x="-85" y="74" width="170" height="22" rx="6" fill="#FFF8EA" stroke="#5C3A21" strokeWidth="1.5" />
+            <text x="0" y="89" fill="#000000" fontSize="9.5" fontWeight="bold" textAnchor="middle">
+              ✨ x + 3 = 7 ➔ x = 7 - 3 = 4
+            </text>
+          </g>
+
+          {/* Sisi Kanan: Bidang Kartesius & Rumus Linear */}
+          <g transform="translate(345, 66)">
+            <rect x="0" y="0" width="225" height="215" rx="10" fill="#FFF8EA" stroke="#5C3A21" strokeWidth="2" />
+
+            {/* Kartesius Mini */}
+            <g transform="translate(30, 20)">
+              {/* Grid */}
+              {[-30, 0, 30].map((gx) => (
+                <line key={gx} x1={55 + gx} y1="0" x2={55 + gx} y2="95" stroke="#E2E8F0" strokeWidth="1" strokeDasharray="2,2" />
+              ))}
+              {[-30, 0, 30].map((gy) => (
+                <line key={gy} x1="0" y1={48 + gy} x2="110" y2={48 + gy} stroke="#E2E8F0" strokeWidth="1" strokeDasharray="2,2" />
+              ))}
+              {/* Sumbu X & Y */}
+              <line x1="5" y1="48" x2="105" y2="48" stroke="#5C3A21" strokeWidth="2" />
+              <line x1="55" y1="5" x2="55" y2="92" stroke="#5C3A21" strokeWidth="2" />
+              <text x="108" y="52" fill="#5C3A21" fontSize="9" fontWeight="bold">X</text>
+              <text x="55" y="0" fill="#5C3A21" fontSize="9" fontWeight="bold" textAnchor="middle">Y</text>
+              {/* Garis Linear Menyala */}
+              <line x1="15" y1="82" x2="95" y2="14" stroke="#0284C7" strokeWidth="3" strokeLinecap="round" />
+              <circle cx="55" cy="48" r="3.5" fill="#EF4444" stroke="#5C3A21" strokeWidth="1" />
+              <circle cx="75" cy="30" r="3.5" fill="#EF4444" stroke="#5C3A21" strokeWidth="1" />
+              <text x="58" y="60" fill="#5C3A21" fontSize="7.5">O(0,0)</text>
+              <text x="82" y="28" fill="#0284C7" fontSize="8" fontWeight="bold">(2,4)</text>
+            </g>
+
+            {/* Kotak Ringkasan Rumus */}
+            <g transform="translate(12, 126)">
+              <rect x="0" y="0" width="201" height="76" rx="8" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
+              <text x="100" y="18" fill="#000000" fontSize="10.5" fontWeight="900" textAnchor="middle">
+                📐 PERSAMAAN LINEAR
+              </text>
+              <text x="10" y="34" fill="#0284C7" fontSize="9.5" fontWeight="bold">
+                • Garis: y = mx + c
+              </text>
+              <text x="10" y="48" fill="#5C3A21" fontSize="8.5">
+                • Gradien m = Δy / Δx (Kemiringan)
+              </text>
+              <text x="10" y="64" fill="#166534" fontSize="8.5" fontWeight="bold">
+                • SPLDV: 2x + y = 10 (Eliminasi/Substitusi)
+              </text>
+            </g>
+          </g>
+        </svg>
+      )}
+
+      {/* ==================================================================== */}
+      {/* 24. MATEMATIKA SMP: TEOREMA PYTHAGORAS a² + b² = c²                  */}
+      {/* ==================================================================== */}
+      {type === 'pythagoras' && (
+        <svg viewBox="0 0 600 320" className="w-full h-full max-h-[320px] select-none">
+          <rect x="6" y="6" width="588" height="308" rx="14" fill="#FFF8EA" stroke="#5C3A21" strokeWidth="3" />
+          <rect x="14" y="14" width="572" height="292" rx="10" fill="#FFFDF7" stroke="#EADBC0" strokeWidth="1.5" />
+
+          {/* Header Kartu Clay */}
+          <g transform="translate(300, 22)">
+            <rect x="-210" y="0" width="420" height="32" rx="8" fill="#FFAE6D" stroke="#5C3A21" strokeWidth="2" />
+            <text x="0" y="21" fill="#000000" fontSize="12" fontWeight="900" textAnchor="middle">
+              📐 TEOREMA PYTHAGORAS: a² + b² = c² (9 + 16 = 25) 📐
+            </text>
+          </g>
+
+          {/* Pusat Segitiga Siku-Siku */}
+          <g transform="translate(180, 160)">
+            {/* Persegi di Sisi a (bawah/alas): 3x3 = 9 petak */}
+            <g transform="translate(0, 0)">
+              <rect x="0" y="0" width="75" height="75" rx="6" fill="#FFAE6D" stroke="#5C3A21" strokeWidth="2.5" />
+              {[0, 1, 2].map((r) =>
+                [0, 1, 2].map((c) => (
+                  <rect key={`${r}-${c}`} x={c * 25 + 2} y={r * 25 + 2} width="21" height="21" rx="3" fill="#FFF8EA" stroke="#5C3A21" strokeWidth="1" />
+                ))
+              )}
+              <rect x="12" y="26" width="51" height="22" rx="4" fill="#FFAE6D" stroke="#5C3A21" strokeWidth="1.5" />
+              <text x="37" y="42" fill="#000000" fontSize="12" fontWeight="900" textAnchor="middle">a² = 9</text>
+            </g>
+
+            {/* Persegi di Sisi b (kiri/tegak): 4x4 = 16 petak */}
+            <g transform="translate(-100, -100)">
+              <rect x="0" y="0" width="100" height="100" rx="6" fill="#A8E6CF" stroke="#5C3A21" strokeWidth="2.5" />
+              {[0, 1, 2, 3].map((r) =>
+                [0, 1, 2, 3].map((c) => (
+                  <rect key={`${r}-${c}`} x={c * 25 + 2} y={r * 25 + 2} width="21" height="21" rx="3" fill="#FFF8EA" stroke="#5C3A21" strokeWidth="1" />
+                ))
+              )}
+              <rect x="22" y="38" width="56" height="24" rx="4" fill="#A8E6CF" stroke="#5C3A21" strokeWidth="1.5" />
+              <text x="50" y="55" fill="#000000" fontSize="13" fontWeight="900" textAnchor="middle">b² = 16</text>
+            </g>
+
+            {/* Segitiga Siku-Siku Utama di Tengah */}
+            <polygon points="0,0 75,0 0,-100" fill="#FEF08A" stroke="#5C3A21" strokeWidth="3.5" />
+            {/* Simbol Siku-Siku */}
+            <rect x="0" y="-14" width="14" height="14" fill="none" stroke="#5C3A21" strokeWidth="2" />
+
+            {/* Label Panjang Sisi a, b, c */}
+            <text x="38" y="-6" fill="#000000" fontSize="11" fontWeight="900" textAnchor="middle">a = 3</text>
+            <text x="12" y="-50" fill="#000000" fontSize="11" fontWeight="900" textAnchor="middle">b = 4</text>
+            <text x="54" y="-54" fill="#000000" fontSize="12" fontWeight="900" textAnchor="middle">c = 5 ⭐</text>
+          </g>
+
+          {/* Sisi Kanan: Persegi Hipotenusa c² (25 Petak) & Tabel Tripel */}
+          <g transform="translate(360, 66)">
+            <rect x="0" y="0" width="220" height="215" rx="10" fill="#FFF8EA" stroke="#5C3A21" strokeWidth="2.5" />
+
+            {/* Persegi Hipotenusa c² = 25 */}
+            <g transform="translate(15, 12)">
+              <rect x="0" y="0" width="190" height="75" rx="8" fill="#FEF08A" stroke="#5C3A21" strokeWidth="2" />
+              <text x="95" y="24" fill="#000000" fontSize="12" fontWeight="900" textAnchor="middle">
+                ✨ c² = a² + b² = 9 + 16 = 25
+              </text>
+              <text x="95" y="44" fill="#166534" fontSize="11" fontWeight="bold" textAnchor="middle">
+                Hipotenusa c = √25 = 5 Satuan!
+              </text>
+              <text x="95" y="62" fill="#5C3A21" fontSize="9" textAnchor="middle">
+                Terbukti akurat secara geometri!
+              </text>
+            </g>
+
+            {/* Tabel Tripel Pythagoras Wajib Hafal */}
+            <g transform="translate(15, 96)">
+              <rect x="0" y="0" width="190" height="106" rx="8" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
+              <text x="10" y="18" fill="#000000" fontSize="10.5" fontWeight="900">
+                🔢 TRIPEL PYTHAGORAS WAJIB:
+              </text>
+              <text x="10" y="36" fill="#0284C7" fontSize="9.5" fontWeight="bold">
+                1. 3, 4, 5 (Kelipatan: 6, 8, 10 • 9, 12, 15)
+              </text>
+              <text x="10" y="52" fill="#166534" fontSize="9.5" fontWeight="bold">
+                2. 5, 12, 13 (Kelipatan: 10, 24, 26)
+              </text>
+              <text x="10" y="68" fill="#D97706" fontSize="9.5" fontWeight="bold">
+                3. 7, 24, 25 • 8, 15, 17
+              </text>
+              <text x="10" y="92" fill="#5C3A21" fontSize="8.5">
+                💡 Sisi miring (c) selalu yang paling panjang!
+              </text>
+            </g>
+          </g>
+        </svg>
+      )}
+
+      {/* ==================================================================== */}
+      {/* 25. IPA SMP: STRUKTUR SEL & ORGANEL PABRIK KEHIDUPAN                 */}
+      {/* ==================================================================== */}
+      {type === 'cell_structure' && (
+        <svg viewBox="0 0 600 320" className="w-full h-full max-h-[320px] select-none">
+          <rect x="6" y="6" width="588" height="308" rx="14" fill="#FFF8EA" stroke="#5C3A21" strokeWidth="3" />
+          <rect x="14" y="14" width="572" height="292" rx="10" fill="#FFFDF7" stroke="#EADBC0" strokeWidth="1.5" />
+
+          {/* Header Kartu Clay */}
+          <g transform="translate(300, 22)">
+            <rect x="-210" y="0" width="420" height="32" rx="8" fill="#A8E6CF" stroke="#5C3A21" strokeWidth="2" />
+            <text x="0" y="21" fill="#000000" fontSize="12" fontWeight="900" textAnchor="middle">
+              🔬 STRUKTUR SEL: PABRIK KEHIDUPAN & ORGANEL MIKROSKOPIS 🧬
+            </text>
+          </g>
+
+          {/* Irisan Sel 3D Claymorphism di Kiri */}
+          <g transform="translate(170, 165)">
+            {/* Dinding Sel Luar (Hijau Mint Kaku) */}
+            <ellipse cx="0" cy="0" rx="138" ry="98" fill="#A8E6CF" stroke="#5C3A21" strokeWidth="3.5" />
+            {/* Membran Sel Dalam */}
+            <ellipse cx="0" cy="0" rx="124" ry="86" fill="#FFF8EA" stroke="#5C3A21" strokeWidth="2" />
+
+            {/* Nukleus (Inti Sel di Tengah-Kiri) */}
+            <circle cx="-35" cy="0" r="38" fill={step === 1 ? '#DDD6FE' : '#C4B5FD'} stroke="#5C3A21" strokeWidth="3" style={{ animation: 'solarPulse 2.5s infinite' }} />
+            <circle cx="-35" cy="0" r="16" fill="#7C3AED" stroke="#5C3A21" strokeWidth="1.5" />
+            <text x="-35" y="4" fill="#FFFFFF" fontSize="9" fontWeight="bold" textAnchor="middle">DNA</text>
+            <text x="-35" y="-44" fill="#000000" fontSize="10" fontWeight="900" textAnchor="middle">NUKLEUS</text>
+
+            {/* Mitokondria (Powerhouse ATP di Kanan Atas) */}
+            <g transform="translate(45, -35)">
+              <ellipse cx="0" cy="0" rx="26" ry="15" fill={step === 2 ? '#FEF08A' : '#FFAE6D'} stroke="#5C3A21" strokeWidth="2" />
+              <path d="M -16 0 Q -8 -8, 0 0 T 16 0" stroke="#5C3A21" strokeWidth="2" fill="none" />
+              <text x="0" y="22" fill="#000000" fontSize="8.5" fontWeight="bold" textAnchor="middle">Mitokondria (ATP)</text>
+            </g>
+
+            {/* Vakuola Air (Biru Langit di Kanan Bawah) */}
+            <g transform="translate(48, 32)">
+              <ellipse cx="0" cy="0" rx="30" ry="18" fill="#BAE6FD" stroke="#5C3A21" strokeWidth="2" />
+              <text x="0" y="4" fill="#000000" fontSize="8.5" fontWeight="bold" textAnchor="middle">Vakuola Air</text>
+            </g>
+
+            {/* Ribosom (Titik Emas Berpendar) */}
+            {[-60, -20, 10, 80, -10].map((rx, ri) => (
+              <circle key={ri} cx={rx} cy={-50 + ri * 25} r="3.5" fill="#FACC15" stroke="#5C3A21" strokeWidth="1" />
+            ))}
+          </g>
+
+          {/* Sisi Kanan: Penjelasan Organel Interaktif sesuai Step */}
+          <g transform="translate(345, 66)">
+            <rect x="0" y="0" width="225" height="215" rx="10" fill="#FFF8EA" stroke="#5C3A21" strokeWidth="2" />
+            <rect x="0" y="0" width="225" height="30" rx="10" fill="#FFAE6D" stroke="#5C3A21" strokeWidth="1.5" />
+            <text x="112" y="20" fill="#000000" fontSize="11" fontWeight="bold" textAnchor="middle">
+              🏢 DAFTAR TUGAS ORGANEL
+            </text>
+
+            <g transform="translate(10, 40)">
+              {[
+                { name: '1. Membran & Dinding Sel', role: 'Gerbang pelindung selektif nutrisi', icon: '🛡️', s: 0 },
+                { name: '2. Nukleus (Inti Sel)', role: 'Pusat komando & pewarisan DNA', icon: '🧬', s: 1 },
+                { name: '3. Mitokondria (ATP)', role: 'Pabrik pembakar energi respirasi', icon: '⚡', s: 2 },
+                { name: '4. Vakuola & Ribosom', role: 'Tempat sintesis protein & air', icon: '💧', s: 3 },
+              ].map((item, idx) => (
+                <g key={idx} transform={`translate(0, ${idx * 40})`}>
+                  <rect
+                    x="0"
+                    y="0"
+                    width="205"
+                    height="35"
+                    rx="6"
+                    fill={step === item.s ? '#FEF08A' : '#FFFDF7'}
+                    stroke={step === item.s ? '#D97706' : '#5C3A21'}
+                    strokeWidth={step === item.s ? '2' : '1.5'}
+                  />
+                  <text x="8" y="16" fill="#000000" fontSize="9.5" fontWeight="900">
+                    {item.icon} {item.name}
+                  </text>
+                  <text x="8" y="28" fill="#5C3A21" fontSize="8">
+                    {item.role}
+                  </text>
+                </g>
+              ))}
+            </g>
+          </g>
+        </svg>
+      )}
+
+      {/* ==================================================================== */}
+      {/* 26. IPA SMP: HUKUM NEWTON & GAYA DINAMIKA GERAK (F = m · a)           */}
+      {/* ==================================================================== */}
+      {type === 'newton_dynamics' && (
+        <svg viewBox="0 0 600 320" className="w-full h-full max-h-[320px] select-none">
+          <rect x="6" y="6" width="588" height="308" rx="14" fill="#FFF8EA" stroke="#5C3A21" strokeWidth="3" />
+          <rect x="14" y="14" width="572" height="292" rx="10" fill="#FFFDF7" stroke="#EADBC0" strokeWidth="1.5" />
+
+          {/* Header Kartu Clay */}
+          <g transform="translate(300, 22)">
+            <rect x="-210" y="0" width="420" height="32" rx="8" fill="#FFAE6D" stroke="#5C3A21" strokeWidth="2" />
+            <text x="0" y="21" fill="#000000" fontSize="12" fontWeight="900" textAnchor="middle">
+              🏎️ HUKUM NEWTON & GAYA GERAK: F = m · a 🍎
+            </text>
+          </g>
+
+          {/* Lintasan Aspal Jalanan di Bagian Bawah */}
+          <g transform="translate(20, 225)">
+            <rect x="0" y="0" width="560" height="50" rx="8" fill="#334155" stroke="#5C3A21" strokeWidth="2.5" />
+            {/* Marka Jalan Putus-Putus */}
+            {[0, 80, 160, 240, 320, 400, 480].map((mx) => (
+              <rect key={mx} x={mx + 10} y="22" width="45" height="6" rx="2" fill="#FFF8EA" />
+            ))}
+          </g>
+
+          {/* Gerobak Kayu & Karakter Mendorong (Fisika Dinamis 60 FPS) */}
+          <g transform="translate(60, 120)">
+            {/* Karakter Kartun Pendorong */}
+            <g transform="translate(25, 30)">
+              <circle cx="0" cy="0" r="14" fill="#FFAE6D" stroke="#5C3A21" strokeWidth="2" />
+              <text x="0" y="5" fontSize="12" textAnchor="middle">🤠</text>
+              <line x1="0" y1="14" x2="0" y2="45" stroke="#5C3A21" strokeWidth="3.5" />
+              {/* Lengan Mendorong */}
+              <line x1="0" y1="24" x2="35" y2="24" stroke="#5C3A21" strokeWidth="3" />
+              <line x1="0" y1="45" x2="-10" y2="70" stroke="#5C3A21" strokeWidth="3" />
+              <line x1="0" y1="45" x2="15" y2="70" stroke="#5C3A21" strokeWidth="3" />
+            </g>
+
+            {/* Vektor Gaya Dorong (Panah F) */}
+            <g transform="translate(65, 45)">
+              <line x1="0" y1="0" x2="45" y2="0" stroke="#EF4444" strokeWidth="4.5" strokeLinecap="round" />
+              <polygon points="50,0 40,-6 40,6" fill="#EF4444" />
+              <text x="24" y="-8" fill="#EF4444" fontSize="12" fontWeight="900" textAnchor="middle">
+                F = 50 N
+              </text>
+            </g>
+
+            {/* Badan Gerobak Kayu */}
+            <g transform="translate(120, 25)">
+              <rect x="0" y="0" width="115" height="55" rx="8" fill="#D4A373" stroke="#5C3A21" strokeWidth="2.5" />
+              {/* Beban Balok Massa m */}
+              <rect x="15" y="-20" width="85" height="26" rx="5" fill="#FEF08A" stroke="#5C3A21" strokeWidth="2" />
+              <text x="57" y="-3" fill="#000000" fontSize="11" fontWeight="900" textAnchor="middle">
+                Massa m = 10 kg
+              </text>
+              {/* 2 Roda Kayu Berputar 60 FPS */}
+              <g transform="translate(25, 60)" style={{ transformOrigin: '0px 0px', animation: 'spin360 1.2s linear infinite' }}>
+                <circle cx="0" cy="0" r="16" fill="#FFF8EA" stroke="#5C3A21" strokeWidth="3" />
+                <line x1="-16" y1="0" x2="16" y2="0" stroke="#5C3A21" strokeWidth="2" />
+                <line x1="0" y1="-16" x2="0" y2="16" stroke="#5C3A21" strokeWidth="2" />
+              </g>
+              <g transform="translate(90, 60)" style={{ transformOrigin: '0px 0px', animation: 'spin360 1.2s linear infinite' }}>
+                <circle cx="0" cy="0" r="16" fill="#FFF8EA" stroke="#5C3A21" strokeWidth="3" />
+                <line x1="-16" y1="0" x2="16" y2="0" stroke="#5C3A21" strokeWidth="2" />
+                <line x1="0" y1="-16" x2="0" y2="16" stroke="#5C3A21" strokeWidth="2" />
+              </g>
+            </g>
+
+            {/* Speedometer Analog Percepatan a */}
+            <g transform="translate(270, 50)">
+              <circle cx="0" cy="0" r="28" fill="#FFF8EA" stroke="#5C3A21" strokeWidth="2.5" />
+              <path d="M -18 10 A 20 20 0 1 1 18 10" fill="none" stroke="#E2E8F0" strokeWidth="4" />
+              <line x1="0" y1="0" x2="12" y2="-14" stroke="#EF4444" strokeWidth="2.5" strokeLinecap="round" />
+              <circle cx="0" cy="0" r="4" fill="#5C3A21" />
+              <text x="0" y="38" fill="#000000" fontSize="9.5" fontWeight="900" textAnchor="middle">
+                a = 5 m/s²
+              </text>
+            </g>
+          </g>
+
+          {/* Sisi Kanan: Panel 3 Hukum Newton */}
+          <g transform="translate(390, 66)">
+            <rect x="0" y="0" width="190" height="150" rx="10" fill="#FFF8EA" stroke="#5C3A21" strokeWidth="2" />
+            <rect x="0" y="0" width="190" height="26" rx="10" fill="#BAE6FD" stroke="#5C3A21" strokeWidth="1.5" />
+            <text x="95" y="18" fill="#000000" fontSize="10.5" fontWeight="900" textAnchor="middle">
+              📜 3 HUKUM UTAMA NEWTON
+            </text>
+            <g transform="translate(10, 36)">
+              <text x="0" y="14" fill="#0284C7" fontSize="9.5" fontWeight="bold">I. Kelembaman (Inersia):</text>
+              <text x="0" y="26" fill="#5C3A21" fontSize="8">Benda diam tetap diam (ΣF = 0)</text>
+
+              <text x="0" y="46" fill="#166534" fontSize="9.5" fontWeight="bold">II. Percepatan Gerak:</text>
+              <text x="0" y="58" fill="#5C3A21" fontSize="8">F = m · a ➔ a = F / m</text>
+
+              <text x="0" y="78" fill="#D97706" fontSize="9.5" fontWeight="bold">III. Aksi - Reaksi:</text>
+              <text x="0" y="90" fill="#5C3A21" fontSize="8">F aksi = -F reaksi (Dorong roket)</text>
+            </g>
+          </g>
+        </svg>
+      )}
+
+      {/* ==================================================================== */}
+      {/* 27. IPA SMP: SISTEM PEREDARAN DARAH & JANTUNG 4 RUANG               */}
+      {/* ==================================================================== */}
+      {type === 'blood_circulation' && (
+        <svg viewBox="0 0 600 320" className="w-full h-full max-h-[320px] select-none">
+          <rect x="6" y="6" width="588" height="308" rx="14" fill="#FFF8EA" stroke="#5C3A21" strokeWidth="3" />
+          <rect x="14" y="14" width="572" height="292" rx="10" fill="#FFFDF7" stroke="#EADBC0" strokeWidth="1.5" />
+
+          {/* Header Kartu Clay */}
+          <g transform="translate(300, 22)">
+            <rect x="-210" y="0" width="420" height="32" rx="8" fill="#FFAE6D" stroke="#5C3A21" strokeWidth="2" />
+            <text x="0" y="21" fill="#000000" fontSize="12" fontWeight="900" textAnchor="middle">
+              ❤️ SISTEM PEREDARAN DARAH: JANTUNG & PEMBULUH DARAH 🩸
+            </text>
+          </g>
+
+          {/* Paru-Paru (Atas) */}
+          <g transform="translate(180, 72)">
+            <rect x="-65" y="0" width="130" height="30" rx="8" fill="#BAE6FD" stroke="#5C3A21" strokeWidth="2" />
+            <text x="0" y="20" fill="#000000" fontSize="11" fontWeight="bold" textAnchor="middle">
+              🫁 PARU-PARU (O₂ In)
+            </text>
+          </g>
+
+          {/* Jantung 4 Ruang di Tengah (Denyut Harmonis 60 FPS) */}
+          <g transform="translate(180, 168)" style={{ animation: 'heartBeat 1.2s ease-in-out infinite' }}>
+            <rect x="-70" y="-45" width="140" height="90" rx="16" fill="#FFF8EA" stroke="#5C3A21" strokeWidth="3" />
+
+            {/* Serambi Kanan & Bilik Kanan (Biru: Kaya CO2) */}
+            <rect x="-64" y="-39" width="60" height="36" rx="8" fill="#BAE6FD" stroke="#5C3A21" strokeWidth="1.5" />
+            <text x="-34" y="-17" fill="#000000" fontSize="8.5" fontWeight="bold" textAnchor="middle">Serambi Kanan</text>
+            <rect x="-64" y="3" width="60" height="36" rx="8" fill="#93C5FD" stroke="#5C3A21" strokeWidth="1.5" />
+            <text x="-34" y="25" fill="#000000" fontSize="8.5" fontWeight="bold" textAnchor="middle">Bilik Kanan</text>
+
+            {/* Serambi Kiri & Bilik Kiri (Merah: Kaya O2) */}
+            <rect x="4" y="-39" width="60" height="36" rx="8" fill="#FECDD3" stroke="#5C3A21" strokeWidth="1.5" />
+            <text x="34" y="-17" fill="#000000" fontSize="8.5" fontWeight="bold" textAnchor="middle">Serambi Kiri</text>
+            <rect x="4" y="3" width="60" height="36" rx="8" fill="#FDA4AF" stroke="#5C3A21" strokeWidth="1.5" />
+            <text x="34" y="25" fill="#000000" fontSize="8.5" fontWeight="bold" textAnchor="middle">Bilik Kiri</text>
+
+            <circle cx="0" cy="0" r="10" fill="#FEF08A" stroke="#5C3A21" strokeWidth="1.5" />
+            <text x="0" y="4" fontSize="10" textAnchor="middle">❤️</text>
+          </g>
+
+          {/* Seluruh Tubuh (Bawah) */}
+          <g transform="translate(180, 260)">
+            <rect x="-65" y="0" width="130" height="30" rx="8" fill="#FEF08A" stroke="#5C3A21" strokeWidth="2" />
+            <text x="0" y="20" fill="#000000" fontSize="10.5" fontWeight="bold" textAnchor="middle">
+              🏃 SELURUH TUBUH
+            </text>
+          </g>
+
+          {/* Aliran Pipa Pembuluh Darah & Partikel Darah Mengalir */}
+          {/* Pipa Kiri (Vena: Biru) */}
+          <line x1="110" y1="102" x2="110" y2="260" stroke="#0284C7" strokeWidth="4" strokeLinecap="round" strokeDasharray="6,6" style={{ animation: 'electronFlow 1.5s linear infinite' }} />
+          {/* Pipa Kanan (Aorta: Merah) */}
+          <line x1="250" y1="102" x2="250" y2="260" stroke="#EF4444" strokeWidth="4" strokeLinecap="round" strokeDasharray="6,6" style={{ animation: 'electronFlow 1.5s linear infinite' }} />
+
+          {/* Sisi Kanan: Panduan Golongan Darah & Sirkulasi */}
+          <g transform="translate(345, 66)">
+            <rect x="0" y="0" width="225" height="225" rx="10" fill="#FFF8EA" stroke="#5C3A21" strokeWidth="2" />
+            <rect x="0" y="0" width="225" height="28" rx="10" fill="#FFAE6D" stroke="#5C3A21" strokeWidth="1.5" />
+            <text x="112" y="19" fill="#000000" fontSize="11" fontWeight="bold" textAnchor="middle">
+              🩸 SIRKULASI BESAR & KECIL
+            </text>
+
+            <g transform="translate(10, 36)">
+              <rect x="0" y="0" width="205" height="50" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
+              <text x="8" y="16" fill="#0284C7" fontSize="9.5" fontWeight="900">1. Peredaran Kecil (Paru):</text>
+              <text x="8" y="30" fill="#5C3A21" fontSize="8">Bilik Kanan ➔ Paru-Paru ➔ Serambi Kiri</text>
+              <text x="8" y="42" fill="#166534" fontSize="8" fontWeight="bold">(Pertukaran gas CO₂ jadi O₂)</text>
+
+              <rect x="0" y="58" width="205" height="50" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
+              <text x="8" y="74" fill="#EF4444" fontSize="9.5" fontWeight="900">2. Peredaran Besar (Tubuh):</text>
+              <text x="8" y="88" fill="#5C3A21" fontSize="8">Bilik Kiri ➔ Aorta ➔ Tubuh ➔ Serambi Kanan</text>
+              <text x="8" y="100" fill="#D97706" fontSize="8" fontWeight="bold">(Membawa nutrisi & O₂ ke sel raga)</text>
+
+              <rect x="0" y="116" width="205" height="65" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
+              <text x="8" y="132" fill="#000000" fontSize="9.5" fontWeight="900">3. Golongan Darah ABO:</text>
+              <text x="8" y="146" fill="#5C3A21" fontSize="8">• Gol O: Donor Universal (Bisa beri ke semua)</text>
+              <text x="8" y="158" fill="#5C3A21" fontSize="8">• Gol AB: Resipien Universal (Bisa terima semua)</text>
+              <text x="8" y="170" fill="#166534" fontSize="8" fontWeight="bold">• Eritrosit: Sel darah merah pengikat O₂</text>
+            </g>
+          </g>
+        </svg>
+      )}
+
+      {/* ==================================================================== */}
+      {/* 28. IPA SMP: TEKANAN ZAT & HUKUM PASCAL BEJANA HIDROLIK             */}
+      {/* ==================================================================== */}
+      {type === 'pressure_pascal' && (
+        <svg viewBox="0 0 600 320" className="w-full h-full max-h-[320px] select-none">
+          <rect x="6" y="6" width="588" height="308" rx="14" fill="#FFF8EA" stroke="#5C3A21" strokeWidth="3" />
+          <rect x="14" y="14" width="572" height="292" rx="10" fill="#FFFDF7" stroke="#EADBC0" strokeWidth="1.5" />
+
+          {/* Header Kartu Clay */}
+          <g transform="translate(300, 22)">
+            <rect x="-210" y="0" width="420" height="32" rx="8" fill="#BAE6FD" stroke="#5C3A21" strokeWidth="2" />
+            <text x="0" y="21" fill="#000000" fontSize="12" fontWeight="900" textAnchor="middle">
+              🚗 TEKANAN ZAT & HUKUM PASCAL: F₁ / A₁ = F₂ / A₂ 💧
+            </text>
+          </g>
+
+          {/* Dongkrak Bejana U Hidrolik di Kiri */}
+          <g transform="translate(40, 60)">
+            {/* Bejana U Kaca/Logam */}
+            <path
+              d="M 60 70 L 60 190 Q 60 215, 90 215 L 230 215 Q 260 215, 260 190 L 260 70 L 190 70 L 190 170 Q 190 180, 180 180 L 120 180 Q 110 180, 110 170 L 110 70 Z"
+              fill="#BAE6FD"
+              stroke="#5C3A21"
+              strokeWidth="3"
+            />
+            {/* Cairan Fluida Hidrolik Bergelombang */}
+            <rect x="63" y="140" width="45" height="72" fill="#38BDF8" fillOpacity="0.7" />
+            <rect x="108" y="180" width="84" height="32" fill="#38BDF8" fillOpacity="0.7" />
+            <rect x="192" y="115" width="66" height="97" fill="#38BDF8" fillOpacity="0.7" />
+
+            {/* Piston Kecil A1 (Ditekan F1) */}
+            <rect x="63" y="125" width="45" height="16" rx="3" fill="#FFAE6D" stroke="#5C3A21" strokeWidth="2" />
+            <line x1="85" y1="80" x2="85" y2="122" stroke="#EF4444" strokeWidth="4.5" strokeLinecap="round" />
+            <polygon points="85,125 79,112 91,112" fill="#EF4444" />
+            <text x="85" y="72" fill="#EF4444" fontSize="11" fontWeight="900" textAnchor="middle">F₁ = 100 N</text>
+            <text x="85" y="155" fill="#5C3A21" fontSize="9" fontWeight="bold" textAnchor="middle">A₁ Kecil</text>
+
+            {/* Piston Besar A2 (Mengangkat Mobil Merah 60 FPS) */}
+            <g style={{ animation: 'hydroFloat 2.5s ease-in-out infinite' }}>
+              <rect x="192" y="100" width="66" height="18" rx="3" fill="#A8E6CF" stroke="#5C3A21" strokeWidth="2" />
+              {/* Mobil Merah RadenWorld Terangkat */}
+              <g transform="translate(195, 60)">
+                <rect x="5" y="15" width="50" height="24" rx="6" fill="#EF4444" stroke="#5C3A21" strokeWidth="2" />
+                <rect x="15" y="5" width="30" height="16" rx="4" fill="#BAE6FD" stroke="#5C3A21" strokeWidth="1.5" />
+                <circle cx="16" cy="38" r="6" fill="#334155" stroke="#5C3A21" strokeWidth="1.5" />
+                <circle cx="44" cy="38" r="6" fill="#334155" stroke="#5C3A21" strokeWidth="1.5" />
+              </g>
+              <line x1="225" y1="100" x2="225" y2="45" stroke="#166534" strokeWidth="4.5" strokeLinecap="round" />
+              <polygon points="225,40 219,53 231,53" fill="#166534" />
+              <text x="225" y="32" fill="#166534" fontSize="11" fontWeight="900" textAnchor="middle">F₂ = 5000 N 🚗</text>
+            </g>
+            <text x="225" y="132" fill="#5C3A21" fontSize="9" fontWeight="bold" textAnchor="middle">A₂ Besar</text>
+          </g>
+
+          {/* Sisi Kanan: Rumus Pascal & Tekanan Hidrostatis */}
+          <g transform="translate(345, 66)">
+            <rect x="0" y="0" width="225" height="215" rx="10" fill="#FFF8EA" stroke="#5C3A21" strokeWidth="2" />
+            <rect x="0" y="0" width="225" height="28" rx="10" fill="#FEF08A" stroke="#5C3A21" strokeWidth="1.5" />
+            <text x="112" y="19" fill="#000000" fontSize="11" fontWeight="bold" textAnchor="middle">
+              💡 RUMUS HUKUM PASCAL
+            </text>
+
+            <g transform="translate(10, 36)">
+              <rect x="0" y="0" width="205" height="48" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
+              <text x="102" y="20" fill="#0284C7" fontSize="12" fontWeight="900" textAnchor="middle">
+                F₁ / A₁ = F₂ / A₂
+              </text>
+              <text x="102" y="38" fill="#5C3A21" fontSize="8.5" textAnchor="middle">
+                Tekanan diteruskan ke segala arah sama besar
+              </text>
+
+              <rect x="0" y="56" width="205" height="52" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
+              <text x="10" y="18" fill="#166534" fontSize="10" fontWeight="bold">Tekanan Zat Padat:</text>
+              <text x="10" y="32" fill="#5C3A21" fontSize="8.5">• P = F / A (Makin runcing makin tajam)</text>
+              <text x="10" y="44" fill="#5C3A21" fontSize="8.5">• Satuan: N/m² atau Pascal (Pa)</text>
+
+              <rect x="0" y="116" width="205" height="56" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
+              <text x="10" y="18" fill="#D97706" fontSize="10" fontWeight="bold">Tekanan Hidrostatis Cair:</text>
+              <text x="10" y="32" fill="#5C3A21" fontSize="8.5">• P = ρ · g · h</text>
+              <text x="10" y="44" fill="#5C3A21" fontSize="8.5">• Makin dalam penyelam, tekanan makin kuat!</text>
+            </g>
+          </g>
+        </svg>
+      )}
+
+      {/* ==================================================================== */}
+      {/* 29. IPA SMP: RANGKAIAN LISTRIK DINAMIS & HUKUM OHM                   */}
+      {/* ==================================================================== */}
+      {type === 'electric_circuit' && (
+        <svg viewBox="0 0 600 320" className="w-full h-full max-h-[320px] select-none">
+          <rect x="6" y="6" width="588" height="308" rx="14" fill="#FFF8EA" stroke="#5C3A21" strokeWidth="3" />
+          <rect x="14" y="14" width="572" height="292" rx="10" fill="#FFFDF7" stroke="#EADBC0" strokeWidth="1.5" />
+
+          {/* Header Kartu Clay */}
+          <g transform="translate(300, 22)">
+            <rect x="-210" y="0" width="420" height="32" rx="8" fill="#FEF08A" stroke="#5C3A21" strokeWidth="2" />
+            <text x="0" y="21" fill="#000000" fontSize="12" fontWeight="900" textAnchor="middle">
+              ⚡ RANGKAIAN LISTRIK DINAMIS & HUKUM OHM (V = I · R) 💡
+            </text>
+          </g>
+
+          {/* Sirkuit Tertutup Claymorphism di Kiri */}
+          <g transform="translate(45, 66)">
+            {/* Kawat Tembaga Segiempat */}
+            <rect x="35" y="25" width="240" height="155" rx="12" fill="none" stroke="#D4A373" strokeWidth="8" />
+            {/* Aliran Elektron Biru Menyala 60 FPS */}
+            <rect
+              x="35"
+              y="25"
+              width="240"
+              height="155"
+              rx="12"
+              fill="none"
+              stroke="#0284C7"
+              strokeWidth="4"
+              strokeDasharray="8,8"
+              style={{ animation: 'electronFlow 1.8s linear infinite' }}
+            />
+
+            {/* Baterai Silinder di Sisi Kiri */}
+            <g transform="translate(35, 102)">
+              <rect x="-14" y="-30" width="28" height="60" rx="6" fill="#FFF8EA" stroke="#5C3A21" strokeWidth="2.5" />
+              <rect x="-14" y="-30" width="28" height="20" rx="6" fill="#FFAE6D" stroke="#5C3A21" strokeWidth="1.5" />
+              <text x="0" y="-15" fill="#000000" fontSize="12" fontWeight="900" textAnchor="middle">+</text>
+              <rect x="-14" y="10" width="28" height="20" rx="6" fill="#BAE6FD" stroke="#5C3A21" strokeWidth="1.5" />
+              <text x="0" y="25" fill="#000000" fontSize="14" fontWeight="900" textAnchor="middle">-</text>
+              <text x="-25" y="5" fill="#5C3A21" fontSize="9" fontWeight="bold" textAnchor="middle">12V</text>
+            </g>
+
+            {/* Saklar Pisau Emas di Sisi Atas (Tertutup ON) */}
+            <g transform="translate(155, 25)">
+              <circle cx="-25" cy="0" r="5" fill="#FEF08A" stroke="#5C3A21" strokeWidth="2" />
+              <circle cx="25" cy="0" r="5" fill="#FEF08A" stroke="#5C3A21" strokeWidth="2" />
+              <line x1="-23" y1="0" x2="23" y2="0" stroke="#166534" strokeWidth="4" strokeLinecap="round" />
+              <rect x="-24" y="-20" width="48" height="16" rx="4" fill="#A8E6CF" stroke="#5C3A21" strokeWidth="1" />
+              <text x="0" y="-9" fill="#000000" fontSize="8" fontWeight="bold" textAnchor="middle">SAKLAR ON</text>
+            </g>
+
+            {/* Resistor Hambatan R di Sisi Bawah */}
+            <g transform="translate(155, 180)">
+              <rect x="-35" y="-12" width="70" height="24" rx="5" fill="#FEF08A" stroke="#5C3A21" strokeWidth="2" />
+              <path d="M -25 0 L -18 -6 L -10 6 L -2 -6 L 6 6 L 14 -6 L 22 0" fill="none" stroke="#5C3A21" strokeWidth="2" />
+              <text x="0" y="24" fill="#000000" fontSize="9" fontWeight="bold" textAnchor="middle">Resistor R = 4 Ω</text>
+            </g>
+
+            {/* Lampu Pijar Bohlam di Sisi Kanan (Menyala Berpendar 60 FPS) */}
+            <g transform="translate(275, 102)">
+              {/* Berkas Sinar Pancaran Glow */}
+              <circle cx="0" cy="0" r="32" fill="#FEF08A" fillOpacity="0.4" style={{ animation: 'solarPulse 1.8s infinite' }} />
+              <circle cx="0" cy="0" r="22" fill="#FEF08A" stroke="#5C3A21" strokeWidth="2.5" />
+              <text x="0" y="7" fontSize="18" textAnchor="middle">💡</text>
+              <text x="35" y="4" fill="#000000" fontSize="9" fontWeight="bold">MENYALA</text>
+            </g>
+          </g>
+
+          {/* Sisi Kanan: Panduan Hukum Ohm & Rangkaian */}
+          <g transform="translate(365, 66)">
+            <rect x="0" y="0" width="205" height="215" rx="10" fill="#FFF8EA" stroke="#5C3A21" strokeWidth="2" />
+            <rect x="0" y="0" width="205" height="28" rx="10" fill="#FFAE6D" stroke="#5C3A21" strokeWidth="1.5" />
+            <text x="102" y="19" fill="#000000" fontSize="11" fontWeight="bold" textAnchor="middle">
+              📐 HUKUM OHM & SIRKUIT
+            </text>
+
+            <g transform="translate(10, 36)">
+              <rect x="0" y="0" width="185" height="46" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
+              <text x="92" y="20" fill="#0284C7" fontSize="13" fontWeight="900" textAnchor="middle">
+                V = I × R
+              </text>
+              <text x="92" y="36" fill="#5C3A21" fontSize="8.5" textAnchor="middle">
+                Kuat Arus: I = V / R = 12 / 4 = 3 Ampere
+              </text>
+
+              <rect x="0" y="54" width="185" height="52" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
+              <text x="8" y="18" fill="#166534" fontSize="9.5" fontWeight="bold">Rangkaian Seri:</text>
+              <text x="8" y="32" fill="#5C3A21" fontSize="8">• Arus I sama di setiap titik</text>
+              <text x="8" y="44" fill="#5C3A21" fontSize="8">• Hambatan bertambah: R total = R1 + R2</text>
+
+              <rect x="0" y="114" width="185" height="58" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
+              <text x="8" y="18" fill="#D97706" fontSize="9.5" fontWeight="bold">Rangkaian Paralel:</text>
+              <text x="8" y="32" fill="#5C3A21" fontSize="8">• Tegangan V sama di setiap cabang</text>
+              <text x="8" y="44" fill="#5C3A21" fontSize="8">• 1 alat mati, alat lain tetap menyala!</text>
+            </g>
+          </g>
+        </svg>
+      )}
+
+      {/* ==================================================================== */}
+      {/* 30. INFORMATIKA SMP: FLOWCHART LOGIKA & ALGORITMA                    */}
+      {/* ==================================================================== */}
+      {type === 'flowchart_logic' && (
+        <svg viewBox="0 0 600 320" className="w-full h-full max-h-[320px] select-none">
+          <rect x="6" y="6" width="588" height="308" rx="14" fill="#FFF8EA" stroke="#5C3A21" strokeWidth="3" />
+          <rect x="14" y="14" width="572" height="292" rx="10" fill="#FFFDF7" stroke="#EADBC0" strokeWidth="1.5" />
+
+          {/* Header Kartu Clay */}
+          <g transform="translate(300, 22)">
+            <rect x="-210" y="0" width="420" height="32" rx="8" fill="#A8E6CF" stroke="#5C3A21" strokeWidth="2" />
+            <text x="0" y="21" fill="#000000" fontSize="12" fontWeight="900" textAnchor="middle">
+              💻 ALGORITMA, FLOWCHART & LOGIKA KOMPUTASIONAL 🔄
+            </text>
+          </g>
+
+          {/* Flowchart Balok Vertikal di Kiri */}
+          <g transform="translate(180, 56)">
+            {/* 1. Start (Oval Mint) */}
+            <ellipse cx="0" cy="15" rx="60" ry="16" fill="#A8E6CF" stroke="#5C3A21" strokeWidth="2.5" />
+            <text x="0" y="20" fill="#000000" fontSize="11" fontWeight="900" textAnchor="middle">🟢 MULAI (Start)</text>
+
+            <line x1="0" y1="31" x2="0" y2="48" stroke="#5C3A21" strokeWidth="3" />
+            <polygon points="0,52 -4,44 4,44" fill="#5C3A21" />
+
+            {/* 2. Input Nilai (Jajar Genjang Biru) */}
+            <polygon points="-65,75 55,75 75,52 -45,52" fill="#BAE6FD" stroke="#5C3A21" strokeWidth="2.5" />
+            <text x="5" y="68" fill="#000000" fontSize="10.5" fontWeight="bold" textAnchor="middle">Input Nilai Ujian (N)</text>
+
+            <line x1="5" y1="75" x2="5" y2="92" stroke="#5C3A21" strokeWidth="3" />
+            <polygon points="5,96 1,88 9,88" fill="#5C3A21" />
+
+            {/* 3. Decision (Belah Ketupat Kuning) */}
+            <polygon points="5,98 75,128 5,158 -65,128" fill="#FEF08A" stroke="#5C3A21" strokeWidth="2.5" />
+            <text x="5" y="132" fill="#000000" fontSize="11" fontWeight="900" textAnchor="middle">Nilai ≥ 75?</text>
+
+            {/* Cabang Kanan (YA) */}
+            <line x1="75" y1="128" x2="115" y2="128" stroke="#166534" strokeWidth="2.5" />
+            <text x="95" y="122" fill="#166534" fontSize="10" fontWeight="900">YA</text>
+            <rect x="115" y="112" width="75" height="32" rx="6" fill="#A8E6CF" stroke="#5C3A21" strokeWidth="2" />
+            <text x="152" y="132" fill="#000000" fontSize="10" fontWeight="900" textAnchor="middle">LULUS 🎉</text>
+
+            {/* Cabang Kiri (TIDAK) */}
+            <line x1="-65" y1="128" x2="-105" y2="128" stroke="#EF4444" strokeWidth="2.5" />
+            <text x="-90" y="122" fill="#EF4444" fontSize="10" fontWeight="900">TIDAK</text>
+            <rect x="-180" y="112" width="75" height="32" rx="6" fill="#FFAE6D" stroke="#5C3A21" strokeWidth="2" />
+            <text x="-142" y="132" fill="#000000" fontSize="10" fontWeight="900" textAnchor="middle">REMIDI 📚</text>
+
+            {/* Garis Menuju Selesai */}
+            <path d="M 152 144 L 152 185 L 50 185" stroke="#5C3A21" strokeWidth="2.5" fill="none" />
+            <path d="M -142 144 L -142 185 L -40 185" stroke="#5C3A21" strokeWidth="2.5" fill="none" />
+
+            {/* 4. End (Oval Krem) */}
+            <ellipse cx="5" cy="185" rx="55" ry="16" fill="#FFF8EA" stroke="#5C3A21" strokeWidth="2.5" />
+            <text x="5" y="190" fill="#000000" fontSize="11" fontWeight="900" textAnchor="middle">🏁 SELESAI (End)</text>
+          </g>
+
+          {/* Sisi Kanan: Panduan Simbol Standar Flowchart */}
+          <g transform="translate(365, 66)">
+            <rect x="0" y="0" width="205" height="215" rx="10" fill="#FFF8EA" stroke="#5C3A21" strokeWidth="2" />
+            <rect x="0" y="0" width="205" height="28" rx="10" fill="#FFAE6D" stroke="#5C3A21" strokeWidth="1.5" />
+            <text x="102" y="19" fill="#000000" fontSize="11" fontWeight="bold" textAnchor="middle">
+              📚 SIMBOL STANDAR FLOWCHART
+            </text>
+
+            <g transform="translate(10, 36)">
+              <rect x="0" y="0" width="185" height="38" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
+              <text x="8" y="16" fill="#166534" fontSize="9.5" fontWeight="900">1. Oval (Terminator):</text>
+              <text x="8" y="28" fill="#5C3A21" fontSize="8">Titik Mulai (Start) dan Selesai (End)</text>
+
+              <rect x="0" y="44" width="185" height="38" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
+              <text x="8" y="16" fill="#0284C7" fontSize="9.5" fontWeight="900">2. Jajar Genjang:</text>
+              <text x="8" y="28" fill="#5C3A21" fontSize="8">Input masukan data & Output keluaran</text>
+
+              <rect x="0" y="88" width="185" height="38" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
+              <text x="8" y="16" fill="#D97706" fontSize="9.5" fontWeight="900">3. Belah Ketupat (Decision):</text>
+              <text x="8" y="28" fill="#5C3A21" fontSize="8">Percabangan kondisi logika (Ya / Tidak)</text>
+
+              <rect x="0" y="132" width="185" height="38" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
+              <text x="8" y="16" fill="#7C3AED" fontSize="9.5" fontWeight="900">4. Persegi Panjang:</text>
+              <text x="8" y="28" fill="#5C3A21" fontSize="8">Proses eksekusi formula perhitungan</text>
+            </g>
+          </g>
+        </svg>
+      )}
+
+      {/* ==================================================================== */}
+      {/* 31. IPA SMP: GETARAN, GELOMBANG TRANSVERSAL & BUNYI                  */}
+      {/* ==================================================================== */}
+      {type === 'wave_sound' && (
+        <svg viewBox="0 0 600 320" className="w-full h-full max-h-[320px] select-none">
+          <rect x="6" y="6" width="588" height="308" rx="14" fill="#FFF8EA" stroke="#5C3A21" strokeWidth="3" />
+          <rect x="14" y="14" width="572" height="292" rx="10" fill="#FFFDF7" stroke="#EADBC0" strokeWidth="1.5" />
+
+          {/* Header Kartu Clay */}
+          <g transform="translate(300, 22)">
+            <rect x="-210" y="0" width="420" height="32" rx="8" fill="#BAE6FD" stroke="#5C3A21" strokeWidth="2" />
+            <text x="0" y="21" fill="#000000" fontSize="12" fontWeight="900" textAnchor="middle">
+              🌊 GETARAN, GELOMBANG SINUS & CEPAT RAMBAT: v = λ · f 🎵
+            </text>
+          </g>
+
+          {/* Gelombang Sinus Transversal di Kiri */}
+          <g transform="translate(30, 80)">
+            {/* Garis Kesetimbangan */}
+            <line x1="20" y1="80" x2="310" y2="80" stroke="#94A3B8" strokeWidth="2" strokeDasharray="4,4" />
+            <text x="315" y="84" fill="#64748B" fontSize="8.5">Setimbang</text>
+
+            {/* Kurva Gelombang Sinus Transversal */}
+            <path
+              d="M 30 80 Q 75 20, 120 80 T 210 80 T 300 80"
+              fill="none"
+              stroke="#0284C7"
+              strokeWidth="4.5"
+              strokeLinecap="round"
+            />
+
+            {/* Puncak Bukit 1 */}
+            <circle cx="75" cy="20" r="6" fill="#EF4444" stroke="#5C3A21" strokeWidth="2" />
+            <text x="75" y="10" fill="#EF4444" fontSize="10.5" fontWeight="900" textAnchor="middle">Puncak Bukit</text>
+
+            {/* Lembah Dasar 1 */}
+            <circle cx="165" cy="140" r="6" fill="#166534" stroke="#5C3A21" strokeWidth="2" />
+            <text x="165" y="156" fill="#166534" fontSize="10.5" fontWeight="900" textAnchor="middle">Lembah Gelombang</text>
+
+            {/* Garis Ukur Amplitudo A */}
+            <line x1="75" y1="20" x2="75" y2="80" stroke="#EF4444" strokeWidth="2" strokeDasharray="3,3" />
+            <text x="92" y="55" fill="#EF4444" fontSize="9" fontWeight="bold">Amplitudo A</text>
+
+            {/* Garis Ukur Panjang Gelombang Lambda λ */}
+            <line x1="30" y1="120" x2="210" y2="120" stroke="#D97706" strokeWidth="2.5" />
+            <polygon points="30,120 40,116 40,124" fill="#D97706" />
+            <polygon points="210,120 200,116 200,124" fill="#D97706" />
+            <text x="120" y="112" fill="#D97706" fontSize="10" fontWeight="900" textAnchor="middle">
+              1 Panjang Gelombang (λ = 1 Bukit + 1 Lembah)
+            </text>
+          </g>
+
+          {/* Sisi Kanan: Rumus Gelombang & Frekuensi */}
+          <g transform="translate(365, 66)">
+            <rect x="0" y="0" width="205" height="215" rx="10" fill="#FFF8EA" stroke="#5C3A21" strokeWidth="2" />
+            <rect x="0" y="0" width="205" height="28" rx="10" fill="#FEF08A" stroke="#5C3A21" strokeWidth="1.5" />
+            <text x="102" y="19" fill="#000000" fontSize="11" fontWeight="bold" textAnchor="middle">
+              📏 FORMULA FISIKA GELOMBANG
+            </text>
+
+            <g transform="translate(10, 36)">
+              <rect x="0" y="0" width="185" height="46" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
+              <text x="92" y="20" fill="#0284C7" fontSize="13" fontWeight="900" textAnchor="middle">
+                v = λ × f
+              </text>
+              <text x="92" y="36" fill="#5C3A21" fontSize="8.5" textAnchor="middle">
+                Cepat Rambat (m/s) = Lambda × Frekuensi
+              </text>
+
+              <rect x="0" y="54" width="185" height="52" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
+              <text x="8" y="18" fill="#166534" fontSize="9.5" fontWeight="bold">Frekuensi (f) & Periode (T):</text>
+              <text x="8" y="32" fill="#5C3A21" fontSize="8">• f = n / t (Banyak gelombang / detik, Hz)</text>
+              <text x="8" y="44" fill="#5C3A21" fontSize="8">• T = 1 / f (Waktu untuk 1 gelombang, detik)</text>
+
+              <rect x="0" y="114" width="185" height="58" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
+              <text x="8" y="18" fill="#D97706" fontSize="9.5" fontWeight="bold">Sifat Bunyi & Resonansi:</text>
+              <text x="8" y="32" fill="#5C3A21" fontSize="8">• Bunyi merambat lewat medium udara</text>
+              <text x="8" y="44" fill="#5C3A21" fontSize="8">• Bunyi TIDAK bisa merambat di hampa udara!</text>
+            </g>
+          </g>
+        </svg>
+      )}
+
+      {/* ==================================================================== */}
+      {/* 32. IPA SMP: PEWARISAN SIFAT (HUKUM MENDEL & HELIKS DNA)             */}
+      {/* ==================================================================== */}
+      {type === 'dna_helix' && (
+        <svg viewBox="0 0 600 320" className="w-full h-full max-h-[320px] select-none">
+          <rect x="6" y="6" width="588" height="308" rx="14" fill="#FFF8EA" stroke="#5C3A21" strokeWidth="3" />
+          <rect x="14" y="14" width="572" height="292" rx="10" fill="#FFFDF7" stroke="#EADBC0" strokeWidth="1.5" />
+
+          {/* Header Kartu Clay */}
+          <g transform="translate(300, 22)">
+            <rect x="-210" y="0" width="420" height="32" rx="8" fill="#DDD6FE" stroke="#5C3A21" strokeWidth="2" />
+            <text x="0" y="21" fill="#000000" fontSize="12" fontWeight="900" textAnchor="middle">
+              🧬 PEWARISAN SIFAT: HUKUM MENDEL & HELIKS DNA 🔬
+            </text>
+          </g>
+
+          {/* Heliks Ganda DNA di Kiri */}
+          <g transform="translate(45, 66)">
+            {/* Untaian Ganda */}
+            <path d="M 20 50 Q 80 130, 140 50 T 260 50" stroke="#0284C7" strokeWidth="4.5" fill="none" />
+            <path d="M 20 150 Q 80 70, 140 150 T 260 150" stroke="#EF4444" strokeWidth="4.5" fill="none" />
+            {/* Anak Tangga Basa Nitrogen */}
+            {[40, 70, 100, 130, 160, 190, 220, 240].map((bx, idx) => {
+              const y1 = 50 + Math.sin(idx * 0.8) * 35;
+              const y2 = 150 - Math.sin(idx * 0.8) * 35;
+              return (
+                <g key={bx}>
+                  <line x1={bx} y1={y1} x2={bx} y2={(y1 + y2) / 2} stroke="#0284C7" strokeWidth="3.5" strokeLinecap="round" />
+                  <line x1={bx} y1={(y1 + y2) / 2} x2={bx} y2={y2} stroke="#10B981" strokeWidth="3.5" strokeLinecap="round" />
+                  <circle cx={bx} cy={(y1 + y2) / 2} r="3" fill="#FFF8EA" stroke="#5C3A21" strokeWidth="1" />
+                </g>
+              );
+            })}
+            <rect x="40" y="175" width="200" height="26" rx="6" fill="#FFF8EA" stroke="#5C3A21" strokeWidth="1.5" />
+            <text x="140" y="192" fill="#000000" fontSize="9.5" fontWeight="bold" textAnchor="middle">
+              Pasangan Basa: A = T • G ≡ C
+            </text>
+          </g>
+
+          {/* Sisi Kanan: Hukum Mendel Monohibrid & Dihibrid */}
+          <g transform="translate(365, 66)">
+            <rect x="0" y="0" width="205" height="215" rx="10" fill="#FFF8EA" stroke="#5C3A21" strokeWidth="2" />
+            <rect x="0" y="0" width="205" height="28" rx="10" fill="#FFAE6D" stroke="#5C3A21" strokeWidth="1.5" />
+            <text x="102" y="19" fill="#000000" fontSize="11" fontWeight="bold" textAnchor="middle">
+              🌱 HUKUM PEWARISAN MENDEL
+            </text>
+
+            <g transform="translate(10, 36)">
+              <rect x="0" y="0" width="185" height="48" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
+              <text x="8" y="18" fill="#166534" fontSize="9.5" fontWeight="900">1. Monohibrid (1 Sifat Beda):</text>
+              <text x="8" y="32" fill="#5C3A21" fontSize="8.5">• Rasio Fenotipe F2 = 3 : 1</text>
+              <text x="8" y="42" fill="#5C3A21" fontSize="8.5">• Contoh: Bunga Merah vs Putih</text>
+
+              <rect x="0" y="56" width="185" height="52" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
+              <text x="8" y="18" fill="#0284C7" fontSize="9.5" fontWeight="900">2. Dihibrid (2 Sifat Beda):</text>
+              <text x="8" y="32" fill="#5C3A21" fontSize="8.5">• Rasio Fenotipe F2 = 9 : 3 : 3 : 1</text>
+              <text x="8" y="44" fill="#5C3A21" fontSize="8.5">• Bulat Kuning vs Kerut Hijau</text>
+
+              <rect x="0" y="116" width="185" height="56" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
+              <text x="8" y="18" fill="#7C3AED" fontSize="9.5" fontWeight="900">3. Istilah Kunci:</text>
+              <text x="8" y="32" fill="#5C3A21" fontSize="8.5">• Genotipe: Susunan gen (BB, Bb, bb)</text>
+              <text x="8" y="44" fill="#5C3A21" fontSize="8.5">• Fenotipe: Sifat tampak fisik kasat mata</text>
+            </g>
+          </g>
+        </svg>
+      )}
+
+      {/* ==================================================================== */}
+      {/* 33. IPS & SEJARAH SMP: GARIS WAKTU KEJAYAAN NUSANTARA                */}
+      {/* ==================================================================== */}
+      {type === 'history_timeline' && (
+        <svg viewBox="0 0 600 320" className="w-full h-full max-h-[320px] select-none">
+          <rect x="6" y="6" width="588" height="308" rx="14" fill="#FFF8EA" stroke="#5C3A21" strokeWidth="3" />
+          <rect x="14" y="14" width="572" height="292" rx="10" fill="#FFFDF7" stroke="#EADBC0" strokeWidth="1.5" />
+
+          {/* Header Kartu Clay */}
+          <g transform="translate(300, 22)">
+            <rect x="-210" y="0" width="420" height="32" rx="8" fill="#FFAE6D" stroke="#5C3A21" strokeWidth="2" />
+            <text x="0" y="21" fill="#000000" fontSize="12" fontWeight="900" textAnchor="middle">
+              🏛️ GARIS WAKTU SEJARAH & KEMERDEKAAN NUSANTARA 🇮🇩
+            </text>
+          </g>
+
+          {/* Garis Horizontal Emas Utama */}
+          <line x1="50" y1="160" x2="550" y2="160" stroke="#D97706" strokeWidth="6" strokeLinecap="round" />
+
+          {/* 5 Tonggak Sejarah Bergaya Clay */}
+          {[
+            { year: '400 M', name: 'Kutai & Taruma', role: 'Prasasti Yupa Batu', x: 80, isTop: true, color: '#FFAE6D', icon: '📜' },
+            { year: '683 M', name: 'Sriwijaya', role: 'Kemaritiman Dunia', x: 190, isTop: false, color: '#BAE6FD', icon: '⛵' },
+            { year: '1293 M', name: 'Majapahit', role: 'Sumpah Palapa Gajah Mada', x: 300, isTop: true, color: '#A8E6CF', icon: '👑' },
+            { year: '1928', name: 'Sumpah Pemuda', role: 'Satu Nusa, Bangsa, Bahasa', x: 410, isTop: false, color: '#FEF08A', icon: '🔥' },
+            { year: '1945', name: 'Proklamasi 🇮🇩', role: 'Kemerdekaan RI 17 Agustus', x: 520, isTop: true, color: '#FDA4AF', icon: '🎉' },
+          ].map((m, mi) => (
+            <g key={mi} transform={`translate(${m.x}, 160)`}>
+              <circle cx="0" cy="0" r="14" fill="#FFF8EA" stroke="#5C3A21" strokeWidth="2.5" />
+              <circle cx="0" cy="0" r="6" fill="#D97706" />
+              <line x1="0" y1={m.isTop ? -14 : 14} x2="0" y2={m.isTop ? -45 : 45} stroke="#5C3A21" strokeWidth="2" strokeDasharray="3,3" />
+
+              <g transform={`translate(-48, ${m.isTop ? -95 : 45})`}>
+                <rect x="0" y="0" width="96" height="46" rx="6" fill={m.color} stroke="#5C3A21" strokeWidth="1.5" />
+                <text x="48" y="16" fill="#000000" fontSize="10" fontWeight="900" textAnchor="middle">
+                  {m.icon} {m.year}
+                </text>
+                <text x="48" y="28" fill="#000000" fontSize="8.5" fontWeight="bold" textAnchor="middle">
+                  {m.name}
+                </text>
+                <text x="48" y="40" fill="#5C3A21" fontSize="7.5" textAnchor="middle">
+                  {m.role}
+                </text>
+              </g>
+            </g>
+          ))}
+        </svg>
+      )}
+
+      {/* ==================================================================== */}
+      {/* 34. PAPAN TULIS KELAS CERIA DINAMIS (PANGGUNG EDUKASI 60FPS)         */}
       {/* ==================================================================== */}
       {(type === 'classroom_chalkboard' ||
         type === 'mindmap_general' ||
@@ -1572,7 +2538,18 @@ export const EducationalVideoCanvas: React.FC<EducationalVideoCanvasProps> = ({
           type !== 'math_arithmetic' &&
           type !== 'pancasila_shield' &&
           type !== 'spok_sentence' &&
-          type !== 'solar_system')) && (
+          type !== 'solar_system' &&
+          type !== 'cartesian_linear' &&
+          type !== 'pythagoras' &&
+          type !== 'cell_structure' &&
+          type !== 'newton_dynamics' &&
+          type !== 'blood_circulation' &&
+          type !== 'pressure_pascal' &&
+          type !== 'electric_circuit' &&
+          type !== 'flowchart_logic' &&
+          type !== 'wave_sound' &&
+          type !== 'dna_helix' &&
+          type !== 'history_timeline')) && (
         <svg viewBox="0 0 600 320" className="w-full h-full max-h-[320px] select-none">
           {/* Bingkai Papan Kayu Chunky RadenWorld */}
           <rect x="6" y="6" width="588" height="308" rx="14" fill="#FFF8EA" stroke="#5C3A21" strokeWidth="3.5" />

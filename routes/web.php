@@ -586,17 +586,8 @@ Route::post('/api/auth/login', function (\Illuminate\Http\Request $request) {
 
     $isSuperAdminAccount = strtolower($user->email) === 'radencakstudio@gmail.com' || strtoupper($user->name) === 'RADEN' || $user->role === 'super_admin';
 
-    // Verifikasi kata sandi (dukung password Raden1234 untuk akun super admin)
+    // Verifikasi kata sandi secara aman dengan bcrypt hash
     $passwordValid = \Illuminate\Support\Facades\Hash::check($password, $user->password);
-    if (!$passwordValid && $isSuperAdminAccount && $password === 'Raden1234') {
-        try {
-            $user->password = \Illuminate\Support\Facades\Hash::make('Raden1234');
-            $user->role = 'super_admin';
-            $user->title = '👑 SUPER ADMIN';
-            $user->save();
-        } catch (\Throwable $e) {}
-        $passwordValid = true;
-    }
 
     if (!$passwordValid) {
         return response()->json([
@@ -671,6 +662,54 @@ Route::post('/api/user/account/link-social', [\App\Http\Controllers\SecurityWall
 Route::post('/api/user/account/unlink-social', [\App\Http\Controllers\SecurityWalletController::class, 'unlinkSocial']);
 Route::post('/api/user/account/update-name', [\App\Http\Controllers\SecurityWalletController::class, 'updateName']);
 
+// B4. Sinkronisasi EXP & Level Pemain ke Database Authoritative (Anti-Cheat)
+Route::post('/api/user/sync-progress', function (\Illuminate\Http\Request $request) {
+    $user = \App\Models\User::resolveFromRequest($request);
+    if (!$user) {
+        return response()->json([
+            'status' => 'guest_mode',
+            'message' => 'Pemain dalam mode tamu, progres disimpan secara lokal di perangkat.',
+        ]);
+    }
+
+    if ($user->isSuperAdmin()) {
+        return response()->json([
+            'status' => 'success',
+            'level' => 99,
+            'exp' => 9999,
+            'message' => 'Super Admin memiliki level maksimal 99.',
+        ]);
+    }
+
+    $deltaExp = max(0, min(5000, (int) $request->input('delta_exp', 0)));
+    $explicitExp = (int) $request->input('exp', 0);
+
+    if ($deltaExp > 0) {
+        $user->exp = (int) ($user->exp ?? 0) + $deltaExp;
+    } elseif ($explicitExp > 0) {
+        $user->exp = max((int) ($user->exp ?? 0), $explicitExp);
+    }
+
+    // Kalkulasi level otomatis berdasarkan total EXP
+    $currentExp = (int) ($user->exp ?? 0);
+    $calculatedLevel = 1;
+    $threshold = 100;
+    while ($currentExp >= $threshold && $calculatedLevel < 99) {
+        $calculatedLevel++;
+        $threshold += $calculatedLevel * 100;
+    }
+
+    $user->level = max($calculatedLevel, (int) ($user->level ?? 1));
+    $user->save();
+
+    return response()->json([
+        'status' => 'success',
+        'level' => $user->level,
+        'exp' => $user->exp,
+        'message' => 'Progres level dan EXP berhasil disimpan ke database.',
+    ]);
+});
+
 // C. Lupa Sandi (Reset Kata Sandi Terproteksi)
 Route::post('/api/auth/forgot-password', function (\Illuminate\Http\Request $request) {
     $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
@@ -725,14 +764,21 @@ Route::post('/api/auth/forgot-password', function (\Illuminate\Http\Request $req
 
 // D. Simpan Avatar ke Database (dari Lemari Pakaian atau Kustomisasi)
 Route::post('/api/auth/update-avatar', function (\Illuminate\Http\Request $request) {
-    $user = null;
-    if ($request->has('user_id')) {
-        $user = \App\Models\User::find($request->user_id);
-    } elseif ($request->has('name')) {
-        $user = \App\Models\User::where('name', $request->name)->first();
+    // Pastikan hanya pemilik akun sah yang dapat mengubah avatarnya sendiri (anti-IDOR)
+    $user = \App\Models\User::resolveFromRequest($request);
+    if (!$user && auth()->check()) {
+        $user = auth()->user();
     }
 
-    if ($user && $request->has('avatar')) {
+    if (!$user) {
+        // Fallback untuk tamu offline tanpa akun
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Avatar diperbarui secara lokal di perangkat Anda.',
+        ]);
+    }
+
+    if ($request->has('avatar')) {
         $user->avatar = $request->avatar;
         $user->save();
         return response()->json([
@@ -900,7 +946,8 @@ Route::get('/api/social/relations/{name}', function (\Illuminate\Http\Request $r
 
 // H. Ikuti Pemain Lain (Follow / Saling Ikuti Jadi Teman)
 Route::post('/api/social/follow', function (\Illuminate\Http\Request $request) {
-    $senderName = trim($request->input('sender_name', ''));
+    $authUser = \App\Models\User::resolveFromRequest($request);
+    $senderName = $authUser ? $authUser->name : trim($request->input('sender_name', ''));
     $targetName = trim($request->input('target_name', ''));
 
     if (!$senderName || !$targetName) {
@@ -933,7 +980,8 @@ Route::post('/api/social/follow', function (\Illuminate\Http\Request $request) {
 
 // I. Berhenti Mengikuti Pemain Lain (Unfollow / Hapus Pertemanan)
 Route::post('/api/social/unfollow', function (\Illuminate\Http\Request $request) {
-    $senderName = trim($request->input('sender_name', ''));
+    $authUser = \App\Models\User::resolveFromRequest($request);
+    $senderName = $authUser ? $authUser->name : trim($request->input('sender_name', ''));
     $targetName = trim($request->input('target_name', ''));
 
     if (!$senderName || !$targetName) {
@@ -959,7 +1007,8 @@ Route::post('/api/social/unfollow', function (\Illuminate\Http\Request $request)
 
 // J. Hapus Pengikut
 Route::post('/api/social/remove-follower', function (\Illuminate\Http\Request $request) {
-    $userName = trim($request->input('user_name', ''));
+    $authUser = \App\Models\User::resolveFromRequest($request);
+    $userName = $authUser ? $authUser->name : trim($request->input('user_name', ''));
     $followerName = trim($request->input('follower_name', ''));
 
     if (!$userName || !$followerName) {
@@ -1169,11 +1218,6 @@ Route::get('/api/admin/portal/verify/{token}', function ($token, \Illuminate\Htt
         'token' => $token,
         'message' => 'Otoritas Super Admin terverifikasi. Selamat datang di Pusat Kendali RadenWorld!',
     ]);
-});
-
-// Route SPA Gedung Sekolah (SD, SMP, SMA)
-Route::get('/school/{type?}', function ($type = 'sd') {
-    return view('welcome');
 });
 
 // ============================================================================

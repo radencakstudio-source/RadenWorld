@@ -12,14 +12,16 @@
  * ============================================================================
  */
 
-import React, { useState, startTransition } from 'react';
+import React, { useState, startTransition, lazy, Suspense } from 'react';
 import { IAvatarCustomization } from '../types';
-import { AuthModal } from './AuthModal';
-import { SettingsModal, GameSettings } from './SettingsModal';
-import { CreditsModal } from './CreditsModal';
-import { DownloadModal } from './DownloadModal';
 import { SoundManager } from '../core/SoundManager';
 import { Download, Globe, Info, Play, Settings, Award, Server } from 'lucide-react';
+import type { GameSettings } from './SettingsModal';
+
+const AuthModal = lazy(() => import('./AuthModal').then(m => ({ default: m.AuthModal })));
+const SettingsModal = lazy(() => import('./SettingsModal').then(m => ({ default: m.SettingsModal })));
+const CreditsModal = lazy(() => import('./CreditsModal').then(m => ({ default: m.CreditsModal })));
+const DownloadModal = lazy(() => import('./DownloadModal').then(m => ({ default: m.DownloadModal })));
 
 interface HomeScreenProps {
   onStartGame: (name: string, avatar: IAvatarCustomization, privateRoomId?: string) => void;
@@ -297,33 +299,43 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         </div>
       </div>
 
-      {/* Modals Terkait */}
-      <AuthModal
-        isOpen={isAuthOpen}
-        onClose={() => setIsAuthOpen(false)}
-        onSuccess={(name, avatar, privateRoomId) => {
-          setIsAuthOpen(false);
-          onStartGame(name, avatar, privateRoomId);
-        }}
-      />
+      {/* Modals Terkait (Asinkron On-Demand) */}
+      <Suspense fallback={null}>
+        {isAuthOpen && (
+          <AuthModal
+            isOpen={isAuthOpen}
+            onClose={() => setIsAuthOpen(false)}
+            onSuccess={(name, avatar, privateRoomId) => {
+              setIsAuthOpen(false);
+              onStartGame(name, avatar, privateRoomId);
+            }}
+          />
+        )}
 
-      <SettingsModal
-        isOpen={isSettingsOpen}
-        onClose={() => setIsSettingsOpen(false)}
-        settings={settings}
-        onUpdateSettings={onUpdateSettings}
-        onOpenServerModal={onOpenServerModal}
-      />
+        {isSettingsOpen && (
+          <SettingsModal
+            isOpen={isSettingsOpen}
+            onClose={() => setIsSettingsOpen(false)}
+            settings={settings}
+            onUpdateSettings={onUpdateSettings}
+            onOpenServerModal={onOpenServerModal}
+          />
+        )}
 
-      <CreditsModal
-        isOpen={isCreditsOpen}
-        onClose={() => setIsCreditsOpen(false)}
-      />
+        {isCreditsOpen && (
+          <CreditsModal
+            isOpen={isCreditsOpen}
+            onClose={() => setIsCreditsOpen(false)}
+          />
+        )}
 
-      <DownloadModal
-        isOpen={isDownloadOpen}
-        onClose={() => setIsDownloadOpen(false)}
-      />
+        {isDownloadOpen && (
+          <DownloadModal
+            isOpen={isDownloadOpen}
+            onClose={() => setIsDownloadOpen(false)}
+          />
+        )}
+      </Suspense>
     </div>
   );
 };

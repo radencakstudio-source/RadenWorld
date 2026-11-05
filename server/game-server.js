@@ -25,10 +25,35 @@
 import { createServer, request as httpRequest } from 'http';
 import { Server } from 'socket.io';
 import crypto from 'crypto';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const PORT = process.env.PORT || 3001;
 const LARAVEL_PORT = process.env.LARAVEL_PORT || 8000;
-const APP_KEY = process.env.APP_KEY || 'RadenWorldSecureSaltKey123';
+
+/**
+ * Baca APP_KEY langsung dari file .env Laravel agar secret HMAC 100% sinkron
+ */
+function getAppKey() {
+  if (process.env.APP_KEY) return process.env.APP_KEY;
+  try {
+    const envPath = path.resolve(__dirname, '../.env');
+    if (fs.existsSync(envPath)) {
+      const content = fs.readFileSync(envPath, 'utf8');
+      const match = content.match(/^APP_KEY=(.*)$/m);
+      if (match && match[1]) {
+        return match[1].trim().replace(/^['"]|['"]$/g, '');
+      }
+    }
+  } catch (e) {}
+  return 'RadenWorldSecureSaltKey123';
+}
+
+const APP_KEY = getAppKey();
 
 /**
  * Validasi Cryptographic Auth Token (HMAC-SHA256) untuk mencegah pemalsuan identitas Super Admin
@@ -296,14 +321,10 @@ io.on('connection', (socket) => {
     const defaultY = (typeof data?.y === 'number' && !isNaN(data.y)) ? data.y : 4860;
     const defaultDir = data?.direction || 'down';
 
-    // Verifikasi identitas Super Admin
+    // Verifikasi identitas Super Admin secara ketat hanya melalui cryptographic auth token sah
     const verifiedToken = verifyAuthToken(data.authToken || data.auth_token);
     const isSuperAdmin = Boolean(
-      (verifiedToken && (verifiedToken.role === 'super_admin' || verifiedToken.email === 'radencakstudio@gmail.com')) ||
-      data.isSuperAdmin === true ||
-      data.role === 'super_admin' ||
-      data.role === 'admin' ||
-      (typeof data.name === 'string' && data.name.trim().toUpperCase() === 'RADEN')
+      verifiedToken && (verifiedToken.role === 'super_admin' || verifiedToken.email === 'radencakstudio@gmail.com')
     );
 
     let rawName = (data.name || `Player_${socket.id.substring(0, 4)}`).trim();
@@ -312,18 +333,33 @@ io.on('connection', (socket) => {
     }
     const playerName = sanitizeText(rawName);
 
-    // Bersihkan sesi lama dengan nama yang sama untuk mencegah duplikat/ghost saat refresh atau reconnect
+    // Ambil User ID jika terotentikasi untuk mencegah eksploitasi Kick-Attack / DoS antar pemain
+    const incomingUserId = verifiedToken?.id || (typeof data.userId === 'number' || typeof data.userId === 'string' ? String(data.userId) : null);
+    let finalPlayerName = playerName;
+
+    // Bersihkan sesi lama HANYA jika akun milik user yang sama (reconnect sah)
     for (const [oldId, oldPlayer] of players.entries()) {
       if (oldId !== socket.id && oldPlayer.name.toLowerCase() === playerName.toLowerCase()) {
-        console.log(`[Server] Menutup sesi lama '${oldPlayer.name}' (ID: ${oldId}) karena login baru`);
-        const oldSocket = io.sockets.sockets.get(oldId);
-        if (oldSocket) {
-          try {
-            oldSocket.disconnect(true);
-          } catch (e) {}
+        const isSameAuthenticatedOwner = Boolean(
+          incomingUserId && oldPlayer.userId && String(incomingUserId) === String(oldPlayer.userId)
+        );
+
+        if (isSameAuthenticatedOwner) {
+          console.log(`[Server] Menutup sesi lama akun '${oldPlayer.name}' (User ID: ${incomingUserId}) karena login ulang sah dari perangkat/tab baru`);
+          const oldSocket = io.sockets.sockets.get(oldId);
+          if (oldSocket) {
+            try {
+              oldSocket.disconnect(true);
+            } catch (e) {}
+          }
+          players.delete(oldId);
+          io.emit('player:left', { id: oldId, name: oldPlayer.name });
+        } else {
+          // Cegah kick attack DoS: jangan disconnect pemain lama! Alokasikan nama unik bagi penjelajah baru
+          const randomSuffix = Math.floor(100 + Math.random() * 900);
+          finalPlayerName = `${playerName}_${randomSuffix}`;
+          console.log(`[Server] Mencegah konflik/kick attack untuk nama '${playerName}'. Mengalokasikan nama '${finalPlayerName}' ke ID: ${socket.id}`);
         }
-        players.delete(oldId);
-        io.emit('player:left', { id: oldId, name: oldPlayer.name });
       }
     }
 
@@ -334,7 +370,8 @@ io.on('connection', (socket) => {
 
     const player = {
       id: socket.id,
-      name: playerName,
+      userId: incomingUserId,
+      name: finalPlayerName,
       room: initialRoom,
       serverCode: playerServerCode,
       role: isSuperAdmin ? 'super_admin' : (data.role || 'player'),

@@ -1,4 +1,89 @@
 {
+  "_SchoolCurriculumData-DJe1v-WJ.js": {
+    "file": "assets/SchoolCurriculumData-DJe1v-WJ.js",
+    "name": "SchoolCurriculumData",
+    "imports": [
+      "resources/js/app.tsx",
+      "_vendor-react-dgengZBm.js"
+    ]
+  },
+  "_circle-check-BRl5U9rH.js": {
+    "file": "assets/circle-check-BRl5U9rH.js",
+    "name": "circle-check",
+    "imports": [
+      "resources/js/app.tsx"
+    ]
+  },
+  "_cpu-C_2zZ2Fb.js": {
+    "file": "assets/cpu-C_2zZ2Fb.js",
+    "name": "cpu",
+    "imports": [
+      "resources/js/app.tsx"
+    ]
+  },
+  "_file-text-BOH9Gvpe.js": {
+    "file": "assets/file-text-BOH9Gvpe.js",
+    "name": "file-text",
+    "imports": [
+      "resources/js/app.tsx"
+    ]
+  },
+  "_graduation-cap-DTLKzY98.js": {
+    "file": "assets/graduation-cap-DTLKzY98.js",
+    "name": "graduation-cap",
+    "imports": [
+      "resources/js/app.tsx"
+    ]
+  },
+  "_heart-BMl6Y7jR.js": {
+    "file": "assets/heart-BMl6Y7jR.js",
+    "name": "heart",
+    "imports": [
+      "resources/js/app.tsx"
+    ]
+  },
+  "_layers-DJ4A2hy2.js": {
+    "file": "assets/layers-DJ4A2hy2.js",
+    "name": "layers",
+    "imports": [
+      "resources/js/app.tsx"
+    ]
+  },
+  "_pause-DUP_fz5H.js": {
+    "file": "assets/pause-DUP_fz5H.js",
+    "name": "pause",
+    "imports": [
+      "resources/js/app.tsx"
+    ]
+  },
+  "_refresh-cw-DBKrrntK.js": {
+    "file": "assets/refresh-cw-DBKrrntK.js",
+    "name": "refresh-cw",
+    "imports": [
+      "resources/js/app.tsx"
+    ]
+  },
+  "_school-Oi1QMKiU.js": {
+    "file": "assets/school-Oi1QMKiU.js",
+    "name": "school",
+    "imports": [
+      "resources/js/app.tsx"
+    ]
+  },
+  "_smartphone-DEWBzV6s.js": {
+    "file": "assets/smartphone-DEWBzV6s.js",
+    "name": "smartphone",
+    "imports": [
+      "resources/js/app.tsx"
+    ]
+  },
+  "_triangle-alert-CQ-SGSr7.js": {
+    "file": "assets/triangle-alert-CQ-SGSr7.js",
+    "name": "triangle-alert",
+    "imports": [
+      "resources/js/app.tsx"
+    ]
+  },
   "_vendor-phaser-BTGbtjln.js": {
     "file": "assets/vendor-phaser-BTGbtjln.js",
     "name": "vendor-phaser"
@@ -10,6 +95,20 @@
   "_vendor-socket-Kk_l3rvZ.js": {
     "file": "assets/vendor-socket-Kk_l3rvZ.js",
     "name": "vendor-socket"
+  },
+  "_volume-x-BsmZuu8k.js": {
+    "file": "assets/volume-x-BsmZuu8k.js",
+    "name": "volume-x",
+    "imports": [
+      "resources/js/app.tsx"
+    ]
+  },
+  "_wifi-Ck-b-5AU.js": {
+    "file": "assets/wifi-Ck-b-5AU.js",
+    "name": "wifi",
+    "imports": [
+      "resources/js/app.tsx"
+    ]
   },
   "resources/css/app.css": {
     "file": "assets/app-Cg1MoYbS.css",
@@ -37,12 +136,234 @@
     "src": "resources/fonts/m5x7.ttf"
   },
   "resources/js/app.tsx": {
-    "file": "assets/app-CjWM6uS3.js",
+    "file": "assets/app-_yZjaajD.js",
     "name": "app",
     "src": "resources/js/app.tsx",
     "isEntry": true,
     "imports": [
       "_vendor-react-dgengZBm.js",
+      "_vendor-phaser-BTGbtjln.js",
+      "_vendor-socket-Kk_l3rvZ.js"
+    ],
+    "dynamicImports": [
+      "resources/js/game/ui/SettingsModal.tsx",
+      "resources/js/game/ui/CreditsModal.tsx",
+      "resources/js/game/ui/DownloadModal.tsx",
+      "resources/js/game/ui/SettingsModal.tsx",
+      "resources/js/game/ui/WardrobeModal.tsx",
+      "resources/js/game/ui/ProfileModal.tsx",
+      "resources/js/game/ui/ServerModal.tsx",
+      "resources/js/game/ui/CreatorStudioModal.tsx",
+      "resources/js/game/ui/SchoolGradeSelectModal.tsx",
+      "resources/js/game/ui/SchoolSubjectsModal.tsx",
+      "resources/js/game/ui/LibraryMaterialsModal.tsx",
+      "resources/js/game/ui/PoliceReportModal.tsx",
+      "resources/js/game/ui/BankModal.tsx",
+      "resources/js/game/ui/PharmacyModal.tsx",
+      "resources/js/game/ui/MarketRealtorModal.tsx"
+    ]
+  },
+  "resources/js/game/ui/BankModal.tsx": {
+    "file": "assets/BankModal-CWKzA3L3.js",
+    "name": "BankModal",
+    "src": "resources/js/game/ui/BankModal.tsx",
+    "isDynamicEntry": true,
+    "imports": [
+      "_vendor-react-dgengZBm.js",
+      "resources/js/app.tsx",
+      "_file-text-BOH9Gvpe.js",
+      "_circle-check-BRl5U9rH.js",
+      "_vendor-phaser-BTGbtjln.js",
+      "_vendor-socket-Kk_l3rvZ.js"
+    ]
+  },
+  "resources/js/game/ui/CreatorStudioModal.tsx": {
+    "file": "assets/CreatorStudioModal-DYtLCu3u.js",
+    "name": "CreatorStudioModal",
+    "src": "resources/js/game/ui/CreatorStudioModal.tsx",
+    "isDynamicEntry": true,
+    "imports": [
+      "_vendor-react-dgengZBm.js",
+      "resources/js/app.tsx",
+      "_school-Oi1QMKiU.js",
+      "_layers-DJ4A2hy2.js",
+      "_graduation-cap-DTLKzY98.js",
+      "_vendor-phaser-BTGbtjln.js",
+      "_vendor-socket-Kk_l3rvZ.js"
+    ]
+  },
+  "resources/js/game/ui/CreditsModal.tsx": {
+    "file": "assets/CreditsModal-s-DZrXiv.js",
+    "name": "CreditsModal",
+    "src": "resources/js/game/ui/CreditsModal.tsx",
+    "isDynamicEntry": true,
+    "imports": [
+      "_vendor-react-dgengZBm.js",
+      "resources/js/app.tsx",
+      "_pause-DUP_fz5H.js",
+      "_heart-BMl6Y7jR.js",
+      "_graduation-cap-DTLKzY98.js",
+      "_layers-DJ4A2hy2.js",
+      "_cpu-C_2zZ2Fb.js",
+      "_vendor-phaser-BTGbtjln.js",
+      "_vendor-socket-Kk_l3rvZ.js"
+    ]
+  },
+  "resources/js/game/ui/DownloadModal.tsx": {
+    "file": "assets/DownloadModal-BRHMG8-3.js",
+    "name": "DownloadModal",
+    "src": "resources/js/game/ui/DownloadModal.tsx",
+    "isDynamicEntry": true,
+    "imports": [
+      "_vendor-react-dgengZBm.js",
+      "resources/js/app.tsx",
+      "_smartphone-DEWBzV6s.js",
+      "_circle-check-BRl5U9rH.js",
+      "_vendor-phaser-BTGbtjln.js",
+      "_vendor-socket-Kk_l3rvZ.js"
+    ]
+  },
+  "resources/js/game/ui/LibraryMaterialsModal.tsx": {
+    "file": "assets/LibraryMaterialsModal-gs9skubx.js",
+    "name": "LibraryMaterialsModal",
+    "src": "resources/js/game/ui/LibraryMaterialsModal.tsx",
+    "isDynamicEntry": true,
+    "imports": [
+      "_vendor-react-dgengZBm.js",
+      "resources/js/app.tsx",
+      "_volume-x-BsmZuu8k.js",
+      "_pause-DUP_fz5H.js",
+      "_layers-DJ4A2hy2.js",
+      "_circle-check-BRl5U9rH.js",
+      "_vendor-phaser-BTGbtjln.js",
+      "_vendor-socket-Kk_l3rvZ.js"
+    ]
+  },
+  "resources/js/game/ui/MarketRealtorModal.tsx": {
+    "file": "assets/MarketRealtorModal-WAMsIb_R.js",
+    "name": "MarketRealtorModal",
+    "src": "resources/js/game/ui/MarketRealtorModal.tsx",
+    "isDynamicEntry": true,
+    "imports": [
+      "_vendor-react-dgengZBm.js",
+      "resources/js/app.tsx",
+      "_circle-check-BRl5U9rH.js",
+      "_vendor-phaser-BTGbtjln.js",
+      "_vendor-socket-Kk_l3rvZ.js"
+    ]
+  },
+  "resources/js/game/ui/PharmacyModal.tsx": {
+    "file": "assets/PharmacyModal-AtcizTuJ.js",
+    "name": "PharmacyModal",
+    "src": "resources/js/game/ui/PharmacyModal.tsx",
+    "isDynamicEntry": true,
+    "imports": [
+      "_vendor-react-dgengZBm.js",
+      "resources/js/app.tsx",
+      "_circle-check-BRl5U9rH.js",
+      "_vendor-phaser-BTGbtjln.js",
+      "_vendor-socket-Kk_l3rvZ.js"
+    ]
+  },
+  "resources/js/game/ui/PoliceReportModal.tsx": {
+    "file": "assets/PoliceReportModal-Bw-jFZJU.js",
+    "name": "PoliceReportModal",
+    "src": "resources/js/game/ui/PoliceReportModal.tsx",
+    "isDynamicEntry": true,
+    "imports": [
+      "_vendor-react-dgengZBm.js",
+      "resources/js/app.tsx",
+      "_triangle-alert-CQ-SGSr7.js",
+      "_file-text-BOH9Gvpe.js",
+      "_circle-check-BRl5U9rH.js",
+      "_vendor-phaser-BTGbtjln.js",
+      "_vendor-socket-Kk_l3rvZ.js"
+    ]
+  },
+  "resources/js/game/ui/ProfileModal.tsx": {
+    "file": "assets/ProfileModal-Ddjm152S.js",
+    "name": "ProfileModal",
+    "src": "resources/js/game/ui/ProfileModal.tsx",
+    "isDynamicEntry": true,
+    "imports": [
+      "_vendor-react-dgengZBm.js",
+      "resources/js/app.tsx",
+      "_heart-BMl6Y7jR.js",
+      "_file-text-BOH9Gvpe.js",
+      "_refresh-cw-DBKrrntK.js",
+      "_vendor-phaser-BTGbtjln.js",
+      "_vendor-socket-Kk_l3rvZ.js"
+    ]
+  },
+  "resources/js/game/ui/SchoolGradeSelectModal.tsx": {
+    "file": "assets/SchoolGradeSelectModal-x7Bd4uXx.js",
+    "name": "SchoolGradeSelectModal",
+    "src": "resources/js/game/ui/SchoolGradeSelectModal.tsx",
+    "isDynamicEntry": true,
+    "imports": [
+      "_vendor-react-dgengZBm.js",
+      "resources/js/app.tsx",
+      "_SchoolCurriculumData-DJe1v-WJ.js",
+      "_school-Oi1QMKiU.js",
+      "_vendor-phaser-BTGbtjln.js",
+      "_vendor-socket-Kk_l3rvZ.js"
+    ]
+  },
+  "resources/js/game/ui/SchoolSubjectsModal.tsx": {
+    "file": "assets/SchoolSubjectsModal-BkRc99oT.js",
+    "name": "SchoolSubjectsModal",
+    "src": "resources/js/game/ui/SchoolSubjectsModal.tsx",
+    "isDynamicEntry": true,
+    "imports": [
+      "_vendor-react-dgengZBm.js",
+      "resources/js/app.tsx",
+      "_SchoolCurriculumData-DJe1v-WJ.js",
+      "_triangle-alert-CQ-SGSr7.js",
+      "_school-Oi1QMKiU.js",
+      "_vendor-phaser-BTGbtjln.js",
+      "_vendor-socket-Kk_l3rvZ.js"
+    ]
+  },
+  "resources/js/game/ui/ServerModal.tsx": {
+    "file": "assets/ServerModal-mxfC-4pb.js",
+    "name": "ServerModal",
+    "src": "resources/js/game/ui/ServerModal.tsx",
+    "isDynamicEntry": true,
+    "imports": [
+      "_vendor-react-dgengZBm.js",
+      "resources/js/app.tsx",
+      "_refresh-cw-DBKrrntK.js",
+      "_wifi-Ck-b-5AU.js",
+      "_vendor-phaser-BTGbtjln.js",
+      "_vendor-socket-Kk_l3rvZ.js"
+    ]
+  },
+  "resources/js/game/ui/SettingsModal.tsx": {
+    "file": "assets/SettingsModal-C4M7CqqH.js",
+    "name": "SettingsModal",
+    "src": "resources/js/game/ui/SettingsModal.tsx",
+    "isDynamicEntry": true,
+    "imports": [
+      "_vendor-react-dgengZBm.js",
+      "resources/js/app.tsx",
+      "_volume-x-BsmZuu8k.js",
+      "_wifi-Ck-b-5AU.js",
+      "_pause-DUP_fz5H.js",
+      "_cpu-C_2zZ2Fb.js",
+      "_smartphone-DEWBzV6s.js",
+      "_refresh-cw-DBKrrntK.js",
+      "_vendor-phaser-BTGbtjln.js",
+      "_vendor-socket-Kk_l3rvZ.js"
+    ]
+  },
+  "resources/js/game/ui/WardrobeModal.tsx": {
+    "file": "assets/WardrobeModal-BUA3-MKD.js",
+    "name": "WardrobeModal",
+    "src": "resources/js/game/ui/WardrobeModal.tsx",
+    "isDynamicEntry": true,
+    "imports": [
+      "_vendor-react-dgengZBm.js",
+      "resources/js/app.tsx",
       "_vendor-phaser-BTGbtjln.js",
       "_vendor-socket-Kk_l3rvZ.js"
     ]

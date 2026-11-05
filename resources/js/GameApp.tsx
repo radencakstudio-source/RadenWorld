@@ -11,25 +11,16 @@
  * ============================================================================
  */
 
-import React, { useState, useEffect, useMemo, useCallback, startTransition } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, startTransition, lazy, Suspense } from 'react';
 import { GameCanvas } from './components/GameCanvas';
 import { HomeScreen } from './game/ui/HomeScreen';
 import { HUD } from './game/ui/HUD';
 import { ChatBox } from './game/ui/ChatBox';
 import { ControlGuide } from './game/ui/ControlGuide';
 import { VirtualControls } from './game/ui/VirtualControls';
-import { SettingsModal, GameSettings } from './game/ui/SettingsModal';
-import { WardrobeModal } from './game/ui/WardrobeModal';
-import { ProfileModal } from './game/ui/ProfileModal';
-import { ServerModal, IGameServerOption } from './game/ui/ServerModal';
 import { FriendRequestNotification, IFriendRequest } from './game/ui/FriendRequestNotification';
 import { DialogueBox } from './game/ui/DialogueBox';
 import { LoadingScreen } from './game/ui/LoadingScreen';
-import { CreatorStudioModal } from './game/ui/CreatorStudioModal';
-import { SdSubjectsModal } from './game/ui/SdSubjectsModal';
-import { SchoolGradeSelectModal } from './game/ui/SchoolGradeSelectModal';
-import { SchoolSubjectsModal } from './game/ui/SchoolSubjectsModal';
-import { LibraryMaterialsModal } from './game/ui/LibraryMaterialsModal';
 import { FishingMinigame } from './game/ui/FishingMinigame';
 import { Hotbar } from './game/ui/Hotbar';
 import { InventoryModal } from './game/ui/InventoryModal';
@@ -41,12 +32,24 @@ import { NetworkManager } from './game/core/NetworkManager';
 import { IAvatarCustomization, IChatMessage } from './game/types';
 import { IFishData } from './game/controllers/CharacterController';
 import { Zap } from 'lucide-react';
-import { PoliceReportModal } from './game/ui/PoliceReportModal';
-import { BankModal } from './game/ui/BankModal';
-import { PharmacyModal } from './game/ui/PharmacyModal';
-import { MarketRealtorModal } from './game/ui/MarketRealtorModal';
 import { KeybindingManager } from './game/core/KeybindingManager';
 import { InventoryManager } from './game/core/InventoryManager';
+import type { GameSettings } from './game/ui/SettingsModal';
+import type { IGameServerOption } from './game/ui/ServerModal';
+
+// Modal yang dimuat secara asinkron saat dibuka (Code Splitting / Lazy Loading)
+const SettingsModal = lazy(() => import('./game/ui/SettingsModal').then(m => ({ default: m.SettingsModal })));
+const WardrobeModal = lazy(() => import('./game/ui/WardrobeModal').then(m => ({ default: m.WardrobeModal })));
+const ProfileModal = lazy(() => import('./game/ui/ProfileModal').then(m => ({ default: m.ProfileModal })));
+const ServerModal = lazy(() => import('./game/ui/ServerModal').then(m => ({ default: m.ServerModal })));
+const CreatorStudioModal = lazy(() => import('./game/ui/CreatorStudioModal').then(m => ({ default: m.CreatorStudioModal })));
+const SchoolGradeSelectModal = lazy(() => import('./game/ui/SchoolGradeSelectModal').then(m => ({ default: m.SchoolGradeSelectModal })));
+const SchoolSubjectsModal = lazy(() => import('./game/ui/SchoolSubjectsModal').then(m => ({ default: m.SchoolSubjectsModal })));
+const LibraryMaterialsModal = lazy(() => import('./game/ui/LibraryMaterialsModal').then(m => ({ default: m.LibraryMaterialsModal })));
+const PoliceReportModal = lazy(() => import('./game/ui/PoliceReportModal').then(m => ({ default: m.PoliceReportModal })));
+const BankModal = lazy(() => import('./game/ui/BankModal').then(m => ({ default: m.BankModal })));
+const PharmacyModal = lazy(() => import('./game/ui/PharmacyModal').then(m => ({ default: m.PharmacyModal })));
+const MarketRealtorModal = lazy(() => import('./game/ui/MarketRealtorModal').then(m => ({ default: m.MarketRealtorModal })));
 
 export const GameApp: React.FC = () => {
   // Cek apakah pemain memiliki akun yang sah tersimpan
@@ -505,9 +508,6 @@ export const GameApp: React.FC = () => {
   const [isWardrobeOpen, setIsWardrobeOpen] = useState(false);
   // Panel Arsitek Pencipta (Tahta Agung Raden) State
   const [isCreatorStudioOpen, setIsCreatorStudioOpen] = useState(false);
-  // Modal Mata Pelajaran Khusus Kelas SD (Legacy)
-  const [isSdSubjectsOpen, setIsSdSubjectsOpen] = useState(false);
-  const [sdDeskType, setSdDeskType] = useState<'guru' | 'siswa'>('guru');
 
   // Modal Pemilihan Kelas Sekolah (SD 1-6, SMP 1-3, SMA 1-3)
   const [isGradeSelectOpen, setIsGradeSelectOpen] = useState(false);
@@ -1011,16 +1011,41 @@ export const GameApp: React.FC = () => {
     };
     EventBus.on('open-library-modal', handleOpenLibrary);
 
-    // Tangani reward EXP langsung
+    // Tangani reward EXP langsung & sinkronisasi permanen ke backend database
     const handleGainExp = (data: { amount: number; source?: string }) => {
       if (!data?.amount) return;
       sound.playSuccess();
       setPlayerExp((prev) => {
         const next = prev + data.amount;
         try {
-          const u = JSON.parse(localStorage.getItem('raden_player_user') || '{}');
+          const raw = localStorage.getItem('raden_player_user');
+          const u = raw ? JSON.parse(raw) : {};
           u.exp = next;
           localStorage.setItem('raden_player_user', JSON.stringify(u));
+
+          // Kirim sinkronisasi ke backend jika akun terdaftar
+          const token = u.auth_token || localStorage.getItem('raden_auth_token');
+          if (token && u.id) {
+            fetch('/api/user/sync-progress', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+                'X-Auth-Token': token,
+              },
+              body: JSON.stringify({ delta_exp: data.amount, exp: next }),
+            })
+              .then((res) => res.json())
+              .then((resData) => {
+                if (resData?.status === 'success' && resData.level) {
+                  setPlayerStats((prev) => ({ ...prev, level: resData.level }));
+                  u.level = resData.level;
+                  u.exp = resData.exp;
+                  localStorage.setItem('raden_player_user', JSON.stringify(u));
+                }
+              })
+              .catch(() => {});
+          }
         } catch (e) {}
         return next;
       });
@@ -1829,8 +1854,9 @@ export const GameApp: React.FC = () => {
               : false;
 
             return (
-              <ProfileModal
-                isOpen={isProfileOpen}
+              <Suspense fallback={null}>
+                <ProfileModal
+                  isOpen={isProfileOpen}
                 onClose={() => {
                   setIsProfileOpen(false);
                   setInspectedPlayer(null);
@@ -2024,7 +2050,8 @@ export const GameApp: React.FC = () => {
                   } catch (e) {}
                 }}
               />
-            );
+            </Suspense>
+          );
           })()}
 
           <ChatBox
@@ -2051,8 +2078,9 @@ export const GameApp: React.FC = () => {
             />
           )}
 
-          {/* Modal Lemari Pakaian (Ganti Ava di dalam Rumah) */}
-          {isWardrobeOpen && (
+          <Suspense fallback={null}>
+            {/* Modal Lemari Pakaian (Ganti Ava di dalam Rumah) */}
+            {isWardrobeOpen && (
             <WardrobeModal
               isOpen={isWardrobeOpen}
               onClose={() => setIsWardrobeOpen(false)}
@@ -2147,38 +2175,9 @@ export const GameApp: React.FC = () => {
               }}
             />
           )}
+          </Suspense>
 
-          {/* Modal Mata Pelajaran Khusus SD (Legacy fallback) */}
-          {isSdSubjectsOpen && (
-            <SdSubjectsModal
-              isOpen={isSdSubjectsOpen}
-              onClose={() => {
-                sound.playClick();
-                setIsSdSubjectsOpen(false);
-                EventBus.emit('dialogue-active', false);
-              }}
-              deskType={sdDeskType}
-              onStudySubject={(subjectName, expEarned) => {
-                sound.playSuccess();
-                setPlayerExp((prev) => {
-                  const next = prev + expEarned;
-                  try {
-                    const u = JSON.parse(localStorage.getItem('raden_player_user') || '{}');
-                    u.exp = next;
-                    localStorage.setItem('raden_player_user', JSON.stringify(u));
-                  } catch (e) {}
-                  return next;
-                });
-                EventBus.emit('new-chat-message', {
-                  id: `study_msg_${Date.now()}`,
-                  sender: 'KELAS SD',
-                  text: `📚 Kamu tekun belajar ${subjectName} di ${sdDeskType === 'guru' ? 'Meja Guru' : 'Meja Belajar Siswa'}! (+${expEarned} EXP)`,
-                  timestamp: Date.now(),
-                  isSystem: true,
-                });
-              }}
-            />
-          )}
+
 
           {/* Minigame Memancing Interaktif Bergaya Stardew Valley */}
           {isFishingMinigameOpen && (
@@ -2257,6 +2256,7 @@ export const GameApp: React.FC = () => {
           />
 
           {/* Modal Pengaturan jika dibuka */}
+          <Suspense fallback={null}>
           {inGameSettingsOpen && (
             <SettingsModal
               isOpen={inGameSettingsOpen}
@@ -2359,29 +2359,31 @@ export const GameApp: React.FC = () => {
               isAdmin={isCurrentUserAdmin}
             />
           )}
-
+          </Suspense>
 
         </>
       )}
 
       {/* Modal Pemilih & Pindah Server (Bisa Diakses Global dari Home maupun In-Game) */}
       {isServerModalOpen && (
-        <ServerModal
-          isOpen={isServerModalOpen}
-          onClose={() => setIsServerModalOpen(false)}
-          currentServerCode={serverCode}
-          onSelectServer={(server: IGameServerOption) => {
-            setServerCode(server.code);
-            NetworkManager.getInstance().switchServer(server.code);
-            EventBus.emit('new-chat-message', {
-              id: `sys_srv_${Date.now()}`,
-              sender: 'SISTEM',
-              text: `🌐 Berhasil beralih ke server ${server.name} (${server.code})!`,
-              timestamp: Date.now(),
-              isSystem: true,
-            });
-          }}
-        />
+        <Suspense fallback={null}>
+          <ServerModal
+            isOpen={isServerModalOpen}
+            onClose={() => setIsServerModalOpen(false)}
+            currentServerCode={serverCode}
+            onSelectServer={(server: IGameServerOption) => {
+              setServerCode(server.code);
+              NetworkManager.getInstance().switchServer(server.code);
+              EventBus.emit('new-chat-message', {
+                id: `sys_srv_${Date.now()}`,
+                sender: 'SISTEM',
+                text: `🌐 Berhasil beralih ke server ${server.name} (${server.code})!`,
+                timestamp: Date.now(),
+                isSystem: true,
+              });
+            }}
+          />
+        </Suspense>
       )}
     </div>
   );

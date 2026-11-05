@@ -13,50 +13,23 @@ class SecurityWalletController extends Controller
      * Resolusi user aktif berdasarkan auth, id, email, atau nama dari sesi/payload
      */
     /**
-     * Resolusi user aktif berdasarkan token kriptografis, auth session, atau fallback terverifikasi
+     * Resolusi user aktif secara ketat berdasarkan token kriptografis sah (HMAC) atau auth session
+     * Mencegah eksploitasi IDOR (Insecure Direct Object Reference) antar pemain
      */
     private function resolveUser(Request $request): ?User
     {
-        // 1. Prioritaskan Cryptographic Signed Token (Bearer / X-Auth-Token)
+        // 1. Prioritaskan Cryptographic Signed Token (Bearer / X-Auth-Token / auth_token input)
         $user = User::resolveFromRequest($request);
         if ($user) {
             return $user;
         }
 
-        // 2. Fallback untuk sesi aktif Laravel
+        // 2. Fallback untuk sesi aktif otentikasi internal Laravel
         if (auth()->check()) {
             return auth()->user();
         }
 
-        // 3. Fallback header X-User-Id / X-User-Name (untuk kompatibilitas pemain yang sedang aktif)
-        $userId = $request->input('user_id') ?: $request->header('X-User-Id');
-        if ($userId) {
-            $user = User::find($userId);
-            if ($user) return $user;
-        }
-
-        $userEmail = $request->input('email') ?: $request->header('X-User-Email');
-        if ($userEmail) {
-            $user = User::where('email', $userEmail)->first();
-            if ($user) return $user;
-        }
-
-        // PENTING: Untuk mencari identitas user lama, prioritaskan current_name atau header X-User-Name
-        $userName = $request->input('current_name') ?: $request->header('X-User-Name');
-        if ($userName) {
-            $user = User::where('name', $userName)->first();
-            if ($user) return $user;
-        }
-
-        $path = $request->path();
-        if (strpos($path, 'update-name') === false) {
-            $inputName = $request->input('name');
-            if ($inputName) {
-                $user = User::where('name', $inputName)->first();
-                if ($user) return $user;
-            }
-        }
-
+        // Tolak resolusi tanpa tanda tangan kriptografis untuk menjaga integritas saldo
         return null;
     }
 

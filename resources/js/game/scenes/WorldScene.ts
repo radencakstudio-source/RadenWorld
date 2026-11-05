@@ -1431,12 +1431,6 @@ export class WorldScene extends Phaser.Scene {
     // 2e. Pertumbuhan Tanaman Kebun Tani Real-time
     WorldFarming.update(time);
 
-    // 2d. Atmosfer Malam Biru Sungguhan & Nyala Lampu Jalan Dinamis
-    this.updateNightAtmosphere(time);
-
-    // 2e. Pertumbuhan Tanaman Kebun Tani Real-time
-    WorldFarming.update(time);
-
     const px = this.player.x;
     const py = this.player.y;
 

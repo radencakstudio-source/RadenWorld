@@ -50,6 +50,7 @@ import { VoiceManager } from '../core/VoiceManager';
 import { NetworkManager } from '../core/NetworkManager';
 import { WorldMapSvg, IMapMarker } from './WorldMapSvg';
 import { ServerUsersModal } from './ServerUsersModal';
+import { ThemeSettings, DEFAULT_THEME_SETTINGS } from '../core/ThemeManager';
 
 export const cleanServerCode = (code?: string | null): string => {
   if (!code) return 'Asia 1';
@@ -93,6 +94,7 @@ interface HUDProps {
   friendsList?: string[];
   onInspectPlayer?: (player: IPlayerData) => void;
   onAddFriend?: (targetId: string, targetName: string) => void;
+  themeSettings?: ThemeSettings;
 }
 
 export const HUD: React.FC<HUDProps> = React.memo(({
@@ -111,8 +113,10 @@ export const HUD: React.FC<HUDProps> = React.memo(({
   friendsList = [],
   onInspectPlayer,
   onAddFriend,
+  themeSettings,
 }) => {
   const sound = SoundManager.getInstance();
+  const theme = themeSettings || DEFAULT_THEME_SETTINGS;
   const displayServerCode = cleanServerCode(serverCode);
   const isMobile = controlMode === 'mobile';
   const stats = playerStats || {
@@ -505,47 +509,51 @@ export const HUD: React.FC<HUDProps> = React.memo(({
         {/* KIRI ATAS */}
         <div className="pointer-events-auto flex items-center gap-1 sm:gap-1.5 shrink-0">
           {/* Tombol Profil Karakter */}
-          <button
-            type="button"
-            tabIndex={-1}
-            onClick={onOpenProfile}
-            onPointerDown={(e) => (e.currentTarget as HTMLElement).blur()}
-            className="clay-btn-neutral h-8 sm:h-10 flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 text-left shrink-0 text-black"
-            title={isSuperAdmin ? '👑 Profil Super Admin (RADEN)' : 'Klik untuk membuka Profil Karakter'}
-          >
-            <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-md bg-[#FFAE6D] border border-[#5C3A21] flex items-center justify-center shrink-0 text-black">
-              <User className="w-3 sm:w-3.5 h-3 sm:h-3.5 stroke-[2.5]" />
-            </div>
-            <div className="flex flex-col leading-none">
-              <div className="flex items-center gap-1">
-                <span className="font-bold text-[11px] sm:text-xs text-black truncate max-w-[95px] sm:max-w-[145px]" title={stats.name}>
-                  {stats.name}
-                </span>
-                {isSuperAdmin && (
-                  <span className="clay-badge-secondary text-[8px] font-bold text-black px-1 py-0.5 leading-none">
-                    ADMIN
-                  </span>
-                )}
+          {theme.visibility?.showPlayerStats !== false && (
+            <button
+              type="button"
+              tabIndex={-1}
+              onClick={onOpenProfile}
+              onPointerDown={(e) => (e.currentTarget as HTMLElement).blur()}
+              className="clay-btn-neutral h-8 sm:h-10 flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 text-left shrink-0 text-black"
+              title={isSuperAdmin ? '👑 Profil Super Admin (RADEN)' : 'Klik untuk membuka Profil Karakter'}
+            >
+              <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-md bg-[#FFAE6D] border border-[#5C3A21] flex items-center justify-center shrink-0 text-black">
+                <User className="w-3 sm:w-3.5 h-3 sm:h-3.5 stroke-[2.5]" />
               </div>
-              <span className="text-[8px] sm:text-[9px] font-bold text-black mt-0.5">
-                LV. {formattedLevel}
-              </span>
-            </div>
-          </button>
+              <div className="flex flex-col leading-none">
+                <div className="flex items-center gap-1">
+                  <span className="font-bold text-[11px] sm:text-xs text-black truncate max-w-[95px] sm:max-w-[145px]" title={stats.name}>
+                    {stats.name}
+                  </span>
+                  {isSuperAdmin && (
+                    <span className="clay-badge-secondary text-[8px] font-bold text-black px-1 py-0.5 leading-none">
+                      ADMIN
+                    </span>
+                  )}
+                </div>
+                <span className="text-[8px] sm:text-[9px] font-bold text-black mt-0.5">
+                  LV. {formattedLevel}
+                </span>
+              </div>
+            </button>
+          )}
 
           {/* Tombol Chat */}
-          <button
-            type="button"
-            tabIndex={-1}
-            onClick={onToggleChat}
-            onPointerDown={(e) => (e.currentTarget as HTMLElement).blur()}
-            className={`h-8 w-8 sm:h-10 sm:w-10 flex items-center justify-center shrink-0 text-black ${
-              isChatOpen ? 'clay-btn-primary' : 'clay-btn-neutral'
-            }`}
-            title={isChatOpen ? 'Tutup Obrolan' : 'Buka Obrolan (/)'}
-          >
-            <MessageSquare className="w-3.5 sm:w-4 h-3.5 sm:h-4 stroke-[2.5]" />
-          </button>
+          {theme.visibility?.showChat !== false && (
+            <button
+              type="button"
+              tabIndex={-1}
+              onClick={onToggleChat}
+              onPointerDown={(e) => (e.currentTarget as HTMLElement).blur()}
+              className={`h-8 w-8 sm:h-10 sm:w-10 flex items-center justify-center shrink-0 text-black ${
+                isChatOpen ? 'clay-btn-primary' : 'clay-btn-neutral'
+              }`}
+              title={isChatOpen ? 'Tutup Obrolan' : 'Buka Obrolan (/)'}
+            >
+              <MessageSquare className="w-3.5 sm:w-4 h-3.5 sm:h-4 stroke-[2.5]" />
+            </button>
+          )}
 
           {/* Tombol Mikrofon Proximity Voice Chat */}
           <button
@@ -598,7 +606,7 @@ export const HUD: React.FC<HUDProps> = React.memo(({
           </button>
 
           {/* Tombol Panduan Kontrol (Opsional Cepat) */}
-          {onToggleGuide && (
+          {onToggleGuide && theme.visibility?.showControlsGuide !== false && (
             <button
               type="button"
               tabIndex={-1}
@@ -721,8 +729,8 @@ export const HUD: React.FC<HUDProps> = React.memo(({
             </button>
           )}
 
-          {/* UI PETA / MINIMAP CLAY-PIXEL */}
-          {!stats.inHouse && (
+          {/* UI PETA / MINIMAP CLAY-PIXEL (HANYA JIKA POSISI TOP-RIGHT) */}
+          {!stats.inHouse && theme.visibility?.showMinimap !== false && (theme.minimapPosition || 'top-right') === 'top-right' && (
             <div className="pointer-events-auto flex flex-col items-end gap-1 shrink-0 w-[92px] sm:w-[118px] md:w-[138px]">
               <div className="clay-panel w-full overflow-hidden flex flex-col">
                 {/* Header Peta Mini */}
@@ -791,10 +799,12 @@ export const HUD: React.FC<HUDProps> = React.memo(({
 
                 {/* Info Grid & Jam Digital */}
                 <div className="w-full px-1.5 py-1 bg-[#FFF8EA] flex flex-col gap-1 text-black select-none">
-                  <div className="w-full flex items-center justify-between text-[8px] sm:text-[9px] font-bold bg-[#A8E6CF] px-1.5 py-0.5 rounded border border-[#5C3A21]">
-                    <span>GRID</span>
-                    <span>{gridX},{gridY}</span>
-                  </div>
+                  {theme.visibility?.showCoordinates !== false && (
+                    <div className="w-full flex items-center justify-between text-[8px] sm:text-[9px] font-bold bg-[#A8E6CF] px-1.5 py-0.5 rounded border border-[#5C3A21]">
+                      <span>GRID</span>
+                      <span>{gridX},{gridY}</span>
+                    </div>
+                  )}
 
                   {customMarker && (
                     <div className="w-full flex items-center justify-between text-[7.5px] sm:text-[8.5px] font-bold bg-[#FFAE6D] border border-[#5C3A21] px-1.5 py-0.5 rounded text-black">
@@ -844,6 +854,134 @@ export const HUD: React.FC<HUDProps> = React.memo(({
           )}
         </div>
       </div>
+
+      {/* PETA / MINIMAP POSISI DINAMIS (JIKA DIUBAH KE TOP-LEFT, BOTTOM-LEFT, ATAU BOTTOM-RIGHT) */}
+      {!stats.inHouse && theme.visibility?.showMinimap !== false && (theme.minimapPosition || 'top-right') !== 'top-right' && (
+        <div
+          className={`fixed z-30 pointer-events-auto flex flex-col gap-1 w-[92px] sm:w-[118px] md:w-[138px] ${
+            theme.minimapPosition === 'top-left'
+              ? 'top-14 left-3 items-start'
+              : theme.minimapPosition === 'bottom-left'
+              ? 'bottom-24 left-3 items-start'
+              : 'bottom-24 right-3 items-end'
+          }`}
+        >
+          <div className="clay-panel w-full overflow-hidden flex flex-col">
+            <div className="clay-header h-6 sm:h-7 flex items-center justify-between px-1.5 sm:px-2 text-black">
+              <div className="flex items-center gap-1">
+                <Map className="w-2.5 h-2.5 sm:w-3 sm:h-3 stroke-[2.5]" />
+                <span className="font-bold text-[8.5px] sm:text-[10px]">PETA</span>
+              </div>
+              <div className="flex items-center gap-0.5">
+                <button
+                  type="button"
+                  tabIndex={-1}
+                  onClick={() => {
+                    sound.playClick();
+                    setIsMinimapOpen(!isMinimapOpen);
+                  }}
+                  onPointerDown={(e) => (e.currentTarget as HTMLElement).blur()}
+                  className="p-0.5 text-black active:translate-y-[1px] cursor-pointer"
+                  title={isMinimapOpen ? 'Sembunyikan Peta' : 'Tampilkan Peta'}
+                >
+                  {isMinimapOpen ? (
+                    <ChevronUp className="w-3 h-3 stroke-[2.5]" />
+                  ) : (
+                    <ChevronDown className="w-3 h-3 stroke-[2.5]" />
+                  )}
+                </button>
+                <button
+                  type="button"
+                  tabIndex={-1}
+                  onClick={() => {
+                    sound.playClick();
+                    setIsFullMapOpen(true);
+                  }}
+                  onPointerDown={(e) => (e.currentTarget as HTMLElement).blur()}
+                  className="p-0.5 text-black active:translate-y-[1px] cursor-pointer"
+                  title="Perbesar Peta Penuh"
+                >
+                  <Maximize2 className="w-2.5 h-2.5 stroke-[2.5]" />
+                </button>
+              </div>
+            </div>
+
+            {isMinimapOpen && (
+              <div
+                onClick={() => {
+                  sound.playClick();
+                  setIsFullMapOpen(true);
+                }}
+                className="w-full h-[68px] sm:h-[98px] md:h-[120px] landscape:max-md:h-[60px] bg-[#001026] p-0.5 relative overflow-hidden cursor-pointer border-b-2 border-[#5C3A21]"
+                title="Klik untuk membuka Peta Penuh"
+              >
+                <WorldMapSvg
+                  playerGridX={gridX}
+                  playerGridY={gridY}
+                  playerDirection={stats?.direction || 'down'}
+                  isMini={true}
+                  customMarker={customMarker}
+                  className="w-full h-full rounded-sm"
+                />
+                <div className="absolute top-0.5 left-1/2 -translate-x-1/2 px-1 bg-[#FFF8EA] border border-[#5C3A21] rounded text-[6.5px] font-bold text-black pointer-events-none leading-none">
+                  U
+                </div>
+              </div>
+            )}
+
+            <div className="w-full px-1.5 py-1 bg-[#FFF8EA] flex flex-col gap-1 text-black select-none">
+              {theme.visibility?.showCoordinates !== false && (
+                <div className="w-full flex items-center justify-between text-[8px] sm:text-[9px] font-bold bg-[#A8E6CF] px-1.5 py-0.5 rounded border border-[#5C3A21]">
+                  <span>GRID</span>
+                  <span>{gridX},{gridY}</span>
+                </div>
+              )}
+
+              {customMarker && (
+                <div className="w-full flex items-center justify-between text-[7.5px] sm:text-[8.5px] font-bold bg-[#FFAE6D] border border-[#5C3A21] px-1.5 py-0.5 rounded text-black">
+                  <span className="flex items-center gap-0.5 truncate">
+                    <MapPin className="w-2.5 h-2.5 shrink-0 stroke-[2.5]" />
+                    {customMarker.x},{customMarker.y}
+                  </span>
+                  <button
+                    type="button"
+                    tabIndex={-1}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleClearMarker();
+                    }}
+                    onPointerDown={(e) => (e.currentTarget as HTMLElement).blur()}
+                    className="text-black px-0.5 font-bold cursor-pointer leading-none ml-1"
+                    title="Hapus Tanda Waypoint"
+                  >
+                    ×
+                  </button>
+                </div>
+              )}
+
+              <div
+                className="w-full flex items-center justify-between gap-1 text-[7.5px] sm:text-[8.5px] font-bold text-black"
+                title={`Waktu RadenWorld: ${timePeriod} (${dateString}) - ${timeString} WIB`}
+              >
+                <span className="flex items-center gap-0.5 truncate">
+                  <PeriodIcon className="w-2.5 h-2.5 shrink-0 stroke-[2.5]" />
+                  <span>{timeString}</span>
+                </span>
+                <span className="clay-badge-primary px-1 py-0 text-[6.5px] sm:text-[7.5px] leading-tight shrink-0">
+                  {timePeriod}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div
+            className="clay-badge-neutral px-1.5 py-0.5 w-full text-[8px] sm:text-[9px] font-bold text-black truncate text-center pointer-events-none"
+            title={displayLocation}
+          >
+            {displayLocation}
+          </div>
+        </div>
+      )}
 
       {/* ==================================================================== */}
       {/* 2. BOTTOM BAR (TOMBOL INTERAKSI PC JIKA TERSEDIA)                     */}

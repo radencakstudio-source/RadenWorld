@@ -36,6 +36,8 @@ import { KeybindingManager } from './game/core/KeybindingManager';
 import { InventoryManager } from './game/core/InventoryManager';
 import type { GameSettings } from './game/ui/SettingsModal';
 import type { IGameServerOption } from './game/ui/ServerModal';
+import { DEFAULT_THEME_SETTINGS, applyThemeToDom } from './game/core/ThemeManager';
+import { AccessibilityColorFilters } from './game/ui/AccessibilityColorFilters';
 
 // Modal yang dimuat secara asinkron saat dibuka (Code Splitting / Lazy Loading)
 const SettingsModal = lazy(() => import('./game/ui/SettingsModal').then(m => ({ default: m.SettingsModal })));
@@ -115,6 +117,7 @@ export const GameApp: React.FC = () => {
       maxVisiblePlayers: typeof saved.maxVisiblePlayers === 'number' ? saved.maxVisiblePlayers : (isTouch ? 25 : 50),
       enableMovementEffects: saved.enableMovementEffects !== false,
       enableAntiAliasing: saved.enableAntiAliasing !== false,
+      theme: saved.theme || DEFAULT_THEME_SETTINGS,
     };
   });
 
@@ -1278,13 +1281,17 @@ export const GameApp: React.FC = () => {
     };
   }, []);
 
-  // Memulai Musik Latar (BGM) Resmi RadenWorld secara otomatis
+  // Memulai Musik Latar (BGM) Resmi RadenWorld secara otomatis dan terapkan tema UI
   useEffect(() => {
     sound.playBGM();
+    applyThemeToDom(settings.theme || DEFAULT_THEME_SETTINGS);
   }, []);
 
   const handleUpdateSettings = (newSettings: GameSettings) => {
     setSettings(newSettings);
+    if (newSettings.theme) {
+      applyThemeToDom(newSettings.theme);
+    }
     try {
       localStorage.setItem('raden_game_settings', JSON.stringify(newSettings));
     } catch (e) {}
@@ -1768,7 +1775,19 @@ export const GameApp: React.FC = () => {
   }, [gameState, playerStats.level, playerStats.isSuperAdmin, playerStats.role, playerStats.name]);
 
   return (
-    <div className="fixed inset-0 w-full h-full h-[100dvh] overflow-hidden bg-[#FFF8EA] text-black select-none">
+    <div
+      className="fixed inset-0 w-full h-full h-[100dvh] overflow-hidden bg-[#FFF8EA] text-black select-none"
+      style={{
+        filter:
+          settings.theme?.colorBlindMode && settings.theme.colorBlindMode !== 'none'
+            ? 'var(--raden-viewport-filter)'
+            : undefined,
+        fontFamily: 'var(--raden-font-family)',
+      }}
+    >
+      {/* Filter Aksesibilitas Buta Warna (Protanopia, Deuteranopia, Tritanopia) */}
+      <AccessibilityColorFilters />
+
       {/* 2D HTML5 Canvas Game Engine (Phaser 3) */}
       <GameCanvas />
 
@@ -1824,12 +1843,14 @@ export const GameApp: React.FC = () => {
               EventBus.emit('inspect-player-profile', p);
             }}
             onAddFriend={(targetId, targetName) => handleAddFriend(targetId, targetName)}
+            themeSettings={settings.theme}
           />
 
           {/* Mini Hotbar 6-Slot di Tengah Bawah Layar */}
           <Hotbar
             onOpenBackpack={() => setIsBackpackOpen(!isBackpackOpen)}
             isBackpackOpen={isBackpackOpen}
+            themeSettings={settings.theme}
           />
 
           {/* Modal Tas Inventaris Lengkap 30 Slot (Buka dengan [B] atau klik tombol Tas) */}
@@ -2061,6 +2082,7 @@ export const GameApp: React.FC = () => {
             onClose={() => setIsChatOpen(false)}
             gender={((playerStats?.avatar?.gender || wardrobeAvatar.gender) === 'female' ? 'female' : 'male')}
             currentPlayerName={playerStats?.name || 'Petualang'}
+            themeSettings={settings.theme}
           />
 
           {/* Dialog Narasi NPC Bergaya RPG (Next, Before, Skip) */}

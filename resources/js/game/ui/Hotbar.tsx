@@ -18,14 +18,16 @@ import { EventBus } from '../core/EventBus';
 import { PotionManager, IActivePotionBuff } from '../core/PotionManager';
 import { KeybindingManager } from '../core/KeybindingManager';
 import { Backpack, X } from 'lucide-react';
+import { ThemeSettings } from '../core/ThemeManager';
 
 interface HotbarProps {
   onOpenBackpack: () => void;
   isBackpackOpen?: boolean;
   isFullMapOpen?: boolean;
+  themeSettings?: ThemeSettings;
 }
 
-export const Hotbar: React.FC<HotbarProps> = React.memo(({ onOpenBackpack, isBackpackOpen = false, isFullMapOpen: propIsFullMapOpen }) => {
+export const Hotbar: React.FC<HotbarProps> = React.memo(({ onOpenBackpack, isBackpackOpen = false, isFullMapOpen: propIsFullMapOpen, themeSettings }) => {
   const inv = InventoryManager.getInstance();
   const sound = SoundManager.getInstance();
 
@@ -159,19 +161,22 @@ export const Hotbar: React.FC<HotbarProps> = React.memo(({ onOpenBackpack, isBac
     setDragOverSlot(null);
   };
 
-  if (isFullMapOpen || propIsFullMapOpen || isDialogueOpen) {
+  if (isFullMapOpen || propIsFullMapOpen || isDialogueOpen || themeSettings?.visibility?.showHotbar === false) {
     return null;
   }
 
   const activeItem = hotbarItems[activeSlot];
+  const isTopHotbar = themeSettings?.hotbarPosition === 'top-center';
 
   return (
     <aside
       aria-label="Mini Inventaris & Status Ramuan"
       className="fixed left-1/2 -translate-x-1/2 z-40 select-none pointer-events-auto flex flex-col items-center gap-1 sm:gap-1.5"
-      style={{
-        bottom: 'max(0.5rem, env(safe-area-inset-bottom, 0.5rem))',
-      }}
+      style={
+        isTopHotbar
+          ? { top: 'max(4.25rem, env(safe-area-inset-top, 4.25rem))' }
+          : { bottom: 'max(0.5rem, env(safe-area-inset-bottom, 0.5rem))' }
+      }
     >
       {/* 1. Barisan Kotak-Kotak Efek Ramuan Apotek Farma (Active Potion Buffs) */}
       {activeBuffs.length > 0 && (

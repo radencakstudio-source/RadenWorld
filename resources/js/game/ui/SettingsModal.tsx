@@ -51,8 +51,27 @@ import {
   Battery,
   BatteryCharging,
   HardDrive,
+  Palette,
+  Type,
+  Layout,
 } from 'lucide-react';
 import { KeybindingManager, KEYBINDING_METADATA, DEFAULT_PC_KEYBINDINGS } from '../core/KeybindingManager';
+import {
+  ThemeSettings,
+  DEFAULT_THEME_SETTINGS,
+  THEME_PRESETS,
+  FONT_FAMILY_MAP,
+  COLORBLIND_INFO,
+  applyThemeToDom,
+  ThemePreset,
+  FontFamilyChoice,
+  FontSizeScale,
+  FontWeightChoice,
+  MinimapPosition,
+  HotbarPosition,
+  ColorBlindMode,
+  UIElementVisibility,
+} from '../core/ThemeManager';
 
 export type LanguageCode = 'id' | 'en' | 'zh' | 'ja' | 'ko' | 'ar' | 'fr' | 'ru' | 'de' | 'es';
 export type ControlMode = 'pc' | 'mobile';
@@ -74,6 +93,7 @@ export interface GameSettings {
   maxVisiblePlayers?: number;
   enableMovementEffects?: boolean;
   enableAntiAliasing?: boolean;
+  theme?: ThemeSettings;
 }
 
 interface SettingsModalProps {
@@ -92,7 +112,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   onOpenServerModal,
 }) => {
   const [activeSection, setActiveSection] = useState<
-    'language' | 'sound' | 'graphics' | 'display' | 'controls' | 'network'
+    'language' | 'theme' | 'sound' | 'graphics' | 'display' | 'controls' | 'network'
   >('language');
   const sound = SoundManager.getInstance();
   const networkMgr = NetworkManager.getInstance();
@@ -454,6 +474,39 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     }
   };
 
+  // Tema & UI State Handlers
+  const theme = settings.theme || DEFAULT_THEME_SETTINGS;
+
+  const handleUpdateTheme = (updatedTheme: Partial<ThemeSettings>) => {
+    const nextTheme: ThemeSettings = {
+      ...theme,
+      ...updatedTheme,
+      customColors: {
+        ...theme.customColors,
+        ...(updatedTheme.customColors || {}),
+      },
+      visibility: {
+        ...theme.visibility,
+        ...(updatedTheme.visibility || {}),
+      },
+    };
+
+    if (updatedTheme.preset && updatedTheme.preset !== 'custom' && THEME_PRESETS[updatedTheme.preset]) {
+      nextTheme.customColors = { ...THEME_PRESETS[updatedTheme.preset].colors };
+    }
+
+    const updatedSettings = { ...settings, theme: nextTheme };
+    onUpdateSettings(updatedSettings);
+    applyThemeToDom(nextTheme);
+  };
+
+  const handleResetThemeToDefault = () => {
+    sound.playSuccess();
+    const updatedSettings = { ...settings, theme: { ...DEFAULT_THEME_SETTINGS } };
+    onUpdateSettings(updatedSettings);
+    applyThemeToDom(DEFAULT_THEME_SETTINGS);
+  };
+
   const handleSelectQualityPreset = (preset: 'high' | 'medium' | 'low') => {
     sound.playClick();
     let newMaxPlayers = 50;
@@ -584,6 +637,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             <div className="clay-sidebar-nav custom-scrollbar">
               {[
                 { id: 'language', label: 'Bahasa', icon: Languages },
+                { id: 'theme', label: 'Tema & UI', icon: Palette },
                 { id: 'sound', label: 'Audio', icon: Volume2 },
                 { id: 'graphics', label: 'Grafik', icon: Sparkles },
                 { id: 'display', label: 'Tampilan', icon: ZoomIn },
@@ -624,6 +678,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               <div className="flex items-center gap-2 min-w-0">
                 <span className="text-xs sm:text-sm font-bold uppercase text-black truncate">
                   {activeSection === 'language' && 'PILIHAN BAHASA DUNIA'}
+                  {activeSection === 'theme' && 'KUSTOMISASI TEMA, TIPOGRAFI & TATA LETAK UI'}
                   {activeSection === 'sound' && 'AUDIO & EFEK SUARA'}
                   {activeSection === 'graphics' && 'KUALITAS GRAFIK & PERFORMA'}
                   {activeSection === 'display' && 'TAMPILAN & KAMERA'}
@@ -691,6 +746,397 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     </button>
                   );
                 })}
+              </div>
+            </div>
+          )}
+
+          {/* TAB TEMA, TIPOGRAFI, AKSESIBILITAS & TATA LETAK UI */}
+          {activeSection === 'theme' && (
+            <div className="space-y-4">
+              {/* Header: Tombol Reset ke Bawaan */}
+              <div className="flex flex-wrap items-center justify-between gap-2 p-3 bg-[#FFF8EA] border-2 border-[#5C3A21] rounded-xl shadow-inner">
+                <div>
+                  <div className="text-xs font-black uppercase text-black flex items-center gap-1.5">
+                    <Palette className="w-4 h-4 stroke-[2.5]" />
+                    <span>Kustomisasi Tampilan & Kenyamanan Penglihatan</span>
+                  </div>
+                  <div className="text-[10px] text-black/80">
+                    Atur tema warna, font, tata letak posisi UI, serta mode buta warna atau monokrom hitam-putih.
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleResetThemeToDefault}
+                  className="clay-btn-neutral px-3 py-1.5 text-[10px] font-bold flex items-center gap-1.5 text-black hover:bg-[#FFAE6D]/40 cursor-pointer"
+                  title="Kembalikan semua setelan tema, warna, font, dan tata letak ke konfigurasi asli pabrik"
+                >
+                  <RotateCcw className="w-3.5 h-3.5 stroke-[2.5]" />
+                  <span>KEMBALI KE BAWAAN (RESET)</span>
+                </button>
+              </div>
+
+              {/* 1. PRESET TEMA & WARNA UI */}
+              <div className="clay-card p-3 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold uppercase text-black flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 stroke-[2.5]" />
+                    1. Pilihan Tema Warna
+                  </span>
+                  <span className="clay-badge-secondary px-2 py-0.5 text-[9px] font-bold text-black uppercase">
+                    {theme.preset}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {Object.entries(THEME_PRESETS).map(([key, p]) => {
+                    const isSelected = theme.preset === key;
+                    return (
+                      <button
+                        key={key}
+                        type="button"
+                        onClick={() => {
+                          sound.playClick();
+                          handleUpdateTheme({ preset: key as ThemePreset });
+                        }}
+                        className={`p-2.5 text-left rounded-lg border-2 border-[#5C3A21] transition-all flex flex-col gap-1.5 cursor-pointer ${
+                          isSelected ? 'scale-[1.02] shadow-sm ring-2 ring-[#5C3A21]' : 'opacity-90 hover:opacity-100'
+                        }`}
+                        style={{ backgroundColor: p.colors.panelBg, color: p.colors.textColor }}
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="font-bold text-[11px] truncate">{p.name}</span>
+                          {isSelected && <Check className="w-3.5 h-3.5 stroke-[3] text-black" />}
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <span className="w-3.5 h-3.5 rounded-full border border-black/30" style={{ backgroundColor: p.colors.panelBg }} />
+                          <span className="w-3.5 h-3.5 rounded-full border border-black/30" style={{ backgroundColor: p.colors.accentPrimary }} />
+                          <span className="w-3.5 h-3.5 rounded-full border border-black/30" style={{ backgroundColor: p.colors.accentSecondary }} />
+                          <span className="w-3.5 h-3.5 rounded-full border border-black/30" style={{ backgroundColor: p.colors.panelBorder }} />
+                        </div>
+                        <span className="text-[8.5px] leading-tight opacity-80">{p.description}</span>
+                      </button>
+                    );
+                  })}
+
+                  {/* Tombol Kustom Sendiri */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      sound.playClick();
+                      handleUpdateTheme({ preset: 'custom' });
+                    }}
+                    className={`p-2.5 text-left rounded-lg border-2 border-[#5C3A21] transition-all flex flex-col gap-1.5 cursor-pointer ${
+                      theme.preset === 'custom' ? 'bg-[#FFF8EA] scale-[1.02] shadow-sm ring-2 ring-[#5C3A21]' : 'bg-white opacity-90'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between text-black">
+                      <span className="font-bold text-[11px]">🎨 Kustom Sendiri</span>
+                      {theme.preset === 'custom' && <Check className="w-3.5 h-3.5 stroke-[3]" />}
+                    </div>
+                    <span className="text-[8.5px] text-black/80">Pilih palet warna panel, border, dan aksen sendiri</span>
+                  </button>
+                </div>
+
+                {/* Color Pickers jika preset Custom */}
+                {theme.preset === 'custom' && (
+                  <div className="p-3 bg-white border-2 border-[#5C3A21] rounded-lg grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-black">
+                    <div>
+                      <label className="text-[9px] font-bold block mb-1">Latar Panel:</label>
+                      <div className="flex items-center gap-1.5">
+                        <input
+                          type="color"
+                          value={theme.customColors.panelBg}
+                          onChange={(e) => handleUpdateTheme({ customColors: { ...theme.customColors, panelBg: e.target.value } })}
+                          className="w-7 h-7 rounded border border-[#5C3A21] cursor-pointer"
+                        />
+                        <span className="text-[9px] font-mono">{theme.customColors.panelBg}</span>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-[9px] font-bold block mb-1">Garis Tepi (Border):</label>
+                      <div className="flex items-center gap-1.5">
+                        <input
+                          type="color"
+                          value={theme.customColors.panelBorder}
+                          onChange={(e) => handleUpdateTheme({ customColors: { ...theme.customColors, panelBorder: e.target.value } })}
+                          className="w-7 h-7 rounded border border-[#5C3A21] cursor-pointer"
+                        />
+                        <span className="text-[9px] font-mono">{theme.customColors.panelBorder}</span>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-[9px] font-bold block mb-1">Aksen Utama:</label>
+                      <div className="flex items-center gap-1.5">
+                        <input
+                          type="color"
+                          value={theme.customColors.accentPrimary}
+                          onChange={(e) => handleUpdateTheme({ customColors: { ...theme.customColors, accentPrimary: e.target.value } })}
+                          className="w-7 h-7 rounded border border-[#5C3A21] cursor-pointer"
+                        />
+                        <span className="text-[9px] font-mono">{theme.customColors.accentPrimary}</span>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-[9px] font-bold block mb-1">Teks Utama:</label>
+                      <div className="flex items-center gap-1.5">
+                        <input
+                          type="color"
+                          value={theme.customColors.textColor}
+                          onChange={(e) => handleUpdateTheme({ customColors: { ...theme.customColors, textColor: e.target.value } })}
+                          className="w-7 h-7 rounded border border-[#5C3A21] cursor-pointer"
+                        />
+                        <span className="text-[9px] font-mono">{theme.customColors.textColor}</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* 2. TIPOGRAFI (FONT, UKURAN, KETEBALAN) */}
+              <div className="clay-card p-3 space-y-3">
+                <span className="text-xs font-bold uppercase text-black flex items-center gap-1.5">
+                  <Type className="w-3.5 h-3.5 stroke-[2.5]" />
+                  2. Tipografi (Font, Ukuran & Ketebalan)
+                </span>
+
+                {/* Font Family */}
+                <div>
+                  <label className="text-[10px] font-bold text-black uppercase block mb-1.5">
+                    Pilihan Jenis Huruf (Font):
+                  </label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                    {Object.entries(FONT_FAMILY_MAP).map(([key, f]) => {
+                      const isSelected = theme.fontFamily === key;
+                      return (
+                        <button
+                          key={key}
+                          type="button"
+                          onClick={() => {
+                            sound.playClick();
+                            handleUpdateTheme({ fontFamily: key as FontFamilyChoice });
+                          }}
+                          className={`p-2 text-left flex items-center justify-between text-black rounded-lg border-2 border-[#5C3A21] cursor-pointer ${
+                            isSelected ? 'bg-[#FFAE6D] font-bold ring-2 ring-[#5C3A21]' : 'bg-white'
+                          }`}
+                          style={{ fontFamily: f.style }}
+                        >
+                          <span className="text-xs truncate">{f.name}</span>
+                          {isSelected && <Check className="w-3.5 h-3.5 stroke-[3] shrink-0" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Ukuran & Ketebalan Huruf */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                  <div>
+                    <label className="text-[10px] font-bold text-black uppercase block mb-1">
+                      Ukuran Teks:
+                    </label>
+                    <div className="grid grid-cols-3 gap-1">
+                      {[
+                        { id: 'small', label: 'Kecil (90%)' },
+                        { id: 'normal', label: 'Normal' },
+                        { id: 'large', label: 'Besar (112%)' },
+                      ].map((s) => (
+                        <button
+                          key={s.id}
+                          type="button"
+                          onClick={() => {
+                            sound.playClick();
+                            handleUpdateTheme({ fontSize: s.id as FontSizeScale });
+                          }}
+                          className={`py-1.5 px-1 text-[10px] font-bold text-center border-2 border-[#5C3A21] rounded-lg text-black cursor-pointer ${
+                            theme.fontSize === s.id ? 'bg-[#A8E6CF]' : 'bg-white'
+                          }`}
+                        >
+                          {s.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] font-bold text-black uppercase block mb-1">
+                      Ketebalan Teks (Weight):
+                    </label>
+                    <div className="grid grid-cols-3 gap-1">
+                      {[
+                        { id: 'normal', label: 'Normal' },
+                        { id: 'bold', label: 'Tebal' },
+                        { id: 'black', label: 'Ekstra' },
+                      ].map((w) => (
+                        <button
+                          key={w.id}
+                          type="button"
+                          onClick={() => {
+                            sound.playClick();
+                            handleUpdateTheme({ fontWeight: w.id as FontWeightChoice });
+                          }}
+                          className={`py-1.5 px-1 text-[10px] font-bold text-center border-2 border-[#5C3A21] rounded-lg text-black cursor-pointer ${
+                            theme.fontWeight === w.id ? 'bg-[#A8E6CF]' : 'bg-white'
+                          }`}
+                        >
+                          {w.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* 3. AKSESIBILITAS: BUTA WARNA & MODE HITAM PUTIH */}
+              <div className="clay-card p-3 space-y-2.5">
+                <div>
+                  <span className="text-xs font-bold uppercase text-black flex items-center gap-1.5">
+                    <Eye className="w-3.5 h-3.5 stroke-[2.5]" />
+                    3. Aksesibilitas: Mode Buta Warna & Hitam-Putih
+                  </span>
+                  <p className="text-[9.5px] text-black/80 mt-0.5">
+                    Membantu kenyamanan penglihatan bagi pemain buta warna serta meredakan mata pusing / silau akibat warna-warni yang terlalu ramai.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {Object.entries(COLORBLIND_INFO).map(([key, info]) => {
+                    const isSelected = theme.colorBlindMode === key;
+                    const isMono = key === 'monochrome';
+                    return (
+                      <button
+                        key={key}
+                        type="button"
+                        onClick={() => {
+                          sound.playClick();
+                          handleUpdateTheme({ colorBlindMode: key as ColorBlindMode });
+                        }}
+                        className={`p-2.5 text-left border-2 border-[#5C3A21] rounded-xl flex flex-col gap-1 transition-all text-black cursor-pointer ${
+                          isSelected
+                            ? isMono
+                              ? 'bg-[#E4E4E7] ring-2 ring-black font-bold scale-[1.01]'
+                              : 'bg-[#A8E6CF] ring-2 ring-[#5C3A21] font-bold scale-[1.01]'
+                            : 'bg-white hover:bg-[#FFF8EA]'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="text-[11px] font-bold flex items-center gap-1.5">
+                            {isMono ? '🖤' : '👁️'} {info.label}
+                          </span>
+                          {isSelected && <Check className="w-3.5 h-3.5 stroke-[3]" />}
+                        </div>
+                        <p className="text-[9px] leading-tight text-black/80">{info.desc}</p>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* 4. TATA LETAK & POSISI UI */}
+              <div className="clay-card p-3 space-y-3">
+                <span className="text-xs font-bold uppercase text-black flex items-center gap-1.5">
+                  <Layout className="w-3.5 h-3.5 stroke-[2.5]" />
+                  4. Posisi Komponen UI di Layar
+                </span>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-[10px] font-bold text-black uppercase block mb-1">
+                      Posisi Radar Peta (Minimap):
+                    </label>
+                    <div className="grid grid-cols-2 gap-1.5">
+                      {[
+                        { id: 'top-right', label: '↗ Kanan Atas' },
+                        { id: 'top-left', label: '↖ Kiri Atas' },
+                        { id: 'bottom-right', label: '↘ Kanan Bawah' },
+                        { id: 'bottom-left', label: '↙ Kiri Bawah' },
+                      ].map((pos) => (
+                        <button
+                          key={pos.id}
+                          type="button"
+                          onClick={() => {
+                            sound.playClick();
+                            handleUpdateTheme({ minimapPosition: pos.id as MinimapPosition });
+                          }}
+                          className={`py-1.5 px-2 text-[10px] font-bold text-left border-2 border-[#5C3A21] rounded-lg text-black cursor-pointer ${
+                            theme.minimapPosition === pos.id ? 'bg-[#FFAE6D]' : 'bg-white'
+                          }`}
+                        >
+                          {pos.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] font-bold text-black uppercase block mb-1">
+                      Posisi Toolbar Hotbar:
+                    </label>
+                    <div className="grid grid-cols-2 gap-1.5">
+                      {[
+                        { id: 'bottom-center', label: '⬇ Bawah Tengah' },
+                        { id: 'top-center', label: '⬆ Atas Tengah' },
+                      ].map((pos) => (
+                        <button
+                          key={pos.id}
+                          type="button"
+                          onClick={() => {
+                            sound.playClick();
+                            handleUpdateTheme({ hotbarPosition: pos.id as HotbarPosition });
+                          }}
+                          className={`py-1.5 px-2 text-[10px] font-bold text-left border-2 border-[#5C3A21] rounded-lg text-black cursor-pointer ${
+                            theme.hotbarPosition === pos.id ? 'bg-[#FFAE6D]' : 'bg-white'
+                          }`}
+                        >
+                          {pos.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* 5. VISIBILITAS ELEMEN (ON / OFF SWITCH) */}
+              <div className="clay-card p-3 space-y-2.5">
+                <span className="text-xs font-bold uppercase text-black flex items-center gap-1.5">
+                  <Sliders className="w-3.5 h-3.5 stroke-[2.5]" />
+                  5. Tampilkan / Sembunyikan Elemen di Layar
+                </span>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {[
+                    { key: 'showMinimap', label: 'Radar Peta Minimap' },
+                    { key: 'showPlayerStats', label: 'Bar Status Karakter (HP, Koin, Diamond)' },
+                    { key: 'showChat', label: 'Balon Obrolan & Tombol Chat' },
+                    { key: 'showHotbar', label: 'Toolbar Hotbar Cepat' },
+                    { key: 'showControlsGuide', label: 'Panduan Tombol Kontrol' },
+                    { key: 'showCoordinates', label: 'Koordinat Grid Wilayah' },
+                  ].map((item) => {
+                    const isVisible = theme.visibility[item.key as keyof UIElementVisibility];
+                    return (
+                      <button
+                        key={item.key}
+                        type="button"
+                        onClick={() => {
+                          sound.playClick();
+                          handleUpdateTheme({
+                            visibility: {
+                              ...theme.visibility,
+                              [item.key]: !isVisible,
+                            },
+                          });
+                        }}
+                        className={`p-2 border-2 border-[#5C3A21] rounded-lg flex items-center justify-between text-black transition-all cursor-pointer ${
+                          isVisible ? 'bg-[#A8E6CF]' : 'bg-[#E5E7EB] opacity-60'
+                        }`}
+                      >
+                        <span className="text-[10px] font-bold">{item.label}</span>
+                        <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-white border border-[#5C3A21]">
+                          {isVisible ? 'ON' : 'OFF'}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             </div>
           )}

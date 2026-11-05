@@ -16,6 +16,7 @@ import { Send, MessageSquare, X, Smile, Sparkles, Globe, User, Lock, ChevronDown
 import { SoundManager } from '../core/SoundManager';
 import { KeybindingManager } from '../core/KeybindingManager';
 import { EventBus } from '../core/EventBus';
+import { ThemeSettings } from '../core/ThemeManager';
 
 interface ChatBoxProps {
   messages: IChatMessage[];
@@ -24,6 +25,7 @@ interface ChatBoxProps {
   onClose?: () => void;
   gender?: 'male' | 'female';
   currentPlayerName?: string;
+  themeSettings?: ThemeSettings;
 }
 
 interface ICharacterExpression {
@@ -72,6 +74,7 @@ export const ChatBox: React.FC<ChatBoxProps> = React.memo(({
   onClose,
   gender = 'male',
   currentPlayerName = 'Petualang',
+  themeSettings,
 }) => {
   const [inputText, setInputText] = useState('');
   const [showExpressions, setShowExpressions] = useState(false);
@@ -312,15 +315,24 @@ export const ChatBox: React.FC<ChatBoxProps> = React.memo(({
     inputRef.current?.focus();
   };
 
-  if (!isOpen) return null;
+  if (!isOpen || themeSettings?.visibility?.showChat === false) return null;
+
+  const isBottomRight = themeSettings?.chatPosition === 'bottom-right';
 
   return (
     <div
       className="fixed z-50 w-[285px] sm:w-[340px] md:w-[385px] max-w-[calc(100dvw-1rem)] max-h-[calc(100dvh-3.75rem)] flex flex-col clay-panel overflow-hidden pointer-events-auto text-black"
-      style={{
-        top: 'max(3rem, calc(env(safe-area-inset-top, 0px) + 3rem))',
-        left: 'max(0.5rem, env(safe-area-inset-left, 0.5rem))',
-      }}
+      style={
+        isBottomRight
+          ? {
+              bottom: 'max(4.5rem, env(safe-area-inset-bottom, 4.5rem))',
+              right: 'max(0.5rem, env(safe-area-inset-right, 0.5rem))',
+            }
+          : {
+              top: 'max(3rem, calc(env(safe-area-inset-top, 0px) + 3rem))',
+              left: 'max(0.5rem, env(safe-area-inset-left, 0.5rem))',
+            }
+      }
     >
       {/* 1. HEADER CHAT */}
       <div className="clay-header px-2.5 sm:px-3.5 py-2 flex items-center justify-between gap-2 text-xs font-bold text-black uppercase shrink-0">

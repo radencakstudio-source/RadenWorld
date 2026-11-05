@@ -2121,23 +2121,29 @@ export const EducationalVideoCanvas: React.FC<EducationalVideoCanvasProps> = ({
             </text>
 
             <g transform="translate(10, 36)">
-              <rect x="0" y="0" width="205" height="48" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
-              <text x="102" y="20" fill="#0284C7" fontSize="12" fontWeight="900" textAnchor="middle">
-                F₁ / A₁ = F₂ / A₂
-              </text>
-              <text x="102" y="38" fill="#5C3A21" fontSize="8.5" textAnchor="middle">
-                Tekanan diteruskan ke segala arah sama besar
-              </text>
+              <g transform="translate(0, 0)">
+                <rect x="0" y="0" width="205" height="48" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
+                <text x="102" y="20" fill="#0284C7" fontSize="12" fontWeight="900" textAnchor="middle">
+                  F₁ / A₁ = F₂ / A₂
+                </text>
+                <text x="102" y="38" fill="#5C3A21" fontSize="8.5" textAnchor="middle">
+                  Tekanan diteruskan ke segala arah sama besar
+                </text>
+              </g>
 
-              <rect x="0" y="56" width="205" height="52" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
-              <text x="10" y="18" fill="#166534" fontSize="10" fontWeight="bold">Tekanan Zat Padat:</text>
-              <text x="10" y="32" fill="#5C3A21" fontSize="8.5">• P = F / A (Makin runcing makin tajam)</text>
-              <text x="10" y="44" fill="#5C3A21" fontSize="8.5">• Satuan: N/m² atau Pascal (Pa)</text>
+              <g transform="translate(0, 56)">
+                <rect x="0" y="0" width="205" height="52" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
+                <text x="10" y="18" fill="#166534" fontSize="10" fontWeight="bold">Tekanan Zat Padat:</text>
+                <text x="10" y="32" fill="#5C3A21" fontSize="8.5">• P = F / A (Makin runcing makin tajam)</text>
+                <text x="10" y="44" fill="#5C3A21" fontSize="8.5">• Satuan: N/m² atau Pascal (Pa)</text>
+              </g>
 
-              <rect x="0" y="116" width="205" height="56" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
-              <text x="10" y="18" fill="#D97706" fontSize="10" fontWeight="bold">Tekanan Hidrostatis Cair:</text>
-              <text x="10" y="32" fill="#5C3A21" fontSize="8.5">• P = ρ · g · h</text>
-              <text x="10" y="44" fill="#5C3A21" fontSize="8.5">• Makin dalam penyelam, tekanan makin kuat!</text>
+              <g transform="translate(0, 116)">
+                <rect x="0" y="0" width="205" height="56" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
+                <text x="10" y="18" fill="#D97706" fontSize="10" fontWeight="bold">Tekanan Hidrostatis Cair:</text>
+                <text x="10" y="32" fill="#5C3A21" fontSize="8.5">• P = ρ · g · h</text>
+                <text x="10" y="44" fill="#5C3A21" fontSize="8.5">• Makin dalam penyelam, tekanan makin kuat!</text>
+              </g>
             </g>
           </g>
         </svg>
@@ -2222,23 +2228,29 @@ export const EducationalVideoCanvas: React.FC<EducationalVideoCanvasProps> = ({
             </text>
 
             <g transform="translate(10, 36)">
-              <rect x="0" y="0" width="185" height="46" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
-              <text x="92" y="20" fill="#0284C7" fontSize="13" fontWeight="900" textAnchor="middle">
-                V = I × R
-              </text>
-              <text x="92" y="36" fill="#5C3A21" fontSize="8.5" textAnchor="middle">
-                Kuat Arus: I = V / R = 12 / 4 = 3 Ampere
-              </text>
+              <g transform="translate(0, 0)">
+                <rect x="0" y="0" width="185" height="46" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
+                <text x="92" y="20" fill="#0284C7" fontSize="13" fontWeight="900" textAnchor="middle">
+                  V = I × R
+                </text>
+                <text x="92" y="36" fill="#5C3A21" fontSize="8.5" textAnchor="middle">
+                  Kuat Arus: I = V / R = 12 / 4 = 3 Ampere
+                </text>
+              </g>
 
-              <rect x="0" y="54" width="185" height="52" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
-              <text x="8" y="18" fill="#166534" fontSize="9.5" fontWeight="bold">Rangkaian Seri:</text>
-              <text x="8" y="32" fill="#5C3A21" fontSize="8">• Arus I sama di setiap titik</text>
-              <text x="8" y="44" fill="#5C3A21" fontSize="8">• Hambatan bertambah: R total = R1 + R2</text>
+              <g transform="translate(0, 54)">
+                <rect x="0" y="0" width="185" height="52" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
+                <text x="8" y="18" fill="#166534" fontSize="9.5" fontWeight="bold">Rangkaian Seri:</text>
+                <text x="8" y="32" fill="#5C3A21" fontSize="8">• Arus I sama di setiap titik</text>
+                <text x="8" y="44" fill="#5C3A21" fontSize="8">• Hambatan bertambah: R total = R1 + R2</text>
+              </g>
 
-              <rect x="0" y="114" width="185" height="58" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
-              <text x="8" y="18" fill="#D97706" fontSize="9.5" fontWeight="bold">Rangkaian Paralel:</text>
-              <text x="8" y="32" fill="#5C3A21" fontSize="8">• Tegangan V sama di setiap cabang</text>
-              <text x="8" y="44" fill="#5C3A21" fontSize="8">• 1 alat mati, alat lain tetap menyala!</text>
+              <g transform="translate(0, 114)">
+                <rect x="0" y="0" width="185" height="58" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
+                <text x="8" y="18" fill="#D97706" fontSize="9.5" fontWeight="bold">Rangkaian Paralel:</text>
+                <text x="8" y="32" fill="#5C3A21" fontSize="8">• Tegangan V sama di setiap cabang</text>
+                <text x="8" y="44" fill="#5C3A21" fontSize="8">• 1 alat mati, alat lain tetap menyala!</text>
+              </g>
             </g>
           </g>
         </svg>
@@ -2310,21 +2322,29 @@ export const EducationalVideoCanvas: React.FC<EducationalVideoCanvasProps> = ({
             </text>
 
             <g transform="translate(10, 36)">
-              <rect x="0" y="0" width="185" height="38" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
-              <text x="8" y="16" fill="#166534" fontSize="9.5" fontWeight="900">1. Oval (Terminator):</text>
-              <text x="8" y="28" fill="#5C3A21" fontSize="8">Titik Mulai (Start) dan Selesai (End)</text>
+              <g transform="translate(0, 0)">
+                <rect x="0" y="0" width="185" height="38" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
+                <text x="8" y="16" fill="#166534" fontSize="9.5" fontWeight="900">1. Oval (Terminator):</text>
+                <text x="8" y="28" fill="#5C3A21" fontSize="8">Titik Mulai (Start) dan Selesai (End)</text>
+              </g>
 
-              <rect x="0" y="44" width="185" height="38" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
-              <text x="8" y="16" fill="#0284C7" fontSize="9.5" fontWeight="900">2. Jajar Genjang:</text>
-              <text x="8" y="28" fill="#5C3A21" fontSize="8">Input masukan data & Output keluaran</text>
+              <g transform="translate(0, 44)">
+                <rect x="0" y="0" width="185" height="38" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
+                <text x="8" y="16" fill="#0284C7" fontSize="9.5" fontWeight="900">2. Jajar Genjang:</text>
+                <text x="8" y="28" fill="#5C3A21" fontSize="8">Input masukan data &amp; Output keluaran</text>
+              </g>
 
-              <rect x="0" y="88" width="185" height="38" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
-              <text x="8" y="16" fill="#D97706" fontSize="9.5" fontWeight="900">3. Belah Ketupat (Decision):</text>
-              <text x="8" y="28" fill="#5C3A21" fontSize="8">Percabangan kondisi logika (Ya / Tidak)</text>
+              <g transform="translate(0, 88)">
+                <rect x="0" y="0" width="185" height="38" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
+                <text x="8" y="16" fill="#D97706" fontSize="9.5" fontWeight="900">3. Belah Ketupat (Decision):</text>
+                <text x="8" y="28" fill="#5C3A21" fontSize="8">Percabangan kondisi logika (Ya / Tidak)</text>
+              </g>
 
-              <rect x="0" y="132" width="185" height="38" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
-              <text x="8" y="16" fill="#7C3AED" fontSize="9.5" fontWeight="900">4. Persegi Panjang:</text>
-              <text x="8" y="28" fill="#5C3A21" fontSize="8">Proses eksekusi formula perhitungan</text>
+              <g transform="translate(0, 132)">
+                <rect x="0" y="0" width="185" height="38" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
+                <text x="8" y="16" fill="#7C3AED" fontSize="9.5" fontWeight="900">4. Persegi Panjang:</text>
+                <text x="8" y="28" fill="#5C3A21" fontSize="8">Proses eksekusi formula perhitungan</text>
+              </g>
             </g>
           </g>
         </svg>
@@ -2391,23 +2411,29 @@ export const EducationalVideoCanvas: React.FC<EducationalVideoCanvasProps> = ({
             </text>
 
             <g transform="translate(10, 36)">
-              <rect x="0" y="0" width="185" height="46" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
-              <text x="92" y="20" fill="#0284C7" fontSize="13" fontWeight="900" textAnchor="middle">
-                v = λ × f
-              </text>
-              <text x="92" y="36" fill="#5C3A21" fontSize="8.5" textAnchor="middle">
-                Cepat Rambat (m/s) = Lambda × Frekuensi
-              </text>
+              <g transform="translate(0, 0)">
+                <rect x="0" y="0" width="185" height="46" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
+                <text x="92" y="20" fill="#0284C7" fontSize="13" fontWeight="900" textAnchor="middle">
+                  v = λ × f
+                </text>
+                <text x="92" y="36" fill="#5C3A21" fontSize="8.5" textAnchor="middle">
+                  Cepat Rambat (m/s) = Lambda × Frekuensi
+                </text>
+              </g>
 
-              <rect x="0" y="54" width="185" height="52" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
-              <text x="8" y="18" fill="#166534" fontSize="9.5" fontWeight="bold">Frekuensi (f) & Periode (T):</text>
-              <text x="8" y="32" fill="#5C3A21" fontSize="8">• f = n / t (Banyak gelombang / detik, Hz)</text>
-              <text x="8" y="44" fill="#5C3A21" fontSize="8">• T = 1 / f (Waktu untuk 1 gelombang, detik)</text>
+              <g transform="translate(0, 54)">
+                <rect x="0" y="0" width="185" height="52" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
+                <text x="8" y="18" fill="#166534" fontSize="9.5" fontWeight="bold">Frekuensi (f) & Periode (T):</text>
+                <text x="8" y="32" fill="#5C3A21" fontSize="8">• f = n / t (Banyak gelombang / detik, Hz)</text>
+                <text x="8" y="44" fill="#5C3A21" fontSize="8">• T = 1 / f (Waktu untuk 1 gelombang, detik)</text>
+              </g>
 
-              <rect x="0" y="114" width="185" height="58" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
-              <text x="8" y="18" fill="#D97706" fontSize="9.5" fontWeight="bold">Sifat Bunyi & Resonansi:</text>
-              <text x="8" y="32" fill="#5C3A21" fontSize="8">• Bunyi merambat lewat medium udara</text>
-              <text x="8" y="44" fill="#5C3A21" fontSize="8">• Bunyi TIDAK bisa merambat di hampa udara!</text>
+              <g transform="translate(0, 114)">
+                <rect x="0" y="0" width="185" height="58" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
+                <text x="8" y="18" fill="#D97706" fontSize="9.5" fontWeight="bold">Sifat Bunyi & Resonansi:</text>
+                <text x="8" y="32" fill="#5C3A21" fontSize="8">• Bunyi merambat lewat medium udara</text>
+                <text x="8" y="44" fill="#5C3A21" fontSize="8">• Bunyi TIDAK bisa merambat di hampa udara!</text>
+              </g>
             </g>
           </g>
         </svg>
@@ -2461,20 +2487,26 @@ export const EducationalVideoCanvas: React.FC<EducationalVideoCanvasProps> = ({
             </text>
 
             <g transform="translate(10, 36)">
-              <rect x="0" y="0" width="185" height="48" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
-              <text x="8" y="18" fill="#166534" fontSize="9.5" fontWeight="900">1. Monohibrid (1 Sifat Beda):</text>
-              <text x="8" y="32" fill="#5C3A21" fontSize="8.5">• Rasio Fenotipe F2 = 3 : 1</text>
-              <text x="8" y="42" fill="#5C3A21" fontSize="8.5">• Contoh: Bunga Merah vs Putih</text>
+              <g transform="translate(0, 0)">
+                <rect x="0" y="0" width="185" height="48" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
+                <text x="8" y="18" fill="#166534" fontSize="9.5" fontWeight="900">1. Monohibrid (1 Sifat Beda):</text>
+                <text x="8" y="32" fill="#5C3A21" fontSize="8.5">• Rasio Fenotipe F2 = 3 : 1</text>
+                <text x="8" y="42" fill="#5C3A21" fontSize="8.5">• Contoh: Bunga Merah vs Putih</text>
+              </g>
 
-              <rect x="0" y="56" width="185" height="52" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
-              <text x="8" y="18" fill="#0284C7" fontSize="9.5" fontWeight="900">2. Dihibrid (2 Sifat Beda):</text>
-              <text x="8" y="32" fill="#5C3A21" fontSize="8.5">• Rasio Fenotipe F2 = 9 : 3 : 3 : 1</text>
-              <text x="8" y="44" fill="#5C3A21" fontSize="8.5">• Bulat Kuning vs Kerut Hijau</text>
+              <g transform="translate(0, 56)">
+                <rect x="0" y="0" width="185" height="52" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
+                <text x="8" y="18" fill="#0284C7" fontSize="9.5" fontWeight="900">2. Dihibrid (2 Sifat Beda):</text>
+                <text x="8" y="32" fill="#5C3A21" fontSize="8.5">• Rasio Fenotipe F2 = 9 : 3 : 3 : 1</text>
+                <text x="8" y="44" fill="#5C3A21" fontSize="8.5">• Bulat Kuning vs Kerut Hijau</text>
+              </g>
 
-              <rect x="0" y="116" width="185" height="56" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
-              <text x="8" y="18" fill="#7C3AED" fontSize="9.5" fontWeight="900">3. Istilah Kunci:</text>
-              <text x="8" y="32" fill="#5C3A21" fontSize="8.5">• Genotipe: Susunan gen (BB, Bb, bb)</text>
-              <text x="8" y="44" fill="#5C3A21" fontSize="8.5">• Fenotipe: Sifat tampak fisik kasat mata</text>
+              <g transform="translate(0, 116)">
+                <rect x="0" y="0" width="185" height="56" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
+                <text x="8" y="18" fill="#7C3AED" fontSize="9.5" fontWeight="900">3. Istilah Kunci:</text>
+                <text x="8" y="32" fill="#5C3A21" fontSize="8.5">• Genotipe: Susunan gen (BB, Bb, bb)</text>
+                <text x="8" y="44" fill="#5C3A21" fontSize="8.5">• Fenotipe: Sifat tampak fisik kasat mata</text>
+              </g>
             </g>
           </g>
         </svg>
@@ -2666,20 +2698,26 @@ export const EducationalVideoCanvas: React.FC<EducationalVideoCanvasProps> = ({
             </text>
 
             <g transform="translate(10, 36)">
-              <rect x="0" y="0" width="205" height="52" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
-              <text x="10" y="18" fill="#EF4444" fontSize="10" fontWeight="900">1. Turunan (Diferensial):</text>
-              <text x="10" y="32" fill="#0284C7" fontSize="9.5" fontWeight="bold">• d(xⁿ)/dx = n · xⁿ⁻¹</text>
-              <text x="10" y="44" fill="#5C3A21" fontSize="8.5">• Gradien garis singgung m = f'(x)</text>
+              <g transform="translate(0, 0)">
+                <rect x="0" y="0" width="205" height="52" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
+                <text x="10" y="18" fill="#EF4444" fontSize="10" fontWeight="900">1. Turunan (Diferensial):</text>
+                <text x="10" y="32" fill="#0284C7" fontSize="9.5" fontWeight="bold">• d(xⁿ)/dx = n · xⁿ⁻¹</text>
+                <text x="10" y="44" fill="#5C3A21" fontSize="8.5">• Gradien garis singgung m = f'(x)</text>
+              </g>
 
-              <rect x="0" y="60" width="205" height="52" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
-              <text x="10" y="18" fill="#166534" fontSize="10" fontWeight="900">2. Integral (Antiturunan):</text>
-              <text x="10" y="32" fill="#166534" fontSize="9.5" fontWeight="bold">• ∫ xⁿ dx = (1/(n+1)) xⁿ⁺¹ + C</text>
-              <text x="10" y="44" fill="#5C3A21" fontSize="8.5">• Menghitung luas & volume benda putar</text>
+              <g transform="translate(0, 60)">
+                <rect x="0" y="0" width="205" height="52" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
+                <text x="10" y="18" fill="#166534" fontSize="10" fontWeight="900">2. Integral (Antiturunan):</text>
+                <text x="10" y="32" fill="#166534" fontSize="9.5" fontWeight="bold">• ∫ xⁿ dx = (1/(n+1)) xⁿ⁺¹ + C</text>
+                <text x="10" y="44" fill="#5C3A21" fontSize="8.5">• Menghitung luas &amp; volume benda putar</text>
+              </g>
 
-              <rect x="0" y="120" width="205" height="50" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
-              <text x="10" y="18" fill="#D97706" fontSize="10" fontWeight="bold">3. Nilai Optimum:</text>
-              <text x="10" y="32" fill="#5C3A21" fontSize="8.5">• Maksimum/Minimum saat f'(x) = 0</text>
-              <text x="10" y="44" fill="#5C3A21" fontSize="8.5">• Digunakan untuk laba maksimal bisnis!</text>
+              <g transform="translate(0, 120)">
+                <rect x="0" y="0" width="205" height="50" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
+                <text x="10" y="18" fill="#D97706" fontSize="10" fontWeight="bold">3. Nilai Optimum:</text>
+                <text x="10" y="32" fill="#5C3A21" fontSize="8.5">• Maksimum/Minimum saat f'(x) = 0</text>
+                <text x="10" y="44" fill="#5C3A21" fontSize="8.5">• Digunakan untuk laba maksimal bisnis!</text>
+              </g>
             </g>
           </g>
         </svg>
@@ -2740,20 +2778,26 @@ export const EducationalVideoCanvas: React.FC<EducationalVideoCanvasProps> = ({
             </text>
 
             <g transform="translate(10, 36)">
-              <rect x="0" y="0" width="205" height="52" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
-              <text x="10" y="18" fill="#0284C7" fontSize="10" fontWeight="900">1. Daya Tampung Kulit (2n²):</text>
-              <text x="10" y="32" fill="#5C3A21" fontSize="8.5">• Kulit K (n=1) = maks 2 elektron</text>
-              <text x="10" y="44" fill="#5C3A21" fontSize="8.5">• Kulit L (n=2) = maks 8 • M (n=3) = 18</text>
+              <g transform="translate(0, 0)">
+                <rect x="0" y="0" width="205" height="52" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
+                <text x="10" y="18" fill="#0284C7" fontSize="10" fontWeight="900">1. Daya Tampung Kulit (2n²):</text>
+                <text x="10" y="32" fill="#5C3A21" fontSize="8.5">• Kulit K (n=1) = maks 2 elektron</text>
+                <text x="10" y="44" fill="#5C3A21" fontSize="8.5">• Kulit L (n=2) = maks 8 • M (n=3) = 18</text>
+              </g>
 
-              <rect x="0" y="60" width="205" height="52" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
-              <text x="10" y="18" fill="#7C3AED" fontSize="10" fontWeight="900">2. 4 Bilangan Kuantum:</text>
-              <text x="10" y="32" fill="#5C3A21" fontSize="8.5">• Utama (n) • Azimut (l: s, p, d, f)</text>
-              <text x="10" y="44" fill="#5C3A21" fontSize="8.5">• Magnetik (m) • Spin (s: +½, -½)</text>
+              <g transform="translate(0, 60)">
+                <rect x="0" y="0" width="205" height="52" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
+                <text x="10" y="18" fill="#7C3AED" fontSize="10" fontWeight="900">2. 4 Bilangan Kuantum:</text>
+                <text x="10" y="32" fill="#5C3A21" fontSize="8.5">• Utama (n) • Azimut (l: s, p, d, f)</text>
+                <text x="10" y="44" fill="#5C3A21" fontSize="8.5">• Magnetik (m) • Spin (s: +½, -½)</text>
+              </g>
 
-              <rect x="0" y="120" width="205" height="50" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
-              <text x="10" y="18" fill="#D97706" fontSize="10" fontWeight="bold">3. Efek Fotolistrik (Einstein):</text>
-              <text x="10" y="32" fill="#5C3A21" fontSize="8.5">• Elektron terlempar saat disinari foton</text>
-              <text x="10" y="44" fill="#5C3A21" fontSize="8.5">• Membuktikan sifat partikel cahaya!</text>
+              <g transform="translate(0, 120)">
+                <rect x="0" y="0" width="205" height="50" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
+                <text x="10" y="18" fill="#D97706" fontSize="10" fontWeight="bold">3. Efek Fotolistrik (Einstein):</text>
+                <text x="10" y="32" fill="#5C3A21" fontSize="8.5">• Elektron terlempar saat disinari foton</text>
+                <text x="10" y="44" fill="#5C3A21" fontSize="8.5">• Membuktikan sifat partikel cahaya!</text>
+              </g>
             </g>
           </g>
         </svg>
@@ -2890,20 +2934,26 @@ export const EducationalVideoCanvas: React.FC<EducationalVideoCanvasProps> = ({
             </text>
 
             <g transform="translate(10, 36)">
-              <rect x="0" y="0" width="205" height="52" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
-              <text x="10" y="18" fill="#EF4444" fontSize="10" fontWeight="900">1. Hukum Permintaan (D):</text>
-              <text x="10" y="32" fill="#5C3A21" fontSize="8.5">• Harga P naik ➔ Permintaan Qd turun</text>
-              <text x="10" y="44" fill="#5C3A21" fontSize="8.5">• Sudut pandang pembeli / konsumen</text>
+              <g transform="translate(0, 0)">
+                <rect x="0" y="0" width="205" height="52" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
+                <text x="10" y="18" fill="#EF4444" fontSize="10" fontWeight="900">1. Hukum Permintaan (D):</text>
+                <text x="10" y="32" fill="#5C3A21" fontSize="8.5">• Harga P naik ➔ Permintaan Qd turun</text>
+                <text x="10" y="44" fill="#5C3A21" fontSize="8.5">• Sudut pandang pembeli / konsumen</text>
+              </g>
 
-              <rect x="0" y="60" width="205" height="52" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
-              <text x="10" y="18" fill="#0284C7" fontSize="10" fontWeight="900">2. Hukum Penawaran (S):</text>
-              <text x="10" y="32" fill="#5C3A21" fontSize="8.5">• Harga P naik ➔ Pasokan Qs naik</text>
-              <text x="10" y="44" fill="#5C3A21" fontSize="8.5">• Sudut pandang penjual / produsen</text>
+              <g transform="translate(0, 60)">
+                <rect x="0" y="0" width="205" height="52" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
+                <text x="10" y="18" fill="#0284C7" fontSize="10" fontWeight="900">2. Hukum Penawaran (S):</text>
+                <text x="10" y="32" fill="#5C3A21" fontSize="8.5">• Harga P naik ➔ Pasokan Qs naik</text>
+                <text x="10" y="44" fill="#5C3A21" fontSize="8.5">• Sudut pandang penjual / produsen</text>
+              </g>
 
-              <rect x="0" y="120" width="205" height="50" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
-              <text x="10" y="18" fill="#166534" fontSize="10" fontWeight="bold">3. Titik Keseimbangan (E):</text>
-              <text x="10" y="32" fill="#166534" fontSize="9" fontWeight="bold">• Qd = Qs (Harga pasar sepakat adil)</text>
-              <text x="10" y="44" fill="#5C3A21" fontSize="8.5">• Mencegah kelangkaan & surplus!</text>
+              <g transform="translate(0, 120)">
+                <rect x="0" y="0" width="205" height="50" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
+                <text x="10" y="18" fill="#166534" fontSize="10" fontWeight="bold">3. Titik Keseimbangan (E):</text>
+                <text x="10" y="32" fill="#166534" fontSize="9" fontWeight="bold">• Qd = Qs (Harga pasar sepakat adil)</text>
+                <text x="10" y="44" fill="#5C3A21" fontSize="8.5">• Mencegah kelangkaan &amp; surplus!</text>
+              </g>
             </g>
           </g>
         </svg>
@@ -2969,23 +3019,29 @@ export const EducationalVideoCanvas: React.FC<EducationalVideoCanvasProps> = ({
             </text>
 
             <g transform="translate(10, 36)">
-              <rect x="0" y="0" width="205" height="48" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
-              <text x="102" y="20" fill="#166534" fontSize="12" fontWeight="900" textAnchor="middle">
-                W = Q₁ - Q₂
-              </text>
-              <text x="102" y="36" fill="#5C3A21" fontSize="8.5" textAnchor="middle">
-                Usaha Luar = Kalor Masuk - Kalor Buang
-              </text>
+              <g transform="translate(0, 0)">
+                <rect x="0" y="0" width="205" height="48" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
+                <text x="102" y="20" fill="#166534" fontSize="12" fontWeight="900" textAnchor="middle">
+                  W = Q₁ - Q₂
+                </text>
+                <text x="102" y="36" fill="#5C3A21" fontSize="8.5" textAnchor="middle">
+                  Usaha Luar = Kalor Masuk - Kalor Buang
+                </text>
+              </g>
 
-              <rect x="0" y="56" width="205" height="52" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
-              <text x="10" y="18" fill="#0284C7" fontSize="10" fontWeight="900">Efisiensi Carnot (η):</text>
-              <text x="10" y="32" fill="#0284C7" fontSize="9.5" fontWeight="bold">• η = 1 - (T₂ / T₁)</text>
-              <text x="10" y="44" fill="#5C3A21" fontSize="8.5">• Suhu mutlak dalam Kelvin (K)</text>
+              <g transform="translate(0, 56)">
+                <rect x="0" y="0" width="205" height="52" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
+                <text x="10" y="18" fill="#0284C7" fontSize="10" fontWeight="900">Efisiensi Carnot (η):</text>
+                <text x="10" y="32" fill="#0284C7" fontSize="9.5" fontWeight="bold">• η = 1 - (T₂ / T₁)</text>
+                <text x="10" y="44" fill="#5C3A21" fontSize="8.5">• Suhu mutlak dalam Kelvin (K)</text>
+              </g>
 
-              <rect x="0" y="116" width="205" height="56" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
-              <text x="10" y="18" fill="#D97706" fontSize="10" fontWeight="bold">Hukum Hess Termokimia:</text>
-              <text x="10" y="32" fill="#5C3A21" fontSize="8.5">• ΔH reaksi tidak bergantung lintasan</text>
-              <text x="10" y="44" fill="#5C3A21" fontSize="8.5">• Eksoterm (ΔH &lt; 0) • Endoterm (ΔH &gt; 0)</text>
+              <g transform="translate(0, 116)">
+                <rect x="0" y="0" width="205" height="56" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
+                <text x="10" y="18" fill="#D97706" fontSize="10" fontWeight="bold">Hukum Hess Termokimia:</text>
+                <text x="10" y="32" fill="#5C3A21" fontSize="8.5">• ΔH reaksi tidak bergantung lintasan</text>
+                <text x="10" y="44" fill="#5C3A21" fontSize="8.5">• Eksoterm (ΔH &lt; 0) • Endoterm (ΔH &gt; 0)</text>
+              </g>
             </g>
           </g>
         </svg>
@@ -3052,23 +3108,29 @@ export const EducationalVideoCanvas: React.FC<EducationalVideoCanvasProps> = ({
             </text>
 
             <g transform="translate(10, 36)">
-              <rect x="0" y="0" width="205" height="48" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
-              <text x="102" y="20" fill="#0284C7" fontSize="12" fontWeight="900" textAnchor="middle">
-                1/f = 1/s + 1/s'
-              </text>
-              <text x="102" y="36" fill="#5C3A21" fontSize="8.5" textAnchor="middle">
-                f = Jarak Fokus • s = Jarak Benda • s' = Bayangan
-              </text>
+              <g transform="translate(0, 0)">
+                <rect x="0" y="0" width="205" height="48" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
+                <text x="102" y="20" fill="#0284C7" fontSize="12" fontWeight="900" textAnchor="middle">
+                  1/f = 1/s + 1/s'
+                </text>
+                <text x="102" y="36" fill="#5C3A21" fontSize="8.5" textAnchor="middle">
+                  f = Jarak Fokus • s = Jarak Benda • s' = Bayangan
+                </text>
+              </g>
 
-              <rect x="0" y="56" width="205" height="52" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
-              <text x="10" y="18" fill="#166534" fontSize="10" fontWeight="900">Perbesaran Bayangan (M):</text>
-              <text x="10" y="32" fill="#166534" fontSize="9.5" fontWeight="bold">• M = |s' / s| = |h' / h|</text>
-              <text x="10" y="44" fill="#5C3A21" fontSize="8.5">• Kuat Lensa: P = 100/f(cm) Dioptri</text>
+              <g transform="translate(0, 56)">
+                <rect x="0" y="0" width="205" height="52" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
+                <text x="10" y="18" fill="#166534" fontSize="10" fontWeight="900">Perbesaran Bayangan (M):</text>
+                <text x="10" y="32" fill="#166534" fontSize="9.5" fontWeight="bold">• M = |s' / s| = |h' / h|</text>
+                <text x="10" y="44" fill="#5C3A21" fontSize="8.5">• Kuat Lensa: P = 100/f(cm) Dioptri</text>
+              </g>
 
-              <rect x="0" y="116" width="205" height="56" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
-              <text x="10" y="18" fill="#D97706" fontSize="10" fontWeight="bold">Aplikasi Alat Optik:</text>
-              <text x="10" y="32" fill="#5C3A21" fontSize="8.5">• Kacamata: Lensa cekung (-) / cembung (+)</text>
-              <text x="10" y="44" fill="#5C3A21" fontSize="8.5">• Mikroskop: 2 Lensa cembung (Objektif + Okuler)</text>
+              <g transform="translate(0, 116)">
+                <rect x="0" y="0" width="205" height="56" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
+                <text x="10" y="18" fill="#D97706" fontSize="10" fontWeight="bold">Aplikasi Alat Optik:</text>
+                <text x="10" y="32" fill="#5C3A21" fontSize="8.5">• Kacamata: Lensa cekung (-) / cembung (+)</text>
+                <text x="10" y="44" fill="#5C3A21" fontSize="8.5">• Mikroskop: 2 Lensa cembung (Objektif + Okuler)</text>
+              </g>
             </g>
           </g>
         </svg>
@@ -3125,20 +3187,26 @@ export const EducationalVideoCanvas: React.FC<EducationalVideoCanvasProps> = ({
             </text>
 
             <g transform="translate(10, 36)">
-              <rect x="0" y="0" width="205" height="52" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
-              <text x="10" y="18" fill="#166534" fontSize="10" fontWeight="900">1. Deret Alkana, Alkena, Alkuna:</text>
-              <text x="10" y="32" fill="#5C3A21" fontSize="8.5">• Alkana: CₙH₂ₙ₊₂ (Ikatan tunggal)</text>
-              <text x="10" y="44" fill="#5C3A21" fontSize="8.5">• Alkena: CₙH₂ₙ • Alkuna: CₙH₂ₙ₋₂</text>
+              <g transform="translate(0, 0)">
+                <rect x="0" y="0" width="205" height="52" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
+                <text x="10" y="18" fill="#166534" fontSize="10" fontWeight="900">1. Deret Alkana, Alkena, Alkuna:</text>
+                <text x="10" y="32" fill="#5C3A21" fontSize="8.5">• Alkana: CₙH₂ₙ₊₂ (Ikatan tunggal)</text>
+                <text x="10" y="44" fill="#5C3A21" fontSize="8.5">• Alkena: CₙH₂ₙ • Alkuna: CₙH₂ₙ₋₂</text>
+              </g>
 
-              <rect x="0" y="60" width="205" height="52" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
-              <text x="10" y="18" fill="#0284C7" fontSize="10" fontWeight="900">2. Gugus Fungsi Utama:</text>
-              <text x="10" y="32" fill="#5C3A21" fontSize="8.5">• Alkohol (-OH) • Eter (-O-)</text>
-              <text x="10" y="44" fill="#5C3A21" fontSize="8.5">• Aldehid (-CHO) • Asam Karboksilat</text>
+              <g transform="translate(0, 60)">
+                <rect x="0" y="0" width="205" height="52" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
+                <text x="10" y="18" fill="#0284C7" fontSize="10" fontWeight="900">2. Gugus Fungsi Utama:</text>
+                <text x="10" y="32" fill="#5C3A21" fontSize="8.5">• Alkohol (-OH) • Eter (-O-)</text>
+                <text x="10" y="44" fill="#5C3A21" fontSize="8.5">• Aldehid (-CHO) • Asam Karboksilat</text>
+              </g>
 
-              <rect x="0" y="120" width="205" height="50" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
-              <text x="10" y="18" fill="#D97706" fontSize="10" fontWeight="bold">3. Makromolekul Kehidupan:</text>
-              <text x="10" y="32" fill="#5C3A21" fontSize="8.5">• Polimer, Karbohidrat, Protein, Lipid</text>
-              <text x="10" y="44" fill="#5C3A21" fontSize="8.5">• Menyusun seluruh sel makhluk hidup!</text>
+              <g transform="translate(0, 120)">
+                <rect x="0" y="0" width="205" height="50" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
+                <text x="10" y="18" fill="#D97706" fontSize="10" fontWeight="bold">3. Makromolekul Kehidupan:</text>
+                <text x="10" y="32" fill="#5C3A21" fontSize="8.5">• Polimer, Karbohidrat, Protein, Lipid</text>
+                <text x="10" y="44" fill="#5C3A21" fontSize="8.5">• Menyusun seluruh sel makhluk hidup!</text>
+              </g>
             </g>
           </g>
         </svg>
@@ -3193,23 +3261,29 @@ export const EducationalVideoCanvas: React.FC<EducationalVideoCanvasProps> = ({
             </text>
 
             <g transform="translate(10, 36)">
-              <rect x="0" y="0" width="205" height="52" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
-              <text x="102" y="20" fill="#D97706" fontSize="14" fontWeight="900" textAnchor="middle">
-                E = m · c²
-              </text>
-              <text x="102" y="36" fill="#5C3A21" fontSize="8.5" textAnchor="middle">
-                c = 300.000 km/s (Cepat rambat cahaya)
-              </text>
+              <g transform="translate(0, 0)">
+                <rect x="0" y="0" width="205" height="52" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
+                <text x="102" y="20" fill="#D97706" fontSize="14" fontWeight="900" textAnchor="middle">
+                  E = m · c²
+                </text>
+                <text x="102" y="36" fill="#5C3A21" fontSize="8.5" textAnchor="middle">
+                  c = 300.000 km/s (Cepat rambat cahaya)
+                </text>
+              </g>
 
-              <rect x="0" y="60" width="205" height="52" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
-              <text x="10" y="18" fill="#0284C7" fontSize="10" fontWeight="900">1. Dilatasi Waktu (Δt):</text>
-              <text x="10" y="32" fill="#0284C7" fontSize="9" fontWeight="bold">• Δt = Δt₀ / √(1 - v²/c²)</text>
-              <text x="10" y="44" fill="#5C3A21" fontSize="8.5">• Jam astronot bergerak lebih lambat</text>
+              <g transform="translate(0, 60)">
+                <rect x="0" y="0" width="205" height="52" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
+                <text x="10" y="18" fill="#0284C7" fontSize="10" fontWeight="900">1. Dilatasi Waktu (Δt):</text>
+                <text x="10" y="32" fill="#0284C7" fontSize="9" fontWeight="bold">• Δt = Δt₀ / √(1 - v²/c²)</text>
+                <text x="10" y="44" fill="#5C3A21" fontSize="8.5">• Jam astronot bergerak lebih lambat</text>
+              </g>
 
-              <rect x="0" y="120" width="205" height="50" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
-              <text x="10" y="18" fill="#166534" fontSize="10" fontWeight="bold">2. Kalibrasi Satelit GPS:</text>
-              <text x="10" y="32" fill="#5C3A21" fontSize="8.5">• Satelit GPS wajib koreksi rumus Einstein</text>
-              <text x="10" y="44" fill="#5C3A21" fontSize="8.5">• Peta smartphone akurat hingga meter!</text>
+              <g transform="translate(0, 120)">
+                <rect x="0" y="0" width="205" height="50" rx="6" fill="#FFFDF7" stroke="#5C3A21" strokeWidth="1.5" />
+                <text x="10" y="18" fill="#166534" fontSize="10" fontWeight="bold">2. Kalibrasi Satelit GPS:</text>
+                <text x="10" y="32" fill="#5C3A21" fontSize="8.5">• Satelit GPS wajib koreksi rumus Einstein</text>
+                <text x="10" y="44" fill="#5C3A21" fontSize="8.5">• Peta smartphone akurat hingga meter!</text>
+              </g>
             </g>
           </g>
         </svg>

@@ -3,15 +3,19 @@
  * FILE: resources/js/game/ui/LibraryMaterialsModal.tsx
  * ============================================================================
  * FUNGSI UTAMA:
- * Modal Ensiklopedia & Visual Edukasi Perpustakaan Kota RadenWorld.
- * Gaya Visual: Chunky Pastel Pixel (Cozycore UI) & Cute Minimalist Clay-Pixel.
+ * Modal Perpustakaan & Kurikulum Nasional Terpadu RadenWorld (SD 1-6, SMP 1-3, SMA 1-3).
+ * Menghadirkan:
+ * 1. Navigasi Bertingkat: Pilih Jenjang -> Pilih Kelas -> Pilih Mapel -> Daftar Isi Bab
+ * 2. Daftar Isi Komprehensif dengan Indikator Status: Belum Dibuka / Sedang Dipelajari / Selesai
+ * 3. Engine Video & Visual Pembelajaran Interaktif (InteractiveVideoStage 60FPS)
+ * 4. Layanan Narator Suara Bahasa Indonesia Interaktif (VoiceNarratorService)
+ * 5. 100% Selaras dengan Estetika UI RadenWorld (Cozy Clay-Pixel).
  * ============================================================================
  */
 
-import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   X,
-  CheckCircle2,
   ChevronRight,
   ChevronLeft,
   Bookmark,
@@ -25,20 +29,24 @@ import {
   Search,
   Volume2,
   VolumeX,
+  CheckCircle2,
+  Sparkles,
 } from 'lucide-react';
 import { SoundManager } from '../core/SoundManager';
 import { EventBus } from '../core/EventBus';
+import { SchoolType } from '../data/library/LibraryMasterData';
 import {
-  ALL_LIBRARY_TOPICS,
-  LIBRARY_GRADES,
-  LibraryCategory,
-  SchoolType,
-} from '../data/library/LibraryMasterData';
-import {
-  detectDiagramType,
-  getTopicStoryScenes,
-} from './LibraryTopicVisualizer';
-import { EducationalVideoCanvas } from './EducationalVideoCanvas';
+  CURRICULUM_SCHOOL_LEVELS,
+  CURRICULUM_GRADES,
+  CURRICULUM_SUBJECTS,
+  ALL_COMBINED_TOPICS,
+  getCurriculumTopics,
+  findCurriculumTopicById,
+  ICurriculumSubjectMeta,
+} from '../data/library/CurriculumMasterRegistry';
+import { InteractiveVideoStage } from './InteractiveVideoStage';
+import { VoiceNarratorService } from '../services/VoiceNarratorService';
+import { ILibraryTopicItem } from '../data/library/SdLibraryData';
 
 export interface LibraryMaterialsModalProps {
   isOpen: boolean;
@@ -50,74 +58,6 @@ export interface LibraryMaterialsModalProps {
 
 type LibraryViewStep = 'select_subject' | 'table_of_contents' | 'material_detail';
 
-interface ISubjectCategoryMeta {
-  category: LibraryCategory;
-  name: string;
-  icon: string;
-  tagline: string;
-}
-
-const SUBJECT_METAS: ISubjectCategoryMeta[] = [
-  {
-    category: 'Matematika',
-    name: 'Matematika',
-    icon: '📐',
-    tagline: 'Bilangan Cacah, Aljabar, Geometri, Pecahan & Statistika',
-  },
-  {
-    category: 'IPA / Sains',
-    name: 'IPA / Sains',
-    icon: '🔬',
-    tagline: 'Makhluk Hidup, Fotosintesis, Fisika Gerak, Kimia & Tata Surya',
-  },
-  {
-    category: 'Bahasa Indonesia',
-    name: 'Bahasa Indonesia',
-    icon: '📚',
-    tagline: 'Kosakata, Kalimat Efektif SPOK, Paragraf, Puisi & Karya Sastra',
-  },
-  {
-    category: 'Bahasa Inggris',
-    name: 'Bahasa Inggris',
-    icon: '🌐',
-    tagline: 'Greetings, Grammar, Tenses, Reading Comprehension & Vocabulary',
-  },
-  {
-    category: 'IPS / Sosial',
-    name: 'IPS / Sosial',
-    icon: '🌍',
-    tagline: 'Sejarah Kerajaan Nusantara, Peta Geografi & Kegiatan Ekonomi',
-  },
-  {
-    category: 'Pancasila & PKn',
-    name: 'Pancasila & PKn',
-    icon: '🇮🇩',
-    tagline: 'Makna 5 Sila Garuda, Hak & Kewajiban Warga, Bhinneka Tunggal Ika',
-  },
-  {
-    category: 'Informatika & Seni',
-    name: 'Informatika & Seni',
-    icon: '💻',
-    tagline: 'Berpikir Komputasional, Algoritma, Koding & Seni Budaya',
-  },
-];
-
-function getTopicDurationSeconds(topicId: string): number {
-  let hash = 0;
-  for (let i = 0; i < topicId.length; i++) {
-    hash = (hash << 5) - hash + topicId.charCodeAt(i);
-  }
-  const durations = [720, 600, 720, 660, 720, 840, 720];
-  return durations[Math.abs(hash) % durations.length];
-}
-
-function formatTime(seconds: number): string {
-  const s = Math.max(0, Math.floor(seconds));
-  const mins = Math.floor(s / 60);
-  const secs = s % 60;
-  return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-}
-
 export const LibraryMaterialsModal: React.FC<LibraryMaterialsModalProps> = ({
   isOpen,
   initialSchoolType = 'sd',
@@ -126,75 +66,74 @@ export const LibraryMaterialsModal: React.FC<LibraryMaterialsModalProps> = ({
   onGainExp,
 }) => {
   const sound = SoundManager.getInstance();
+  const narrator = VoiceNarratorService.getInstance();
 
+  // --------------------------------------------------------------------------
+  // 1. STATE NAVIGASI BERTINGKAT
+  // --------------------------------------------------------------------------
   const [viewStep, setViewStep] = useState<LibraryViewStep>('select_subject');
   const [activeSchool, setActiveSchool] = useState<SchoolType>(initialSchoolType);
   const [activeGradeKey, setActiveGradeKey] = useState<string>('sd-1');
-  const [selectedSubjectCategory, setSelectedSubjectCategory] =
-    useState<LibraryCategory>('Matematika');
+  const [selectedSubjectId, setSelectedSubjectId] = useState<string>('sd_math');
   const [selectedTopicId, setSelectedTopicId] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
 
+  // Status Bacaan (EXP Tracker)
   const [readTopics, setReadTopics] = useState<Set<string>>(() => {
     try {
       const saved = localStorage.getItem('raden_library_read_topics');
       return saved ? new Set(JSON.parse(saved)) : new Set();
-    } catch (e) {
+    } catch {
       return new Set();
     }
   });
 
-  const [playbackTime, setPlaybackTime] = useState<number>(80);
+  // Pemutar Video State
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [playbackSpeed, setPlaybackSpeed] = useState<number>(1);
-  const [activeSceneStep, setActiveSceneStep] = useState<number>(0);
-  const scrubberTrackRef = useRef<HTMLDivElement>(null);
-  const [isScrubbing, setIsScrubbing] = useState<boolean>(false);
-
   const [currentDescPage, setCurrentDescPage] = useState<number>(1);
   const totalDescPages = 3;
 
-  // Status Suara Penjelasan Narasi Bahasa Indonesia (Web Speech API)
-  const [isVoiceEnabled, setIsVoiceEnabled] = useState<boolean>(() => {
-    try {
-      const saved = localStorage.getItem('raden_library_voice_enabled');
-      return saved !== null ? saved === 'true' : true;
-    } catch (e) {
-      return true;
-    }
-  });
-
-  useEffect(() => {
-    try {
-      localStorage.setItem('raden_library_voice_enabled', String(isVoiceEnabled));
-    } catch (e) {}
-  }, [isVoiceEnabled]);
-
+  // --------------------------------------------------------------------------
+  // 2. INISIALISASI & RESPONSIVE PROPS
+  // --------------------------------------------------------------------------
   useEffect(() => {
     if (isOpen) {
       const school = initialSchoolType || 'sd';
       setActiveSchool(school);
-      const grades = LIBRARY_GRADES[school];
+      const grades = CURRICULUM_GRADES[school];
       const targetNumeric =
         initialGrade || (school === 'sd' ? 1 : school === 'smp' ? 7 : 10);
       const matched =
         grades.find((g) => g.numericGrade === targetNumeric) || grades[0];
       setActiveGradeKey(matched.key);
+
+      const subjects = CURRICULUM_SUBJECTS[school];
+      setSelectedSubjectId(subjects[0]?.id || 'sd_math');
+
       setViewStep('select_subject');
-      setSelectedSubjectCategory('Matematika');
       setSearchQuery('');
-      setPlaybackTime(80);
       setIsPlaying(false);
       setCurrentDescPage(1);
     }
   }, [isOpen, initialSchoolType, initialGrade]);
 
-  // Keyboard Escape handler
+  // Hentikan suara saat modal ditutup
+  useEffect(() => {
+    if (!isOpen) {
+      narrator.stop();
+    }
+  }, [isOpen, narrator]);
+
+  // Keyboard Escape Handler
   useEffect(() => {
     if (!isOpen) return;
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+      if (
+        e.target instanceof HTMLInputElement ||
+        e.target instanceof HTMLTextAreaElement
+      ) {
         if (e.key === 'Escape') {
           (e.target as HTMLElement).blur();
         }
@@ -204,6 +143,7 @@ export const LibraryMaterialsModal: React.FC<LibraryMaterialsModalProps> = ({
         sound.playClick();
         if (viewStep === 'material_detail') {
           setIsPlaying(false);
+          narrator.stop();
           setViewStep('table_of_contents');
         } else if (viewStep === 'table_of_contents') {
           setViewStep('select_subject');
@@ -214,10 +154,13 @@ export const LibraryMaterialsModal: React.FC<LibraryMaterialsModalProps> = ({
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, viewStep, onClose, sound]);
+  }, [isOpen, viewStep, onClose, sound, narrator]);
 
+  // --------------------------------------------------------------------------
+  // 3. DAFTAR KELAS, MAPEL & TOPIK TERSEDIA
+  // --------------------------------------------------------------------------
   const currentGrades = useMemo(() => {
-    return LIBRARY_GRADES[activeSchool] || LIBRARY_GRADES.sd;
+    return CURRICULUM_GRADES[activeSchool] || CURRICULUM_GRADES.sd;
   }, [activeSchool]);
 
   const activeGradeLabel = useMemo(() => {
@@ -225,19 +168,41 @@ export const LibraryMaterialsModal: React.FC<LibraryMaterialsModalProps> = ({
     return found ? found.label : 'Kelas 1 SD';
   }, [currentGrades, activeGradeKey]);
 
-  const currentSubjectTopics = useMemo(() => {
-    return ALL_LIBRARY_TOPICS.filter((t) => {
-      const matchSchool = t.schoolType === activeSchool;
-      const matchGrade = t.gradeKey === activeGradeKey;
-      const matchSubject = t.subjectCategory === selectedSubjectCategory;
-      return matchSchool && matchGrade && matchSubject;
-    });
-  }, [activeSchool, activeGradeKey, selectedSubjectCategory]);
+  const currentSubjects = useMemo(() => {
+    return CURRICULUM_SUBJECTS[activeSchool] || CURRICULUM_SUBJECTS.sd;
+  }, [activeSchool]);
 
+  const activeSubjectMeta = useMemo(() => {
+    return (
+      currentSubjects.find((s) => s.id === selectedSubjectId) ||
+      currentSubjects[0]
+    );
+  }, [currentSubjects, selectedSubjectId]);
+
+  // Daftar topik untuk mapel dan kelas aktif
+  const currentSubjectTopics = useMemo(() => {
+    return getCurriculumTopics({
+      schoolType: activeSchool,
+      gradeKey: activeGradeKey,
+      subjectId: selectedSubjectId,
+    });
+  }, [activeSchool, activeGradeKey, selectedSubjectId]);
+
+  // Topik aktif untuk diputar di player
+  const activeTopic: ILibraryTopicItem | null = useMemo(() => {
+    if (!selectedTopicId) return currentSubjectTopics[0] || null;
+    return (
+      findCurriculumTopicById(selectedTopicId) ||
+      currentSubjectTopics[0] ||
+      null
+    );
+  }, [selectedTopicId, currentSubjectTopics]);
+
+  // Hasil pencarian cepat lintas kurikulum
   const searchResults = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
     if (!q) return [];
-    return ALL_LIBRARY_TOPICS.filter((item) => {
+    return ALL_COMBINED_TOPICS.filter((item) => {
       return (
         item.title.toLowerCase().includes(q) ||
         item.summary.toLowerCase().includes(q) ||
@@ -248,96 +213,9 @@ export const LibraryMaterialsModal: React.FC<LibraryMaterialsModalProps> = ({
     });
   }, [searchQuery]);
 
-  const activeTopic = useMemo(() => {
-    if (!selectedTopicId) return currentSubjectTopics[0] || null;
-    return (
-      ALL_LIBRARY_TOPICS.find((t) => t.id === selectedTopicId) ||
-      currentSubjectTopics[0] ||
-      null
-    );
-  }, [selectedTopicId, currentSubjectTopics]);
-
-  const totalDuration = useMemo(() => {
-    if (!activeTopic) return 720;
-    return getTopicDurationSeconds(activeTopic.id);
-  }, [activeTopic]);
-
-  const diagramType = useMemo(() => {
-    if (!activeTopic) return 'classroom_chalkboard';
-    return detectDiagramType({
-      id: activeTopic.id,
-      name: activeTopic.title,
-      title: activeTopic.title,
-      badge: activeTopic.badge,
-      subtitle: activeTopic.summary,
-      category: activeTopic.subjectCategory || activeTopic.subjectName,
-      points: activeTopic.points,
-    });
-  }, [activeTopic]);
-
-  const storyScenes = useMemo(() => {
-    return getTopicStoryScenes(diagramType, activeTopic);
-  }, [diagramType, activeTopic]);
-
-  useEffect(() => {
-    if (storyScenes.length > 0) {
-      const sceneIndex = Math.min(
-        storyScenes.length - 1,
-        Math.floor((playbackTime / totalDuration) * storyScenes.length)
-      );
-      setActiveSceneStep(sceneIndex);
-    }
-  }, [playbackTime, totalDuration, storyScenes.length]);
-
-  useEffect(() => {
-    if (!isPlaying) return;
-
-    const intervalTime = Math.max(250, 1000 / playbackSpeed);
-    const interval = setInterval(() => {
-      setPlaybackTime((prev) => {
-        if (prev >= totalDuration) {
-          setIsPlaying(false);
-          return totalDuration;
-        }
-        return prev + 1;
-      });
-    }, intervalTime);
-
-    return () => clearInterval(interval);
-  }, [isPlaying, totalDuration, playbackSpeed]);
-
-  const handleSeekFromClientX = useCallback(
-    (clientX: number) => {
-      if (!scrubberTrackRef.current) return;
-      const rect = scrubberTrackRef.current.getBoundingClientRect();
-      const clickX = clientX - rect.left;
-      const ratio = Math.max(0, Math.min(1, clickX / rect.width));
-      const targetTime = Math.round(ratio * totalDuration);
-      setPlaybackTime(targetTime);
-    },
-    [totalDuration]
-  );
-
-  useEffect(() => {
-    if (!isScrubbing) return;
-
-    const handlePointerMove = (e: PointerEvent) => {
-      handleSeekFromClientX(e.clientX);
-    };
-
-    const handlePointerUp = () => {
-      setIsScrubbing(false);
-    };
-
-    window.addEventListener('pointermove', handlePointerMove);
-    window.addEventListener('pointerup', handlePointerUp);
-
-    return () => {
-      window.removeEventListener('pointermove', handlePointerMove);
-      window.removeEventListener('pointerup', handlePointerUp);
-    };
-  }, [isScrubbing, handleSeekFromClientX]);
-
+  // --------------------------------------------------------------------------
+  // 4. ACTION HANDLERS: EXP & NAVIGASI BAB
+  // --------------------------------------------------------------------------
   const handleMarkAsRead = useCallback(() => {
     if (!activeTopic) return;
     const id = activeTopic.id;
@@ -356,7 +234,7 @@ export const LibraryMaterialsModal: React.FC<LibraryMaterialsModalProps> = ({
         'raden_library_read_topics',
         JSON.stringify(Array.from(nextSet))
       );
-    } catch (e) {}
+    } catch {}
 
     const expBonus =
       activeSchool === 'sma' ? 50 : activeSchool === 'smp' ? 35 : 20;
@@ -373,7 +251,7 @@ export const LibraryMaterialsModal: React.FC<LibraryMaterialsModalProps> = ({
     EventBus.emit('new-chat-message', {
       id: `lib_read_${Date.now()}`,
       sender: 'PERPUSTAKAAN KOTA',
-      text: `📖 Kamu telah tuntas mempelajari materi "${activeTopic.title}" (${activeTopic.gradeName})! (+${expBonus} EXP)`,
+      text: `📖 Kamu telah tuntas mempelajari "${activeTopic.title}" (${activeTopic.gradeName})! (+${expBonus} EXP)`,
       timestamp: Date.now(),
       isSystem: true,
     });
@@ -389,7 +267,6 @@ export const LibraryMaterialsModal: React.FC<LibraryMaterialsModalProps> = ({
       sound.playClick();
       const prev = currentSubjectTopics[currentTopicIndex - 1];
       setSelectedTopicId(prev.id);
-      setPlaybackTime(0);
       setCurrentDescPage(1);
     }
   }, [currentTopicIndex, currentSubjectTopics, sound]);
@@ -402,77 +279,13 @@ export const LibraryMaterialsModal: React.FC<LibraryMaterialsModalProps> = ({
       sound.playClick();
       const next = currentSubjectTopics[currentTopicIndex + 1];
       setSelectedTopicId(next.id);
-      setPlaybackTime(0);
       setCurrentDescPage(1);
     }
   }, [currentTopicIndex, currentSubjectTopics, sound]);
 
-  const currentScene = storyScenes[activeSceneStep] || storyScenes[0];
-
-  const speakCurrentScene = useCallback(
-    (scene?: { chapter: string; title: string; narration: string } | null, force = false) => {
-      if (!isVoiceEnabled && !force) return;
-      if (!scene) return;
-      if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
-
-      try {
-        window.speechSynthesis.cancel();
-
-        const cleanNarration = (scene.narration || '')
-          .replace(/[\u{1F300}-\u{1F9FF}]/gu, '')
-          .replace(/[\u{2600}-\u{26FF}]/gu, '')
-          .replace(/[➔•\+]/g, ' ')
-          .replace(/(\r\n|\n|\r)/gm, ' ')
-          .trim();
-        const cleanTitle = (scene.title || '').replace(/[\u{1F300}-\u{1F9FF}]/gu, '').trim();
-        const textToSpeak = `${scene.chapter}. ${cleanTitle}. ${cleanNarration}`;
-
-        const utterance = new SpeechSynthesisUtterance(textToSpeak);
-        utterance.lang = 'id-ID';
-        utterance.rate = 0.93;
-        utterance.pitch = 1.05;
-
-        const voices = window.speechSynthesis.getVoices();
-        const idVoice = voices.find((v) => v.lang === 'id-ID' || v.lang.startsWith('id'));
-        if (idVoice) {
-          utterance.voice = idVoice;
-        }
-
-        window.speechSynthesis.speak(utterance);
-      } catch (err) {
-        console.warn('[EducationalVoice] Gagal memutar suara narasi:', err);
-      }
-    },
-    [isVoiceEnabled]
-  );
-
-  useEffect(() => {
-    if (isPlaying && currentScene && isVoiceEnabled) {
-      speakCurrentScene(currentScene);
-    }
-  }, [activeSceneStep, isPlaying, isVoiceEnabled, currentScene, speakCurrentScene]);
-
-  useEffect(() => {
-    if (!isPlaying && typeof window !== 'undefined' && 'speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-    }
-  }, [isPlaying]);
-
-  useEffect(() => {
-    return () => {
-      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-        window.speechSynthesis.cancel();
-      }
-    };
-  }, []);
-
   if (!isOpen) return null;
 
   const isRead = activeTopic ? readTopics.has(activeTopic.id) : false;
-  const scrubberPercent = Math.min(
-    100,
-    Math.max(0, (playbackTime / totalDuration) * 100)
-  );
 
   return (
     <div
@@ -490,7 +303,7 @@ export const LibraryMaterialsModal: React.FC<LibraryMaterialsModalProps> = ({
         }
       >
         {/* ==================================================================== */}
-        {/* LANGKAH 3: DETAIL MATERI & VIDEO ANIMASI (RESPONSIF PORTRAIT/LANDSCAPE) */}
+        {/* LANGKAH 3: DETAIL MATERI & VIDEO INTERAKTIF ("PAHAM SEKETIKA")       */}
         {/* ==================================================================== */}
         {viewStep === 'material_detail' && activeTopic ? (
           <div className="flex-1 min-h-0 flex flex-col h-full w-full bg-[#FFF8EA] select-none overflow-hidden">
@@ -522,217 +335,71 @@ export const LibraryMaterialsModal: React.FC<LibraryMaterialsModalProps> = ({
                 </h2>
 
                 <span className="hidden md:inline-flex items-center gap-1.5 px-2 py-0.5 clay-badge-secondary text-[10px] font-bold text-black shrink-0">
-                  <span>{isPlaying ? '▶ PUTAR' : '⏸ JEDA'}</span>
-                  <span>• 60FPS</span>
+                  <span>{isPlaying ? '▶ BERJALAN' : '⏸ JEDA'}</span>
+                  <span>• 60 FPS</span>
                 </span>
               </div>
 
               <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-                {/* Tombol Suara Guru Bahasa Indonesia (TTS) */}
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    sound.playClick();
-                    setIsVoiceEnabled((prev) => !prev);
-                  }}
-                  className={`px-2 py-1 flex items-center gap-1.5 text-[11px] font-bold ${
-                    isVoiceEnabled
-                      ? 'clay-btn-secondary text-black'
-                      : 'clay-btn-neutral text-black/60'
-                  }`}
-                  title={
-                    isVoiceEnabled
-                      ? 'Suara Guru Bahasa Indonesia: Aktif (Klik untuk Matikan)'
-                      : 'Suara Guru Bahasa Indonesia: Mati (Klik untuk Nyalakan)'
-                  }
-                >
-                  {isVoiceEnabled ? (
-                    <>
-                      <Volume2 className="w-3.5 h-3.5 text-black" />
-                      <span className="hidden sm:inline">Suara: ON</span>
-                    </>
-                  ) : (
-                    <>
-                      <VolumeX className="w-3.5 h-3.5 text-black/60" />
-                      <span className="hidden sm:inline">Suara: OFF</span>
-                    </>
-                  )}
-                </button>
-
-                {/* Pengubah Kecepatan 1x / 1.5x / 2x */}
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    sound.playClick();
-                    setPlaybackSpeed((prev) =>
-                      prev === 1 ? 1.5 : prev === 1.5 ? 2 : 1
-                    );
-                  }}
-                  className="px-2 py-1 clay-btn-secondary text-black text-[11px] font-bold"
-                  title="Kecepatan Putar Video"
-                >
-                  {playbackSpeed}x
-                </button>
-
                 {/* Tombol Kembali ke Daftar Isi */}
                 <button
                   type="button"
                   onClick={() => {
                     sound.playClick();
                     setIsPlaying(false);
+                    narrator.stop();
                     setViewStep('table_of_contents');
                   }}
+                  className="flex items-center gap-1 px-3 py-1.5 clay-btn-secondary text-black text-xs font-bold"
+                  title="Kembali ke Daftar Isi"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                  <span className="hidden sm:inline">Daftar Isi</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    sound.playClick();
+                    setIsPlaying(false);
+                    narrator.stop();
+                    onClose();
+                  }}
                   className="w-8 h-8 clay-btn-cocoa text-white flex items-center justify-center"
-                  title="Kembali ke Daftar Isi (X)"
+                  title="Tutup Perpustakaan (Esc)"
                 >
                   <X className="w-4 h-4" />
                 </button>
               </div>
             </div>
 
-            {/* Split View: Atas/Bawah di Portrait, Kiri/Kanan di Desktop & Mobile Landscape */}
+            {/* Split View: Kiri (Player Video Interaktif), Kanan (Rangkuman & Kuis) */}
             <div className="flex-1 min-h-0 flex flex-col lg:flex-row landscape:flex-row overflow-hidden">
-              {/* 3A. VIDEO ANIMASI & VISUAL PLAYER BERGAYA CLAY-PIXEL COZY */}
-              <div className="relative basis-[44%] lg:basis-1/2 landscape:basis-1/2 min-h-[190px] lg:min-h-0 landscape:min-h-0 bg-[#FFF8EA] border-b-2 lg:border-b-0 lg:border-r-2 landscape:border-b-0 landscape:border-r-2 border-[#5C3A21] flex flex-col justify-between overflow-hidden shrink-0">
-                {/* Area Tengah: Pemutar Animasi Edukasi 60 FPS */}
-                <div
-                  className="relative flex-1 min-h-0 flex items-center justify-center p-2 sm:p-4 cursor-pointer overflow-hidden bg-[#FFF8EA]"
-                  onClick={() => {
-                    sound.playClick();
-                    setIsPlaying((prev) => !prev);
-                  }}
-                  title={isPlaying ? 'Klik untuk Jeda Video' : 'Klik untuk Putar Video'}
-                >
-                  <div className="w-full h-full max-w-2xl flex items-center justify-center">
-                    <EducationalVideoCanvas
-                      type={diagramType}
-                      step={activeSceneStep}
-                      isPlaying={isPlaying}
-                      playbackSpeed={playbackSpeed}
-                      topic={activeTopic}
-                    />
-                  </div>
-
-                  {/* Subtitle / Babak Cerita Narasi Singkat dengan Suara Guru */}
-                  {currentScene && (
-                    <div className="absolute top-2 inset-x-2 sm:inset-x-4 max-w-xl mx-auto z-10 pointer-events-auto">
-                      <div className="clay-card px-3 py-1.5 text-center shadow-lg bg-[#FFF8EA]/95 border-2 border-[#5C3A21]">
-                        <div className="flex items-center justify-between w-full gap-2">
-                          <div className="flex items-center gap-1.5 min-w-0">
-                            <span className="text-xs">{currentScene.icon || '📖'}</span>
-                            <span className="text-[10px] sm:text-[11px] font-bold text-black uppercase tracking-wide truncate">
-                              {currentScene.chapter}: {currentScene.title}
-                            </span>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              sound.playClick();
-                              speakCurrentScene(currentScene, true);
-                            }}
-                            className="clay-btn-secondary px-2 py-0.5 text-[9.5px] sm:text-[10px] font-bold text-black shrink-0 flex items-center gap-1 shadow-sm"
-                            title="Dengarkan Suara Penjelasan Materi Ini"
-                          >
-                            <Volume2 className="w-3 h-3 text-black" />
-                            <span>Dengarkan</span>
-                          </button>
-                        </div>
-                        <p className="text-[9.5px] sm:text-[11px] text-black/90 font-medium leading-snug mt-1 text-left sm:text-center">
-                          {currentScene.narration}
-                        </p>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Indikator Tombol Play Saat Jeda */}
-                  {!isPlaying && (
-                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                      <div className="px-4 py-2 clay-btn-primary text-black flex items-center gap-2 shadow-lg">
-                        <Play className="w-4 h-4 text-black fill-black" />
-                        <span className="text-black text-xs font-bold uppercase">
-                          Putar Video Animasi
-                        </span>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Bawah Layar Video: Scrubber Bar + Kontrol */}
-                <div className="relative z-20 px-3 sm:px-4 py-2 bg-[#FFF8EA] border-t-2 border-[#5C3A21] flex items-center gap-2.5 shrink-0">
-                  <div className="flex items-center gap-1 shrink-0">
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        sound.playClick();
-                        setIsPlaying((prev) => !prev);
-                      }}
-                      className="p-1.5 clay-btn-primary text-black"
-                      title={isPlaying ? 'Jeda Video' : 'Putar Video'}
-                    >
-                      {isPlaying ? (
-                        <Pause className="w-3.5 h-3.5 fill-black text-black" />
-                      ) : (
-                        <Play className="w-3.5 h-3.5 fill-black text-black" />
-                      )}
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        sound.playClick();
-                        setPlaybackTime((p) => Math.max(0, p - 10));
-                      }}
-                      className="hidden sm:inline-block px-1.5 py-1 clay-btn-neutral text-black text-[10px] font-bold"
-                      title="Mundur 10 Detik"
-                    >
-                      -10s
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        sound.playClick();
-                        setPlaybackTime((p) => Math.min(totalDuration, p + 10));
-                      }}
-                      className="hidden sm:inline-block px-1.5 py-1 clay-btn-neutral text-black text-[10px] font-bold"
-                      title="Maju 10 Detik"
-                    >
-                      +10s
-                    </button>
-                  </div>
-
-                  {/* Garis Scrubber */}
-                  <div
-                    ref={scrubberTrackRef}
-                    onPointerDown={(e) => {
-                      setIsScrubbing(true);
-                      handleSeekFromClientX(e.clientX);
-                    }}
-                    className="relative flex-1 h-3 bg-[#FFF8EA] border-2 border-[#5C3A21] rounded-full cursor-pointer"
-                  >
-                    <div
-                      className="absolute inset-y-0 left-0 bg-[#FFAE6D] rounded-full pointer-events-none"
-                      style={{ width: `${scrubberPercent}%` }}
-                    />
-                    <div
-                      className="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-[#A8E6CF] rounded-full border-2 border-[#5C3A21] -translate-x-1/2 cursor-grab active:cursor-grabbing"
-                      style={{ left: `${scrubberPercent}%` }}
-                    />
-                  </div>
-
-                  <div className="text-black text-[11px] sm:text-xs font-bold tracking-wider shrink-0 select-none">
-                    {formatTime(playbackTime)}/{formatTime(totalDuration)}
-                  </div>
-                </div>
+              {/* SISI KIRI: PANGGUNG VIDEO VISUAL & INTERAKTIF */}
+              <div className="relative basis-[48%] lg:basis-1/2 landscape:basis-1/2 min-h-[220px] lg:min-h-0 landscape:min-h-0 bg-[#FFF8EA] border-b-2 lg:border-b-0 lg:border-r-2 landscape:border-b-0 landscape:border-r-2 border-[#5C3A21] flex flex-col justify-between overflow-hidden shrink-0">
+                <InteractiveVideoStage
+                  topic={activeTopic}
+                  isPlaying={isPlaying}
+                  playbackSpeed={playbackSpeed}
+                  onTogglePlay={() => setIsPlaying((p) => !p)}
+                  onChangeSpeed={() =>
+                    setPlaybackSpeed((prev) =>
+                      prev === 1 ? 1.5 : prev === 1.5 ? 2 : 1
+                    )
+                  }
+                  onPrevTopic={handlePrevTopic}
+                  onNextTopic={handleNextTopic}
+                  hasPrevTopic={currentTopicIndex > 0}
+                  hasNextTopic={
+                    currentTopicIndex >= 0 &&
+                    currentTopicIndex < currentSubjectTopics.length - 1
+                  }
+                  isFullscreen={isFullscreen}
+                  onToggleFullscreen={() => setIsFullscreen((p) => !p)}
+                />
               </div>
 
-              {/* 3B. PENJELASAN DESKRIPSI */}
+              {/* SISI KANAN: RANGKUMAN PENJELASAN, TIPS & KUIS EXP */}
               <div className="relative flex-1 min-h-0 bg-[#FFF8EA] text-black p-3.5 sm:p-5 landscape:max-md:p-3 flex flex-col justify-between overflow-y-auto custom-scrollbar">
                 <div className="space-y-3">
                   <div className="flex items-center justify-between gap-2 border-b-2 border-[#5C3A21] pb-2 flex-wrap">
@@ -774,16 +441,18 @@ export const LibraryMaterialsModal: React.FC<LibraryMaterialsModalProps> = ({
                     ))}
                   </div>
 
-                  {/* HALAMAN 1 DARI 3 */}
+                  {/* HALAMAN 1: PENJELASAN UTAMA */}
                   {currentDescPage === 1 && (
                     <div className="space-y-2.5 text-black">
-                      <p className="text-xs sm:text-sm leading-relaxed font-bold text-black clay-card p-3">
-                        📖 {activeTopic.summary}
-                      </p>
+                      <div className="clay-card p-3 border-2 border-[#5C3A21]">
+                        <p className="text-xs sm:text-sm leading-relaxed font-bold text-black">
+                          {activeTopic.summary}
+                        </p>
+                      </div>
 
                       <div className="space-y-1.5">
                         <h4 className="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-black">
-                          Pokok Pembahasan Ilmiah:
+                          Pokok Pemahaman Materi:
                         </h4>
                         <ul className="space-y-1.5">
                           {activeTopic.points.map((pt, pIdx) => (
@@ -802,14 +471,14 @@ export const LibraryMaterialsModal: React.FC<LibraryMaterialsModalProps> = ({
                     </div>
                   )}
 
-                  {/* HALAMAN 2 DARI 3 */}
+                  {/* HALAMAN 2: KUNCI PINTAR & TANTANGAN KUIS */}
                   {currentDescPage === 2 && (
                     <div className="space-y-2.5 text-black">
                       {activeTopic.keyFormulaOrConcept && (
                         <div className="p-3 clay-card-primary text-black space-y-1">
                           <div className="flex items-center gap-1.5 text-[10.5px] font-bold text-black uppercase">
                             <span>💡</span>
-                            <span>KUNCI PINTAR & TIPS CEPAT:</span>
+                            <span>KUNCI PINTAR & TIPS RUMUS CEPAT:</span>
                           </div>
                           <div className="text-xs sm:text-sm font-bold text-black bg-[#FFF8EA] p-2 rounded border border-[#5C3A21]/40 overflow-x-auto">
                             {activeTopic.keyFormulaOrConcept}
@@ -837,17 +506,24 @@ export const LibraryMaterialsModal: React.FC<LibraryMaterialsModalProps> = ({
                         <div className="text-xs text-black clay-card-secondary p-3 space-y-1.5 rounded-lg border-2 border-[#5C3A21]">
                           <div className="font-bold text-green-900 flex items-center gap-1">
                             <span>✅ Jawaban Benar:</span>
-                            <span className="text-black">{activeTopic.quiz.options[activeTopic.quiz.answerIndex]}</span>
+                            <span className="text-black">
+                              {
+                                activeTopic.quiz.options[
+                                  activeTopic.quiz.answerIndex
+                                ]
+                              }
+                            </span>
                           </div>
                           <div className="text-black leading-relaxed pt-1 border-t border-[#5C3A21]/20">
-                            💡 <strong>Penjelasan Mudah:</strong> {activeTopic.quiz.explanation}
+                            💡 <strong>Penjelasan Mudah:</strong>{' '}
+                            {activeTopic.quiz.explanation}
                           </div>
                         </div>
                       </div>
                     </div>
                   )}
 
-                  {/* HALAMAN 3 DARI 3 */}
+                  {/* HALAMAN 3: FAKTA SERU DUNIA */}
                   {currentDescPage === 3 && (
                     <div className="space-y-2.5 text-black">
                       <div className="p-3.5 clay-card-secondary space-y-2 border-2 border-[#5C3A21]">
@@ -877,13 +553,13 @@ export const LibraryMaterialsModal: React.FC<LibraryMaterialsModalProps> = ({
                   )}
                 </div>
 
-                {/* Footer Navigasi Bab & Halaman */}
+                {/* Footer Navigasi Bab & Tombol Selesai (+EXP) */}
                 <div className="pt-3 mt-3 border-t-2 border-[#5C3A21] flex flex-wrap items-center justify-between gap-2">
                   <div className="flex items-center gap-1.5 flex-wrap">
                     <button
                       type="button"
                       onClick={handleMarkAsRead}
-                      className={`px-2.5 py-1.5 text-[11px] font-bold flex items-center gap-1.5 ${
+                      className={`px-3 py-1.5 text-xs font-bold flex items-center gap-1.5 ${
                         isRead
                           ? 'clay-badge-secondary text-black'
                           : 'clay-btn-primary text-black'
@@ -892,7 +568,7 @@ export const LibraryMaterialsModal: React.FC<LibraryMaterialsModalProps> = ({
                       {isRead ? (
                         <>
                           <Check className="w-3.5 h-3.5 text-black" />
-                          <span>Selesai (+EXP)</span>
+                          <span>Tuntas Dipelajari (+EXP)</span>
                         </>
                       ) : (
                         <>
@@ -909,31 +585,9 @@ export const LibraryMaterialsModal: React.FC<LibraryMaterialsModalProps> = ({
                         </>
                       )}
                     </button>
-
-                    {currentTopicIndex > 0 && (
-                      <button
-                        type="button"
-                        onClick={handlePrevTopic}
-                        className="px-2.5 py-1.5 clay-btn-neutral text-black text-[11px] font-bold"
-                        title="Bab Sebelumnya"
-                      >
-                        ◀ Bab
-                      </button>
-                    )}
-
-                    {currentTopicIndex < currentSubjectTopics.length - 1 && (
-                      <button
-                        type="button"
-                        onClick={handleNextTopic}
-                        className="px-2.5 py-1.5 clay-btn-neutral text-black text-[11px] font-bold"
-                        title="Bab Selanjutnya"
-                      >
-                        Bab ▶
-                      </button>
-                    )}
                   </div>
 
-                  {/* Pagination Halaman */}
+                  {/* Pagination Halaman Deskripsi */}
                   <div className="flex items-center gap-1.5">
                     <button
                       type="button"
@@ -942,7 +596,7 @@ export const LibraryMaterialsModal: React.FC<LibraryMaterialsModalProps> = ({
                         sound.playClick();
                         setCurrentDescPage((p) => Math.max(1, p - 1));
                       }}
-                      className="p-1.5 clay-btn-neutral text-black"
+                      className="p-1.5 clay-btn-neutral text-black disabled:opacity-40"
                       title="Halaman Sebelumnya"
                     >
                       <ChevronLeft className="w-4 h-4" />
@@ -961,7 +615,7 @@ export const LibraryMaterialsModal: React.FC<LibraryMaterialsModalProps> = ({
                           Math.min(totalDescPages, p + 1)
                         );
                       }}
-                      className="p-1.5 clay-btn-neutral text-black"
+                      className="p-1.5 clay-btn-neutral text-black disabled:opacity-40"
                       title="Halaman Selanjutnya"
                     >
                       <ChevronRight className="w-4 h-4" />
@@ -974,11 +628,11 @@ export const LibraryMaterialsModal: React.FC<LibraryMaterialsModalProps> = ({
         ) : null}
 
         {/* ==================================================================== */}
-        {/* LANGKAH 1 & LANGKAH 2: PILIH MATA PELAJARAN & DAFTAR ISI             */}
+        {/* LANGKAH 1 & 2: PILIH MATA PELAJARAN & DAFTAR ISI                     */}
         {/* ==================================================================== */}
         {viewStep !== 'material_detail' && (
           <div className="flex-1 min-h-0 flex flex-col h-full overflow-hidden bg-[#FFF8EA]">
-            {/* Header Utama Perpustakaan Kota */}
+            {/* Header Utama Perpustakaan */}
             <div className="flex items-center justify-between px-3.5 sm:px-5 py-2.5 sm:py-3 clay-header landscape-compact-header gap-2 shrink-0">
               <div className="flex items-center gap-2.5 min-w-0">
                 <div className="w-9 h-9 sm:w-10 sm:h-10 clay-card flex items-center justify-center text-lg sm:text-xl shrink-0">
@@ -990,11 +644,11 @@ export const LibraryMaterialsModal: React.FC<LibraryMaterialsModalProps> = ({
                       PERPUSTAKAAN KOTA RADENWORLD
                     </h2>
                     <span className="px-2 py-0.5 text-[10px] font-bold clay-badge-secondary text-black">
-                      240 TOPIK KURIKULUM
+                      KURIKULUM TERPADU SD - SMP - SMA
                     </span>
                   </div>
                   <p className="text-[11px] text-black hidden sm:block truncate">
-                    Materi Pendidikan Riil Terintegrasi Bank Soal Kuis Ujian Sekolah
+                    Modul Visual Animasi 60 FPS, Penjelasan Super Sederhana & Narasi Suara
                   </p>
                 </div>
               </div>
@@ -1003,7 +657,7 @@ export const LibraryMaterialsModal: React.FC<LibraryMaterialsModalProps> = ({
                 <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1 clay-badge-neutral text-xs text-black font-bold">
                   <BookMarked className="w-3.5 h-3.5 text-black" />
                   <span>
-                    Selesai: <strong>{readTopics.size}</strong> / 240
+                    Selesai: <strong>{readTopics.size}</strong> Bab
                   </span>
                 </div>
 
@@ -1023,55 +677,36 @@ export const LibraryMaterialsModal: React.FC<LibraryMaterialsModalProps> = ({
 
             {/* Sub-Header: Pemilihan Jenjang, Tingkat Kelas & Pencarian */}
             <div className="px-3.5 sm:px-5 py-2 bg-[#FFF8EA] border-b-2 border-[#5C3A21] flex flex-wrap items-center justify-between gap-2 shrink-0">
-              {/* Tab Sekolah: SD, SMP, SMA */}
+              {/* Tab Jenjang Sekolah: SD, SMP, SMA */}
               <div className="flex items-center gap-1.5">
-                <button
-                  type="button"
-                  onClick={() => {
-                    sound.playClick();
-                    setActiveSchool('sd');
-                    setActiveGradeKey('sd-1');
-                  }}
-                  className={`px-2.5 py-1 text-xs font-bold flex items-center gap-1 ${
-                    activeSchool === 'sd'
-                      ? 'clay-btn-primary text-black'
-                      : 'clay-btn-neutral text-black'
-                  }`}
-                >
-                  <span>🎒</span> SD (1-6)
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    sound.playClick();
-                    setActiveSchool('smp');
-                    setActiveGradeKey('smp-7');
-                  }}
-                  className={`px-2.5 py-1 text-xs font-bold flex items-center gap-1 ${
-                    activeSchool === 'smp'
-                      ? 'clay-btn-primary text-black'
-                      : 'clay-btn-neutral text-black'
-                  }`}
-                >
-                  <span>🏫</span> SMP (7-9)
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    sound.playClick();
-                    setActiveSchool('sma');
-                    setActiveGradeKey('sma-10');
-                  }}
-                  className={`px-2.5 py-1 text-xs font-bold flex items-center gap-1 ${
-                    activeSchool === 'sma'
-                      ? 'clay-btn-primary text-black'
-                      : 'clay-btn-neutral text-black'
-                  }`}
-                >
-                  <span>🏛️</span> SMA (10-12)
-                </button>
+                {CURRICULUM_SCHOOL_LEVELS.map((lvl) => {
+                  const isCurrent = activeSchool === lvl.type;
+                  return (
+                    <button
+                      key={lvl.type}
+                      type="button"
+                      onClick={() => {
+                        sound.playClick();
+                        setActiveSchool(lvl.type);
+                        const firstGrade = CURRICULUM_GRADES[lvl.type][0];
+                        setActiveGradeKey(firstGrade.key);
+                        const firstSubject = CURRICULUM_SUBJECTS[lvl.type][0];
+                        setSelectedSubjectId(firstSubject.id);
+                        if (viewStep === 'table_of_contents') {
+                          setViewStep('select_subject');
+                        }
+                      }}
+                      className={`px-2.5 py-1 text-xs font-bold flex items-center gap-1 transition-all ${
+                        isCurrent
+                          ? 'clay-btn-primary text-black'
+                          : 'clay-btn-neutral text-black'
+                      }`}
+                    >
+                      <span>{lvl.icon}</span>
+                      <span>{lvl.badge}</span>
+                    </button>
+                  );
+                })}
               </div>
 
               {/* Selector Tingkat Kelas */}
@@ -1102,7 +737,7 @@ export const LibraryMaterialsModal: React.FC<LibraryMaterialsModalProps> = ({
                 })}
               </div>
 
-              {/* Pencarian Cepat */}
+              {/* Input Pencarian Cepat */}
               <div className="relative w-full sm:w-52">
                 <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-black pointer-events-none" />
                 <input
@@ -1121,7 +756,7 @@ export const LibraryMaterialsModal: React.FC<LibraryMaterialsModalProps> = ({
               <div className="flex-1 min-h-0 overflow-y-auto p-3.5 sm:p-5 custom-scrollbar space-y-2.5">
                 <div className="flex items-center justify-between gap-2">
                   <h3 className="text-sm font-bold text-black">
-                    Hasil Pencarian "{searchQuery}" ({searchResults.length} Topik)
+                    Hasil Pencarian "{searchQuery}" ({searchResults.length} Bab)
                   </h3>
                   <button
                     type="button"
@@ -1139,15 +774,13 @@ export const LibraryMaterialsModal: React.FC<LibraryMaterialsModalProps> = ({
                       sound.playClick();
                       setActiveSchool(topic.schoolType);
                       setActiveGradeKey(topic.gradeKey);
-                      setSelectedSubjectCategory(topic.subjectCategory);
                       setSelectedTopicId(topic.id);
                       setSearchQuery('');
-                      setPlaybackTime(80);
                       setIsPlaying(true);
                       setCurrentDescPage(1);
                       setViewStep('material_detail');
                     }}
-                    className="p-3 clay-card cursor-pointer flex items-center justify-between gap-3"
+                    className="p-3 clay-card cursor-pointer flex items-center justify-between gap-3 hover:translate-y-[-2px] transition-all"
                   >
                     <div className="min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
@@ -1166,43 +799,47 @@ export const LibraryMaterialsModal: React.FC<LibraryMaterialsModalProps> = ({
                       </p>
                     </div>
                     <span className="px-3 py-1.5 clay-btn-primary text-black text-xs font-bold shrink-0">
-                      Buka ▶
+                      Buka Video ▶
                     </span>
                   </div>
                 ))}
 
                 {searchResults.length === 0 && (
                   <div className="p-6 text-center clay-card text-black text-xs font-bold">
-                    Tidak ditemukan topik yang cocok dengan "{searchQuery}".
+                    Tidak ditemukan topik materi yang cocok dengan "{searchQuery}".
                   </div>
                 )}
               </div>
             ) : (
               <>
-                {/* ================================================================ */}
-                {/* LANGKAH 1: PILIH MATA PELAJARAN                                   */}
-                {/* ================================================================ */}
+                {/* ============================================================ */}
+                {/* LANGKAH 1: PILIH MATA PELAJARAN                              */}
+                {/* ============================================================ */}
                 {viewStep === 'select_subject' && (
                   <div className="flex-1 min-h-0 overflow-y-auto p-3.5 sm:p-5 custom-scrollbar landscape-compact-body space-y-4">
-                    {/* Banner Ceria Ramah Anak untuk SD */}
-                    {activeSchool === 'sd' && (
-                      <div className="clay-card-secondary p-3 sm:p-3.5 flex items-center justify-between gap-3 border-2 border-[#5C3A21] bg-[#FFAE6D]/25">
-                        <div className="flex items-center gap-2.5 min-w-0">
-                          <span className="text-2xl sm:text-3xl shrink-0">🎒</span>
-                          <div className="min-w-0">
-                            <div className="text-xs sm:text-sm font-bold text-black uppercase truncate">
-                              Kurikulum Ceria Sekolah Dasar ({activeGradeLabel})
-                            </div>
-                            <div className="text-[10px] sm:text-[11px] text-black/80 font-medium">
-                              Materi pelajaran dibuat asyik, bertabur gambar nyata, mudah dipahami & bertabur hadiah EXP!
-                            </div>
+                    {/* Banner Kurikulum Ceria */}
+                    <div className="clay-card-secondary p-3 sm:p-3.5 flex items-center justify-between gap-3 border-2 border-[#5C3A21] bg-[#FFAE6D]/20">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <span className="text-2xl sm:text-3xl shrink-0">
+                          {activeSchool === 'sd'
+                            ? '🎒'
+                            : activeSchool === 'smp'
+                            ? '🏫'
+                            : '🏛️'}
+                        </span>
+                        <div className="min-w-0">
+                          <div className="text-xs sm:text-sm font-bold text-black uppercase truncate">
+                            Kurikulum {activeGradeLabel}
+                          </div>
+                          <div className="text-[10px] sm:text-[11px] text-black/85 font-medium">
+                            Setiap bab dilengkapi video animasi 60 FPS, panggung interaktif, dan narasi suara Bahasa Indonesia.
                           </div>
                         </div>
-                        <span className="clay-badge-primary px-2.5 py-1 text-[10px] font-bold text-black shrink-0 hidden sm:inline-block">
-                          ⭐ Ramah Anak
-                        </span>
                       </div>
-                    )}
+                      <span className="clay-badge-primary px-2.5 py-1 text-[10px] font-bold text-black shrink-0 hidden sm:inline-block">
+                        ⭐ Edukasi Interaktif
+                      </span>
+                    </div>
 
                     <div>
                       <h3 className="text-sm sm:text-lg font-bold text-black flex items-center gap-2 flex-wrap">
@@ -1212,26 +849,29 @@ export const LibraryMaterialsModal: React.FC<LibraryMaterialsModalProps> = ({
                         </span>
                       </h3>
                       <p className="text-xs text-black mt-0.5">
-                        Pilih salah satu mata pelajaran di bawah untuk membuka Daftar Isi bab kurikulum seru.
+                        Pilih salah satu mata pelajaran di bawah untuk membuka Daftar Isi bab pembelajaran.
                       </p>
                     </div>
 
+                    {/* Grid Mata Pelajaran Sesuai Jenjang */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 landscape:grid-cols-2 gap-3">
-                      {SUBJECT_METAS.map((subj) => {
-                        const topicCount = ALL_LIBRARY_TOPICS.filter(
-                          (t) =>
-                            t.schoolType === activeSchool &&
-                            t.gradeKey === activeGradeKey &&
-                            t.subjectCategory === subj.category
+                      {currentSubjects.map((subj) => {
+                        const topics = getCurriculumTopics({
+                          schoolType: activeSchool,
+                          gradeKey: activeGradeKey,
+                          subjectId: subj.id,
+                        });
+                        const completedCount = topics.filter((t) =>
+                          readTopics.has(t.id)
                         ).length;
 
                         return (
                           <button
-                            key={subj.category}
+                            key={subj.id}
                             type="button"
                             onClick={() => {
                               sound.playClick();
-                              setSelectedSubjectCategory(subj.category);
+                              setSelectedSubjectId(subj.id);
                               setViewStep('table_of_contents');
                             }}
                             className="p-3.5 sm:p-4 clay-btn-neutral text-black text-left flex flex-col justify-between min-h-[136px] hover:translate-y-[-2px] transition-all"
@@ -1241,8 +881,8 @@ export const LibraryMaterialsModal: React.FC<LibraryMaterialsModalProps> = ({
                                 <span className="w-10 h-10 clay-badge-primary flex items-center justify-center text-2xl shrink-0">
                                   {subj.icon}
                                 </span>
-                                <span className="text-[11px] font-bold px-2.5 py-0.5 clay-badge-secondary text-black">
-                                  {topicCount} Bab Materi
+                                <span className="text-[10.5px] font-bold px-2 py-0.5 clay-badge-secondary text-black">
+                                  {topics.length} Bab Materi
                                 </span>
                               </div>
 
@@ -1250,14 +890,19 @@ export const LibraryMaterialsModal: React.FC<LibraryMaterialsModalProps> = ({
                                 {subj.name}
                               </h4>
 
-                              <p className="text-[11px] sm:text-xs text-black line-clamp-2 mt-1 leading-relaxed">
+                              <p className="text-[11px] sm:text-xs text-black/85 line-clamp-2 mt-1 leading-relaxed">
                                 {subj.tagline}
                               </p>
                             </div>
 
                             <div className="pt-2.5 mt-2 border-t-2 border-[#5C3A21] flex items-center justify-between text-xs font-bold text-black w-full">
-                              <span>Buka Daftar Isi</span>
-                              <ChevronRight className="w-4 h-4 text-black" />
+                              <span className="text-[10.5px] text-black/80 font-bold">
+                                Selesai: {completedCount}/{topics.length}
+                              </span>
+                              <div className="flex items-center gap-1 text-black font-bold">
+                                <span>Daftar Isi</span>
+                                <ChevronRight className="w-4 h-4 text-black" />
+                              </div>
                             </div>
                           </button>
                         );
@@ -1266,11 +911,12 @@ export const LibraryMaterialsModal: React.FC<LibraryMaterialsModalProps> = ({
                   </div>
                 )}
 
-                {/* ================================================================ */}
-                {/* LANGKAH 2: DAFTAR ISI TIAP JUDUL (BAGUS, JELAS & MUDAH DIPAHAMI)   */}
-                {/* ================================================================ */}
+                {/* ============================================================ */}
+                {/* LANGKAH 2: DAFTAR ISI TIAP MATA PELAJARAN DENGAN INDIKATOR   */}
+                {/* ============================================================ */}
                 {viewStep === 'table_of_contents' && (
                   <div className="flex-1 min-h-0 overflow-y-auto p-3.5 sm:p-5 custom-scrollbar landscape-compact-body space-y-3.5">
+                    {/* Header Navigasi Daftar Isi */}
                     <div className="flex flex-wrap items-center justify-between gap-2.5 pb-2.5 border-b-2 border-[#5C3A21]">
                       <div className="flex items-center gap-2.5 flex-wrap">
                         <button
@@ -1286,20 +932,45 @@ export const LibraryMaterialsModal: React.FC<LibraryMaterialsModalProps> = ({
                         </button>
 
                         <div>
-                          <h3 className="text-sm sm:text-lg font-bold text-black">
-                            2. DAFTAR ISI: {selectedSubjectCategory}
+                          <h3 className="text-sm sm:text-lg font-bold text-black flex items-center gap-1.5">
+                            <span>{activeSubjectMeta.icon}</span>
+                            <span>2. DAFTAR ISI: {activeSubjectMeta.name}</span>
                           </h3>
                           <p className="text-[11px] sm:text-xs text-black font-bold">
-                            {activeGradeLabel} • {currentSubjectTopics.length} Bab Kurikulum
+                            {activeGradeLabel} • {currentSubjectTopics.length} Bab Terstruktur
                           </p>
                         </div>
                       </div>
                     </div>
 
+                    {/* List Bab Daftar Isi */}
                     <div className="space-y-2.5">
                       {currentSubjectTopics.map((topic, idx) => {
                         const hasRead = readTopics.has(topic.id);
-                        const durationSec = getTopicDurationSeconds(topic.id);
+                        const isCurrentActive = selectedTopicId === topic.id;
+
+                        // Indikator Status: Belum Dibuka / Sedang Dipelajari / Selesai
+                        let statusBadge = (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 clay-badge-neutral text-[9.5px] text-black font-bold">
+                            <span>📖 Belum Dibuka</span>
+                          </span>
+                        );
+
+                        if (hasRead) {
+                          statusBadge = (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 text-[9.5px] font-bold text-green-900 bg-green-200 border-2 border-[#5C3A21] rounded-md shadow-xs">
+                              <CheckCircle2 className="w-3 h-3 text-green-800" />
+                              <span>✓ Selesai Tuntas</span>
+                            </span>
+                          );
+                        } else if (isCurrentActive) {
+                          statusBadge = (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 text-[9.5px] font-bold text-black bg-[#FFAE6D] border-2 border-[#5C3A21] rounded-md shadow-xs">
+                              <Play className="w-2.5 h-2.5 fill-black text-black" />
+                              <span>Sedang Dipelajari</span>
+                            </span>
+                          );
+                        }
 
                         return (
                           <div
@@ -1307,17 +978,24 @@ export const LibraryMaterialsModal: React.FC<LibraryMaterialsModalProps> = ({
                             onClick={() => {
                               sound.playClick();
                               setSelectedTopicId(topic.id);
-                              setPlaybackTime(80);
                               setIsPlaying(true);
                               setCurrentDescPage(1);
                               setViewStep('material_detail');
                             }}
-                            className="p-3.5 clay-card cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:translate-y-[-2px] transition-all"
+                            className={`p-3.5 clay-card cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:translate-y-[-2px] transition-all border-2 ${
+                              isCurrentActive
+                                ? 'border-[#FFAE6D] bg-[#FFF8EA]'
+                                : 'border-[#5C3A21]'
+                            }`}
                           >
                             <div className="flex items-start gap-3 flex-1 min-w-0">
                               <div className="w-10 h-10 clay-badge-primary flex flex-col items-center justify-center text-black shrink-0 shadow-sm">
-                                <span className="text-[8.5px] font-bold uppercase leading-none opacity-75">Bab</span>
-                                <span className="text-xs font-bold leading-none mt-0.5">{String(idx + 1).padStart(2, '0')}</span>
+                                <span className="text-[8px] font-bold uppercase leading-none opacity-75">
+                                  Bab
+                                </span>
+                                <span className="text-xs font-bold leading-none mt-0.5">
+                                  {String(idx + 1).padStart(2, '0')}
+                                </span>
                               </div>
 
                               <div className="space-y-1.5 flex-1 min-w-0">
@@ -1328,16 +1006,7 @@ export const LibraryMaterialsModal: React.FC<LibraryMaterialsModalProps> = ({
                                   <span className="px-2 py-0.5 clay-badge-secondary text-black text-[9.5px] font-bold">
                                     {topic.badge}
                                   </span>
-                                  {hasRead ? (
-                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 clay-badge-secondary text-[9.5px] text-green-900 font-bold bg-green-200">
-                                      <CheckCircle2 className="w-3 h-3 text-green-800" />
-                                      <span>Tuntas Dipelajari</span>
-                                    </span>
-                                  ) : (
-                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 clay-badge-neutral text-[9px] text-black font-bold">
-                                      <span>🎬 Animasi + Kuis</span>
-                                    </span>
-                                  )}
+                                  {statusBadge}
                                 </div>
 
                                 <p className="text-[11px] sm:text-xs text-black leading-relaxed">
@@ -1347,36 +1016,36 @@ export const LibraryMaterialsModal: React.FC<LibraryMaterialsModalProps> = ({
                                 <div className="flex items-center gap-2 text-[10.5px] text-black/90 flex-wrap pt-0.5">
                                   <span className="inline-flex items-center gap-1 clay-badge-neutral px-2 py-0.5 text-[9.5px] font-bold">
                                     <span>🎯 Kuis:</span>
-                                    <span className="truncate max-w-xs">{topic.quiz.question}</span>
-                                  </span>
-                                  <span className="text-[9.5px] text-black/70 font-bold">
-                                    💡 Hadiah: +{activeSchool === 'sma' ? 50 : activeSchool === 'smp' ? 35 : 20} EXP
+                                    <span className="truncate max-w-xs">
+                                      {topic.quiz.question}
+                                    </span>
                                   </span>
                                 </div>
                               </div>
                             </div>
 
-                            <div className="flex items-center justify-between sm:justify-end gap-2.5 shrink-0 pt-2 sm:pt-0 border-t-2 sm:border-t-0 border-[#5C3A21]">
-                              <div className="flex items-center gap-1 text-xs text-black font-bold clay-badge-neutral px-2.5 py-1">
-                                <Clock className="w-3.5 h-3.5 text-black" />
-                                <span>{formatTime(durationSec)}</span>
-                              </div>
-
-                              <button
-                                type="button"
-                                className="px-3.5 py-1.5 clay-btn-primary text-black text-xs font-bold flex items-center gap-1.5 shadow"
-                              >
-                                <span>Mulai Belajar</span>
-                                <Play className="w-3.5 h-3.5 fill-black text-black" />
-                              </button>
-                            </div>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                sound.playClick();
+                                setSelectedTopicId(topic.id);
+                                setIsPlaying(true);
+                                setCurrentDescPage(1);
+                                setViewStep('material_detail');
+                              }}
+                              className="px-3.5 py-1.5 clay-btn-primary text-black text-xs font-bold shrink-0 flex items-center justify-center gap-1.5 shadow-sm"
+                            >
+                              <Play className="w-3.5 h-3.5 fill-black text-black" />
+                              <span>Putar Video</span>
+                            </button>
                           </div>
                         );
                       })}
 
                       {currentSubjectTopics.length === 0 && (
-                        <div className="p-6 text-center clay-card text-black text-xs font-bold">
-                          Belum ada bab kurikulum yang terdaftar untuk {selectedSubjectCategory} di {activeGradeLabel}.
+                        <div className="p-8 text-center clay-card text-black text-xs font-bold">
+                          Materi untuk mata pelajaran ini sedang dalam proses penyusunan kurikulum.
                         </div>
                       )}
                     </div>

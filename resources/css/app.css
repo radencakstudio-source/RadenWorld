@@ -55,7 +55,7 @@
 }
 
 /* ============================================================================
- * COZYCORE UI & CUTE MINIMALIST CLAY-PIXEL DESIGN TOKENS
+ * COZYCORE UI & CUTE MINIMALIST CLAY-PIXEL DESIGN TOKENS (DYNAMIC THEMES)
  * ============================================================================ */
 :root {
     --sat: env(safe-area-inset-top, 0px);
@@ -63,12 +63,28 @@
     --sab: env(safe-area-inset-bottom, 0px);
     --sal: env(safe-area-inset-left, 0px);
 
-    --ui-primary: #FFAE6D;
-    --ui-secondary: #A8E6CF;
-    --ui-bg: #FFF8EA;
-    --ui-outline: #5C3A21;
-    --ui-text-black: #000000;
+    /* Dynamic Theme Variables from ThemeManager */
+    --raden-panel-bg: #FFF8EA;
+    --raden-card-bg: #FFFDF7;
+    --raden-panel-border: #5C3A21;
+    --raden-accent-primary: #FFAE6D;
+    --raden-accent-secondary: #A8E6CF;
+    --raden-text-color: #000000;
+    --raden-font-family: 'Pixelify Sans', 'Kenney Pixel Square', 'm5x7', monospace;
+    --raden-font-scale: 1;
+    --raden-font-weight: 700;
+    --raden-viewport-filter: none;
+
+    --ui-primary: var(--raden-accent-primary);
+    --ui-secondary: var(--raden-accent-secondary);
+    --ui-bg: var(--raden-panel-bg);
+    --ui-outline: var(--raden-panel-border);
+    --ui-text-black: var(--raden-text-color);
     --ui-text-white: #FFFFFF;
+}
+
+html {
+    font-size: calc(16px * var(--raden-font-scale, 1));
 }
 
 html, body {
@@ -82,9 +98,10 @@ html, body {
     overflow: hidden;
     overscroll-behavior: none;
     -webkit-overflow-scrolling: auto;
-    background-color: #FFF8EA;
-    color: #000000;
-    font-family: 'Pixelify Sans', 'Kenney Pixel Square', 'm5x7', 'Press Start 2P', monospace;
+    background-color: var(--raden-panel-bg, #FFF8EA);
+    color: var(--raden-text-color, #000000);
+    font-family: var(--raden-font-family, 'Pixelify Sans', monospace);
+    font-weight: var(--raden-font-weight, 600);
     letter-spacing: 0.035em;
     user-select: none;
     -webkit-user-select: none;
@@ -98,17 +115,24 @@ html, body {
 }
 
 /* ============================================================================
- * PIXEL FONT: Pixelify Sans Crisp Natural Typography (Renggang & Jelas Tanpa Dempet)
+ * PIXEL FONT: Dynamic Typography & Responsive Scaling
  * ============================================================================ */
+* {
+    font-family: var(--raden-font-family, 'Pixelify Sans', 'Kenney Pixel Square', 'm5x7', monospace);
+}
+
 .font-bold,
 .font-semibold,
 .font-extrabold,
+.font-black,
 h1, h2, h3, h4, h5, h6,
 strong, b,
 th,
 [class*="font-bold"],
-[class*="font-semibold"] {
-    font-weight: 600;
+[class*="font-semibold"],
+[class*="font-black"],
+[class*="font-extrabold"] {
+    font-weight: var(--raden-font-weight, 700) !important;
     letter-spacing: 0.035em;
 }
 
@@ -123,7 +147,7 @@ button,
 input,
 select,
 textarea {
-    font-family: 'Pixelify Sans', 'Kenney Pixel Square', 'm5x7', 'Press Start 2P', monospace;
+    font-family: var(--raden-font-family, 'Pixelify Sans', monospace);
     letter-spacing: 0.035em;
 }
 
@@ -231,63 +255,63 @@ input, textarea, [contenteditable="true"] {
 }
 
 .clay-panel {
-    background-color: #FFF8EA;
-    border: 2px solid #5C3A21;
+    background-color: var(--raden-panel-bg, #FFF8EA);
+    border: 2px solid var(--raden-panel-border, #5C3A21);
     border-radius: 14px;
-    color: #000000;
-    box-shadow: inset 0 2px 0 #FFFFFF, inset 0 -3px 0 #EADBC0, 0 3px 0 #5C3A21;
+    color: var(--raden-text-color, #000000);
+    box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.4), inset 0 -3px 0 rgba(0, 0, 0, 0.15), 0 3px 0 var(--raden-panel-border, #5C3A21);
 }
 
 .clay-card {
-    background-color: #FFF8EA;
-    border: 2px solid #5C3A21;
+    background-color: var(--raden-card-bg, var(--raden-panel-bg, #FFF8EA));
+    border: 2px solid var(--raden-panel-border, #5C3A21);
     border-radius: 10px;
-    color: #000000;
-    box-shadow: inset 0 2px 0 #FFFFFF, inset 0 -2px 0 #EADBC0;
+    color: var(--raden-text-color, #000000);
+    box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.4), inset 0 -2px 0 rgba(0, 0, 0, 0.15);
 }
 
 .clay-card-primary {
-    background-color: #FFAE6D;
-    border: 2px solid #5C3A21;
+    background-color: var(--raden-accent-primary, #FFAE6D);
+    border: 2px solid var(--raden-panel-border, #5C3A21);
     border-radius: 10px;
     color: #000000;
-    box-shadow: inset 0 2px 0 #FFD0A6, inset 0 -2px 0 #E5924F;
+    box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.45), inset 0 -2px 0 rgba(0, 0, 0, 0.2);
 }
 
 .clay-card-secondary {
-    background-color: #A8E6CF;
-    border: 2px solid #5C3A21;
+    background-color: var(--raden-accent-secondary, #A8E6CF);
+    border: 2px solid var(--raden-panel-border, #5C3A21);
     border-radius: 10px;
     color: #000000;
-    box-shadow: inset 0 2px 0 #D4F5E9, inset 0 -2px 0 #84CAAF;
+    box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.45), inset 0 -2px 0 rgba(0, 0, 0, 0.2);
 }
 
 .clay-header {
-    background-color: #FFAE6D;
-    border-bottom: 2px solid #5C3A21;
+    background-color: var(--raden-accent-primary, #FFAE6D);
+    border-bottom: 2px solid var(--raden-panel-border, #5C3A21);
     color: #000000;
-    box-shadow: inset 0 2px 0 #FFD0A6, inset 0 -2px 0 #E5924F;
+    box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.45), inset 0 -2px 0 rgba(0, 0, 0, 0.2);
 }
 
 .clay-header-secondary {
-    background-color: #A8E6CF;
-    border-bottom: 2px solid #5C3A21;
+    background-color: var(--raden-accent-secondary, #A8E6CF);
+    border-bottom: 2px solid var(--raden-panel-border, #5C3A21);
     color: #000000;
-    box-shadow: inset 0 2px 0 #D4F5E9, inset 0 -2px 0 #84CAAF;
+    box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.45), inset 0 -2px 0 rgba(0, 0, 0, 0.2);
 }
 
 .clay-btn-primary {
-    background-color: #FFAE6D;
-    border: 2px solid #5C3A21;
+    background-color: var(--raden-accent-primary, #FFAE6D);
+    border: 2px solid var(--raden-panel-border, #5C3A21);
     border-radius: 10px;
     color: #000000;
-    box-shadow: inset 0 2px 0 #FFD0A6, inset 0 -2px 0 #E5924F, 0 3px 0 #5C3A21;
+    box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.45), inset 0 -2px 0 rgba(0, 0, 0, 0.2), 0 3px 0 var(--raden-panel-border, #5C3A21);
     cursor: pointer;
     transition: transform 60ms steps(2, end), box-shadow 60ms steps(2, end);
 }
 .clay-btn-primary:active:not(:disabled) {
     transform: translateY(2px);
-    box-shadow: inset 0 2px 0 #E5924F, 0 1px 0 #5C3A21;
+    box-shadow: inset 0 2px 0 rgba(0, 0, 0, 0.2), 0 1px 0 var(--raden-panel-border, #5C3A21);
 }
 .clay-btn-primary:disabled {
     opacity: 0.55;
@@ -295,17 +319,17 @@ input, textarea, [contenteditable="true"] {
 }
 
 .clay-btn-secondary {
-    background-color: #A8E6CF;
-    border: 2px solid #5C3A21;
+    background-color: var(--raden-accent-secondary, #A8E6CF);
+    border: 2px solid var(--raden-panel-border, #5C3A21);
     border-radius: 10px;
     color: #000000;
-    box-shadow: inset 0 2px 0 #D4F5E9, inset 0 -2px 0 #84CAAF, 0 3px 0 #5C3A21;
+    box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.45), inset 0 -2px 0 rgba(0, 0, 0, 0.2), 0 3px 0 var(--raden-panel-border, #5C3A21);
     cursor: pointer;
     transition: transform 60ms steps(2, end), box-shadow 60ms steps(2, end);
 }
 .clay-btn-secondary:active:not(:disabled) {
     transform: translateY(2px);
-    box-shadow: inset 0 2px 0 #84CAAF, 0 1px 0 #5C3A21;
+    box-shadow: inset 0 2px 0 rgba(0, 0, 0, 0.2), 0 1px 0 var(--raden-panel-border, #5C3A21);
 }
 .clay-btn-secondary:disabled {
     opacity: 0.55;
@@ -313,35 +337,85 @@ input, textarea, [contenteditable="true"] {
 }
 
 .clay-btn-neutral {
-    background-color: #FFF8EA;
-    border: 2px solid #5C3A21;
+    background-color: var(--raden-card-bg, var(--raden-panel-bg, #FFF8EA));
+    border: 2px solid var(--raden-panel-border, #5C3A21);
     border-radius: 10px;
-    color: #000000;
-    box-shadow: inset 0 2px 0 #FFFFFF, inset 0 -2px 0 #EADBC0, 0 3px 0 #5C3A21;
+    color: var(--raden-text-color, #000000);
+    box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.4), inset 0 -2px 0 rgba(0, 0, 0, 0.15), 0 3px 0 var(--raden-panel-border, #5C3A21);
     cursor: pointer;
     transition: transform 60ms steps(2, end), box-shadow 60ms steps(2, end);
 }
 .clay-btn-neutral:active:not(:disabled) {
     transform: translateY(2px);
-    box-shadow: inset 0 2px 0 #EADBC0, 0 1px 0 #5C3A21;
+    box-shadow: inset 0 2px 0 rgba(0, 0, 0, 0.15), 0 1px 0 var(--raden-panel-border, #5C3A21);
 }
 .clay-btn-neutral:disabled {
     opacity: 0.55;
     cursor: not-allowed;
 }
 
+/* ============================================================================
+ * TEMA & AKSESIBILITAS: DYNAMIC CONTRAST COLOR ENGINE
+ * Memastikan teks mode gelap / obsidian / custom tidak pernah hitam di atas hitam
+ * ============================================================================ */
+.clay-panel,
+.clay-panel *,
+.clay-card,
+.clay-card *,
+.clay-main-pane,
+.clay-main-pane *,
+.clay-sidebar,
+.clay-sidebar *,
+.clay-modal-shell,
+.clay-modal-shell *,
+.clay-btn-neutral,
+.clay-btn-neutral * {
+    color: var(--raden-text-color, #000000);
+}
+
+/* Otomatis alihkan class utility text-black mengikuti warna tema jika di dalam container */
+.clay-panel .text-black,
+.clay-card .text-black,
+.clay-modal-shell .text-black,
+.clay-main-pane .text-black,
+.clay-main-topbar .text-black,
+.clay-sidebar .text-black,
+.clay-sidebar-subtitle,
+.clay-sidebar-title,
+.clay-btn-neutral .text-black {
+    color: var(--raden-text-color, #000000) !important;
+}
+
+/* KECUALI elemen dengan background aksen cerah: teks HARUS tetap hitam pekat (#000000) */
+.clay-btn-primary,
+.clay-btn-primary *,
+.clay-btn-secondary,
+.clay-btn-secondary *,
+.clay-badge-primary,
+.clay-badge-primary *,
+.clay-badge-secondary,
+.clay-badge-secondary *,
+.clay-sidebar-brand,
+.clay-sidebar-brand *,
+.clay-sidebar-btn-active,
+.clay-sidebar-btn-active *,
+.clay-header,
+.clay-header * {
+    color: #000000 !important;
+}
+
 .clay-btn-cocoa {
-    background-color: #5C3A21;
-    border: 2px solid #5C3A21;
+    background-color: var(--raden-panel-border, #5C3A21);
+    border: 2px solid var(--raden-panel-border, #5C3A21);
     border-radius: 8px;
     color: #FFFFFF;
-    box-shadow: inset 0 2px 0 #784E2F, 0 2px 0 #3E2513;
+    box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.2), 0 2px 0 rgba(0, 0, 0, 0.3);
     cursor: pointer;
     transition: transform 60ms steps(2, end), box-shadow 60ms steps(2, end);
 }
 .clay-btn-cocoa:active:not(:disabled) {
     transform: translateY(2px);
-    box-shadow: inset 0 2px 0 #3E2513;
+    box-shadow: inset 0 2px 0 rgba(0, 0, 0, 0.3);
 }
 .clay-btn-cocoa:disabled {
     opacity: 0.55;
@@ -384,68 +458,71 @@ input, textarea, [contenteditable="true"] {
 }
 .clay-slot:active:not(:disabled) {
     transform: translateY(2px);
-    box-shadow: 0 0 0 #5C3A21 !important;
+    box-shadow: 0 0 0 var(--raden-panel-border, #5C3A21) !important;
 }
 .clay-slot-neutral {
-    background-color: #FFF8EA;
-    color: #000000;
-    box-shadow: inset 0 2px 0 #FFFFFF, inset 0 -2px 0 #EADBC0, 0 2px 0 #5C3A21;
+    background-color: var(--raden-panel-bg, #FFF8EA);
+    border-color: var(--raden-panel-border, #5C3A21);
+    color: var(--raden-text-color, #000000);
+    box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.4), inset 0 -2px 0 rgba(0, 0, 0, 0.15), 0 2px 0 var(--raden-panel-border, #5C3A21);
 }
 .clay-slot-primary {
-    background-color: #FFAE6D;
-    color: #000000;
-    box-shadow: inset 0 2px 0 #FFD0A6, inset 0 -2px 0 #E5924F, 0 2px 0 #5C3A21;
+    background-color: var(--raden-accent-primary, #FFAE6D);
+    border-color: var(--raden-panel-border, #5C3A21);
+    color: var(--raden-text-color, #000000);
+    box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.45), inset 0 -2px 0 rgba(0, 0, 0, 0.2), 0 2px 0 var(--raden-panel-border, #5C3A21);
 }
 .clay-slot-secondary {
-    background-color: #A8E6CF;
-    color: #000000;
-    box-shadow: inset 0 2px 0 #D4F5E9, inset 0 -2px 0 #84CAAF, 0 2px 0 #5C3A21;
+    background-color: var(--raden-accent-secondary, #A8E6CF);
+    border-color: var(--raden-panel-border, #5C3A21);
+    color: var(--raden-text-color, #000000);
+    box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.45), inset 0 -2px 0 rgba(0, 0, 0, 0.2), 0 2px 0 var(--raden-panel-border, #5C3A21);
 }
 
 .clay-input {
-    background-color: #FFF8EA;
-    border: 2px solid #5C3A21;
+    background-color: var(--raden-panel-bg, #FFF8EA);
+    border: 2px solid var(--raden-panel-border, #5C3A21);
     border-radius: 8px;
-    color: #000000;
-    box-shadow: inset 0 2px 0 #EADBC0;
+    color: var(--raden-text-color, #000000);
+    box-shadow: inset 0 2px 0 rgba(0, 0, 0, 0.1);
 }
 .clay-input::placeholder {
-    color: #000000;
+    color: var(--raden-text-color, #000000);
     opacity: 0.5;
 }
 .clay-input:focus {
     outline: none;
-    border-color: #5C3A21;
-    background-color: #FFFFFF;
+    border-color: var(--raden-panel-border, #5C3A21);
+    background-color: var(--raden-panel-bg, #FFFFFF);
 }
 
 .clay-badge-primary {
-    background-color: #FFAE6D;
-    border: 1.5px solid #5C3A21;
+    background-color: var(--raden-accent-primary, #FFAE6D);
+    border: 1.5px solid var(--raden-panel-border, #5C3A21);
     border-radius: 6px;
-    color: #000000;
-    box-shadow: inset 0 1px 0 #FFD0A6;
+    color: var(--raden-text-color, #000000);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45);
 }
 
 .clay-badge-secondary {
-    background-color: #A8E6CF;
-    border: 1.5px solid #5C3A21;
+    background-color: var(--raden-accent-secondary, #A8E6CF);
+    border: 1.5px solid var(--raden-panel-border, #5C3A21);
     border-radius: 6px;
-    color: #000000;
-    box-shadow: inset 0 1px 0 #D4F5E9;
+    color: var(--raden-text-color, #000000);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45);
 }
 
 .clay-badge-neutral {
-    background-color: #FFF8EA;
-    border: 1.5px solid #5C3A21;
+    background-color: var(--raden-panel-bg, #FFF8EA);
+    border: 1.5px solid var(--raden-panel-border, #5C3A21);
     border-radius: 6px;
-    color: #000000;
-    box-shadow: inset 0 1px 0 #FFFFFF;
+    color: var(--raden-text-color, #000000);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4);
 }
 
 .clay-badge-cocoa {
-    background-color: #5C3A21;
-    border: 1.5px solid #5C3A21;
+    background-color: var(--raden-panel-border, #5C3A21);
+    border: 1.5px solid var(--raden-panel-border, #5C3A21);
     border-radius: 6px;
     color: #FFFFFF;
 }
@@ -529,19 +606,19 @@ input, textarea, [contenteditable="true"] {
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    background-color: #FFF8EA;
-    border-right: 2px solid #5C3A21;
-    box-shadow: inset -2px 0 0 #EADBC0;
+    background-color: var(--raden-panel-bg, #FFF8EA);
+    border-right: 2px solid var(--raden-panel-border, #5C3A21);
+    box-shadow: inset -2px 0 0 rgba(0, 0, 0, 0.08);
     overflow: hidden;
 }
 
 .clay-sidebar-brand,
 .clay-sidebar-header {
     flex-shrink: 0;
-    background-color: #FFAE6D;
-    border-bottom: 2px solid #5C3A21;
+    background-color: var(--raden-accent-primary, #FFAE6D);
+    border-bottom: 2px solid var(--raden-panel-border, #5C3A21);
     color: #000000;
-    box-shadow: inset 0 2px 0 #FFD0A6, inset 0 -2px 0 #E5924F;
+    box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.45), inset 0 -2px 0 rgba(0, 0, 0, 0.15);
     padding: 0.55rem 0.35rem;
     display: flex;
     flex-direction: column;
@@ -569,10 +646,10 @@ input, textarea, [contenteditable="true"] {
 
 .clay-sidebar-brand-secondary {
     flex-shrink: 0;
-    background-color: #A8E6CF;
-    border-bottom: 2px solid #5C3A21;
+    background-color: var(--raden-accent-secondary, #A8E6CF);
+    border-bottom: 2px solid var(--raden-panel-border, #5C3A21);
     color: #000000;
-    box-shadow: inset 0 2px 0 #D4F5E9, inset 0 -2px 0 #84CAAF;
+    box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.45), inset 0 -2px 0 rgba(0, 0, 0, 0.15);
     padding: 0.55rem 0.35rem;
     display: flex;
     flex-direction: column;
@@ -588,7 +665,7 @@ input, textarea, [contenteditable="true"] {
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.04em;
-    color: #000000;
+    color: var(--raden-text-color, #000000);
     padding: 0.3rem 0.25rem 0.1rem;
     text-align: center;
 }
@@ -638,7 +715,7 @@ input, textarea, [contenteditable="true"] {
     font-weight: 800;
     text-transform: uppercase;
     border-radius: 8px;
-    border: 2px solid #5C3A21;
+    border: 2px solid var(--raden-panel-border, #5C3A21);
     cursor: pointer;
     transition: transform 60ms steps(2, end), box-shadow 60ms steps(2, end);
 }
@@ -649,22 +726,22 @@ input, textarea, [contenteditable="true"] {
 }
 
 .clay-sidebar-btn-active {
-    background-color: #FFAE6D;
+    background-color: var(--raden-accent-primary, #FFAE6D);
     color: #000000;
-    box-shadow: inset 0 2px 0 #FFD0A6, inset 0 -2px 0 #E5924F, 0 2px 0 #5C3A21;
+    box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.45), inset 0 -2px 0 rgba(0, 0, 0, 0.2), 0 2px 0 var(--raden-panel-border, #5C3A21);
 }
 
 .clay-sidebar-btn-inactive {
-    background-color: #FFF8EA;
-    color: #000000;
-    box-shadow: inset 0 2px 0 #FFFFFF, inset 0 -2px 0 #EADBC0, 0 2px 0 #5C3A21;
+    background-color: var(--raden-card-bg, var(--raden-panel-bg, #FFF8EA));
+    color: var(--raden-text-color, #000000);
+    box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.2), inset 0 -2px 0 rgba(0, 0, 0, 0.1), 0 2px 0 var(--raden-panel-border, #5C3A21);
 }
 
 .clay-sidebar-footer {
     flex-shrink: 0;
-    border-top: 2px solid #5C3A21;
-    background-color: #FFF8EA;
-    box-shadow: inset 0 2px 0 #FFFFFF;
+    border-top: 2px solid var(--raden-panel-border, #5C3A21);
+    background-color: var(--raden-panel-bg, #FFF8EA);
+    box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.2);
     padding: 0.45rem;
     display: flex;
     flex-direction: column;
@@ -677,7 +754,7 @@ input, textarea, [contenteditable="true"] {
     min-height: 0;
     display: flex;
     flex-direction: column;
-    background-color: #FFF8EA;
+    background-color: var(--raden-panel-bg, #FFF8EA);
     overflow: hidden;
 }
 
@@ -688,9 +765,9 @@ input, textarea, [contenteditable="true"] {
     justify-content: space-between;
     gap: 0.5rem;
     padding: 0.55rem 0.75rem;
-    background-color: #FFF8EA;
-    border-bottom: 2px solid #5C3A21;
-    box-shadow: inset 0 2px 0 #FFFFFF, inset 0 -2px 0 #EADBC0;
+    background-color: var(--raden-card-bg, var(--raden-panel-bg, #FFF8EA));
+    border-bottom: 2px solid var(--raden-panel-border, #5C3A21);
+    box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.15), inset 0 -2px 0 rgba(0, 0, 0, 0.08);
 }
 
 .clay-main-body {
@@ -702,9 +779,9 @@ input, textarea, [contenteditable="true"] {
 
 .clay-main-footer {
     flex-shrink: 0;
-    border-top: 2px solid #5C3A21;
-    background-color: #FFF8EA;
-    box-shadow: inset 0 2px 0 #FFFFFF;
+    border-top: 2px solid var(--raden-panel-border, #5C3A21);
+    background-color: var(--raden-card-bg, var(--raden-panel-bg, #FFF8EA));
+    box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.15);
     padding: 0.55rem 0.75rem;
     display: flex;
     align-items: center;

@@ -159,6 +159,12 @@ export class WorldScene extends Phaser.Scene {
       if (typeof data?.enableAntiAliasing === 'boolean') {
         this.enableAntiAliasing = data.enableAntiAliasing;
       }
+      // Optimasi grafis hemat daya jika mode 'low' dipilih
+      if (data?.graphicsQuality === 'low') {
+        if (this.clouds) this.clouds.forEach(c => c.sprite?.setVisible(false));
+      } else if (this.clouds) {
+        this.clouds.forEach(c => c.sprite?.setVisible(true));
+      }
     };
     EventBus.on('graphics-settings-updated', onGraphicsSettingsUpdated);
     this.events.once('shutdown', () => {
@@ -196,6 +202,14 @@ export class WorldScene extends Phaser.Scene {
     this.shorelineSurfs = terrain.shorelineSurfs;
     this.clouds = terrain.clouds;
     this.digTiles = terrain.digTiles;
+
+    // Terapkan kualitas awal awan jika mode grafis 'low'
+    try {
+      const gs = JSON.parse(localStorage.getItem('raden_game_settings') || '{}');
+      if (gs.graphicsQuality === 'low' && this.clouds) {
+        this.clouds.forEach(c => c.sprite?.setVisible(false));
+      }
+    } catch (e) {}
 
     // 5b. Inisialisasi Sistem Pertanian Kebun Tani (Menanam Biji, Menyiram & Panen)
     WorldFarming.init(this, this.tileSize, this.digTiles);

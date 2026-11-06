@@ -65,6 +65,7 @@ export const DialogueBox: React.FC = () => {
     const handleCloseDialogue = () => {
       setDialogue(null);
       setCurrentPage(0);
+      EventBus.emit('close-dialogue');
       EventBus.emit('dialogue-active', false);
     };
 
@@ -74,6 +75,7 @@ export const DialogueBox: React.FC = () => {
     return () => {
       EventBus.off('open-dialogue', handleOpenDialogue);
       EventBus.off('close-dialogue', handleCloseDialogue);
+      EventBus.emit('close-dialogue');
       EventBus.emit('dialogue-active', false);
     };
   }, [sound]);
@@ -107,6 +109,7 @@ export const DialogueBox: React.FC = () => {
   const closeDialogue = useCallback(() => {
     setDialogue(null);
     setCurrentPage(0);
+    EventBus.emit('close-dialogue');
     EventBus.emit('dialogue-active', false);
   }, []);
 

@@ -211,6 +211,15 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
   useEffect(() => {
     if (!isOpen) return;
+    setGraphicsQuality(settings.graphicsQuality || 'high');
+    setMaxVisiblePlayers(typeof settings.maxVisiblePlayers === 'number' ? settings.maxVisiblePlayers : 50);
+    setEnableMovementEffects(settings.enableMovementEffects !== false);
+    setEnableAntiAliasing(settings.enableAntiAliasing !== false);
+    setCurrentCameraZoom(settings.cameraZoom || 0.9);
+    setMinCameraZoom(typeof settings.minCameraZoom === 'number' ? settings.minCameraZoom : 0.38);
+    setMaxCameraZoom(typeof settings.maxCameraZoom === 'number' ? settings.maxCameraZoom : 2.0);
+    setCameraSmoothingSpeed(settings.cameraSmoothingSpeed || 'normal');
+
     setIsSocketConnected(networkMgr.getIsConnected());
     setCurrentSocketUrl(networkMgr.getServerUrl());
     setIsFullscreen(Boolean(document.fullscreenElement));
@@ -234,7 +243,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       EventBus.off('network-status-changed', handleNet);
       document.removeEventListener('fullscreenchange', handleFsChange);
     };
-  }, [isOpen]);
+  }, [isOpen, settings]);
 
   // Efek Monitor Live FPS & Diagnostik Performa saat Tab Jaringan Aktif
   useEffect(() => {
@@ -624,12 +633,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       className="ui-modal-backdrop select-none"
       onKeyDown={(e) => e.stopPropagation()}
     >
-      <div className="clay-panel landscape-compact-modal relative w-full max-w-3xl max-h-[min(92dvh,calc(100dvh-1rem))] flex flex-col overflow-hidden text-black">
+      <div className="clay-panel landscape-compact-modal relative w-full max-w-3xl max-h-[min(92dvh,calc(100dvh-1rem))] flex flex-col overflow-hidden">
         <div className="clay-modal-shell flex-1 min-h-0">
           {/* SIDEBAR KIRI: LOGO DI ATAS, TEKS DI BAWAH */}
           <aside className="clay-sidebar">
             <div className="clay-sidebar-brand">
-              <Sliders className="w-5 h-5 text-black stroke-[2.5]" />
+              <Sliders className="w-5 h-5 stroke-[2.5]" />
               <span className="clay-sidebar-title">PENGATURAN</span>
               <span className="clay-sidebar-subtitle">SISTEM GAME</span>
             </div>
@@ -674,9 +683,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
           {/* MAIN CONTENT PANE */}
           <div className="clay-main-pane flex-1 min-w-0 flex flex-col">
-            <div className="clay-main-topbar flex items-center justify-between px-3.5 sm:px-4 py-2 border-b-2 border-[#5C3A21] bg-[#FFF8EA] shrink-0">
+            <div className="clay-main-topbar flex items-center justify-between px-3.5 sm:px-4 py-2 shrink-0">
               <div className="flex items-center gap-2 min-w-0">
-                <span className="text-xs sm:text-sm font-bold uppercase text-black truncate">
+                <span className="text-xs sm:text-sm font-bold uppercase truncate">
                   {activeSection === 'language' && 'PILIHAN BAHASA DUNIA'}
                   {activeSection === 'theme' && 'KUSTOMISASI TEMA, TIPOGRAFI & TATA LETAK UI'}
                   {activeSection === 'sound' && 'AUDIO & EFEK SUARA'}
@@ -685,7 +694,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   {activeSection === 'controls' && 'KONTROL PERMAINAN'}
                   {activeSection === 'network' && 'JARINGAN & MULTIPLAYER'}
                 </span>
-                <span className="clay-badge-secondary hidden sm:inline-block text-[9px] font-bold px-1.5 py-0.5 text-black">
+                <span className="clay-badge-secondary hidden sm:inline-block text-[9px] font-bold px-1.5 py-0.5">
                   AKTIF
                 </span>
               </div>
@@ -696,7 +705,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   sound.playClick();
                   onClose();
                 }}
-                className="clay-btn-neutral w-8 h-8 flex items-center justify-center text-black shrink-0"
+                className="clay-btn-neutral w-8 h-8 flex items-center justify-center shrink-0"
                 title="Tutup Pengaturan"
               >
                 <X className="w-4 h-4 stroke-[2.5]" />
@@ -709,10 +718,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           {activeSection === 'language' && (
             <div className="space-y-3">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <label className="text-xs font-bold text-black uppercase">
+                <label className="text-xs font-bold uppercase">
                   Pilih Bahasa Dialog & Antarmuka:
                 </label>
-                <span className="clay-badge-secondary px-2 py-0.5 text-[10px] font-bold text-black">
+                <span className="clay-badge-secondary px-2 py-0.5 text-[10px] font-bold">
                   Aktif: {settings.language.toUpperCase()}
                 </span>
               </div>
@@ -725,17 +734,17 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       key={lang.code}
                       type="button"
                       onClick={() => handleLanguageChange(lang.code)}
-                      className={`p-2.5 sm:p-3 text-left flex items-center justify-between gap-2 text-black ${
+                      className={`p-2.5 sm:p-3 text-left flex items-center justify-between gap-2 ${
                         isSelected ? 'clay-btn-secondary' : 'clay-btn-neutral'
                       }`}
                     >
                       <div className="flex items-center gap-2.5 min-w-0">
                         <span className="text-lg shrink-0">{lang.flag}</span>
                         <div className="min-w-0">
-                          <div className="font-bold text-xs uppercase text-black truncate">
+                          <div className="font-bold text-xs uppercase truncate">
                             {lang.name}
                           </div>
-                          <div className="text-[10px] text-black truncate">{lang.region}</div>
+                          <div className="text-[10px] opacity-80 truncate">{lang.region}</div>
                         </div>
                       </div>
                       {isSelected && (
@@ -754,20 +763,20 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           {activeSection === 'theme' && (
             <div className="space-y-4">
               {/* Header: Tombol Reset ke Bawaan */}
-              <div className="flex flex-wrap items-center justify-between gap-2 p-3 bg-[#FFF8EA] border-2 border-[#5C3A21] rounded-xl shadow-inner">
+              <div className="flex flex-wrap items-center justify-between gap-2 p-3 clay-card rounded-xl shadow-inner">
                 <div>
-                  <div className="text-xs font-black uppercase text-black flex items-center gap-1.5">
+                  <div className="text-xs font-black uppercase flex items-center gap-1.5">
                     <Palette className="w-4 h-4 stroke-[2.5]" />
                     <span>Kustomisasi Tampilan & Kenyamanan Penglihatan</span>
                   </div>
-                  <div className="text-[10px] text-black/80">
+                  <div className="text-[10px] opacity-80">
                     Atur tema warna, font, tata letak posisi UI, serta mode buta warna atau monokrom hitam-putih.
                   </div>
                 </div>
                 <button
                   type="button"
                   onClick={handleResetThemeToDefault}
-                  className="clay-btn-neutral px-3 py-1.5 text-[10px] font-bold flex items-center gap-1.5 text-black hover:bg-[#FFAE6D]/40 cursor-pointer"
+                  className="clay-btn-neutral px-3 py-1.5 text-[10px] font-bold flex items-center gap-1.5 cursor-pointer"
                   title="Kembalikan semua setelan tema, warna, font, dan tata letak ke konfigurasi asli pabrik"
                 >
                   <RotateCcw className="w-3.5 h-3.5 stroke-[2.5]" />
@@ -778,11 +787,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               {/* 1. PRESET TEMA & WARNA UI */}
               <div className="clay-card p-3 space-y-2.5">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold uppercase text-black flex items-center gap-1.5">
+                  <span className="text-xs font-bold uppercase flex items-center gap-1.5">
                     <Sparkles className="w-3.5 h-3.5 stroke-[2.5]" />
                     1. Pilihan Tema Warna
                   </span>
-                  <span className="clay-badge-secondary px-2 py-0.5 text-[9px] font-bold text-black uppercase">
+                  <span className="clay-badge-secondary px-2 py-0.5 text-[9px] font-bold uppercase">
                     {theme.preset}
                   </span>
                 </div>
@@ -805,7 +814,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       >
                         <div className="flex items-center justify-between">
                           <span className="font-bold text-[11px] truncate">{p.name}</span>
-                          {isSelected && <Check className="w-3.5 h-3.5 stroke-[3] text-black" />}
+                          {isSelected && <Check className="w-3.5 h-3.5 stroke-[3]" />}
                         </div>
                         <div className="flex items-center gap-1">
                           <span className="w-3.5 h-3.5 rounded-full border border-black/30" style={{ backgroundColor: p.colors.panelBg }} />
@@ -826,20 +835,20 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       handleUpdateTheme({ preset: 'custom' });
                     }}
                     className={`p-2.5 text-left rounded-lg border-2 border-[#5C3A21] transition-all flex flex-col gap-1.5 cursor-pointer ${
-                      theme.preset === 'custom' ? 'bg-[#FFF8EA] scale-[1.02] shadow-sm ring-2 ring-[#5C3A21]' : 'bg-white opacity-90'
+                      theme.preset === 'custom' ? 'clay-btn-primary scale-[1.02] shadow-sm ring-2 ring-[#5C3A21]' : 'clay-btn-neutral opacity-90'
                     }`}
                   >
-                    <div className="flex items-center justify-between text-black">
+                    <div className="flex items-center justify-between">
                       <span className="font-bold text-[11px]">🎨 Kustom Sendiri</span>
                       {theme.preset === 'custom' && <Check className="w-3.5 h-3.5 stroke-[3]" />}
                     </div>
-                    <span className="text-[8.5px] text-black/80">Pilih palet warna panel, border, dan aksen sendiri</span>
+                    <span className="text-[8.5px] opacity-80">Pilih palet warna panel, border, dan aksen sendiri</span>
                   </button>
                 </div>
 
                 {/* Color Pickers jika preset Custom */}
                 {theme.preset === 'custom' && (
-                  <div className="p-3 bg-white border-2 border-[#5C3A21] rounded-lg grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-black">
+                  <div className="p-3 clay-card border-2 border-[#5C3A21] rounded-lg grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                     <div>
                       <label className="text-[9px] font-bold block mb-1">Latar Panel:</label>
                       <div className="flex items-center gap-1.5">
@@ -877,6 +886,18 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       </div>
                     </div>
                     <div>
+                      <label className="text-[9px] font-bold block mb-1">Aksen Sekunder:</label>
+                      <div className="flex items-center gap-1.5">
+                        <input
+                          type="color"
+                          value={theme.customColors.accentSecondary}
+                          onChange={(e) => handleUpdateTheme({ customColors: { ...theme.customColors, accentSecondary: e.target.value } })}
+                          className="w-7 h-7 rounded border border-[#5C3A21] cursor-pointer"
+                        />
+                        <span className="text-[9px] font-mono">{theme.customColors.accentSecondary}</span>
+                      </div>
+                    </div>
+                    <div>
                       <label className="text-[9px] font-bold block mb-1">Teks Utama:</label>
                       <div className="flex items-center gap-1.5">
                         <input
@@ -894,14 +915,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
               {/* 2. TIPOGRAFI (FONT, UKURAN, KETEBALAN) */}
               <div className="clay-card p-3 space-y-3">
-                <span className="text-xs font-bold uppercase text-black flex items-center gap-1.5">
+                <span className="text-xs font-bold uppercase flex items-center gap-1.5">
                   <Type className="w-3.5 h-3.5 stroke-[2.5]" />
                   2. Tipografi (Font, Ukuran & Ketebalan)
                 </span>
 
                 {/* Font Family */}
                 <div>
-                  <label className="text-[10px] font-bold text-black uppercase block mb-1.5">
+                  <label className="text-[10px] font-bold uppercase block mb-1.5">
                     Pilihan Jenis Huruf (Font):
                   </label>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
@@ -915,8 +936,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                             sound.playClick();
                             handleUpdateTheme({ fontFamily: key as FontFamilyChoice });
                           }}
-                          className={`p-2 text-left flex items-center justify-between text-black rounded-lg border-2 border-[#5C3A21] cursor-pointer ${
-                            isSelected ? 'bg-[#FFAE6D] font-bold ring-2 ring-[#5C3A21]' : 'bg-white'
+                          className={`p-2 text-left flex items-center justify-between rounded-lg border-2 border-[#5C3A21] cursor-pointer ${
+                            isSelected ? 'clay-btn-primary font-bold ring-2 ring-[#5C3A21]' : 'clay-btn-neutral'
                           }`}
                           style={{ fontFamily: f.style }}
                         >
@@ -931,7 +952,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 {/* Ukuran & Ketebalan Huruf */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                   <div>
-                    <label className="text-[10px] font-bold text-black uppercase block mb-1">
+                    <label className="text-[10px] font-bold uppercase block mb-1">
                       Ukuran Teks:
                     </label>
                     <div className="grid grid-cols-3 gap-1">
@@ -947,8 +968,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                             sound.playClick();
                             handleUpdateTheme({ fontSize: s.id as FontSizeScale });
                           }}
-                          className={`py-1.5 px-1 text-[10px] font-bold text-center border-2 border-[#5C3A21] rounded-lg text-black cursor-pointer ${
-                            theme.fontSize === s.id ? 'bg-[#A8E6CF]' : 'bg-white'
+                          className={`py-1.5 px-1 text-[10px] font-bold text-center border-2 border-[#5C3A21] rounded-lg cursor-pointer ${
+                            theme.fontSize === s.id ? 'clay-btn-secondary' : 'clay-btn-neutral'
                           }`}
                         >
                           {s.label}
@@ -958,7 +979,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   </div>
 
                   <div>
-                    <label className="text-[10px] font-bold text-black uppercase block mb-1">
+                    <label className="text-[10px] font-bold uppercase block mb-1">
                       Ketebalan Teks (Weight):
                     </label>
                     <div className="grid grid-cols-3 gap-1">
@@ -974,8 +995,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                             sound.playClick();
                             handleUpdateTheme({ fontWeight: w.id as FontWeightChoice });
                           }}
-                          className={`py-1.5 px-1 text-[10px] font-bold text-center border-2 border-[#5C3A21] rounded-lg text-black cursor-pointer ${
-                            theme.fontWeight === w.id ? 'bg-[#A8E6CF]' : 'bg-white'
+                          className={`py-1.5 px-1 text-[10px] font-bold text-center border-2 border-[#5C3A21] rounded-lg cursor-pointer ${
+                            theme.fontWeight === w.id ? 'clay-btn-secondary' : 'clay-btn-neutral'
                           }`}
                         >
                           {w.label}
@@ -989,11 +1010,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               {/* 3. AKSESIBILITAS: BUTA WARNA & MODE HITAM PUTIH */}
               <div className="clay-card p-3 space-y-2.5">
                 <div>
-                  <span className="text-xs font-bold uppercase text-black flex items-center gap-1.5">
+                  <span className="text-xs font-bold uppercase flex items-center gap-1.5">
                     <Eye className="w-3.5 h-3.5 stroke-[2.5]" />
                     3. Aksesibilitas: Mode Buta Warna & Hitam-Putih
                   </span>
-                  <p className="text-[9.5px] text-black/80 mt-0.5">
+                  <p className="text-[9.5px] opacity-80 mt-0.5">
                     Membantu kenyamanan penglihatan bagi pemain buta warna serta meredakan mata pusing / silau akibat warna-warni yang terlalu ramai.
                   </p>
                 </div>
@@ -1010,12 +1031,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                           sound.playClick();
                           handleUpdateTheme({ colorBlindMode: key as ColorBlindMode });
                         }}
-                        className={`p-2.5 text-left border-2 border-[#5C3A21] rounded-xl flex flex-col gap-1 transition-all text-black cursor-pointer ${
+                        className={`p-2.5 text-left border-2 border-[#5C3A21] rounded-xl flex flex-col gap-1 transition-all cursor-pointer ${
                           isSelected
                             ? isMono
-                              ? 'bg-[#E4E4E7] ring-2 ring-black font-bold scale-[1.01]'
-                              : 'bg-[#A8E6CF] ring-2 ring-[#5C3A21] font-bold scale-[1.01]'
-                            : 'bg-white hover:bg-[#FFF8EA]'
+                              ? 'bg-[#E4E4E7] text-black ring-2 ring-black font-bold scale-[1.01]'
+                              : 'clay-btn-secondary ring-2 ring-[#5C3A21] font-bold scale-[1.01]'
+                            : 'clay-btn-neutral'
                         }`}
                       >
                         <div className="flex items-center justify-between">
@@ -1024,7 +1045,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                           </span>
                           {isSelected && <Check className="w-3.5 h-3.5 stroke-[3]" />}
                         </div>
-                        <p className="text-[9px] leading-tight text-black/80">{info.desc}</p>
+                        <p className="text-[9px] leading-tight opacity-80">{info.desc}</p>
                       </button>
                     );
                   })}
@@ -1033,14 +1054,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
               {/* 4. TATA LETAK & POSISI UI */}
               <div className="clay-card p-3 space-y-3">
-                <span className="text-xs font-bold uppercase text-black flex items-center gap-1.5">
+                <span className="text-xs font-bold uppercase flex items-center gap-1.5">
                   <Layout className="w-3.5 h-3.5 stroke-[2.5]" />
                   4. Posisi Komponen UI di Layar
                 </span>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="text-[10px] font-bold text-black uppercase block mb-1">
+                    <label className="text-[10px] font-bold uppercase block mb-1">
                       Posisi Radar Peta (Minimap):
                     </label>
                     <div className="grid grid-cols-2 gap-1.5">
@@ -1057,8 +1078,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                             sound.playClick();
                             handleUpdateTheme({ minimapPosition: pos.id as MinimapPosition });
                           }}
-                          className={`py-1.5 px-2 text-[10px] font-bold text-left border-2 border-[#5C3A21] rounded-lg text-black cursor-pointer ${
-                            theme.minimapPosition === pos.id ? 'bg-[#FFAE6D]' : 'bg-white'
+                          className={`py-1.5 px-2 text-[10px] font-bold text-left border-2 border-[#5C3A21] rounded-lg cursor-pointer ${
+                            theme.minimapPosition === pos.id ? 'clay-btn-primary' : 'clay-btn-neutral'
                           }`}
                         >
                           {pos.label}
@@ -1068,7 +1089,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   </div>
 
                   <div>
-                    <label className="text-[10px] font-bold text-black uppercase block mb-1">
+                    <label className="text-[10px] font-bold uppercase block mb-1">
                       Posisi Toolbar Hotbar:
                     </label>
                     <div className="grid grid-cols-2 gap-1.5">
@@ -1083,8 +1104,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                             sound.playClick();
                             handleUpdateTheme({ hotbarPosition: pos.id as HotbarPosition });
                           }}
-                          className={`py-1.5 px-2 text-[10px] font-bold text-left border-2 border-[#5C3A21] rounded-lg text-black cursor-pointer ${
-                            theme.hotbarPosition === pos.id ? 'bg-[#FFAE6D]' : 'bg-white'
+                          className={`py-1.5 px-2 text-[10px] font-bold text-left border-2 border-[#5C3A21] rounded-lg cursor-pointer ${
+                            theme.hotbarPosition === pos.id ? 'clay-btn-primary' : 'clay-btn-neutral'
                           }`}
                         >
                           {pos.label}
@@ -1097,7 +1118,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
               {/* 5. VISIBILITAS ELEMEN (ON / OFF SWITCH) */}
               <div className="clay-card p-3 space-y-2.5">
-                <span className="text-xs font-bold uppercase text-black flex items-center gap-1.5">
+                <span className="text-xs font-bold uppercase flex items-center gap-1.5">
                   <Sliders className="w-3.5 h-3.5 stroke-[2.5]" />
                   5. Tampilkan / Sembunyikan Elemen di Layar
                 </span>
@@ -1105,7 +1126,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {[
                     { key: 'showMinimap', label: 'Radar Peta Minimap' },
-                    { key: 'showPlayerStats', label: 'Bar Status Karakter (HP, Koin, Diamond)' },
+                    { key: 'showPlayerStats', label: 'Bar Status Karakter (HP & Koin Emas)' },
                     { key: 'showChat', label: 'Balon Obrolan & Tombol Chat' },
                     { key: 'showHotbar', label: 'Toolbar Hotbar Cepat' },
                     { key: 'showControlsGuide', label: 'Panduan Tombol Kontrol' },
@@ -1125,12 +1146,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                             },
                           });
                         }}
-                        className={`p-2 border-2 border-[#5C3A21] rounded-lg flex items-center justify-between text-black transition-all cursor-pointer ${
-                          isVisible ? 'bg-[#A8E6CF]' : 'bg-[#E5E7EB] opacity-60'
+                        className={`p-2 border-2 border-[#5C3A21] rounded-lg flex items-center justify-between transition-all cursor-pointer ${
+                          isVisible ? 'clay-btn-secondary' : 'clay-btn-neutral opacity-60'
                         }`}
                       >
                         <span className="text-[10px] font-bold">{item.label}</span>
-                        <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-white border border-[#5C3A21]">
+                        <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded clay-btn-neutral border border-[#5C3A21]">
                           {isVisible ? 'ON' : 'OFF'}
                         </span>
                       </button>
@@ -1194,7 +1215,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   step="0.05"
                   value={settings.masterVolume}
                   onChange={(e) => handleVolumeChange('masterVolume', parseFloat(e.target.value))}
-                  className="w-full accent-[#FFAE6D] cursor-pointer h-2.5 bg-[#FFF8EA] border border-[#5C3A21] rounded-lg"
+                  className="w-full accent-[#FFAE6D] cursor-pointer h-2.5 bg-[var(--raden-panel-bg,#FFF8EA)] border border-[var(--raden-panel-border,#5C3A21)] rounded-lg"
                 />
               </div>
 
@@ -1254,14 +1275,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     step="0.05"
                     value={settings.bgmVolume}
                     onChange={(e) => handleVolumeChange('bgmVolume', parseFloat(e.target.value))}
-                    className="w-full accent-[#FFAE6D] cursor-pointer h-2.5 bg-[#FFF8EA] border border-[#5C3A21] rounded-lg"
+                    className="w-full accent-[#FFAE6D] cursor-pointer h-2.5 bg-[var(--raden-panel-bg,#FFF8EA)] border border-[var(--raden-panel-border,#5C3A21)] rounded-lg"
                   />
                 </div>
               </div>
 
               {/* Slider SFX */}
               <div className="clay-card p-3 space-y-2">
-                <div className="flex justify-between text-xs font-bold text-black">
+                <div className="flex justify-between text-xs font-bold">
                   <span className="uppercase">Efek Suara (SFX)</span>
                   <span>{Math.round(settings.sfxVolume * 100)}%</span>
                 </div>
@@ -1272,7 +1293,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   step="0.05"
                   value={settings.sfxVolume}
                   onChange={(e) => handleVolumeChange('sfxVolume', parseFloat(e.target.value))}
-                  className="w-full accent-[#FFAE6D] cursor-pointer h-2.5 bg-[#FFF8EA] border border-[#5C3A21] rounded-lg"
+                  className="w-full accent-[#FFAE6D] cursor-pointer h-2.5 bg-[var(--raden-panel-bg,#FFF8EA)] border border-[var(--raden-panel-border,#5C3A21)] rounded-lg"
                 />
               </div>
 
@@ -2166,8 +2187,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             </div>
 
             {/* FOOTER ACTIONS */}
-            <div className="px-4 sm:px-5 py-2.5 border-t-2 border-[#5C3A21] bg-[#FFF8EA] flex items-center justify-between gap-2 text-xs shrink-0">
-              <div className="text-[10px] sm:text-[11px] font-bold text-black truncate">
+            <div className="clay-main-footer px-4 sm:px-5 py-2.5 flex items-center justify-between gap-2 text-xs shrink-0">
+              <div className="text-[10px] sm:text-[11px] font-bold opacity-80 truncate">
                 RadenWorld Engine • Client Build 2026
               </div>
 

@@ -337,7 +337,7 @@ export const ChatBox: React.FC<ChatBoxProps> = React.memo(({
       {/* 1. HEADER CHAT */}
       <div className="clay-header px-2.5 sm:px-3.5 py-2 flex items-center justify-between gap-2 text-xs font-bold text-black uppercase shrink-0">
         <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
-          <div className="w-6 h-6 rounded-md bg-[#FFF8EA] border-2 border-[#5C3A21] flex items-center justify-center text-black shrink-0">
+          <div className="w-6 h-6 rounded-md bg-[var(--raden-card-bg,var(--raden-panel-bg,#FFF8EA))] border-2 border-[var(--raden-panel-border,#5C3A21)] flex items-center justify-center shrink-0">
             <MessageSquare className="w-3.5 h-3.5 stroke-[2.5]" />
           </div>
           <span className="font-bold text-[11px] sm:text-xs truncate">
@@ -378,7 +378,7 @@ export const ChatBox: React.FC<ChatBoxProps> = React.memo(({
                 sound.playClick();
                 onClose();
               }}
-              className="clay-btn-neutral h-7 w-7 flex items-center justify-center text-black"
+              className="clay-btn-neutral h-7 w-7 flex items-center justify-center"
               style={{ borderRadius: '7px' }}
               title="Tutup Obrolan"
             >
@@ -389,7 +389,7 @@ export const ChatBox: React.FC<ChatBoxProps> = React.memo(({
       </div>
 
       {/* 2. TAB HEADER OBROLAN */}
-      <div className="px-2.5 py-1.5 bg-[#FFF8EA] border-b-2 border-[#5C3A21] flex items-center gap-1.5 overflow-x-auto no-scrollbar shrink-0">
+      <div className="px-2.5 py-1.5 bg-[var(--raden-card-bg,var(--raden-panel-bg,#FFF8EA))] border-b-2 border-[var(--raden-panel-border,#5C3A21)] flex items-center gap-1.5 overflow-x-auto no-scrollbar shrink-0">
         <button
           type="button"
           onClick={() => handleSelectTab('global')}
@@ -418,7 +418,7 @@ export const ChatBox: React.FC<ChatBoxProps> = React.memo(({
               <span className="max-w-[80px] sm:max-w-[100px] truncate">{pName}</span>
 
               {unread > 0 && !isActive && (
-                <span className="clay-badge-primary text-[8.5px] font-bold px-1 leading-none">
+                <span className="clay-badge-primary text-[8.5px] font-bold px-1 leading-none text-black">
                   {unread}
                 </span>
               )}
@@ -426,7 +426,7 @@ export const ChatBox: React.FC<ChatBoxProps> = React.memo(({
               <button
                 type="button"
                 onClick={(e) => handleClosePrivateTab(e, pName)}
-                className="w-4 h-4 rounded flex items-center justify-center text-black active:translate-y-[1px] cursor-pointer ml-0.5"
+                className="w-4 h-4 rounded flex items-center justify-center active:translate-y-[1px] cursor-pointer ml-0.5"
                 title={`Tutup tab obrolan dengan ${pName}`}
               >
                 <X className="w-3 h-3 stroke-[2.5]" />
@@ -438,9 +438,9 @@ export const ChatBox: React.FC<ChatBoxProps> = React.memo(({
 
       {/* 3. DRAWER PALET REAKSI EKSPRESI KARAKTER */}
       {showExpressions && (
-        <div className="p-2.5 bg-[#FFF8EA] border-b-2 border-[#5C3A21] shrink-0">
+        <div className="p-2.5 bg-[var(--raden-card-bg,var(--raden-panel-bg,#FFF8EA))] border-b-2 border-[var(--raden-panel-border,#5C3A21)] shrink-0">
           <div className="flex items-center justify-between mb-1.5">
-            <span className="text-[10px] font-bold text-black uppercase flex items-center gap-1">
+            <span className="text-[10px] font-bold uppercase flex items-center gap-1">
               <Sparkles className="w-3 h-3 stroke-[2.5]" />
               REAKSI ({genderFolder.toUpperCase()}):
             </span>
@@ -457,17 +457,17 @@ export const ChatBox: React.FC<ChatBoxProps> = React.memo(({
                   key={expr.type}
                   type="button"
                   onClick={() => handleTriggerCharacterExpression(expr)}
-                  className="clay-btn-neutral flex flex-col items-center justify-center p-1.5 text-black"
+                  className="clay-btn-neutral flex flex-col items-center justify-center p-1.5"
                   title={`Munculkan reaksi wajah ${expr.name}`}
                 >
-                  <div className="w-full h-10 landscape:max-md:h-7 rounded-md overflow-hidden bg-[#FFF8EA] border border-[#5C3A21] p-0.5 flex items-center justify-center">
+                  <div className="w-full h-10 landscape:max-md:h-7 rounded-md overflow-hidden bg-[var(--raden-panel-bg,#FFF8EA)] border border-[var(--raden-panel-border,#5C3A21)] p-0.5 flex items-center justify-center">
                     <img
                       src={imageSrc}
                       alt={expr.name}
                       className="max-w-full max-h-full object-contain pixelated"
                     />
                   </div>
-                  <span className="text-[9px] font-bold text-black mt-1 uppercase truncate max-w-full">
+                  <span className="text-[9px] font-bold mt-1 uppercase truncate max-w-full">
                     {expr.name}
                   </span>
                 </button>
@@ -482,10 +482,10 @@ export const ChatBox: React.FC<ChatBoxProps> = React.memo(({
         <div
           ref={chatListRef}
           onScroll={handleScroll}
-          className="p-2 flex-1 min-h-[64px] max-h-[170px] sm:max-h-[210px] md:max-h-[250px] landscape:max-md:max-h-[95px] overflow-y-auto space-y-1.5 text-xs custom-scrollbar bg-[#FFF8EA]"
+          className="p-2 flex-1 min-h-[64px] max-h-[170px] sm:max-h-[210px] md:max-h-[250px] landscape:max-md:max-h-[95px] overflow-y-auto space-y-1.5 text-xs custom-scrollbar bg-[var(--raden-panel-bg,#FFF8EA)]"
         >
           {activeTab !== 'global' && (
-            <div className="clay-card-secondary p-2 mb-1.5 flex items-center justify-between text-[10px] text-black font-bold">
+            <div className="clay-card-secondary p-2 mb-1.5 flex items-center justify-between text-[10px] font-bold text-black">
               <div className="flex items-center gap-1.5 min-w-0">
                 <Lock className="w-3.5 h-3.5 shrink-0 stroke-[2.5]" />
                 <span className="truncate">
@@ -497,7 +497,7 @@ export const ChatBox: React.FC<ChatBoxProps> = React.memo(({
           )}
 
           {filteredMessages.length === 0 ? (
-            <div className="text-black text-center py-5 text-[11px] font-bold px-2">
+            <div className="text-center py-5 text-[11px] font-bold px-2 opacity-80">
               {activeTab === 'global'
                 ? 'Belum ada obrolan. Ketik pesan di bawah untuk menyapa pemain lain!'
                 : `Belum ada pesan pribadi dengan ${activeTab}.`}
@@ -530,11 +530,11 @@ export const ChatBox: React.FC<ChatBoxProps> = React.memo(({
                       : 'clay-card'
                     }`}
                 >
-                  <span className="text-[9.5px] text-black font-bold shrink-0 pt-0.5">
+                  <span className="text-[9.5px] opacity-75 font-bold shrink-0 pt-0.5">
                     [{timeText}]
                   </span>
 
-                  <div className="flex-1 min-w-0 break-words text-black">
+                  <div className="flex-1 min-w-0 break-words">
                     {isPrivate && (
                       <span className="clay-badge-neutral inline-block font-bold text-[8.5px] px-1.5 py-0.2 mr-1 align-baseline">
                         🔒 BISIKAN {msg.recipientName ? `➔ ${msg.recipientName}` : ''}
@@ -569,19 +569,18 @@ export const ChatBox: React.FC<ChatBoxProps> = React.memo(({
                             followingCount: isSuper ? 999 : 0,
                             followersCount: isSuper ? 999 : 0,
                             gold: isSuper ? 99999999999 : 2500,
-                            diamonds: isSuper ? 99999999999 : 50,
                             location: 'Obrolan Server',
                           });
                         }
                       }}
-                      className={`font-bold mr-1.5 text-black ${!isSystem ? 'cursor-pointer underline' : ''
+                      className={`font-bold mr-1.5 ${!isSystem ? 'cursor-pointer underline' : ''
                         }`}
                       title={!isSystem ? `Klik untuk melihat profil ${msg.senderName}` : undefined}
                     >
                       {isMe ? 'Anda' : msg.senderName}:
                     </span>
 
-                    <span className="text-black font-normal">{msg.text}</span>
+                    <span className="font-normal">{msg.text}</span>
                   </div>
 
                   {/* Tombol Cepat Bisik (Selalu Tampil untuk Perangkat Sentuh & PC) */}
@@ -617,14 +616,14 @@ export const ChatBox: React.FC<ChatBoxProps> = React.memo(({
       </div>
 
       {/* 5. BARIS CEPAT EMOJI */}
-      <div className="px-2.5 py-1 bg-[#FFF8EA] border-t-2 border-[#5C3A21] flex items-center gap-1 overflow-x-auto no-scrollbar shrink-0 landscape:max-md:hidden">
-        <span className="text-[9px] font-bold text-black shrink-0 mr-0.5">CEPAT:</span>
+      <div className="px-2.5 py-1 bg-[var(--raden-card-bg,var(--raden-panel-bg,#FFF8EA))] border-t-2 border-[var(--raden-panel-border,#5C3A21)] flex items-center gap-1 overflow-x-auto no-scrollbar shrink-0 landscape:max-md:hidden">
+        <span className="text-[9px] font-bold shrink-0 mr-0.5">CEPAT:</span>
         {['👋', '😊', '😂', '👑', '⚔️', '❤️', '⚡', '🔥'].map((em, i) => (
           <button
             key={i}
             type="button"
             onClick={() => handleInsertEmoji(em)}
-            className="w-6 h-6 rounded-md bg-[#FFF8EA] border border-[#5C3A21] active:translate-y-[1px] flex items-center justify-center text-xs cursor-pointer shrink-0"
+            className="w-6 h-6 rounded-md bg-[var(--raden-card-bg,var(--raden-panel-bg,#FFF8EA))] border border-[var(--raden-panel-border,#5C3A21)] active:translate-y-[1px] flex items-center justify-center text-xs cursor-pointer shrink-0"
             title={`Tambahkan ${em}`}
           >
             {em}
@@ -633,14 +632,14 @@ export const ChatBox: React.FC<ChatBoxProps> = React.memo(({
       </div>
 
       {/* 6. FORM INPUT */}
-      <form onSubmit={handleSubmit} className="p-2 border-t-2 border-[#5C3A21] flex items-center gap-1.5 bg-[#FFF8EA] shrink-0">
+      <form onSubmit={handleSubmit} className="p-2 border-t-2 border-[var(--raden-panel-border,#5C3A21)] flex items-center gap-1.5 bg-[var(--raden-card-bg,var(--raden-panel-bg,#FFF8EA))] shrink-0">
         <button
           type="button"
           onClick={() => {
             sound.playClick();
             setShowExpressions(!showExpressions);
           }}
-          className={`w-8 h-8 flex items-center justify-center shrink-0 text-black ${showExpressions ? 'clay-btn-secondary' : 'clay-btn-neutral'
+          className={`w-8 h-8 flex items-center justify-center shrink-0 ${showExpressions ? 'clay-btn-secondary' : 'clay-btn-neutral'
             }`}
           style={{ borderRadius: '8px' }}
           title="Pilih Ekspresi"
@@ -661,7 +660,7 @@ export const ChatBox: React.FC<ChatBoxProps> = React.memo(({
               : `Bisik ke ${activeTab}...`
           }
           maxLength={150}
-          className="clay-input flex-1 min-w-0 h-8 px-2.5 text-[11px] sm:text-xs text-black font-bold"
+          className="clay-input flex-1 min-w-0 h-8 px-2.5 text-[11px] sm:text-xs font-bold"
         />
 
         <button

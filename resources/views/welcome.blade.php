@@ -45,9 +45,10 @@
             margin: 0;
             padding: 0;
             overflow: hidden;
-            background-color: #FFF8EA;
-            color: #000000;
-            font-family: 'Pixelify Sans', 'Kenney Pixel Square', monospace;
+            background-color: var(--raden-panel-bg, #FFF8EA);
+            color: var(--raden-text-color, #000000);
+            font-family: var(--raden-font-family, 'Pixelify Sans', monospace);
+            font-weight: var(--raden-font-weight, 600);
             letter-spacing: 0.035em;
             touch-action: none;
             -webkit-user-select: none;
@@ -64,7 +65,7 @@
             height: 100vh;
             height: 100dvh;
             overflow: hidden;
-            background-color: #FFF8EA;
+            background-color: var(--raden-panel-bg, #FFF8EA);
             contain: strict;
         }
         @keyframes raden-spin {
@@ -108,6 +109,21 @@
     </script>
 </head>
 <body class="bg-[#FFF8EA] text-black antialiased overflow-hidden select-none">
+    <!-- SVG Filter Medis untuk Aksesibilitas Buta Warna (Protanopia, Deuteranopia, Tritanopia) -->
+    <svg style="position:fixed;width:0;height:0;pointer-events:none;opacity:0;" aria-hidden="true">
+        <defs>
+            <filter id="raden-protanopia">
+                <feColorMatrix type="matrix" values="0.567, 0.433, 0, 0, 0  0.558, 0.442, 0, 0, 0  0, 0.242, 0.758, 0, 0  0, 0, 0, 1, 0" />
+            </filter>
+            <filter id="raden-deuteranopia">
+                <feColorMatrix type="matrix" values="0.625, 0.375, 0, 0, 0  0.7, 0.3, 0, 0, 0  0, 0.3, 0.7, 0, 0  0, 0, 0, 1, 0" />
+            </filter>
+            <filter id="raden-tritanopia">
+                <feColorMatrix type="matrix" values="0.95, 0.05, 0, 0, 0  0, 0.433, 0.567, 0, 0  0, 0.475, 0.525, 0, 0  0, 0, 0, 1, 0" />
+            </filter>
+        </defs>
+    </svg>
+
     <div id="raden-game-app">
         <!-- Ultra-Fast LCP Pre-rendered Splash Element (< 200ms Paint) -->
         <div style="position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background-color:#FFF8EA;padding:1rem;">

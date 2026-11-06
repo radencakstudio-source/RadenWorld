@@ -83,15 +83,18 @@ export const Hotbar: React.FC<HotbarProps> = React.memo(({ onOpenBackpack, isBac
     const handleMapToggle = (open: boolean) => setIsFullMapOpen(open);
     const handleOpenDlg = () => setIsDialogueOpen(true);
     const handleCloseDlg = () => setIsDialogueOpen(false);
+    const handleDlgActive = (active: boolean) => setIsDialogueOpen(Boolean(active));
 
     EventBus.on('full-map-toggled', handleMapToggle);
     EventBus.on('open-dialogue', handleOpenDlg);
     EventBus.on('close-dialogue', handleCloseDlg);
+    EventBus.on('dialogue-active', handleDlgActive);
 
     return () => {
       EventBus.off('full-map-toggled', handleMapToggle);
       EventBus.off('open-dialogue', handleOpenDlg);
       EventBus.off('close-dialogue', handleCloseDlg);
+      EventBus.off('dialogue-active', handleDlgActive);
     };
   }, []);
 

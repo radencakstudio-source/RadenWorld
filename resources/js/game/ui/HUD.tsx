@@ -110,6 +110,7 @@ export const HUD: React.FC<HUDProps> = React.memo(({
   onTriggerInteraction,
   controlMode = 'pc',
   gold = 2500,
+  diamonds = 0,
   friendsList = [],
   onInspectPlayer,
   onAddFriend,
@@ -170,6 +171,12 @@ export const HUD: React.FC<HUDProps> = React.memo(({
   React.useEffect(() => {
     EventBus.emit('full-map-toggled', isFullMapOpen);
   }, [isFullMapOpen]);
+
+  React.useEffect(() => {
+    if (stats.inHouse && isFullMapOpen) {
+      setIsFullMapOpen(false);
+    }
+  }, [stats.inHouse, isFullMapOpen]);
 
   React.useEffect(() => {
     const handleToggleFullMap = () => {
@@ -625,21 +632,23 @@ export const HUD: React.FC<HUDProps> = React.memo(({
 
         {/* KANAN ATAS */}
         <div className="pointer-events-none flex items-start gap-1 sm:gap-1.5 flex-wrap justify-end select-none max-w-[calc(100dvw-155px)] sm:max-w-none">
-          {/* KOIN EMAS */}
-          <div
-            className="pointer-events-auto clay-card h-8 sm:h-10 flex items-center gap-1.5 px-2 sm:px-2.5 text-black shrink-0"
-            title={`Koin Emas: ${gold.toLocaleString('id-ID')}`}
-          >
-            <div className="w-5 h-5 rounded-md bg-[#FFAE6D] border border-[#5C3A21] flex items-center justify-center shrink-0">
-              <Coins className="w-3 h-3 text-black stroke-[2.5]" />
+          {/* KOIN EMAS (Bisa di-toggle via Pengaturan UI) */}
+          {theme.visibility?.showPlayerStats !== false && (
+            <div
+              className="pointer-events-auto clay-card h-8 sm:h-10 flex items-center gap-1.5 px-2 sm:px-2.5 text-black shrink-0"
+              title={`Koin Emas: ${gold.toLocaleString('id-ID')}`}
+            >
+              <div className="w-5 h-5 rounded-md bg-[#FFAE6D] border border-[#5C3A21] flex items-center justify-center shrink-0">
+                <Coins className="w-3 h-3 text-black stroke-[2.5]" />
+              </div>
+              <div className="flex flex-col text-left leading-none">
+                <span className="text-[7px] sm:text-[8px] text-black uppercase font-bold">KOIN</span>
+                <span className="text-[9px] sm:text-xs font-bold text-black mt-0.5">
+                  {formattedGold}
+                </span>
+              </div>
             </div>
-            <div className="flex flex-col text-left leading-none">
-              <span className="text-[7px] sm:text-[8px] text-black uppercase font-bold">KOIN</span>
-              <span className="text-[9px] sm:text-xs font-bold text-black mt-0.5">
-                {formattedGold}
-              </span>
-            </div>
-          </div>
+          )}
 
           {/* Tombol Status Server */}
           <button
@@ -860,10 +869,10 @@ export const HUD: React.FC<HUDProps> = React.memo(({
         <div
           className={`fixed z-30 pointer-events-auto flex flex-col gap-1 w-[92px] sm:w-[118px] md:w-[138px] ${
             theme.minimapPosition === 'top-left'
-              ? 'top-14 left-3 items-start'
+              ? (theme.visibility?.showPlayerStats !== false ? 'top-14 left-3 items-start' : 'top-3 left-3 items-start')
               : theme.minimapPosition === 'bottom-left'
-              ? 'bottom-24 left-3 items-start'
-              : 'bottom-24 right-3 items-end'
+              ? 'bottom-28 left-3 items-start'
+              : 'bottom-28 right-3 items-end'
           }`}
         >
           <div className="clay-panel w-full overflow-hidden flex flex-col">

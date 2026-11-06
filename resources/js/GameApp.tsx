@@ -1777,12 +1777,10 @@ export const GameApp: React.FC = () => {
 
   return (
     <div
-      className="fixed inset-0 w-full h-full h-[100dvh] overflow-hidden bg-[#FFF8EA] text-black select-none"
+      className="fixed inset-0 w-full h-full h-[100dvh] overflow-hidden select-none"
       style={{
-        filter:
-          settings.theme?.colorBlindMode && settings.theme.colorBlindMode !== 'none'
-            ? 'var(--raden-viewport-filter)'
-            : undefined,
+        backgroundColor: 'var(--raden-panel-bg, #FFF8EA)',
+        color: 'var(--raden-text-color, #000000)',
         fontFamily: 'var(--raden-font-family)',
       }}
     >
@@ -1792,8 +1790,8 @@ export const GameApp: React.FC = () => {
       {/* 2D HTML5 Canvas Game Engine (Phaser 3) */}
       <GameCanvas />
 
-      {/* Sinar Cahaya Mentari dari Atas Kiri Nyorot ke Tengah (Bebas Kotak & Kebal Zoom) */}
-      {!isLoadingScreen && gameState === 'playing' && !playerStats.inHouse && !isMiniGameMode && (
+      {/* Sinar Cahaya Mentari dari Atas Kiri Nyorot ke Tengah (Hanya di mode grafik Sedang/Tinggi) */}
+      {!isLoadingScreen && gameState === 'playing' && !playerStats.inHouse && !isMiniGameMode && settings.graphicsQuality !== 'low' && (
         <SunbeamOverlay />
       )}
 

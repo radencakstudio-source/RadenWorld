@@ -33,6 +33,7 @@ export interface UIElementVisibility {
 
 export interface CustomThemeColors {
   panelBg: string;
+  cardBg?: string;
   panelBorder: string;
   accentPrimary: string;
   accentSecondary: string;
@@ -58,6 +59,7 @@ export const THEME_PRESETS: Record<Exclude<ThemePreset, 'custom'>, { name: strin
     description: 'Nuansa hangat pastel kayu & tembikar khas RadenWorld.',
     colors: {
       panelBg: '#FFF8EA',
+      cardBg: '#FFFDF7',
       panelBorder: '#5C3A21',
       accentPrimary: '#FFAE6D',
       accentSecondary: '#A8E6CF',
@@ -69,10 +71,11 @@ export const THEME_PRESETS: Record<Exclude<ThemePreset, 'custom'>, { name: strin
     description: 'Tampilan malam elegan berlatar arang gelap dan aksen emas neon.',
     colors: {
       panelBg: '#18181B',
-      panelBorder: '#3F3F46',
+      cardBg: '#27272A',
+      panelBorder: '#52525B',
       accentPrimary: '#F59E0B',
       accentSecondary: '#10B981',
-      textColor: '#F4F4F5',
+      textColor: '#FFFFFF',
     },
   },
   cyber_pastel: {
@@ -80,6 +83,7 @@ export const THEME_PRESETS: Record<Exclude<ThemePreset, 'custom'>, { name: strin
     description: 'Kombinasi lavender futuristik dengan mint segar lembut.',
     colors: {
       panelBg: '#F5F3FF',
+      cardBg: '#FAF5FF',
       panelBorder: '#6D28D9',
       accentPrimary: '#C084FC',
       accentSecondary: '#6EE7B7',
@@ -91,6 +95,7 @@ export const THEME_PRESETS: Record<Exclude<ThemePreset, 'custom'>, { name: strin
     description: 'Nuansa alam daun hutan tropis yang menenangkan mata.',
     colors: {
       panelBg: '#F0FDF4',
+      cardBg: '#F7FEE7',
       panelBorder: '#14532D',
       accentPrimary: '#4ADE80',
       accentSecondary: '#86EFAC',
@@ -102,6 +107,7 @@ export const THEME_PRESETS: Record<Exclude<ThemePreset, 'custom'>, { name: strin
     description: 'Biru samudra cerah dengan tepian biru tua menyegarkan.',
     colors: {
       panelBg: '#F0F9FF',
+      cardBg: '#F8FAFC',
       panelBorder: '#0369A1',
       accentPrimary: '#38BDF8',
       accentSecondary: '#7DD3FC',
@@ -114,6 +120,7 @@ export const DEFAULT_THEME_SETTINGS: ThemeSettings = {
   preset: 'cozy_clay',
   customColors: {
     panelBg: '#FFF8EA',
+    cardBg: '#FFFDF7',
     panelBorder: '#5C3A21',
     accentPrimary: '#FFAE6D',
     accentSecondary: '#A8E6CF',
@@ -197,6 +204,7 @@ export function applyThemeToDom(theme: ThemeSettings = DEFAULT_THEME_SETTINGS) {
   const colors = theme.preset === 'custom' ? theme.customColors : (THEME_PRESETS[theme.preset]?.colors || DEFAULT_THEME_SETTINGS.customColors);
 
   root.style.setProperty('--raden-panel-bg', colors.panelBg);
+  root.style.setProperty('--raden-card-bg', colors.cardBg || (theme.preset === 'obsidian_dark' ? '#27272A' : colors.panelBg));
   root.style.setProperty('--raden-panel-border', colors.panelBorder);
   root.style.setProperty('--raden-accent-primary', colors.accentPrimary);
   root.style.setProperty('--raden-accent-secondary', colors.accentSecondary);
@@ -205,13 +213,21 @@ export function applyThemeToDom(theme: ThemeSettings = DEFAULT_THEME_SETTINGS) {
   const fontDef = FONT_FAMILY_MAP[theme.fontFamily] || FONT_FAMILY_MAP.pixel_classic;
   root.style.setProperty('--raden-font-family', fontDef.style);
 
-  const fontScale = theme.fontSize === 'small' ? '0.9' : theme.fontSize === 'large' ? '1.12' : '1';
+  const fontScale = theme.fontSize === 'small' ? '0.88' : theme.fontSize === 'large' ? '1.14' : '1';
   root.style.setProperty('--raden-font-scale', fontScale);
+  root.style.fontSize = `calc(16px * ${fontScale})`;
 
   const fontWeight = theme.fontWeight === 'normal' ? '400' : theme.fontWeight === 'black' ? '900' : '700';
   root.style.setProperty('--raden-font-weight', fontWeight);
 
   const filterInfo = COLORBLIND_INFO[theme.colorBlindMode] || COLORBLIND_INFO.none;
   root.style.setProperty('--raden-viewport-filter', filterInfo.filterStyle);
+
+  // Pasang filter visual ke elemen root & body agar seluruh game (canvas, HUD, modal) terpengaruh filter
+  if (document.body) {
+    document.body.style.filter = filterInfo.filterStyle;
+    document.body.style.backgroundColor = colors.panelBg;
+    document.body.style.color = colors.textColor;
+  }
 }
 

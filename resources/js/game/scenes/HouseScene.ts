@@ -26,9 +26,9 @@ export class HouseScene extends Phaser.Scene {
   private currentAvatar: IAvatarCustomization;
   private playerName: string = 'Petualang';
 
-  // Batas ruangan rumah & ukuran grid: Tepat 1920px x 1080px (16x9 Petak Grid @ 120px)
-  public roomWidth: number = 1920;
-  public roomHeight: number = 1080;
+  // Batas ruangan rumah & ukuran grid: Tepat 3840px x 2160px (32x18 Petak Grid @ 120px)
+  public roomWidth: number = 3840;
+  public roomHeight: number = 2160;
   public readonly tileSize: number = 120;
   private customArchitectPropsGroup: (Phaser.GameObjects.Image | Phaser.GameObjects.GameObject)[] = [];
   private customArchitectTerrainsGroup: Phaser.GameObjects.Graphics[] = [];
@@ -308,10 +308,10 @@ export class HouseScene extends Phaser.Scene {
     // 0. Backdrop area luar rumah (Area Luar Gelap Elegan)
     const outerBg = this.add.graphics();
     outerBg.fillStyle(0x070a12, 1);
-    outerBg.fillRect(-3000, -3000, this.roomWidth + 6000, this.roomHeight + 6000);
+    outerBg.fillRect(-6000, -6000, this.roomWidth + 12000, this.roomHeight + 12000);
     outerBg.setDepth(-999);
 
-    // 1. Lantai Catur Kayu 120x120px Pas di Kotak 1920x1080 (1 draw call)
+    // 1. Lantai Catur Kayu 120x120px Pas di Kotak 3840x2160 (1 draw call)
     const floorTile = this.add.tileSprite(
       this.roomWidth / 2,
       this.roomHeight / 2,
@@ -331,7 +331,7 @@ export class HouseScene extends Phaser.Scene {
     // Dinding Kanan (Luar)
     g.fillRect(this.roomWidth, -wallThick, wallThick, this.roomHeight + wallThick * 2);
     // Dinding Bawah (Luar) dengan celah pintu keluar di tengah
-    const doorW = 200;
+    const doorW = 240;
     const doorStartX = this.roomWidth / 2 - doorW / 2;
     g.fillRect(-wallThick, this.roomHeight, doorStartX + wallThick, wallThick);
     g.fillRect(doorStartX + doorW, this.roomHeight, this.roomWidth - (doorStartX + doorW) + wallThick, wallThick);
@@ -342,40 +342,40 @@ export class HouseScene extends Phaser.Scene {
 
     // Karpet besar di ruang tamu (Tengah)
     g.fillStyle(0xb45309, 0.85);
-    g.fillRoundedRect(this.roomWidth / 2 - 300, 360, 600, 360, 24);
+    g.fillRoundedRect(this.roomWidth / 2 - 450, this.roomHeight / 2 - 250, 900, 500, 28);
     g.lineStyle(3, 0xf59e0b, 0.95);
-    g.strokeRoundedRect(this.roomWidth / 2 - 300, 360, 600, 360, 24);
+    g.strokeRoundedRect(this.roomWidth / 2 - 450, this.roomHeight / 2 - 250, 900, 500, 28);
 
     // Meja kopi di tengah karpet
     g.fillStyle(0x3f1d0b, 1);
-    g.fillRoundedRect(this.roomWidth / 2 - 80, 490, 160, 100, 12);
+    g.fillRoundedRect(this.roomWidth / 2 - 120, this.roomHeight / 2 - 70, 240, 140, 14);
     g.lineStyle(2, 0xd97706, 1);
-    g.strokeRoundedRect(this.roomWidth / 2 - 80, 490, 160, 100, 12);
+    g.strokeRoundedRect(this.roomWidth / 2 - 120, this.roomHeight / 2 - 70, 240, 140, 14);
 
     // Sekat Ruangan Kamar Mandi (Kanan Bawah)
     g.fillStyle(0x180d07, 1);
-    g.fillRect(this.roomWidth - 440, 640, 440, 20);
+    g.fillRect(this.roomWidth - 600, this.roomHeight - 500, 600, 20);
 
     // ==============================================================
     // 1. KAMAR TIDUR (BEDROOM) - Kiri Atas
     // ==============================================================
-    this.bedZone = { x: 200, y: 200 };
+    this.bedZone = { x: 260, y: 240 };
     // Rangka kasur
     g.fillStyle(0x451a03, 1);
-    g.fillRoundedRect(80, 80, 220, 260, 12);
+    g.fillRoundedRect(120, 100, 280, 320, 14);
     // Kasur putih
     g.fillStyle(0xf8fafc, 1);
-    g.fillRoundedRect(92, 92, 196, 236, 8);
+    g.fillRoundedRect(134, 114, 252, 292, 10);
     // Selimut biru
     g.fillStyle(0x2563eb, 1);
-    g.fillRoundedRect(92, 150, 196, 178, 6);
+    g.fillRoundedRect(134, 180, 252, 226, 8);
     // Bantal
     g.fillStyle(0xe2e8f0, 1);
-    g.fillRoundedRect(110, 100, 160, 40, 6);
+    g.fillRoundedRect(160, 124, 200, 48, 8);
 
-    this.add.text(190, 50, '🛏️ TEMPAT TIDUR', {
+    this.add.text(260, 60, '🛏️ TEMPAT TIDUR', {
       fontFamily: '"Chakra Petch", sans-serif',
-      fontSize: '13px',
+      fontSize: '14px',
       color: '#f59e0b',
       fontStyle: 'bold',
       stroke: '#0a0f1d',
@@ -383,22 +383,22 @@ export class HouseScene extends Phaser.Scene {
     }).setOrigin(0.5);
 
     // ==============================================================
-    // 2. LEMARI PAKAIAN (WARDROBE) - Kiri Tengah
+    // 2. LEMARI PAKAIAN (WARDROBE) - Kiri Atas agak ke tengah
     // ==============================================================
-    this.wardrobeZone = { x: 440, y: 140 };
+    this.wardrobeZone = { x: 580, y: 150 };
     // Lemari kayu jati
     g.fillStyle(0x522304, 1);
-    g.fillRoundedRect(360, 50, 160, 130, 10);
+    g.fillRoundedRect(480, 60, 200, 160, 12);
     g.lineStyle(2.5, 0xd97706, 1);
-    g.strokeRoundedRect(360, 50, 160, 130, 10);
+    g.strokeRoundedRect(480, 60, 200, 160, 12);
     // Gagang pintu lemari emas
     g.fillStyle(0xfbbf24, 1);
-    g.fillCircle(430, 115, 5);
-    g.fillCircle(450, 115, 5);
+    g.fillCircle(565, 140, 6);
+    g.fillCircle(595, 140, 6);
 
-    this.add.text(440, 25, '🚪 LEMARI (GANTI AVA)', {
+    this.add.text(580, 30, '🚪 LEMARI (GANTI AVA)', {
       fontFamily: '"Chakra Petch", sans-serif',
-      fontSize: '13px',
+      fontSize: '14px',
       color: '#f59e0b',
       fontStyle: 'bold',
       stroke: '#0a0f1d',
@@ -408,22 +408,22 @@ export class HouseScene extends Phaser.Scene {
     // ==============================================================
     // 3. DAPUR MEMASAK (KITCHEN) - Kanan Atas
     // ==============================================================
-    this.kitchenZone = { x: this.roomWidth - 280, y: 150 };
+    this.kitchenZone = { x: this.roomWidth - 350, y: 180 };
     // Meja konter dapur
     g.fillStyle(0x334155, 1);
-    g.fillRoundedRect(this.roomWidth - 440, 50, 320, 110, 10);
+    g.fillRoundedRect(this.roomWidth - 580, 50, 460, 130, 10);
     // Kompor & api
     g.fillStyle(0x0f172a, 1);
-    g.fillRect(this.roomWidth - 400, 65, 75, 75);
+    g.fillRect(this.roomWidth - 520, 70, 95, 95);
     g.fillStyle(0xef4444, 1);
-    g.fillCircle(this.roomWidth - 363, 102, 14);
+    g.fillCircle(this.roomWidth - 472, 117, 18);
     // Kulkas perak
     g.fillStyle(0x94a3b8, 1);
-    g.fillRoundedRect(this.roomWidth - 200, 30, 75, 150, 6);
+    g.fillRoundedRect(this.roomWidth - 260, 30, 95, 175, 6);
 
-    this.add.text(this.roomWidth - 280, 20, '🍳 DAPUR MEMASAK', {
+    this.add.text(this.roomWidth - 350, 20, '🍳 DAPUR MEMASAK', {
       fontFamily: '"Chakra Petch", sans-serif',
-      fontSize: '13px',
+      fontSize: '14px',
       color: '#f59e0b',
       fontStyle: 'bold',
       stroke: '#0a0f1d',
@@ -433,20 +433,20 @@ export class HouseScene extends Phaser.Scene {
     // ==============================================================
     // 4. KAMAR MANDI (BATHROOM) - Kanan Bawah
     // ==============================================================
-    this.bathroomZone = { x: this.roomWidth - 220, y: 860 };
+    this.bathroomZone = { x: this.roomWidth - 300, y: this.roomHeight - 240 };
     // Lantai keramik porselen biru muda
     g.fillStyle(0x0284c7, 0.35);
-    g.fillRect(this.roomWidth - 430, 660, 420, 410);
+    g.fillRect(this.roomWidth - 590, this.roomHeight - 480, 580, 470);
     // Bathtub porselen
     g.fillStyle(0xf1f5f9, 1);
-    g.fillRoundedRect(this.roomWidth - 320, 840, 200, 100, 16);
+    g.fillRoundedRect(this.roomWidth - 400, this.roomHeight - 260, 280, 140, 16);
     // Air bathtub
     g.fillStyle(0x38bdf8, 0.85);
-    g.fillRoundedRect(this.roomWidth - 308, 852, 176, 76, 10);
+    g.fillRoundedRect(this.roomWidth - 384, this.roomHeight - 244, 248, 108, 10);
 
-    this.add.text(this.roomWidth - 220, 740, '🚿 KAMAR MANDI', {
+    this.add.text(this.roomWidth - 300, this.roomHeight - 380, '🚿 KAMAR MANDI', {
       fontFamily: '"Chakra Petch", sans-serif',
-      fontSize: '13px',
+      fontSize: '14px',
       color: '#f59e0b',
       fontStyle: 'bold',
       stroke: '#0a0f1d',
@@ -456,20 +456,20 @@ export class HouseScene extends Phaser.Scene {
     // ==============================================================
     // 5. PINTU KELUAR KE WORLD (EXIT DOOR) - Tengah Bawah
     // ==============================================================
-    this.exitDoorZone = { x: this.roomWidth / 2, y: this.roomHeight - 30, width: 160, height: 60 };
+    this.exitDoorZone = { x: this.roomWidth / 2, y: this.roomHeight - 30, width: 200, height: 60 };
     // Karpet selamat jalan
     g.fillStyle(0x0f172a, 1);
-    g.fillRoundedRect(this.roomWidth / 2 - 90, this.roomHeight - 65, 180, 50, 6);
+    g.fillRoundedRect(this.roomWidth / 2 - 110, this.roomHeight - 65, 220, 50, 6);
     g.lineStyle(3, 0xf59e0b, 1);
-    g.strokeRoundedRect(this.roomWidth / 2 - 90, this.roomHeight - 65, 180, 50, 6);
+    g.strokeRoundedRect(this.roomWidth / 2 - 110, this.roomHeight - 65, 220, 50, 6);
 
     // Lubang pintu keluar tepat di garis bawah
     g.fillStyle(0x0284c7, 1);
-    g.fillRect(this.roomWidth / 2 - 70, this.roomHeight - 20, 140, 25);
+    g.fillRect(this.roomWidth / 2 - 90, this.roomHeight - 20, 180, 25);
 
     this.add.text(this.roomWidth / 2, this.roomHeight - 45, '🚪 PINTU KELUAR KE WORLD', {
       fontFamily: '"Chakra Petch", sans-serif',
-      fontSize: '13px',
+      fontSize: '14px',
       color: '#fef08a',
       fontStyle: 'bold',
       stroke: '#0a0f1d',
@@ -619,8 +619,8 @@ export class HouseScene extends Phaser.Scene {
     }
 
     // Posisi awal di dalam rumah: pulihkan posisi terakhir jika ada
-    let startX = 960;
-    let startY = 540;
+    let startX = this.roomWidth / 2;
+    let startY = this.roomHeight / 2;
     try {
       const saved = localStorage.getItem(`raden_pos_house_${this.privateRoomId}`);
       if (saved) {

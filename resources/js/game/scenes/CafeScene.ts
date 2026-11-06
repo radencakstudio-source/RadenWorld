@@ -44,9 +44,9 @@ export class CafeScene extends Phaser.Scene {
   private lastX: number = -1;
   private lastY: number = -1;
 
-  // Dimensi Ruangan Tepat 16x9 Grid @ 120px (1920px x 1080px)
-  public readonly roomWidth: number = 1920;  // 16 petak x 120px
-  public readonly roomHeight: number = 1080; // 9 petak x 120px
+  // Dimensi Ruangan Tepat 32x18 Grid @ 120px (3840px x 2160px)
+  public readonly roomWidth: number = 3840;  // 32 petak x 120px
+  public readonly roomHeight: number = 2160; // 18 petak x 120px
   public readonly tileSize: number = 120;
 
   // Zona Interaksi
@@ -441,12 +441,12 @@ export class CafeScene extends Phaser.Scene {
   }
 
   /**
-   * Render Bar Counter Mewah yang Pas Pada Grid (gy: 2, gx: 4..11)
+   * Render Bar Counter Mewah yang Pas Pada Grid (gy: 2, tengah ruangan)
    */
   private renderBarCounter(): void {
     const ts = this.tileSize;
-    const startGx = 4;
-    const countGw = 8; // gx: 4 s/d 11 (lebar 960px)
+    const startGx = Math.floor(this.roomWidth / (2 * ts)) - 5; // gx: 11
+    const countGw = 10; // lebar 1200px
     const gy = 2; // y: 240..360
 
     const barX = startGx * ts;
@@ -487,8 +487,8 @@ export class CafeScene extends Phaser.Scene {
 
     barG.setDepth(barY + barH);
 
-    // 3. Mesin Kopi Espresso Modern di Atas Counter (gx: 5..6)
-    const espX = barX + 180;
+    // 3. Mesin Kopi Espresso Modern di Atas Counter (gx: 12)
+    const espX = barX + 200;
     const espY = barY + 10;
     const espG = this.add.graphics();
     espG.fillStyle(0x0f172a, 1);
@@ -506,7 +506,7 @@ export class CafeScene extends Phaser.Scene {
     // Animasi Uap Kopi Harum Menggepul dari Mesin Espresso
     this.createCoffeeSteam(espX, espY - 50);
 
-    // 4. Etalase Kaca Pastry & Kue Hangat di Tengah (gx: 7.5..8.5)
+    // 4. Etalase Kaca Pastry & Kue Hangat di Tengah
     const pasX = this.roomWidth / 2;
     const pasY = barY + 12;
     const pasG = this.add.graphics();
@@ -524,7 +524,7 @@ export class CafeScene extends Phaser.Scene {
     pasG.fillCircle(pasX + 55, pasY - 18, 9);
     pasG.setDepth(barY + barH + 5);
 
-    // 5. Mesin Kasir Register Canggih di Sisi Kanan (gx: 10)
+    // 5. Mesin Kasir Register Canggih di Sisi Kanan
     const posX = barX + barW - 180;
     const posY = barY + 12;
     const posG = this.add.graphics();
@@ -534,7 +534,7 @@ export class CafeScene extends Phaser.Scene {
     posG.fillRect(posX - 25, posY - 34, 50, 20); // Monitor kasir
     posG.setDepth(barY + barH + 5);
 
-    // 6. Barista Doni NPC Berdiri di Belakang Meja Bar (gx: 8, gy: 1.5)
+    // 6. Barista Doni NPC Berdiri di Belakang Meja Bar
     const barista = this.add.image(this.roomWidth / 2, barY - 20, 'npc-penjaga-pasar')
       .setDisplaySize(96, 168)
       .setDepth(barY + 10);
@@ -547,10 +547,10 @@ export class CafeScene extends Phaser.Scene {
       padding: { x: 8, y: 3 },
     }).setOrigin(0.5, 0.5).setDepth(barY + 25);
 
-    // 7. Daftarkan Rintangan Fisik Meja Bar (gx: 4..11, gy: 2)
+    // 7. Daftarkan Rintangan Fisik Meja Bar
     this.addGridObstacle(startGx, gy, countGw, 1);
 
-    // 8. Deretan Kursi Bar Stool kayu rotan di Depan Meja (gy: 3, pas di tiap kolom)
+    // 8. Deretan Kursi Bar Stool kayu rotan di Depan Meja
     for (let c = startGx; c < startGx + countGw; c++) {
       const stoolCenterX = (c + 0.5) * ts;
       const stoolCenterY = (gy + 1) * ts + 40; // gy: 3
@@ -599,30 +599,27 @@ export class CafeScene extends Phaser.Scene {
   }
 
   /**
-   * Render 8 Set Meja & Kursi Cafe yang Pas Sesuai Grid:
-   * Baris 1: gy: 4.5 (y: 540) pada kolom gx: 2, 5.5, 9.5, 13
-   * Baris 2: gy: 6.5 (y: 780) pada kolom gx: 2, 5.5, 9.5, 13
+   * Render Set Meja & Kursi Cafe yang Pas Sesuai Grid:
+   * 6 Kolom x 4 Baris (24 Set Meja & Kursi Mewah)
    */
   private renderGridDiningTables(): void {
     const ts = this.tileSize;
 
-    // Koordinat pusat grid yang seimbang:
-    // Sisi Kiri (Barat): gx: 2 & gx: 5.5
-    // Sisi Kanan (Timur): gx: 9.5 & gx: 13
-    // Lorong tengah (gx: 7..8) tetap lapang & bebas hambatan untuk jalan ke Doni!
-    const tableGridSpots = [
-      // Baris 1 Meja (gy: 4.5)
-      { gx: 2,   gy: 4.5, hasCroissant: true },
-      { gx: 5.5, gy: 4.5, hasCroissant: false },
-      { gx: 9.5, gy: 4.5, hasCroissant: true },
-      { gx: 13,  gy: 4.5, hasCroissant: false },
+    // Kolom kiri (gx: 4, 8, 12) & Kolom kanan (gx: 19, 23, 27)
+    // Lorong tengah lapang di gx: 14..17
+    const tableGridSpots: Array<{ gx: number; gy: number; hasCroissant: boolean }> = [];
+    const cols = [4, 8, 12, 19, 23, 27];
+    const rows = [5, 8, 11, 14];
 
-      // Baris 2 Meja (gy: 6.5)
-      { gx: 2,   gy: 6.5, hasCroissant: false },
-      { gx: 5.5, gy: 6.5, hasCroissant: true },
-      { gx: 9.5, gy: 6.5, hasCroissant: false },
-      { gx: 13,  gy: 6.5, hasCroissant: true },
-    ];
+    rows.forEach((gy, rIdx) => {
+      cols.forEach((gx, cIdx) => {
+        tableGridSpots.push({
+          gx,
+          gy,
+          hasCroissant: (rIdx + cIdx) % 2 === 0,
+        });
+      });
+    });
 
     tableGridSpots.forEach(({ gx, gy, hasCroissant }) => {
       const centerX = gx * ts + ts / 2;
@@ -730,28 +727,29 @@ export class CafeScene extends Phaser.Scene {
     }
     this.addGridObstacle(1, 2, 1, 1.2);
 
-    // 2. Mesin Vending Minuman Dingin (gx: 14, gy: 2)
+    // 2. Mesin Vending Minuman Dingin di Dinding Kanan (gx: 30, gy: 2)
+    const rightGx = Math.floor(this.roomWidth / ts) - 2;
     if (this.textures.exists('vending-blue')) {
-      this.add.image(14.5 * ts, 2.5 * ts, 'vending-blue').setDisplaySize(100, 180).setDepth(2.5 * ts);
+      this.add.image((rightGx + 0.5) * ts, 2.5 * ts, 'vending-blue').setDisplaySize(100, 180).setDepth(2.5 * ts);
     } else {
       const vG2 = this.add.graphics();
       vG2.fillStyle(0x0284c7, 1);
-      vG2.fillRoundedRect(14 * ts + 15, 2 * ts, 90, 140, 8);
+      vG2.fillRoundedRect(rightGx * ts + 15, 2 * ts, 90, 140, 8);
       vG2.setDepth(2.5 * ts);
     }
-    this.addGridObstacle(14, 2, 1, 1.2);
+    this.addGridObstacle(rightGx, 2, 1, 1.2);
 
-    // 3. Tanaman Indoor Monstera Sudut Kiri Bawah (gx: 1, gy: 7.5)
-    this.renderIndoorPlant(1.5 * ts, 7.8 * ts);
-    this.addGridObstacle(1, 7.5, 1, 1);
+    // 3. Tanaman Indoor Monstera Sudut Kiri Bawah (gx: 1, gy: 15.5)
+    this.renderIndoorPlant(1.5 * ts, (Math.floor(this.roomHeight / ts) - 2.2) * ts);
+    this.addGridObstacle(1, Math.floor(this.roomHeight / ts) - 2.5, 1, 1);
 
-    // 4. Tanaman Indoor Ficus Sudut Kanan Bawah (gx: 14, gy: 7.5)
-    this.renderIndoorPlant(14.5 * ts, 7.8 * ts);
-    this.addGridObstacle(14, 7.5, 1, 1);
+    // 4. Tanaman Indoor Ficus Sudut Kanan Bawah (gx: 30, gy: 15.5)
+    this.renderIndoorPlant((rightGx + 0.5) * ts, (Math.floor(this.roomHeight / ts) - 2.2) * ts);
+    this.addGridObstacle(rightGx, Math.floor(this.roomHeight / ts) - 2.5, 1, 1);
 
-    // 5. Jukebox Musik Klasik di Dinding Kanan (gx: 14, gy: 4)
-    const jx = 14.5 * ts;
-    const jy = 4.5 * ts;
+    // 5. Jukebox Musik Klasik di Dinding Kanan (gx: 30, gy: 8)
+    const jx = (rightGx + 0.5) * ts;
+    const jy = 8.5 * ts;
     const jG = this.add.graphics();
     jG.fillStyle(0x581c87, 1);
     jG.fillRoundedRect(jx - 35, jy - 50, 70, 100, 10);
@@ -769,7 +767,7 @@ export class CafeScene extends Phaser.Scene {
       padding: { x: 4, y: 1 },
     }).setOrigin(0.5, 0.5).setDepth(jy + 5);
 
-    this.addGridObstacle(14, 4, 1, 1);
+    this.addGridObstacle(rightGx, 8, 1, 1);
   }
 
   /**

@@ -51,9 +51,9 @@ export class LibraryScene extends Phaser.Scene {
   private lastX: number = -1;
   private lastY: number = -1;
 
-  // Dimensi Ruangan Tepat 16x9 Grid @ 120px (1920px x 1080px)
-  public readonly roomWidth: number = 1920;  // 16 petak x 120px
-  public readonly roomHeight: number = 1080; // 9 petak x 120px
+  // Dimensi Ruangan Tepat 32x18 Grid @ 120px (3840px x 2160px)
+  public readonly roomWidth: number = 3840;  // 32 petak x 120px
+  public readonly roomHeight: number = 2160; // 18 petak x 120px
   public readonly tileSize: number = 120;
 
   // Zona Interaksi
@@ -107,7 +107,7 @@ export class LibraryScene extends Phaser.Scene {
     this.cameras.main.setBackgroundColor('#2c1810');
     const outerBg = this.add.graphics();
     outerBg.fillStyle(0x2c1810, 1);
-    outerBg.fillRect(-3000, -3000, this.roomWidth + 6000, this.roomHeight + 6000);
+    outerBg.fillRect(-6000, -6000, this.roomWidth + 12000, this.roomHeight + 12000);
     outerBg.setDepth(-999);
 
     // 1. Batas fisika ruangan
@@ -122,12 +122,12 @@ export class LibraryScene extends Phaser.Scene {
       .setOrigin(0, 0)
       .setDepth(-100);
 
-    // 4. Render Karpet Runner Hijau Zamrud (Emerald Runner) di Lorong Tengah (gx: 6..9)
+    // 4. Render Karpet Runner Hijau Zamrud (Emerald Runner) di Lorong Tengah (gx: 14..17)
     const carpet = this.add.graphics();
     carpet.fillStyle(0x064e3b, 0.95);
-    carpet.fillRect(this.roomWidth / 2 - 180, 180, 360, this.roomHeight - 240);
+    carpet.fillRect(this.roomWidth / 2 - 240, 180, 480, this.roomHeight - 240);
     carpet.lineStyle(4, 0xf59e0b, 0.85);
-    carpet.strokeRect(this.roomWidth / 2 - 180, 180, 360, this.roomHeight - 240);
+    carpet.strokeRect(this.roomWidth / 2 - 240, 180, 480, this.roomHeight - 240);
     carpet.setDepth(-90);
 
     // 5. Render Dinding Atas Perpustakaan & Spanduk Kehormatan
@@ -450,18 +450,17 @@ export class LibraryScene extends Phaser.Scene {
 
   /**
    * Render Lemari Buku Sesuai Grid:
-   * 1. Seksi SD: gx: 1.5..4.5 pada gy: 4 & gy: 7
-   * 2. Seksi SMP: gx: 11.5..14.5 pada gy: 4
-   * 3. Seksi SMA: gx: 11.5..14.5 pada gy: 7
+   * 1. Seksi SD: Sisi Barat / Kiri (gx: 3..8) pada gy: 4, 8, 12
+   * 2. Seksi SMP & SMA: Sisi Timur / Kanan (gx: 23..28) pada gy: 4, 8, 12, 15
    */
   private renderClassifiedBookshelves(): void {
     const ts = this.tileSize;
     this.bookshelfZones = [];
 
     // ========================================================================
-    // 1. SEKSI MATERI SD (Sisi Barat / Kiri: gx: 1.5 s/d 4.5)
+    // 1. SEKSI MATERI SD (Sisi Barat / Kiri: gx: 3 s/d 9)
     // ========================================================================
-    this.renderCategoryHeader(360, 2.8 * ts, '🔴 SEKSI BUKU SD (KELAS 1-6)', '#ef4444');
+    this.renderCategoryHeader(660, 2.8 * ts, '🔴 SEKSI BUKU SD (KELAS 1-6)', '#ef4444');
 
     const sdDetails = [
       '📖 Matematika Dasar: Perkalian Cepat, Pecahan Senilai & Luas Bangun Datar',
@@ -470,33 +469,48 @@ export class LibraryScene extends Phaser.Scene {
       '📜 Cerita Nusantara: Legenda Candi Prambanan, Danau Toba & Si Kancil Cerdik',
     ];
 
-    // Baris SD 1 (gy: 3.6)
-    this.renderLongBookshelf(1.5, 3.6, 3, 'sd', 0xef4444);
+    // Baris SD 1 (gy: 4)
+    this.renderLongBookshelf(3, 4, 6, 'sd', 0xef4444);
     this.bookshelfZones.push({
-      x: 3 * ts,
-      y: 4.4 * ts,
+      x: 6 * ts,
+      y: 4.8 * ts,
       category: 'sd',
       title: 'Rak Buku Materi SD: Berhitung & IPA Dasar',
       details: sdDetails,
       expGain: 20,
     });
 
-    // Baris SD 2 (gy: 6.2)
-    this.renderCategoryHeader(360, 5.4 * ts, '🔴 SEKSI DONGENG & LITERASI SD', '#ef4444');
-    this.renderLongBookshelf(1.5, 6.2, 3, 'sd', 0xef4444);
+    // Baris SD 2 (gy: 8)
+    this.renderCategoryHeader(660, 7.2 * ts, '🔴 SEKSI DONGENG & LITERASI SD', '#ef4444');
+    this.renderLongBookshelf(3, 8, 6, 'sd', 0xef4444);
     this.bookshelfZones.push({
-      x: 3 * ts,
-      y: 7.0 * ts,
+      x: 6 * ts,
+      y: 8.8 * ts,
       category: 'sd',
       title: 'Rak Buku Dongeng & Bahasa Indonesia SD',
       details: sdDetails,
       expGain: 20,
     });
 
+    // Baris SD 3 (gy: 12)
+    this.renderCategoryHeader(660, 11.2 * ts, '🔴 SEKSI ENSIKLOPEDIA CILIK SD', '#ef4444');
+    this.renderLongBookshelf(3, 12, 6, 'sd', 0xef4444);
+    this.bookshelfZones.push({
+      x: 6 * ts,
+      y: 12.8 * ts,
+      category: 'sd',
+      title: 'Rak Ensiklopedia Cilik & Budaya Nusantara SD',
+      details: sdDetails,
+      expGain: 25,
+    });
+
     // ========================================================================
-    // 2. SEKSI MATERI SMP (Sisi Timur / Kanan Atas: gx: 11.5 s/d 14.5, gy: 3.6)
+    // 2. SEKSI MATERI SMP & SMA (Sisi Timur / Kanan: gx: 23 s/d 29)
     // ========================================================================
-    this.renderCategoryHeader(this.roomWidth - 360, 2.8 * ts, '🔵 SEKSI BUKU SMP (KELAS 7-9)', '#3b82f6');
+    const rightShelfGx = Math.floor(this.roomWidth / ts) - 9; // gx: 23
+    const rightHeaderX = this.roomWidth - 660;
+
+    this.renderCategoryHeader(rightHeaderX, 2.8 * ts, '🔵 SEKSI BUKU SMP (KELAS 7-9)', '#3b82f6');
 
     const smpDetails = [
       '📐 Aljabar & Geometri: Persamaan Kuadrat, Dalil Pythagoras & Peluang Statistik',
@@ -505,20 +519,31 @@ export class LibraryScene extends Phaser.Scene {
       '🌏 IPS & Geografi: Pergerakan Lempeng Bumi, Iklim Tropis & Jalur Sutra Maritim',
     ];
 
-    this.renderLongBookshelf(11.5, 3.6, 3, 'smp', 0x3b82f6);
+    this.renderLongBookshelf(rightShelfGx, 4, 6, 'smp', 0x3b82f6);
     this.bookshelfZones.push({
-      x: 13 * ts,
-      y: 4.4 * ts,
+      x: (rightShelfGx + 3) * ts,
+      y: 4.8 * ts,
       category: 'smp',
       title: 'Rak Buku Sains & Matematika SMP',
       details: smpDetails,
       expGain: 35,
     });
 
+    this.renderCategoryHeader(rightHeaderX, 7.2 * ts, '🔵 SEKSI SAINS & TEKNOLOGI SMP', '#3b82f6');
+    this.renderLongBookshelf(rightShelfGx, 8, 6, 'smp', 0x3b82f6);
+    this.bookshelfZones.push({
+      x: (rightShelfGx + 3) * ts,
+      y: 8.8 * ts,
+      category: 'smp',
+      title: 'Rak Eksperimen Fisika & Robotika SMP',
+      details: smpDetails,
+      expGain: 40,
+    });
+
     // ========================================================================
-    // 3. SEKSI MATERI SMA (Sisi Timur / Kanan Bawah: gx: 11.5 s/d 14.5, gy: 6.2)
+    // 3. SEKSI MATERI SMA (Sisi Timur / Kanan Bawah: gy: 12 & gy: 15)
     // ========================================================================
-    this.renderCategoryHeader(this.roomWidth - 360, 5.4 * ts, '🟢 SEKSI BUKU SMA (KELAS 10-12)', '#10b981');
+    this.renderCategoryHeader(rightHeaderX, 11.2 * ts, '🟢 SEKSI BUKU SMA (KELAS 10-12)', '#10b981');
 
     const smaDetails = [
       '📊 Kalkulus Lanjut: Limit Fungsi, Turunan Diferensial & Integral Parsial',
@@ -527,14 +552,25 @@ export class LibraryScene extends Phaser.Scene {
       '📈 Ekonomi & Sosiologi: Elastisitas Pasar, Kebijakan Fiskal Moneter & Teori Sosial',
     ];
 
-    this.renderLongBookshelf(11.5, 6.2, 3, 'sma', 0x10b981);
+    this.renderLongBookshelf(rightShelfGx, 12, 6, 'sma', 0x10b981);
     this.bookshelfZones.push({
-      x: 13 * ts,
-      y: 7.0 * ts,
+      x: (rightShelfGx + 3) * ts,
+      y: 12.8 * ts,
       category: 'sma',
       title: 'Rak Ensiklopedia & Kalkulus Lanjut SMA',
       details: smaDetails,
       expGain: 50,
+    });
+
+    this.renderCategoryHeader(rightHeaderX, 14.2 * ts, '🟢 SEKSI RISET & OLIMPIADE SMA', '#10b981');
+    this.renderLongBookshelf(rightShelfGx, 15, 6, 'sma', 0x10b981);
+    this.bookshelfZones.push({
+      x: (rightShelfGx + 3) * ts,
+      y: 15.8 * ts,
+      category: 'sma',
+      title: 'Rak Riset Ilmiah & Olimpiade Sains SMA',
+      details: smaDetails,
+      expGain: 60,
     });
   }
 
@@ -606,22 +642,23 @@ export class LibraryScene extends Phaser.Scene {
 
   /**
    * Render Meja Belajar Panjang (Reading Desk) dengan Banker's Lamp di Tengah
-   * Posisi: gx: 6.5..9.5 pada gy: 5 & gy: 8
    */
   private renderStudyReadingDesks(): void {
     const ts = this.tileSize;
 
     const deskRows = [
-      { gy: 4.0 },
-      { gy: 6.2 },
+      { gy: 5 },
+      { gy: 8 },
+      { gy: 11 },
+      { gy: 14 },
     ];
 
     deskRows.forEach(({ gy }) => {
-      const startX = 6.8 * ts;
-      const startY = gy * ts;
+      const centerX = this.roomWidth / 2;
       const deskW = 3 * ts - 40;
       const deskH = ts - 20;
-      const centerX = startX + deskW / 2;
+      const startX = centerX - deskW / 2;
+      const startY = gy * ts;
       const centerY = startY + deskH / 2;
 
       // Karpet meja belajar
@@ -736,8 +773,9 @@ export class LibraryScene extends Phaser.Scene {
 
     this.addGridObstacle(1, 2, 1, 1);
 
-    // 2. Model Kerangka Anatomi Edukatif di Sudut Kanan (gx: 14.5, gy: 2)
-    const sx = 14.5 * ts;
+    // 2. Model Kerangka Anatomi Edukatif di Sudut Kanan (gx: 30, gy: 2)
+    const rightGx = Math.floor(this.roomWidth / ts) - 2;
+    const sx = (rightGx + 0.5) * ts;
     const sy = 2.4 * ts;
     const sG = this.add.graphics();
     sG.fillStyle(0x020617, 0.4);
@@ -753,7 +791,7 @@ export class LibraryScene extends Phaser.Scene {
     sG.fillRect(sx + 2, sy + 4, 4, 18);
     sG.setDepth(sy);
 
-    this.addGridObstacle(14, 2, 1, 1);
+    this.addGridObstacle(rightGx, 2, 1, 1);
   }
 
   /**

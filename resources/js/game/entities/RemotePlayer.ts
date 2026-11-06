@@ -106,6 +106,7 @@ export class RemotePlayer extends Entity {
       if (this.fishingGraphics) {
         this.fishingGraphics.destroy();
       }
+      this.cleanupRemoteKite();
     });
   }
 
@@ -149,6 +150,139 @@ export class RemotePlayer extends Entity {
 
   public getFishingState(): string {
     return this.fishingState;
+  }
+
+  // Status Sinkronisasi Layang-Layang Multiplayer
+  private remoteKiteContainer: Phaser.GameObjects.Container | null = null;
+  private remoteKiteStringGraphics: Phaser.GameObjects.Graphics | null = null;
+  private remoteKiteBodyGraphics: Phaser.GameObjects.Graphics | null = null;
+  private remoteKiteTailGraphics: Phaser.GameObjects.Graphics | null = null;
+  private isFlyingKite: boolean = false;
+  private remoteKiteX: number = 0;
+  private remoteKiteY: number = 0;
+  private remoteKiteTilt: number = 0;
+  private remoteKiteTargetX: number = 0;
+  private remoteKiteTargetY: number = 0;
+  private remoteKiteTargetTilt: number = 0;
+  private remoteKiteTailNodes: { x: number; y: number }[] = [];
+
+  public setKiteState(isFlying: boolean, kiteX?: number, kiteY?: number, kiteTilt?: number): void {
+    this.isFlyingKite = Boolean(isFlying);
+    if (this.isFlyingKite) {
+      const tx = typeof kiteX === 'number' ? kiteX : this.x;
+      const ty = typeof kiteY === 'number' ? kiteY : (this.y - 320);
+      const tt = typeof kiteTilt === 'number' ? kiteTilt : 0;
+
+      this.remoteKiteTargetX = tx;
+      this.remoteKiteTargetY = ty;
+      this.remoteKiteTargetTilt = tt;
+
+      if (this.remoteKiteX === 0 && this.remoteKiteY === 0) {
+        this.remoteKiteX = tx;
+        this.remoteKiteY = ty;
+        this.remoteKiteTilt = tt;
+      }
+
+      if (!this.remoteKiteContainer || !this.remoteKiteContainer.scene) {
+        this.setupRemoteKiteVisuals();
+      }
+    } else {
+      this.cleanupRemoteKite();
+    }
+  }
+
+  public getKiteState(): boolean {
+    return this.isFlyingKite;
+  }
+
+  private setupRemoteKiteVisuals(): void {
+    if (!this.scene) return;
+    if (!this.remoteKiteStringGraphics || !this.remoteKiteStringGraphics.scene) {
+      this.remoteKiteStringGraphics = this.scene.add.graphics();
+      this.remoteKiteStringGraphics.setDepth(99990);
+    }
+    if (this.remoteKiteContainer) {
+      this.remoteKiteContainer.destroy();
+    }
+    this.remoteKiteContainer = this.scene.add.container(this.remoteKiteX, this.remoteKiteY);
+    this.remoteKiteContainer.setDepth(99995);
+
+    this.remoteKiteBodyGraphics = this.scene.add.graphics();
+    this.remoteKiteContainer.add(this.remoteKiteBodyGraphics);
+    this.drawRemoteKiteBody(this.remoteKiteBodyGraphics);
+
+    this.remoteKiteTailGraphics = this.scene.add.graphics();
+    this.remoteKiteContainer.add(this.remoteKiteTailGraphics);
+
+    this.remoteKiteTailNodes = [];
+    for (let i = 0; i < 9; i++) {
+      this.remoteKiteTailNodes.push({ x: 0, y: 48 + i * 14 });
+    }
+  }
+
+  private cleanupRemoteKite(): void {
+    if (this.remoteKiteStringGraphics) {
+      this.remoteKiteStringGraphics.clear();
+      this.remoteKiteStringGraphics.destroy();
+      this.remoteKiteStringGraphics = null;
+    }
+    if (this.remoteKiteContainer) {
+      this.remoteKiteContainer.destroy();
+      this.remoteKiteContainer = null;
+      this.remoteKiteBodyGraphics = null;
+      this.remoteKiteTailGraphics = null;
+    }
+    this.remoteKiteX = 0;
+    this.remoteKiteY = 0;
+    this.remoteKiteTilt = 0;
+  }
+
+  private drawRemoteKiteBody(g: Phaser.GameObjects.Graphics): void {
+    g.clear();
+    const top = { x: 0, y: -48 };
+    const bottom = { x: 0, y: 48 };
+    const left = { x: -38, y: -10 };
+    const right = { x: 38, y: -10 };
+    const center = { x: 0, y: -10 };
+
+    // 4 Sayap warna-warni layangan nusantara
+    g.fillStyle(0xef4444, 0.98); // Kiri Atas: Merah
+    g.fillTriangle(top.x, top.y, left.x, left.y, center.x, center.y);
+
+    g.fillStyle(0xf59e0b, 0.98); // Kanan Atas: Emas
+    g.fillTriangle(top.x, top.y, right.x, right.y, center.x, center.y);
+
+    g.fillStyle(0x06b6d4, 0.98); // Kiri Bawah: Biru
+    g.fillTriangle(left.x, left.y, bottom.x, bottom.y, center.x, center.y);
+
+    g.fillStyle(0x10b981, 0.98); // Kanan Bawah: Hijau
+    g.fillTriangle(right.x, right.y, bottom.x, bottom.y, center.x, center.y);
+
+    // Garis Pinggir Luar (Outline Clay-Pixel)
+    g.lineStyle(2.5, 0x1e293b, 1);
+    g.beginPath();
+    g.moveTo(top.x, top.y);
+    g.lineTo(right.x, right.y);
+    g.lineTo(bottom.x, bottom.y);
+    g.lineTo(left.x, left.y);
+    g.closePath();
+    g.strokePath();
+
+    // Rangka Bambu Silang
+    g.lineStyle(2.5, 0x78350f, 1);
+    g.beginPath();
+    g.moveTo(top.x, top.y);
+    g.lineTo(bottom.x, bottom.y);
+    g.strokePath();
+
+    g.beginPath();
+    g.moveTo(left.x, left.y);
+    g.lineTo(right.x, right.y);
+    g.strokePath();
+
+    // Ikatan benang intan putih di pusat
+    g.fillStyle(0xffffff, 1);
+    g.fillCircle(center.x, center.y, 4);
   }
 
   public getJumpVisualStage(): JumpVisualStage {
@@ -496,6 +630,9 @@ export class RemotePlayer extends Entity {
 
     // 4. Update visual memancing pemain lain (Multiplayer Fishing Sync)
     this.updateFishing(time, delta);
+
+    // 5. Update visual layang-layang pemain lain (Multiplayer Kite Sync)
+    this.updateKite(time, delta);
   }
 
   /**
@@ -595,6 +732,82 @@ export class RemotePlayer extends Entity {
       this.fishingGraphics.fillStyle(0xffffff, 1.0);
       this.fishingGraphics.fillRect(this.x - 2, alertY - 8, 4, 10);
       this.fishingGraphics.fillCircle(this.x, alertY + 6, 2.5);
+    }
+  }
+
+  /**
+   * Mengupdate fisika, ayunan angin, ekor, dan benang layang-layang pemain lain
+   */
+  private updateKite(time: number, delta: number): void {
+    if (!this.isFlyingKite || !this.remoteKiteContainer) {
+      if (this.remoteKiteStringGraphics) this.remoteKiteStringGraphics.clear();
+      return;
+    }
+
+    const dt = delta / 1000;
+    // Interpolasi posisi mulus dari data jaringan
+    this.remoteKiteX += (this.remoteKiteTargetX - this.remoteKiteX) * Math.min(1, dt * 10);
+    this.remoteKiteY += (this.remoteKiteTargetY - this.remoteKiteY) * Math.min(1, dt * 10);
+    this.remoteKiteTilt += (this.remoteKiteTargetTilt - this.remoteKiteTilt) * Math.min(1, dt * 10);
+
+    this.remoteKiteContainer.setPosition(this.remoteKiteX, this.remoteKiteY);
+    this.remoteKiteContainer.setRotation(this.remoteKiteTilt);
+
+    // Update Ekor Layang-layang
+    if (this.remoteKiteTailGraphics) {
+      this.remoteKiteTailGraphics.clear();
+      let parentX = 0;
+      let parentY = 48;
+      const ribbonColors = [0xef4444, 0xf59e0b, 0x10b981, 0x06b6d4, 0xec4899, 0xa855f7];
+
+      for (let i = 0; i < this.remoteKiteTailNodes.length; i++) {
+        const segTime = time * 0.0045 - i * 0.55;
+        const curX = Math.sin(segTime) * (10 + i * 4);
+        const curY = parentY + 14;
+
+        this.remoteKiteTailGraphics.lineStyle(2, 0xffffff, 0.9);
+        this.remoteKiteTailGraphics.beginPath();
+        this.remoteKiteTailGraphics.moveTo(parentX, parentY);
+        this.remoteKiteTailGraphics.lineTo(curX, curY);
+        this.remoteKiteTailGraphics.strokePath();
+
+        const color = ribbonColors[i % ribbonColors.length];
+        this.remoteKiteTailGraphics.fillStyle(color, 1);
+        this.remoteKiteTailGraphics.fillTriangle(curX - 7, curY, curX + 7, curY, curX, curY + 7);
+
+        parentX = curX;
+        parentY = curY;
+      }
+    }
+
+    // Tali Benang Layang-layang dari tangan remote player ke layangan di langit
+    if (this.remoteKiteStringGraphics) {
+      this.remoteKiteStringGraphics.clear();
+      this.remoteKiteStringGraphics.setDepth(99990);
+
+      const facingLeft = this.currentDirection === 'left';
+      const handX = this.x + (facingLeft ? -10 : 10);
+      const handY = this.y - 26;
+      const kiteTieX = this.remoteKiteX;
+      const kiteTieY = this.remoteKiteY - 10;
+
+      const midX = (handX + kiteTieX) * 0.5 + Math.sin(time * 0.0025) * 12;
+      const midY = (handY + kiteTieY) * 0.5 + 20 + Math.cos(time * 0.002) * 8;
+
+      this.remoteKiteStringGraphics.lineStyle(1.5, 0xf1f5f9, 0.85);
+      const curve = new Phaser.Curves.QuadraticBezier(
+        new Phaser.Math.Vector2(handX, handY),
+        new Phaser.Math.Vector2(midX, midY),
+        new Phaser.Math.Vector2(kiteTieX, kiteTieY)
+      );
+      const curvePoints = curve.getPoints(12);
+
+      this.remoteKiteStringGraphics.beginPath();
+      this.remoteKiteStringGraphics.moveTo(curvePoints[0].x, curvePoints[0].y);
+      for (let i = 1; i < curvePoints.length; i++) {
+        this.remoteKiteStringGraphics.lineTo(curvePoints[i].x, curvePoints[i].y);
+      }
+      this.remoteKiteStringGraphics.strokePath();
     }
   }
 

@@ -1336,6 +1336,14 @@ export class WorldScene extends Phaser.Scene {
         remote.setFishingState(data.state, data.bobberPos, data.targetBobberPos);
       }
     });
+
+    this.networkManager.onPlayerKite((data) => {
+      if (!this.sys || !this.sys.displayList || !this.scene.isActive()) return;
+      const remote = this.remotePlayers.get(data.id);
+      if (remote && remote.active) {
+        remote.setKiteState(data.isFlying, data.kiteX, data.kiteY, data.kiteTilt);
+      }
+    });
   }
 
   private addRemotePlayer(p: IPlayerData): void {
@@ -1406,6 +1414,11 @@ export class WorldScene extends Phaser.Scene {
       if ((p as any).fishing) {
         const f = (p as any).fishing;
         remote.setFishingState(f.state, f.bobberPos, f.targetBobberPos);
+      }
+
+      if ((p as any).kite) {
+        const k = (p as any).kite;
+        remote.setKiteState(k.isFlying, k.kiteX, k.kiteY, k.kiteTilt);
       }
     } catch (err) {
       console.warn('[WorldScene] Gagal menambahkan remote player:', err);

@@ -29,6 +29,18 @@ export interface IPlayerData {
   diamonds?: number;
   location?: string;
   serverCode?: string;
+  fishing?: {
+    state: string;
+    bobberPos?: { x: number; y: number };
+    targetBobberPos?: { x: number; y: number };
+    direction?: Direction;
+  } | null;
+  kite?: {
+    isFlying: boolean;
+    kiteX?: number;
+    kiteY?: number;
+    kiteTilt?: number;
+  } | null;
 }
 
 export interface IMonsterData {

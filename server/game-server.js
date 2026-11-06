@@ -771,6 +771,28 @@ io.on('connection', (socket) => {
     });
   });
 
+  // 7d. Event sinkronisasi menerbangkan layang-layang (Multiplayer Kite Sync)
+  socket.on('player:kite', (data) => {
+    const player = players.get(socket.id);
+    if (!player) return;
+    const currentRoom = player.room || 'world';
+
+    player.kite = (data && data.isFlying) ? {
+      isFlying: true,
+      kiteX: typeof data.kiteX === 'number' ? data.kiteX : player.x,
+      kiteY: typeof data.kiteY === 'number' ? data.kiteY : (player.y - 320),
+      kiteTilt: typeof data.kiteTilt === 'number' ? data.kiteTilt : 0,
+    } : null;
+
+    socket.to(currentRoom).emit('player:kite', {
+      id: socket.id,
+      isFlying: !!(data && data.isFlying),
+      kiteX: player.kite ? player.kite.kiteX : 0,
+      kiteY: player.kite ? player.kite.kiteY : 0,
+      kiteTilt: player.kite ? player.kite.kiteTilt : 0,
+    });
+  });
+
   // 8. Event status AFK pemain
   socket.on('player:afk', (data) => {
     const player = players.get(socket.id);

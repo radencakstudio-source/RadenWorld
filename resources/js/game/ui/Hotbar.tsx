@@ -293,7 +293,7 @@ export const Hotbar: React.FC<HotbarProps> = React.memo(({ onOpenBackpack, isBac
         <div className="clay-panel flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1 sm:py-1.5 shadow-lg pointer-events-auto select-none border-2 border-[#5C3A21] bg-[#FFF8EA] animate-in fade-in zoom-in-95 duration-150">
           {/* Status Mode */}
           <div className="flex items-center gap-1 text-[9.5px] sm:text-[11px] font-black text-black">
-            <span>{kiteState.mode === 'kite' ? '🪁 KENDALI LAYANGAN (WASD/Analog)' : '🚶 KENDALI KARAKTER'}</span>
+            <span>{kiteState.mode === 'kite' ? '🪁 KEMUDI LAYANGAN (Kamera Fokus)' : '🚶 JALAN KARAKTER (Kamera Pemain)'}</span>
           </div>
 
           <div className="w-[1.5px] h-4 bg-[#5C3A21]/40 mx-0.5" />

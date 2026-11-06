@@ -67,6 +67,7 @@ export class NetworkManager {
     friendResponse: ((data: any) => void)[];
     playerJumped: ((data: { id: string; jumpCount: number; x: number; y: number }) => void)[];
     playerFishing: ((data: { id: string; state: string; bobberPos?: { x: number; y: number }; targetBobberPos?: { x: number; y: number }; direction?: Direction }) => void)[];
+    playerKite: ((data: { id: string; isFlying: boolean; kiteX: number; kiteY: number; kiteTilt: number }) => void)[];
     playerFollowedBy: ((data: any) => void)[];
     playerUnfollowedBy: ((data: any) => void)[];
   } = {
@@ -83,6 +84,7 @@ export class NetworkManager {
     friendResponse: [],
     playerJumped: [],
     playerFishing: [],
+    playerKite: [],
     playerFollowedBy: [],
     playerUnfollowedBy: [],
   };
@@ -475,6 +477,7 @@ export class NetworkManager {
     this.socket.off('friend:response_result');
     this.socket.off('player:jumped');
     this.socket.off('player:fishing');
+    this.socket.off('player:kite');
     this.socket.off('player:followed_by');
     this.socket.off('player:unfollowed_by');
     this.socket.off('server:stats');
@@ -511,6 +514,10 @@ export class NetworkManager {
 
     this.socket.on('player:fishing', (data: { id: string; state: string; bobberPos?: { x: number; y: number }; targetBobberPos?: { x: number; y: number }; direction?: Direction }) => {
       this.listeners.playerFishing.forEach((cb) => cb(data));
+    });
+
+    this.socket.on('player:kite', (data: { id: string; isFlying: boolean; kiteX: number; kiteY: number; kiteTilt: number }) => {
+      this.listeners.playerKite.forEach((cb) => cb(data));
     });
 
     this.socket.on('player:followed_by', (data: any) => {
@@ -990,6 +997,22 @@ export class NetworkManager {
   }
 
   /**
+   * Mengirim sinkronisasi status terbang layang-layang ke server
+   */
+  public sendKite(isFlying: boolean, kiteX: number = 0, kiteY: number = 0, kiteTilt: number = 0): void {
+    if (!this.socket || !this.isConnected) return;
+    this.socket.emit('player:kite', { isFlying, kiteX, kiteY, kiteTilt });
+  }
+
+  /**
+   * Mendaftarkan callback saat ada pemain lain yang menerbangkan/mengendalikan layang-layang
+   */
+  public onPlayerKite(callback: (data: { id: string; isFlying: boolean; kiteX: number; kiteY: number; kiteTilt: number }) => void): void {
+    this.listeners.playerKite = [callback];
+    this.bindSocketListeners();
+  }
+
+  /**
    * Mengirim chunk rekaman suara untuk Proximity Voice Chat (Radius ±5 petak)
    */
   public sendVoiceChunk(audio: ArrayBuffer | Blob, x: number, y: number): void {
@@ -1137,6 +1160,7 @@ export class NetworkManager {
     const preservedPlayerAfk = this.listeners.playerAfk || [];
     const preservedPlayerJumped = this.listeners.playerJumped || [];
     const preservedPlayerFishing = this.listeners.playerFishing || [];
+    const preservedPlayerKite = this.listeners.playerKite || [];
     const preservedPlayerExpression = this.listeners.playerExpression || [];
     const preservedPlayerFollowedBy = this.listeners.playerFollowedBy || [];
     const preservedPlayerUnfollowedBy = this.listeners.playerUnfollowedBy || [];
@@ -1155,6 +1179,7 @@ export class NetworkManager {
       friendResponse: preservedFriendResponse,
       playerJumped: preservedPlayerJumped,
       playerFishing: preservedPlayerFishing,
+      playerKite: preservedPlayerKite,
       playerFollowedBy: preservedPlayerFollowedBy,
       playerUnfollowedBy: preservedPlayerUnfollowedBy,
     };

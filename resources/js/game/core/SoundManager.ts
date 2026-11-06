@@ -20,6 +20,7 @@ export class SoundManager {
   private bgmAudio: HTMLAudioElement | null = null;
   private bgmUrl: string = '/assets/audio/bgm/RadenWorld%20Music.mp3';
   private isBgmPlaying: boolean = false;
+  private isBgmSuppressed: boolean = false;
   private userInteracted: boolean = false;
 
   private constructor() {
@@ -54,7 +55,7 @@ export class SoundManager {
         }
 
         // 2. Putar BGM jika aktif dan belum berbunyi (dilakukan di event stack langsung tanpa setTimeout)
-        if (this.shouldPlayBgm && !this.isMuted) {
+        if (this.shouldPlayBgm && !this.isMuted && !this.isBgmSuppressed) {
           this.initBgm();
           if (this.bgmAudio && this.bgmAudio.paused) {
             this.bgmAudio.play().then(() => {
@@ -164,11 +165,36 @@ export class SoundManager {
   }
 
   /**
+   * Menekan (suppress) BGM default RadenWorld (misal saat memasuki Cafe yang memutar Jukebox)
+   */
+  public suppressBGM(suppress: boolean): void {
+    this.isBgmSuppressed = suppress;
+    if (suppress) {
+      if (this.bgmAudio && !this.bgmAudio.paused) {
+        this.bgmAudio.pause();
+        this.isBgmPlaying = false;
+      }
+    } else {
+      if (this.shouldPlayBgm && !this.isMuted && this.bgmAudio && this.bgmAudio.paused) {
+        this.bgmAudio.play().then(() => {
+          this.isBgmPlaying = true;
+        }).catch(() => {});
+      }
+    }
+  }
+
+  public getIsBgmSuppressed(): boolean {
+    return this.isBgmSuppressed;
+  }
+
+  /**
    * Memulai memutar Musik Latar (BGM) resmi RadenWorld
    */
   public playBGM(customUrl?: string): void {
     if (typeof window === 'undefined') return;
     this.shouldPlayBgm = true;
+    if (this.isBgmSuppressed) return; // Jangan putar BGM jika sedang di-suppress (misal di Cafe Jukebox)
+
     this.initBgm();
     if (!this.bgmAudio) return;
 

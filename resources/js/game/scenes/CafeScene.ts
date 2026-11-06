@@ -31,6 +31,7 @@ import { RemotePlayer } from '../entities/RemotePlayer';
 import { NetworkManager } from '../core/NetworkManager';
 import { EventBus } from '../core/EventBus';
 import { SoundManager } from '../core/SoundManager';
+import { JukeboxManager } from '../core/JukeboxManager';
 import { CameraController } from '../controllers/CameraController';
 import { IAvatarCustomization, IPlayerData } from '../types';
 
@@ -52,6 +53,7 @@ export class CafeScene extends Phaser.Scene {
   // Zona Interaksi
   private exitDoorZone!: { x: number; y: number; width: number; height: number };
   private barCounterZone!: { x: number; y: number };
+  private jukeboxZone: { x: number; y: number } = { x: 0, y: 0 };
   private returnX: number = 420;
   private returnY: number = 3180;
 
@@ -59,8 +61,9 @@ export class CafeScene extends Phaser.Scene {
   private isTransitioning: boolean = false;
   private obstacles!: Phaser.Physics.Arcade.StaticGroup;
 
-  // Partikel uap kopi
+  // Partikel uap kopi & efek musik jukebox
   private steamParticles: Phaser.GameObjects.Arc[] = [];
+  private noteParticleTimer: Phaser.Time.TimerEvent | null = null;
 
   constructor() {
     super({ key: 'CafeScene' });
@@ -187,7 +190,16 @@ export class CafeScene extends Phaser.Scene {
     EventBus.emit('location-updated', 'KAWASAN KULINER: RADEN CAFE & LOUNGE (INTERIOR)');
     EventBus.emit('url-changed', '/world/cafe');
 
-    // 14. Event Bus Listeners
+    // 14. Inisialisasi Jukebox musik cafe (menggantikan BGM default)
+    JukeboxManager.getInstance().startInCafe();
+    this.noteParticleTimer = this.time.addEvent({
+      delay: 1300,
+      callback: this.spawnJukeboxNoteParticle,
+      callbackScope: this,
+      loop: true,
+    });
+
+    // 15. Event Bus Listeners
     const onSendChat = (text: string) => {
       if (this.player && this.player.active && this.player.scene) {
         this.player.showSpeechBubble(text);
@@ -226,6 +238,12 @@ export class CafeScene extends Phaser.Scene {
     EventBus.on('update-player-name', onUpdateLocalPlayerName);
 
     const cleanupCafe = () => {
+      JukeboxManager.getInstance().stopInCafe();
+      if (this.noteParticleTimer) {
+        this.noteParticleTimer.destroy();
+        this.noteParticleTimer = null;
+      }
+
       EventBus.off('send-chat', onSendChat);
       EventBus.off('trigger-expression', onTriggerExpression);
       EventBus.off('trigger-interaction', onTriggerInteraction);
@@ -750,6 +768,8 @@ export class CafeScene extends Phaser.Scene {
     // 5. Jukebox Musik Klasik di Dinding Kanan (gx: 30, gy: 8)
     const jx = (rightGx + 0.5) * ts;
     const jy = 8.5 * ts;
+    this.jukeboxZone = { x: jx, y: jy };
+
     const jG = this.add.graphics();
     jG.fillStyle(0x581c87, 1);
     jG.fillRoundedRect(jx - 35, jy - 50, 70, 100, 10);
@@ -759,7 +779,7 @@ export class CafeScene extends Phaser.Scene {
     jG.fillCircle(jx, jy - 15, 18);
     jG.setDepth(jy);
 
-    this.add.text(jx, jy - 65, '🎵 JUKEBOX', {
+    const jukeboxLabel = this.add.text(jx, jy - 65, '🎵 JUKEBOX', {
       fontFamily: 'Chakra Petch, sans-serif',
       fontSize: '10px',
       color: '#fef08a',
@@ -767,7 +787,54 @@ export class CafeScene extends Phaser.Scene {
       padding: { x: 4, y: 1 },
     }).setOrigin(0.5, 0.5).setDepth(jy + 5);
 
+    // Area interaktif klik jukebox
+    const jHitArea = this.add.zone(jx, jy, 80, 110)
+      .setOrigin(0.5, 0.5)
+      .setInteractive({ useHandCursor: true });
+    jHitArea.on('pointerdown', () => {
+      EventBus.emit('open-jukebox');
+    });
+    jukeboxLabel.setInteractive({ useHandCursor: true }).on('pointerdown', () => {
+      EventBus.emit('open-jukebox');
+    });
+
     this.addGridObstacle(rightGx, 8, 1, 1);
+  }
+
+  /**
+   * Partikel Not Balok Melayang Saat Jukebox Menyala
+   */
+  private spawnJukeboxNoteParticle(): void {
+    if (!JukeboxManager.getInstance().getIsPlaying()) return;
+    if (!this.jukeboxZone.x || !this.jukeboxZone.y) return;
+
+    const symbols = ['♪', '♫', '♬', '♩'];
+    const sym = symbols[Math.floor(Math.random() * symbols.length)];
+    const colors = ['#f59e0b', '#ec4899', '#38bdf8', '#a855f7', '#4ade80', '#fbbf24'];
+    const col = colors[Math.floor(Math.random() * colors.length)];
+
+    const offsetX = (Math.random() - 0.5) * 44;
+    const noteText = this.add.text(this.jukeboxZone.x + offsetX, this.jukeboxZone.y - 45, sym, {
+      fontFamily: 'Chakra Petch, sans-serif',
+      fontSize: `${Phaser.Math.Between(16, 26)}px`,
+      color: col,
+      stroke: '#000000',
+      strokeThickness: 3,
+    }).setOrigin(0.5, 0.5).setDepth(this.jukeboxZone.y + 25);
+
+    this.tweens.add({
+      targets: noteText,
+      x: noteText.x + (Math.random() - 0.5) * 60,
+      y: noteText.y - Phaser.Math.Between(75, 120),
+      alpha: { from: 1, to: 0 },
+      scale: { from: 0.8, to: 1.5 },
+      angle: Phaser.Math.Between(-30, 30),
+      duration: Phaser.Math.Between(1600, 2400),
+      ease: 'Cubic.easeOut',
+      onComplete: () => {
+        noteText.destroy();
+      },
+    });
   }
 
   /**
@@ -931,11 +998,14 @@ export class CafeScene extends Phaser.Scene {
 
     const distExit = Phaser.Math.Distance.Between(px, py, this.exitDoorZone.x, this.exitDoorZone.y);
     const distBar = Phaser.Math.Distance.Between(px, py, this.barCounterZone.x, this.barCounterZone.y);
+    const distJukebox = Phaser.Math.Distance.Between(px, py, this.jukeboxZone.x, this.jukeboxZone.y);
 
     let prompt: string | null = null;
 
     if (distExit < 140) {
       prompt = 'TEKAN [E] / KLIK UNTUK KEMBALI KE KOTA 🚪';
+    } else if (distJukebox < 150) {
+      prompt = 'TEKAN [E] / KLIK UNTUK MEMUTAR JUKEBOX 🎵';
     } else if (distBar < 150) {
       prompt = 'TEKAN [E] / KLIK UNTUK MEMESAN KOPI KE BARISTA DONI ☕';
     }
@@ -957,9 +1027,12 @@ export class CafeScene extends Phaser.Scene {
 
     const distExit = Phaser.Math.Distance.Between(px, py, this.exitDoorZone.x, this.exitDoorZone.y);
     const distBar = Phaser.Math.Distance.Between(px, py, this.barCounterZone.x, this.barCounterZone.y);
+    const distJukebox = Phaser.Math.Distance.Between(px, py, this.jukeboxZone.x, this.jukeboxZone.y);
 
     if (distExit < 150) {
       this.exitCafe();
+    } else if (distJukebox < 160) {
+      EventBus.emit('open-jukebox');
     } else if (distBar < 160) {
       SoundManager.getInstance().playClick();
       const phrases = [
@@ -979,6 +1052,8 @@ export class CafeScene extends Phaser.Scene {
   private exitCafe(): void {
     if (this.isTransitioning) return;
     this.isTransitioning = true;
+
+    JukeboxManager.getInstance().stopInCafe();
 
     SoundManager.getInstance().playClick();
     this.player?.showSpeechBubble('Keluar ke kota...', 1000);

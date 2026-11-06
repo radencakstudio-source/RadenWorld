@@ -52,6 +52,7 @@ const PoliceReportModal = lazy(() => import('./game/ui/PoliceReportModal').then(
 const BankModal = lazy(() => import('./game/ui/BankModal').then(m => ({ default: m.BankModal })));
 const PharmacyModal = lazy(() => import('./game/ui/PharmacyModal').then(m => ({ default: m.PharmacyModal })));
 const MarketRealtorModal = lazy(() => import('./game/ui/MarketRealtorModal').then(m => ({ default: m.MarketRealtorModal })));
+const JukeboxModal = lazy(() => import('./game/ui/JukeboxModal').then(m => ({ default: m.JukeboxModal })));
 
 export const GameApp: React.FC = () => {
   // Cek apakah pemain memiliki akun yang sah tersimpan
@@ -539,6 +540,7 @@ export const GameApp: React.FC = () => {
   const [isBankModalOpen, setIsBankModalOpen] = useState(false);
   const [isPharmacyModalOpen, setIsPharmacyModalOpen] = useState(false);
   const [isRealtorModalOpen, setIsRealtorModalOpen] = useState(false);
+  const [isJukeboxOpen, setIsJukeboxOpen] = useState(false);
   const [isMiniGameMode, setIsMiniGameMode] = useState<boolean>(false);
   // Minigame Memancing Interaktif Bergaya Stardew Valley
   const [fishingMinigameData, setFishingMinigameData] = useState<IFishData | null>(null);
@@ -1004,11 +1006,17 @@ export const GameApp: React.FC = () => {
       setIsRealtorModalOpen(true);
       EventBus.emit('dialogue-active', true);
     };
+    const handleOpenJukebox = () => {
+      sound.playOpenModal();
+      setIsJukeboxOpen(true);
+      EventBus.emit('dialogue-active', true);
+    };
 
     EventBus.on('open-police-modal', handleOpenPolice);
     EventBus.on('open-bank-modal', handleOpenBank);
     EventBus.on('open-pharmacy-modal', handleOpenPharmacy);
     EventBus.on('open-realtor-modal', handleOpenRealtor);
+    EventBus.on('open-jukebox', handleOpenJukebox);
 
     // Tangani event pembukaan modal Ensiklopedia & Visual Edukasi Perpustakaan Kota
     const handleOpenLibrary = (data?: { schoolType?: 'sd' | 'smp' | 'sma'; grade?: number }) => {
@@ -1250,6 +1258,7 @@ export const GameApp: React.FC = () => {
         EventBus.off('open-player-profile', handleInspectProfile);
         EventBus.off('player-followed-by', handleFollowedBy);
         EventBus.off('player-unfollowed-by', handleUnfollowedBy);
+        EventBus.off('open-jukebox', handleOpenJukebox);
       };
     }
 
@@ -1280,6 +1289,7 @@ export const GameApp: React.FC = () => {
       EventBus.off('open-bank-modal', handleOpenBank);
       EventBus.off('open-pharmacy-modal', handleOpenPharmacy);
       EventBus.off('open-realtor-modal', handleOpenRealtor);
+      EventBus.off('open-jukebox', handleOpenJukebox);
       EventBus.off('open-library-modal', handleOpenLibrary);
       EventBus.off('gain-exp', handleGainExp);
       EventBus.off('switch-scene', handleSwitchSceneEvent);
@@ -2383,6 +2393,18 @@ export const GameApp: React.FC = () => {
                 }
               }}
               isAdmin={isCurrentUserAdmin}
+            />
+          )}
+
+          {/* Modal Jukebox Musik Cafe */}
+          {isJukeboxOpen && (
+            <JukeboxModal
+              isOpen={isJukeboxOpen}
+              onClose={() => {
+                setIsJukeboxOpen(false);
+                EventBus.emit('dialogue-active', false);
+              }}
+              themeSettings={settings.theme}
             />
           )}
           </Suspense>

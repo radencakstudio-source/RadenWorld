@@ -1,84 +1,98 @@
 {
-  "_SchoolCurriculumData-BSI5ro50.js": {
-    "file": "assets/SchoolCurriculumData-BSI5ro50.js",
+  "_SchoolCurriculumData-k7vmjv9A.js": {
+    "file": "assets/SchoolCurriculumData-k7vmjv9A.js",
     "name": "SchoolCurriculumData",
     "imports": [
       "resources/js/app.tsx",
       "_vendor-react-dgengZBm.js"
     ]
   },
-  "_circle-check-Bp4lfNc-.js": {
-    "file": "assets/circle-check-Bp4lfNc-.js",
+  "_circle-check-CBV8o9D-.js": {
+    "file": "assets/circle-check-CBV8o9D-.js",
     "name": "circle-check",
     "imports": [
       "resources/js/app.tsx"
     ]
   },
-  "_cpu-DQgM8lgr.js": {
-    "file": "assets/cpu-DQgM8lgr.js",
+  "_cpu-DC1UODBf.js": {
+    "file": "assets/cpu-DC1UODBf.js",
     "name": "cpu",
     "imports": [
       "resources/js/app.tsx"
     ]
   },
-  "_file-text-CdtrYIZC.js": {
-    "file": "assets/file-text-CdtrYIZC.js",
+  "_file-text-Dahn3WXF.js": {
+    "file": "assets/file-text-Dahn3WXF.js",
     "name": "file-text",
     "imports": [
       "resources/js/app.tsx"
     ]
   },
-  "_graduation-cap-OylOivhP.js": {
-    "file": "assets/graduation-cap-OylOivhP.js",
+  "_graduation-cap-C50giEVk.js": {
+    "file": "assets/graduation-cap-C50giEVk.js",
     "name": "graduation-cap",
     "imports": [
       "resources/js/app.tsx"
     ]
   },
-  "_heart-Da2uv7Oo.js": {
-    "file": "assets/heart-Da2uv7Oo.js",
+  "_heart-DRYyJ_dC.js": {
+    "file": "assets/heart-DRYyJ_dC.js",
     "name": "heart",
     "imports": [
       "resources/js/app.tsx"
     ]
   },
-  "_layers-xA8BU7Rb.js": {
-    "file": "assets/layers-xA8BU7Rb.js",
+  "_layers-BqHFRSp6.js": {
+    "file": "assets/layers-BqHFRSp6.js",
     "name": "layers",
     "imports": [
       "resources/js/app.tsx"
     ]
   },
-  "_palette-ChNOYBsY.js": {
-    "file": "assets/palette-ChNOYBsY.js",
+  "_music-BXpEz2Q6.js": {
+    "file": "assets/music-BXpEz2Q6.js",
+    "name": "music",
+    "imports": [
+      "resources/js/app.tsx"
+    ]
+  },
+  "_palette-62awpNPD.js": {
+    "file": "assets/palette-62awpNPD.js",
     "name": "palette",
     "imports": [
       "resources/js/app.tsx"
     ]
   },
-  "_pause-ClhzAcLV.js": {
-    "file": "assets/pause-ClhzAcLV.js",
+  "_pause-xe1NBoY8.js": {
+    "file": "assets/pause-xe1NBoY8.js",
     "name": "pause",
     "imports": [
       "resources/js/app.tsx"
     ]
   },
-  "_school-Ccv7KofG.js": {
-    "file": "assets/school-Ccv7KofG.js",
+  "_school-BnAdYBFC.js": {
+    "file": "assets/school-BnAdYBFC.js",
     "name": "school",
     "imports": [
       "resources/js/app.tsx"
     ]
   },
-  "_smartphone-CbVfhOow.js": {
-    "file": "assets/smartphone-CbVfhOow.js",
+  "_skip-forward-B_YSqU5F.js": {
+    "file": "assets/skip-forward-B_YSqU5F.js",
+    "name": "skip-forward",
+    "imports": [
+      "resources/js/app.tsx"
+    ]
+  },
+  "_smartphone-D8EOowa6.js": {
+    "file": "assets/smartphone-D8EOowa6.js",
     "name": "smartphone",
     "imports": [
       "resources/js/app.tsx"
     ]
   },
-  "_triangle-alert-DDlJESAE.js": {
-    "file": "assets/triangle-alert-DDlJESAE.js",
+  "_triangle-alert-DfJKUXlR.js": {
+    "file": "assets/triangle-alert-DfJKUXlR.js",
     "name": "triangle-alert",
     "imports": [
       "resources/js/app.tsx"
@@ -96,22 +110,22 @@
     "file": "assets/vendor-socket-Kk_l3rvZ.js",
     "name": "vendor-socket"
   },
-  "_volume-x-D6b3Re-4.js": {
-    "file": "assets/volume-x-D6b3Re-4.js",
+  "_volume-x-DQFhEN6f.js": {
+    "file": "assets/volume-x-DQFhEN6f.js",
     "name": "volume-x",
     "imports": [
       "resources/js/app.tsx"
     ]
   },
-  "_wifi-C13wjsO_.js": {
-    "file": "assets/wifi-C13wjsO_.js",
+  "_wifi-DW2m1K6X.js": {
+    "file": "assets/wifi-DW2m1K6X.js",
     "name": "wifi",
     "imports": [
       "resources/js/app.tsx"
     ]
   },
   "resources/css/app.css": {
-    "file": "assets/app-Cn9SF0zc.css",
+    "file": "assets/app-CI6WQvcw.css",
     "src": "resources/css/app.css",
     "isEntry": true,
     "name": "app",
@@ -136,7 +150,7 @@
     "src": "resources/fonts/m5x7.ttf"
   },
   "resources/js/app.tsx": {
-    "file": "assets/app-OK-VaTKo.js",
+    "file": "assets/app-CuePYGj5.js",
     "name": "app",
     "src": "resources/js/app.tsx",
     "isEntry": true,
@@ -160,203 +174,222 @@
       "resources/js/game/ui/PoliceReportModal.tsx",
       "resources/js/game/ui/BankModal.tsx",
       "resources/js/game/ui/PharmacyModal.tsx",
-      "resources/js/game/ui/MarketRealtorModal.tsx"
+      "resources/js/game/ui/MarketRealtorModal.tsx",
+      "resources/js/game/ui/JukeboxModal.tsx"
     ]
   },
   "resources/js/game/ui/BankModal.tsx": {
-    "file": "assets/BankModal-CUn6CseB.js",
+    "file": "assets/BankModal-Dgb45qGA.js",
     "name": "BankModal",
     "src": "resources/js/game/ui/BankModal.tsx",
     "isDynamicEntry": true,
     "imports": [
       "_vendor-react-dgengZBm.js",
       "resources/js/app.tsx",
-      "_file-text-CdtrYIZC.js",
-      "_circle-check-Bp4lfNc-.js",
+      "_file-text-Dahn3WXF.js",
+      "_circle-check-CBV8o9D-.js",
       "_vendor-phaser-BTGbtjln.js",
       "_vendor-socket-Kk_l3rvZ.js"
     ]
   },
   "resources/js/game/ui/CreatorStudioModal.tsx": {
-    "file": "assets/CreatorStudioModal-DJQZx5og.js",
+    "file": "assets/CreatorStudioModal-ZZY1OXAz.js",
     "name": "CreatorStudioModal",
     "src": "resources/js/game/ui/CreatorStudioModal.tsx",
     "isDynamicEntry": true,
     "imports": [
       "_vendor-react-dgengZBm.js",
       "resources/js/app.tsx",
-      "_school-Ccv7KofG.js",
-      "_palette-ChNOYBsY.js",
-      "_layers-xA8BU7Rb.js",
-      "_graduation-cap-OylOivhP.js",
+      "_school-BnAdYBFC.js",
+      "_palette-62awpNPD.js",
+      "_layers-BqHFRSp6.js",
+      "_graduation-cap-C50giEVk.js",
       "_vendor-phaser-BTGbtjln.js",
       "_vendor-socket-Kk_l3rvZ.js"
     ]
   },
   "resources/js/game/ui/CreditsModal.tsx": {
-    "file": "assets/CreditsModal-CSwxlyJA.js",
+    "file": "assets/CreditsModal-CyB83Xyf.js",
     "name": "CreditsModal",
     "src": "resources/js/game/ui/CreditsModal.tsx",
     "isDynamicEntry": true,
     "imports": [
       "_vendor-react-dgengZBm.js",
       "resources/js/app.tsx",
-      "_pause-ClhzAcLV.js",
-      "_heart-Da2uv7Oo.js",
-      "_graduation-cap-OylOivhP.js",
-      "_layers-xA8BU7Rb.js",
-      "_cpu-DQgM8lgr.js",
+      "_pause-xe1NBoY8.js",
+      "_heart-DRYyJ_dC.js",
+      "_graduation-cap-C50giEVk.js",
+      "_layers-BqHFRSp6.js",
+      "_cpu-DC1UODBf.js",
       "_vendor-phaser-BTGbtjln.js",
       "_vendor-socket-Kk_l3rvZ.js"
     ]
   },
   "resources/js/game/ui/DownloadModal.tsx": {
-    "file": "assets/DownloadModal-Cr11AID9.js",
+    "file": "assets/DownloadModal-8XlPxwhr.js",
     "name": "DownloadModal",
     "src": "resources/js/game/ui/DownloadModal.tsx",
     "isDynamicEntry": true,
     "imports": [
       "_vendor-react-dgengZBm.js",
       "resources/js/app.tsx",
-      "_smartphone-CbVfhOow.js",
-      "_circle-check-Bp4lfNc-.js",
+      "_smartphone-D8EOowa6.js",
+      "_circle-check-CBV8o9D-.js",
+      "_vendor-phaser-BTGbtjln.js",
+      "_vendor-socket-Kk_l3rvZ.js"
+    ]
+  },
+  "resources/js/game/ui/JukeboxModal.tsx": {
+    "file": "assets/JukeboxModal-DSpeog1i.js",
+    "name": "JukeboxModal",
+    "src": "resources/js/game/ui/JukeboxModal.tsx",
+    "isDynamicEntry": true,
+    "imports": [
+      "_vendor-react-dgengZBm.js",
+      "resources/js/app.tsx",
+      "_skip-forward-B_YSqU5F.js",
+      "_pause-xe1NBoY8.js",
+      "_volume-x-DQFhEN6f.js",
+      "_music-BXpEz2Q6.js",
       "_vendor-phaser-BTGbtjln.js",
       "_vendor-socket-Kk_l3rvZ.js"
     ]
   },
   "resources/js/game/ui/LibraryMaterialsModal.tsx": {
-    "file": "assets/LibraryMaterialsModal-C0VdU_lh.js",
+    "file": "assets/LibraryMaterialsModal-7N6wrw9b.js",
     "name": "LibraryMaterialsModal",
     "src": "resources/js/game/ui/LibraryMaterialsModal.tsx",
     "isDynamicEntry": true,
     "imports": [
       "_vendor-react-dgengZBm.js",
       "resources/js/app.tsx",
-      "_volume-x-D6b3Re-4.js",
-      "_pause-ClhzAcLV.js",
-      "_layers-xA8BU7Rb.js",
-      "_circle-check-Bp4lfNc-.js",
+      "_volume-x-DQFhEN6f.js",
+      "_pause-xe1NBoY8.js",
+      "_skip-forward-B_YSqU5F.js",
+      "_layers-BqHFRSp6.js",
+      "_circle-check-CBV8o9D-.js",
       "_vendor-phaser-BTGbtjln.js",
       "_vendor-socket-Kk_l3rvZ.js"
     ]
   },
   "resources/js/game/ui/MarketRealtorModal.tsx": {
-    "file": "assets/MarketRealtorModal-s7a0bhmP.js",
+    "file": "assets/MarketRealtorModal-CzEP5YzX.js",
     "name": "MarketRealtorModal",
     "src": "resources/js/game/ui/MarketRealtorModal.tsx",
     "isDynamicEntry": true,
     "imports": [
       "_vendor-react-dgengZBm.js",
       "resources/js/app.tsx",
-      "_circle-check-Bp4lfNc-.js",
+      "_circle-check-CBV8o9D-.js",
       "_vendor-phaser-BTGbtjln.js",
       "_vendor-socket-Kk_l3rvZ.js"
     ]
   },
   "resources/js/game/ui/PharmacyModal.tsx": {
-    "file": "assets/PharmacyModal-CEYyLYjr.js",
+    "file": "assets/PharmacyModal-BuLJkE0x.js",
     "name": "PharmacyModal",
     "src": "resources/js/game/ui/PharmacyModal.tsx",
     "isDynamicEntry": true,
     "imports": [
       "_vendor-react-dgengZBm.js",
       "resources/js/app.tsx",
-      "_circle-check-Bp4lfNc-.js",
+      "_circle-check-CBV8o9D-.js",
       "_vendor-phaser-BTGbtjln.js",
       "_vendor-socket-Kk_l3rvZ.js"
     ]
   },
   "resources/js/game/ui/PoliceReportModal.tsx": {
-    "file": "assets/PoliceReportModal-AiJTr0Sp.js",
+    "file": "assets/PoliceReportModal-Ekac9e49.js",
     "name": "PoliceReportModal",
     "src": "resources/js/game/ui/PoliceReportModal.tsx",
     "isDynamicEntry": true,
     "imports": [
       "_vendor-react-dgengZBm.js",
       "resources/js/app.tsx",
-      "_triangle-alert-DDlJESAE.js",
-      "_file-text-CdtrYIZC.js",
-      "_circle-check-Bp4lfNc-.js",
+      "_triangle-alert-DfJKUXlR.js",
+      "_file-text-Dahn3WXF.js",
+      "_circle-check-CBV8o9D-.js",
       "_vendor-phaser-BTGbtjln.js",
       "_vendor-socket-Kk_l3rvZ.js"
     ]
   },
   "resources/js/game/ui/ProfileModal.tsx": {
-    "file": "assets/ProfileModal-CNu1fQuf.js",
+    "file": "assets/ProfileModal-4qVH2bzM.js",
     "name": "ProfileModal",
     "src": "resources/js/game/ui/ProfileModal.tsx",
     "isDynamicEntry": true,
     "imports": [
       "_vendor-react-dgengZBm.js",
       "resources/js/app.tsx",
-      "_heart-Da2uv7Oo.js",
-      "_file-text-CdtrYIZC.js",
+      "_heart-DRYyJ_dC.js",
+      "_file-text-Dahn3WXF.js",
       "_vendor-phaser-BTGbtjln.js",
       "_vendor-socket-Kk_l3rvZ.js"
     ]
   },
   "resources/js/game/ui/SchoolGradeSelectModal.tsx": {
-    "file": "assets/SchoolGradeSelectModal-16zM-2iQ.js",
+    "file": "assets/SchoolGradeSelectModal-CONiy3K2.js",
     "name": "SchoolGradeSelectModal",
     "src": "resources/js/game/ui/SchoolGradeSelectModal.tsx",
     "isDynamicEntry": true,
     "imports": [
       "_vendor-react-dgengZBm.js",
       "resources/js/app.tsx",
-      "_SchoolCurriculumData-BSI5ro50.js",
-      "_school-Ccv7KofG.js",
+      "_SchoolCurriculumData-k7vmjv9A.js",
+      "_school-BnAdYBFC.js",
       "_vendor-phaser-BTGbtjln.js",
       "_vendor-socket-Kk_l3rvZ.js"
     ]
   },
   "resources/js/game/ui/SchoolSubjectsModal.tsx": {
-    "file": "assets/SchoolSubjectsModal-D3Oi4wKH.js",
+    "file": "assets/SchoolSubjectsModal-CaFAtir5.js",
     "name": "SchoolSubjectsModal",
     "src": "resources/js/game/ui/SchoolSubjectsModal.tsx",
     "isDynamicEntry": true,
     "imports": [
       "_vendor-react-dgengZBm.js",
       "resources/js/app.tsx",
-      "_SchoolCurriculumData-BSI5ro50.js",
-      "_triangle-alert-DDlJESAE.js",
-      "_school-Ccv7KofG.js",
+      "_SchoolCurriculumData-k7vmjv9A.js",
+      "_triangle-alert-DfJKUXlR.js",
+      "_school-BnAdYBFC.js",
       "_vendor-phaser-BTGbtjln.js",
       "_vendor-socket-Kk_l3rvZ.js"
     ]
   },
   "resources/js/game/ui/ServerModal.tsx": {
-    "file": "assets/ServerModal-Cn_bdvHs.js",
+    "file": "assets/ServerModal-DTHfMvje.js",
     "name": "ServerModal",
     "src": "resources/js/game/ui/ServerModal.tsx",
     "isDynamicEntry": true,
     "imports": [
       "_vendor-react-dgengZBm.js",
       "resources/js/app.tsx",
-      "_wifi-C13wjsO_.js",
+      "_wifi-DW2m1K6X.js",
       "_vendor-phaser-BTGbtjln.js",
       "_vendor-socket-Kk_l3rvZ.js"
     ]
   },
   "resources/js/game/ui/SettingsModal.tsx": {
-    "file": "assets/SettingsModal-CQDOmy2Q.js",
+    "file": "assets/SettingsModal-BVbZwtdq.js",
     "name": "SettingsModal",
     "src": "resources/js/game/ui/SettingsModal.tsx",
     "isDynamicEntry": true,
     "imports": [
       "_vendor-react-dgengZBm.js",
       "resources/js/app.tsx",
-      "_palette-ChNOYBsY.js",
-      "_volume-x-D6b3Re-4.js",
-      "_wifi-C13wjsO_.js",
-      "_pause-ClhzAcLV.js",
-      "_cpu-DQgM8lgr.js",
-      "_smartphone-CbVfhOow.js",
+      "_palette-62awpNPD.js",
+      "_volume-x-DQFhEN6f.js",
+      "_wifi-DW2m1K6X.js",
+      "_music-BXpEz2Q6.js",
+      "_pause-xe1NBoY8.js",
+      "_cpu-DC1UODBf.js",
+      "_smartphone-D8EOowa6.js",
       "_vendor-phaser-BTGbtjln.js",
       "_vendor-socket-Kk_l3rvZ.js"
     ]
   },
   "resources/js/game/ui/WardrobeModal.tsx": {
-    "file": "assets/WardrobeModal-DORhDxfi.js",
+    "file": "assets/WardrobeModal-DFjPR_dM.js",
     "name": "WardrobeModal",
     "src": "resources/js/game/ui/WardrobeModal.tsx",
     "isDynamicEntry": true,

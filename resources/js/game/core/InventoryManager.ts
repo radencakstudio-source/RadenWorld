@@ -253,11 +253,30 @@ export class InventoryManager {
           const hasSeed = this.items.some((it) => InventoryManager.isSeedItem(it));
           const hasHoe = this.items.some((it) => InventoryManager.isHoeItem(it));
           const hasWatering = this.items.some((it) => InventoryManager.isWateringCanItem(it));
-          const hasKite = this.items.some((it) => InventoryManager.isKiteItem(it));
           if (!hasSeed && defaults[1]) this.addItem({ ...defaults[1] });
           if (!hasHoe && defaults[2]) this.addItem({ ...defaults[2] });
           if (!hasWatering && defaults[3]) this.addItem({ ...defaults[3] });
-          if (!hasKite && defaults[4]) this.addItem({ ...defaults[4] });
+
+          // Pastikan Layang-Layang Tradisional Raden langsung berada di Hotbar Slot 5 (index 4)
+          const currentKiteIdx = this.items.findIndex((it) => InventoryManager.isKiteItem(it));
+          if (currentKiteIdx === -1) {
+            // Belum punya layangan sama sekali: pindahkan isi slot 4 lama jika ada ke tas, lalu pasang layangan di slot 4
+            const oldSlot4 = this.items[4];
+            this.items[4] = { ...defaults[4]! };
+            if (oldSlot4 && oldSlot4.id !== defaults[4]!.id) {
+              const emptyIdx = this.items.findIndex((it, idx) => idx > 4 && it === null);
+              if (emptyIdx !== -1) {
+                this.items[emptyIdx] = oldSlot4;
+              }
+            }
+            this.saveToStorage();
+          } else if (currentKiteIdx >= InventoryManager.HOTBAR_SLOTS) {
+            // Sudah punya tapi tersembunyi di dalam tas (slot > 5): tukar dengan slot 4 hotbar agar langsung terlihat
+            const oldHotbar = this.items[4];
+            this.items[4] = this.items[currentKiteIdx];
+            this.items[currentKiteIdx] = oldHotbar;
+            this.saveToStorage();
+          }
           return;
         }
       }

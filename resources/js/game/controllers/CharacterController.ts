@@ -399,6 +399,8 @@ export class CharacterController {
   private kiteY: number = 0;
   private kiteTilt: number = 0;
   private kiteTailNodes: { x: number; y: number }[] = [];
+  private lastKiteToggleTime: number = 0;
+  private lastFlexibleToolTime: number = 0;
 
   // Key controls
   private keySpace!: Phaser.Input.Keyboard.Key;
@@ -498,6 +500,13 @@ export class CharacterController {
    * - Memegang Makanan / Ramuan -> Konsumsi langsung
    */
   public handleFlexibleToolKeyDown(): void {
+    const now = Date.now();
+    if (now - this.lastFlexibleToolTime < 180) {
+      // Abaikan double-invocation dari Phaser keyboard + DOM Window EventBus dalam rentang waktu singkat
+      return;
+    }
+    this.lastFlexibleToolTime = now;
+
     // 0. Jika minigame memancing sedang terbuka di layar, serahkan 100% input ke FishingMinigame UI
     if (this.fishingState === 'minigame') {
       return;
@@ -629,6 +638,20 @@ export class CharacterController {
       WorldFarming.isFarmGrid(Math.floor(this.player.x / 120), Math.floor(this.player.y / 120))
     ) {
       this.player.showSpeechBubble('🌱 Pilih Bibit Tanaman di Hotbar [1-6] untuk menanam di kebun!');
+    } else if (this.scene.scene.key === 'WorldScene') {
+      // Jika di WorldScene dan pemain punya layang-layang di inventaris, otomatis pilih dan terbangkan!
+      const allItems = inv.getItems();
+      const kiteIdx = allItems.findIndex((it) => InventoryManager.isKiteItem(it));
+      if (kiteIdx !== -1) {
+        if (kiteIdx < InventoryManager.HOTBAR_SLOTS) {
+          inv.setActiveSlotIndex(kiteIdx);
+        } else {
+          inv.moveItem(kiteIdx, inv.getActiveSlotIndex());
+        }
+        this.toggleKiteFlying();
+        return;
+      }
+      this.player.showSpeechBubble('🪁 Pegang Layang-Layang [Slot 5] di Hotbar, lalu tekan [F] untuk menerbangkannya!');
     } else {
       this.player.showSpeechBubble('🖐️ Pegang Pancing [🎣] untuk mancing, atau Bibit [🌱] untuk menanam!');
     }
@@ -2308,6 +2331,12 @@ export class CharacterController {
    * Menghidupkan / mematikan mode penerbangan layang-layang
    */
   public toggleKiteFlying(): void {
+    const now = Date.now();
+    if (now - this.lastKiteToggleTime < 350) {
+      return;
+    }
+    this.lastKiteToggleTime = now;
+
     if (this.isFlyingKite) {
       this.stopKiteFlying('🪁 Menggulung benang layang-layang...');
     } else {
@@ -2331,14 +2360,20 @@ export class CharacterController {
     this.sound.playItemUse();
 
     const facingLeft = (this.player as any).flipX || this.player.getDirection?.() === 'left';
-    this.kiteX = this.player.x + (facingLeft ? 40 : -40);
-    this.kiteY = this.player.y - 150;
+    this.kiteX = this.player.x + (facingLeft ? 45 : -45);
+    this.kiteY = this.player.y - 160;
     this.kiteTilt = 0;
 
     // Inisialisasi node ekor layangan
     this.kiteTailNodes = [];
     for (let i = 0; i < 7; i++) {
-      this.kiteTailNodes.push({ x: 0, y: 28 + i * 9 });
+      this.kiteTailNodes.push({ x: 0, y: 36 + i * 11 });
+    }
+
+    // Pastikan objek grafis tali benang selalu siap
+    if (!this.kiteStringGraphics || !this.kiteStringGraphics.scene) {
+      this.kiteStringGraphics = this.scene.add.graphics();
+      this.kiteStringGraphics.setDepth(99990);
     }
 
     // Buat Container visual layang-layang
@@ -2390,32 +2425,32 @@ export class CharacterController {
   private drawKiteBody(g: Phaser.GameObjects.Graphics): void {
     g.clear();
 
-    // Ukuran layang-layang: Belah ketupat lebar 44px, tinggi 54px
-    const top = { x: 0, y: -26 };
-    const bottom = { x: 0, y: 28 };
-    const left = { x: -22, y: -6 };
-    const right = { x: 22, y: -6 };
-    const center = { x: 0, y: -6 };
+    // Ukuran layang-layang: Belah ketupat lebar 56px, tinggi 70px
+    const top = { x: 0, y: -34 };
+    const bottom = { x: 0, y: 36 };
+    const left = { x: -28, y: -8 };
+    const right = { x: 28, y: -8 };
+    const center = { x: 0, y: -8 };
 
     // 4 Sayap warna-warni layangan nusantara
     // 1. Kiri Atas: Merah Cerah
-    g.fillStyle(0xef4444, 0.95);
+    g.fillStyle(0xef4444, 0.98);
     g.fillTriangle(top.x, top.y, left.x, left.y, center.x, center.y);
 
     // 2. Kanan Atas: Kuning Emas
-    g.fillStyle(0xf59e0b, 0.95);
+    g.fillStyle(0xf59e0b, 0.98);
     g.fillTriangle(top.x, top.y, right.x, right.y, center.x, center.y);
 
     // 3. Kiri Bawah: Biru Langit
-    g.fillStyle(0x06b6d4, 0.95);
+    g.fillStyle(0x06b6d4, 0.98);
     g.fillTriangle(left.x, left.y, bottom.x, bottom.y, center.x, center.y);
 
     // 4. Kanan Bawah: Hijau Zamrud
-    g.fillStyle(0x10b981, 0.95);
+    g.fillStyle(0x10b981, 0.98);
     g.fillTriangle(right.x, right.y, bottom.x, bottom.y, center.x, center.y);
 
     // Garis Pinggir Luar (Outline tebal bergaya Clay-Pixel)
-    g.lineStyle(2, 0x1e293b, 1);
+    g.lineStyle(2.5, 0x1e293b, 1);
     g.beginPath();
     g.moveTo(top.x, top.y);
     g.lineTo(right.x, right.y);
@@ -2425,7 +2460,7 @@ export class CharacterController {
     g.strokePath();
 
     // Rangka Bambu Silang Tradisional
-    g.lineStyle(2, 0x78350f, 1); // Cokelat bambu tua
+    g.lineStyle(2.5, 0x78350f, 1); // Cokelat bambu tua
     // Tulang vertikal (tengah)
     g.beginPath();
     g.moveTo(top.x, top.y);
@@ -2440,7 +2475,7 @@ export class CharacterController {
 
     // Ikatan benang pusat bambu (Intan putih)
     g.fillStyle(0xffffff, 1);
-    g.fillCircle(center.x, center.y, 2.5);
+    g.fillCircle(center.x, center.y, 3.5);
   }
 
   /**
@@ -2471,13 +2506,13 @@ export class CharacterController {
 
     // Angin lembut berhembus (Sine wave)
     const windSpeed = isRunning ? 0.004 : 0.0022;
-    const windSwayX = Math.sin(time * windSpeed) * (isRunning ? 28 : 36);
-    const windSwayY = Math.cos(time * (windSpeed * 1.25)) * (isRunning ? 12 : 16);
+    const windSwayX = Math.sin(time * windSpeed) * (isRunning ? 30 : 40);
+    const windSwayY = Math.cos(time * (windSpeed * 1.25)) * (isRunning ? 14 : 18);
 
     // Ketinggian layang-layang (lebih tinggi saat lari cepat)
-    const baseAltitude = isRunning ? 185 : 155;
+    const baseAltitude = isRunning ? 200 : 165;
     // Layang-layang tertiup ke belakang arah gerak
-    const dragOffsetX = facingLeft ? 45 : -45;
+    const dragOffsetX = facingLeft ? 50 : -50;
 
     const targetX = this.player.x + dragOffsetX + windSwayX;
     const targetY = this.player.y - baseAltitude + windSwayY;
@@ -2500,14 +2535,14 @@ export class CharacterController {
     if (this.kiteTailGraphics) {
       this.kiteTailGraphics.clear();
       let parentX = 0;
-      let parentY = 28;
+      let parentY = 36;
 
       const ribbonColors = [0xef4444, 0xf59e0b, 0x10b981, 0x06b6d4, 0xec4899];
 
       for (let i = 0; i < this.kiteTailNodes.length; i++) {
         const segTime = time * 0.004 - i * 0.6;
-        const waveX = Math.sin(segTime) * (6 + i * 2.5);
-        const curY = parentY + 9;
+        const waveX = Math.sin(segTime) * (8 + i * 3);
+        const curY = parentY + 11;
         const curX = waveX;
 
         // Tali ekor benang
@@ -2521,7 +2556,7 @@ export class CharacterController {
         if (i % 2 === 1) {
           const color = ribbonColors[i % ribbonColors.length];
           this.kiteTailGraphics.fillStyle(color, 1);
-          this.kiteTailGraphics.fillTriangle(curX - 4, curY, curX + 4, curY, curX, curY + 4);
+          this.kiteTailGraphics.fillTriangle(curX - 5, curY, curX + 5, curY, curX, curY + 5);
         }
 
         parentX = curX;
@@ -2540,11 +2575,11 @@ export class CharacterController {
 
       // Titik ikatan pada layangan (di dekat pusat bambu)
       const kiteTieX = this.kiteX;
-      const kiteTieY = this.kiteY - 6;
+      const kiteTieY = this.kiteY - 8;
 
       // Kelenturan tali ditiup gravitasi dan angin
-      const midX = (handX + kiteTieX) * 0.5 + Math.sin(time * 0.0025) * 10;
-      const midY = (handY + kiteTieY) * 0.5 + 18 + Math.cos(time * 0.002) * 6;
+      const midX = (handX + kiteTieX) * 0.5 + Math.sin(time * 0.0025) * 12;
+      const midY = (handY + kiteTieY) * 0.5 + 20 + Math.cos(time * 0.002) * 8;
 
       // Garis benang putih/krem halus melengkung via QuadraticBezier
       this.kiteStringGraphics.lineStyle(1.5, 0xf1f5f9, 0.85);

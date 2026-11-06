@@ -337,6 +337,7 @@ export const GameApp: React.FC = () => {
     const handleGlobalKeyUp = (e: KeyboardEvent) => {
       if ((window as any).__raden_is_rebinding_key) return;
       if (km.matches('fish', e)) {
+        EventBus.emit('fishing-charge-release');
         EventBus.emit('fish-charge-release');
       }
     };

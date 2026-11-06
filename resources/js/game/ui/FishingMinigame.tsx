@@ -69,6 +69,8 @@ const FishingMinigameInner: React.FC<FishingMinigameInnerProps> = ({
 
   const barYRef = useRef<number>(20);
   const barVelocityRef = useRef<number>(0);
+  const isKeyboardPressingRef = useRef<boolean>(false);
+  const isPointerPressingRef = useRef<boolean>(false);
   const isPressingRef = useRef<boolean>(false);
   const [isReeling, setIsReeling] = useState<boolean>(false);
 
@@ -86,75 +88,87 @@ const FishingMinigameInner: React.FC<FishingMinigameInnerProps> = ({
   const animFrameRef = useRef<number | null>(null);
   const lastTimeRef = useRef<number>(performance.now());
 
+  const syncPressing = useCallback(
+    (kb: boolean, ptr: boolean) => {
+      isKeyboardPressingRef.current = kb;
+      isPointerPressingRef.current = ptr;
+      const combined = kb || ptr;
+      if (combined && !isPressingRef.current) {
+        sound.playClick();
+        barVelocityRef.current = Math.max(barVelocityRef.current + 65, 95);
+      }
+      isPressingRef.current = combined;
+      setIsReeling(combined);
+    },
+    [sound]
+  );
+
   const handlePressStart = useCallback(
     (e?: React.SyntheticEvent) => {
       if (e) {
         e.preventDefault();
         e.stopPropagation();
       }
-      if (!isPressingRef.current) {
-        sound.playClick();
-        barVelocityRef.current = Math.max(barVelocityRef.current + 65, 95);
-      }
-      isPressingRef.current = true;
-      setIsReeling(true);
+      syncPressing(isKeyboardPressingRef.current, true);
     },
-    [sound]
+    [syncPressing]
   );
 
-  const handlePressEnd = useCallback((e?: React.SyntheticEvent) => {
-    if (e) {
-      e.preventDefault();
-      e.stopPropagation();
-    }
-    isPressingRef.current = false;
-    setIsReeling(false);
-  }, []);
+  const handlePressEnd = useCallback(
+    (e?: React.SyntheticEvent) => {
+      if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+      syncPressing(isKeyboardPressingRef.current, false);
+    },
+    [syncPressing]
+  );
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.code === 'Space' || e.code === 'KeyF') {
+      if (e.code === 'Space' || e.code === 'KeyF' || e.key?.toLowerCase() === 'f') {
         e.preventDefault();
-        if (!isPressingRef.current) {
-          sound.playClick();
-          barVelocityRef.current = Math.max(barVelocityRef.current + 65, 95);
-        }
-        isPressingRef.current = true;
-        setIsReeling(true);
+        syncPressing(true, isPointerPressingRef.current);
       } else if (e.code === 'Escape') {
         onClose();
       }
     };
 
     const handleKeyUp = (e: KeyboardEvent) => {
-      if (e.code === 'Space' || e.code === 'KeyF') {
+      if (e.code === 'Space' || e.code === 'KeyF' || e.key?.toLowerCase() === 'f') {
         e.preventDefault();
-        isPressingRef.current = false;
-        setIsReeling(false);
+        syncPressing(false, isPointerPressingRef.current);
       }
     };
 
-    const handleGlobalRelease = () => {
-      isPressingRef.current = false;
-      setIsReeling(false);
+    const handleGlobalPointerRelease = () => {
+      // Hanya reset pointer press, penahanan keyboard [F] tetap aman tidak terputus!
+      syncPressing(isKeyboardPressingRef.current, false);
+    };
+
+    const handleWindowBlur = () => {
+      syncPressing(false, false);
     };
 
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('keyup', handleKeyUp);
-    window.addEventListener('pointerup', handleGlobalRelease);
-    window.addEventListener('pointercancel', handleGlobalRelease);
-    window.addEventListener('touchend', handleGlobalRelease);
-    window.addEventListener('touchcancel', handleGlobalRelease);
+    window.addEventListener('pointerup', handleGlobalPointerRelease);
+    window.addEventListener('pointercancel', handleGlobalPointerRelease);
+    window.addEventListener('touchend', handleGlobalPointerRelease);
+    window.addEventListener('touchcancel', handleGlobalPointerRelease);
+    window.addEventListener('blur', handleWindowBlur);
 
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
-      window.removeEventListener('pointerup', handleGlobalRelease);
-      window.removeEventListener('pointercancel', handleGlobalRelease);
-      window.removeEventListener('touchend', handleGlobalRelease);
-      window.removeEventListener('touchcancel', handleGlobalRelease);
+      window.removeEventListener('pointerup', handleGlobalPointerRelease);
+      window.removeEventListener('pointercancel', handleGlobalPointerRelease);
+      window.removeEventListener('touchend', handleGlobalPointerRelease);
+      window.removeEventListener('touchcancel', handleGlobalPointerRelease);
+      window.removeEventListener('blur', handleWindowBlur);
     };
-  }, [onClose, sound]);
+  }, [onClose, syncPressing]);
 
   useEffect(() => {
     lastTimeRef.current = performance.now();

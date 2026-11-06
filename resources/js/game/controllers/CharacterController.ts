@@ -481,6 +481,11 @@ export class CharacterController {
    * - Memegang Makanan / Ramuan -> Konsumsi langsung
    */
   public handleFlexibleToolKeyDown(): void {
+    // 0. Jika minigame memancing sedang terbuka di layar, serahkan 100% input ke FishingMinigame UI
+    if (this.fishingState === 'minigame') {
+      return;
+    }
+
     if (this.fishingState === 'bite') {
       this.strikeFish();
       return;
@@ -490,7 +495,8 @@ export class CharacterController {
       return;
     }
     if (this.fishingState === 'charging') {
-      this.releaseCast();
+      // Pemain sedang menahan tombol [F] untuk menimbang lemparan kail (Hold-to-Cast).
+      // Jangan lepaskan kail di sini! Auto-repeat keyboard di PC harus diabaikan agar bar kekuatan bisa terus terisi!
       return;
     }
     if (this.fishingState === 'caught') {
@@ -499,16 +505,23 @@ export class CharacterController {
     }
     if (this.fishingState !== 'none') return;
 
-    // Prioritas 1: Panen tanaman matang di depan/bawah kaki pemain
+    const inv = InventoryManager.getInstance();
+    const activeItem = inv.getActiveItem();
+
+    // Prioritas 1: Pegang Joran Pancing -> Memancing (Hold-to-Cast)!
+    // Diprioritaskan utama agar tidak pernah terganggu oleh kebun, panen, atau cangkul
+    if (InventoryManager.isRodItem(activeItem)) {
+      this.startChargingCast();
+      return;
+    }
+
+    // Prioritas 2: Panen tanaman matang di depan/bawah kaki pemain (jika memegang cangkul atau tangan biasa)
     if (this.scene.scene.key === 'WorldScene' && WorldFarming.hasRipeCropNearPlayer(this.player)) {
       WorldFarming.tryHarvestNearPlayer(this.player);
       return;
     }
 
-    const inv = InventoryManager.getInstance();
-    const activeItem = inv.getActiveItem();
-
-    // Prioritas 2: Pegang Biji / Bibit -> Tanam!
+    // Prioritas 3: Pegang Biji / Bibit -> Tanam di Kebun Tani!
     if (InventoryManager.isSeedItem(activeItem) && activeItem) {
       if (this.scene.scene.key !== 'WorldScene') {
         this.sound.playError();
@@ -519,7 +532,7 @@ export class CharacterController {
       return;
     }
 
-    // Prioritas 3: Pegang Cangkul -> Gemburkan / Panen!
+    // Prioritas 4: Pegang Cangkul -> Gemburkan / Panen!
     if (InventoryManager.isHoeItem(activeItem)) {
       if (this.scene.scene.key !== 'WorldScene') {
         this.sound.playError();
@@ -530,7 +543,7 @@ export class CharacterController {
       return;
     }
 
-    // Prioritas 4: Pegang Tong Penyiram -> Siram Tanaman atau Isi Air di Pantai/Laut!
+    // Prioritas 5: Pegang Tong Penyiram -> Siram Tanaman atau Isi Air di Pantai/Laut!
     if (InventoryManager.isWateringCanItem(activeItem)) {
       if (this.scene.scene.key !== 'WorldScene') {
         this.sound.playError();
@@ -567,12 +580,6 @@ export class CharacterController {
       }
 
       WorldFarming.handleWateringAction(this.player);
-      return;
-    }
-
-    // Prioritas 5: Pegang Pancing -> Memancing!
-    if (InventoryManager.isRodItem(activeItem)) {
-      this.startChargingCast();
       return;
     }
 
@@ -671,6 +678,7 @@ export class CharacterController {
     EventBus.on('player-strike', onPlayerStrike);
     EventBus.on('fishing-charge-start', onFishChargeStart);
     EventBus.on('fishing-charge-release', onFishChargeRelease);
+    EventBus.on('fish-charge-release', onFishChargeRelease);
     EventBus.on('fishing-cast-release', onFishChargeRelease);
     EventBus.on('fishing-minigame-success', onFishingMinigameSuccess);
     EventBus.on('fishing-minigame-failed', onFishingMinigameFailed);
@@ -722,6 +730,7 @@ export class CharacterController {
       EventBus.off('player-strike', onPlayerStrike);
       EventBus.off('fishing-charge-start', onFishChargeStart);
       EventBus.off('fishing-charge-release', onFishChargeRelease);
+      EventBus.off('fish-charge-release', onFishChargeRelease);
       EventBus.off('fishing-cast-release', onFishChargeRelease);
       EventBus.off('fishing-minigame-success', onFishingMinigameSuccess);
       EventBus.off('fishing-minigame-failed', onFishingMinigameFailed);

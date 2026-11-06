@@ -358,12 +358,12 @@ export const WorldMapSvg: React.FC<WorldMapSvgProps> = React.memo(({
 
       {/* 6 Gedung 5x5 Barat dengan Detail Atap Khas */}
       {[
-        { gx: 1, gy: 21, roof: '#B45309', wall: '#FEF3C7', accent: '#FFAE6D' },
-        { gx: 12, gy: 21, roof: '#0284C7', wall: '#E0F2FE', accent: '#BAE6FD' },
-        { gx: 1, gy: 37, roof: '#1E3A8A', wall: '#DBEAFE', accent: '#93C5FD' },
-        { gx: 12, gy: 37, roof: '#CA8A04', wall: '#FEF9C3', accent: '#FDE047' },
-        { gx: 1, gy: 53, roof: '#059669', wall: '#D1FAE5', accent: '#A8E6CF' },
-        { gx: 12, gy: 53, roof: '#7C2D12', wall: '#FFEDD5', accent: '#FDBA74' },
+        { gx: 1, gy: 17, roof: '#B45309', wall: '#FEF3C7', accent: '#FFAE6D' },
+        { gx: 12, gy: 17, roof: '#0284C7', wall: '#E0F2FE', accent: '#BAE6FD' },
+        { gx: 1, gy: 32, roof: '#1E3A8A', wall: '#DBEAFE', accent: '#93C5FD' },
+        { gx: 12, gy: 32, roof: '#CA8A04', wall: '#FEF9C3', accent: '#FDE047' },
+        { gx: 1, gy: 48, roof: '#059669', wall: '#D1FAE5', accent: '#A8E6CF' },
+        { gx: 12, gy: 48, roof: '#7C2D12', wall: '#FFEDD5', accent: '#FDBA74' },
       ].map((b, idx) => (
         <g key={`west_bldg_${idx}`}>
           <rect x={b.gx} y={b.gy} width="5" height="5" rx="0.3" fill={b.wall} stroke="#5C3A21" strokeWidth="0.18" />
@@ -476,10 +476,10 @@ export const WorldMapSvg: React.FC<WorldMapSvgProps> = React.memo(({
 
           {renderPillLabel(3.5, 19.6, 'CAFE', 5.2, '#FFF8EA', 0.95)}
           {renderPillLabel(14.5, 19.6, 'PERPUS', 6.2, '#FFF8EA', 0.95)}
-          {renderPillLabel(3.5, 35.6, 'POLISI', 5.8, '#FFF8EA', 0.95)}
-          {renderPillLabel(14.5, 35.6, 'BANK', 5.2, '#FFF8EA', 0.95)}
-          {renderPillLabel(3.5, 51.6, 'APOTEK', 6.2, '#FFF8EA', 0.95)}
-          {renderPillLabel(14.5, 51.6, 'PASAR', 5.8, '#FFF8EA', 0.95)}
+          {renderPillLabel(3.5, 34.6, 'POLISI', 5.8, '#FFF8EA', 0.95)}
+          {renderPillLabel(14.5, 34.6, 'BANK', 5.2, '#FFF8EA', 0.95)}
+          {renderPillLabel(3.5, 50.6, 'APOTEK', 6.2, '#FFF8EA', 0.95)}
+          {renderPillLabel(14.5, 50.6, 'PASAR', 5.8, '#FFF8EA', 0.95)}
 
           {renderPillLabel(38.5, 28.2, 'ALUN-ALUN KOTA', 13.5, '#FFAE6D', 1.2)}
           {renderPillLabel(29, 51.6, 'BOLA', 5.0, '#A8E6CF', 0.9)}

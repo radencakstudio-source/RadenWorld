@@ -693,22 +693,22 @@ export class WorldProps {
     // ========================================================================
     // KAWASAN KOMERSIAL & LAYANAN PUBLIK BARAT (6 Gedung 5x5 Petak Grid)
     // Sesuai Tata Letak Grid:
-    // Row 1 (gy: 21):
-    //   - gx: 1,  gy: 21 -> Raden Cafe (5x5)
-    //   - gx: 12, gy: 21 -> Perpustakaan Kota (5x5)
-    // Row 2 (gy: 37):
-    //   - gx: 1,  gy: 37 -> Kantor Polisi (5x5)
-    //   - gx: 12, gy: 37 -> Kantor Bank Sentral (5x5)
-    // Row 3 (gy: 53):
-    //   - gx: 1,  gy: 53 -> Apotek Farma (5x5)
-    //   - gx: 12, gy: 53 -> Kantor Makelar Properti (5x5)
+    // Row 1 (gy: 17):
+    //   - gx: 1,  gy: 17 -> Raden Cafe (5x5)
+    //   - gx: 12, gy: 17 -> Perpustakaan Kota / Restaurant (5x5)
+    // Row 2 (gy: 32):
+    //   - gx: 1,  gy: 32 -> Kantor Polisi (5x5)
+    //   - gx: 12, gy: 32 -> Kantor Bank Sentral (5x5)
+    // Row 3 (gy: 48):
+    //   - gx: 1,  gy: 48 -> Apotek Farma (5x5)
+    //   - gx: 12, gy: 48 -> Kantor Makelar Properti (5x5)
     // ========================================================================
-    // 1. Raden Cafe 5x5 (gx: 1, gy: 21)
-    this.addBuildingLighting(scene, 'cafe', 'Raden Cafe', 420, 3000, 200, [{ x: 300, y: 3000, r: 160 }, { x: 540, y: 3000, r: 160 }], (21 + 5) * tileSize);
+    // 1. Raden Cafe 5x5 (gx: 1, gy: 17)
+    this.addBuildingLighting(scene, 'cafe', 'Raden Cafe', 420, 2520, 200, [{ x: 300, y: 2520, r: 160 }, { x: 540, y: 2520, r: 160 }], (17 + 5) * tileSize);
     addGridPropFn(
       'building-cafe',
       1,
-      21,
+      17,
       5,
       5,
       true,
@@ -722,12 +722,12 @@ export class WorldProps {
       2
     );
 
-    // 2. Perpustakaan 5x5 (gx: 12, gy: 21)
-    this.addBuildingLighting(scene, 'perpustakaan', 'Perpustakaan', 1740, 3000, 200, [{ x: 1620, y: 3000, r: 160 }, { x: 1860, y: 3000, r: 160 }], (21 + 5) * tileSize);
+    // 2. Perpustakaan 5x5 (gx: 12, gy: 17)
+    this.addBuildingLighting(scene, 'perpustakaan', 'Perpustakaan', 1740, 2520, 200, [{ x: 1620, y: 2520, r: 160 }, { x: 1860, y: 2520, r: 160 }], (17 + 5) * tileSize);
     addGridPropFn(
       'building-perpustakaan',
       12,
-      21,
+      17,
       5,
       5,
       true,
@@ -741,12 +741,12 @@ export class WorldProps {
       2
     );
 
-    // 3. Kantor Polisi 5x5 (gx: 1, gy: 37)
-    this.addBuildingLighting(scene, 'kantor-polisi', 'Kantor Polisi', 420, 4920, 200, [{ x: 300, y: 4920, r: 160 }, { x: 540, y: 4920, r: 160 }], (37 + 5) * tileSize);
+    // 3. Kantor Polisi 5x5 (gx: 1, gy: 32)
+    this.addBuildingLighting(scene, 'kantor-polisi', 'Kantor Polisi', 420, 4320, 200, [{ x: 300, y: 4320, r: 160 }, { x: 540, y: 4320, r: 160 }], (32 + 5) * tileSize);
     addGridPropFn(
       'building-kantor-polisi',
       1,
-      37,
+      32,
       5,
       5,
       true,
@@ -756,12 +756,12 @@ export class WorldProps {
       2
     );
 
-    // 4. Kantor Bank 5x5 (gx: 12, gy: 37)
-    this.addBuildingLighting(scene, 'bank', 'Bank Sentral', 1740, 4920, 200, [{ x: 1620, y: 4920, r: 160 }, { x: 1860, y: 4920, r: 160 }], (37 + 5) * tileSize);
+    // 4. Kantor Bank 5x5 (gx: 12, gy: 32)
+    this.addBuildingLighting(scene, 'bank', 'Bank Sentral', 1740, 4320, 200, [{ x: 1620, y: 4320, r: 160 }, { x: 1860, y: 4320, r: 160 }], (32 + 5) * tileSize);
     addGridPropFn(
       'building-bank',
       12,
-      37,
+      32,
       5,
       5,
       true,
@@ -771,12 +771,12 @@ export class WorldProps {
       2
     );
 
-    // 5. Apotek 5x5 (gx: 1, gy: 53)
-    this.addBuildingLighting(scene, 'apotek', 'Apotek Farma', 420, 6840, 200, [{ x: 300, y: 6840, r: 160 }, { x: 540, y: 6840, r: 160 }], (53 + 5) * tileSize);
+    // 5. Apotek 5x5 (gx: 1, gy: 48)
+    this.addBuildingLighting(scene, 'apotek', 'Apotek Farma', 420, 6240, 200, [{ x: 300, y: 6240, r: 160 }, { x: 540, y: 6240, r: 160 }], (48 + 5) * tileSize);
     addGridPropFn(
       'building-apotek',
       1,
-      53,
+      48,
       5,
       5,
       true,
@@ -786,12 +786,12 @@ export class WorldProps {
       2
     );
 
-    // 6. Makelar 5x5 (gx: 12, gy: 53)
-    this.addBuildingLighting(scene, 'makelar', 'Makelar Properti', 1740, 6840, 200, [{ x: 1620, y: 6840, r: 160 }, { x: 1860, y: 6840, r: 160 }], (53 + 5) * tileSize);
+    // 6. Makelar 5x5 (gx: 12, gy: 48)
+    this.addBuildingLighting(scene, 'makelar', 'Makelar Properti', 1740, 6240, 200, [{ x: 1620, y: 6240, r: 160 }, { x: 1860, y: 6240, r: 160 }], (48 + 5) * tileSize);
     addGridPropFn(
       'building-makelar',
       12,
-      53,
+      48,
       5,
       5,
       true,

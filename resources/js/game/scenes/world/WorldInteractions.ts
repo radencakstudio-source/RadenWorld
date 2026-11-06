@@ -46,13 +46,13 @@ export const DEFAULT_WORLD_DOORS: IWorldDoors = {
   schoolSdDoor: { x: 3300, y: 1140 },    // gx: 27.5, gy: 9.5 (Gedung SD 5x10)
   schoolSmpDoor: { x: 4020, y: 1140 },   // gx: 33.5, gy: 9.5 (Gedung SMP 5x10)
   schoolSmaDoor: { x: 4740, y: 1140 },   // gx: 39.5, gy: 9.5 (Gedung SMA 5x10)
-  cafeDoor: { x: 420, y: 3120 },         // gx: 3.5, gy: 26 (Cafe di gx: 1..5, gy: 21..25)
-  libraryDoor: { x: 1740, y: 3120 },     // gx: 14.5, gy: 26 (Perpustakaan di gx: 12..16, gy: 21..25)
-  policeDoor: { x: 420, y: 5040 },       // gx: 3.5, gy: 42 (Kantor Polisi di gx: 1..5, gy: 37..41)
-  bankDoor: { x: 1740, y: 5040 },        // gx: 14.5, gy: 42 (Bank di gx: 12..16, gy: 37..41)
-  pharmacyDoor: { x: 420, y: 6960 },     // gx: 3.5, gy: 58 (Apotek di gx: 1..5, gy: 53..57)
-  hospitalDoor: { x: 420, y: 6960 },     // Alias Apotek / RS
-  realtorDoor: { x: 1740, y: 6960 },     // gx: 14.5, gy: 58 (Makelar di gx: 12..16, gy: 53..57)
+  cafeDoor: { x: 420, y: 2640 },         // gx: 3.5, gy: 22 (Cafe di gx: 1..5, gy: 17..21)
+  libraryDoor: { x: 1740, y: 2640 },     // gx: 14.5, gy: 22 (Perpustakaan/Restaurant di gx: 12..16, gy: 17..21)
+  policeDoor: { x: 420, y: 4440 },       // gx: 3.5, gy: 37 (Kantor Polisi di gx: 1..5, gy: 32..36)
+  bankDoor: { x: 1740, y: 4440 },        // gx: 14.5, gy: 37 (Bank di gx: 12..16, gy: 32..36)
+  pharmacyDoor: { x: 420, y: 6360 },     // gx: 3.5, gy: 53 (Apotek di gx: 1..5, gy: 48..52)
+  hospitalDoor: { x: 420, y: 6360 },     // Alias Apotek / RS
+  realtorDoor: { x: 1740, y: 6360 },     // gx: 14.5, gy: 53 (Makelar di gx: 12..16, gy: 48..52)
 };
 
 export class WorldInteractions {
@@ -83,12 +83,12 @@ export class WorldInteractions {
     if (gy <= 13 && gx >= 57) return 'KAWASAN PERSAWAHAN & PERTANIAN SUBUR';
 
     // 4. Barat: Kawasan Komersial & Layanan Publik (6 Gedung 5x5)
-    if (gx >= 1 && gx <= 5 && gy >= 21 && gy <= 25) return 'KAWASAN KULINER: RADEN CAFE';
-    if (gx >= 12 && gx <= 16 && gy >= 21 && gy <= 25) return 'KAWASAN LITERASI: PERPUSTAKAAN KOTA';
-    if (gx >= 1 && gx <= 5 && gy >= 37 && gy <= 41) return 'LAYANAN PUBLIK: KANTOR POLISI';
-    if (gx >= 12 && gx <= 16 && gy >= 37 && gy <= 41) return 'KAWASAN FINANSIAL: KANTOR BANK';
-    if (gx >= 1 && gx <= 5 && gy >= 53 && gy <= 57) return 'KAWASAN KESEHATAN: APOTEK FARMA';
-    if (gx >= 12 && gx <= 16 && gy >= 53 && gy <= 57) return 'KAWASAN PROPERTI: KANTOR MAKELAR';
+    if (gx >= 1 && gx <= 5 && gy >= 17 && gy <= 21) return 'KAWASAN KULINER: RADEN CAFE';
+    if (gx >= 12 && gx <= 16 && gy >= 17 && gy <= 21) return 'KAWASAN LITERASI: PERPUSTAKAAN KOTA';
+    if (gx >= 1 && gx <= 5 && gy >= 32 && gy <= 36) return 'LAYANAN PUBLIK: KANTOR POLISI';
+    if (gx >= 12 && gx <= 16 && gy >= 32 && gy <= 36) return 'KAWASAN FINANSIAL: KANTOR BANK';
+    if (gx >= 1 && gx <= 5 && gy >= 48 && gy <= 52) return 'KAWASAN KESEHATAN: APOTEK FARMA';
+    if (gx >= 12 && gx <= 16 && gy >= 48 && gy <= 52) return 'KAWASAN PROPERTI: KANTOR MAKELAR';
     if (Math.hypot(x - doors.cafeDoor.x, y - doors.cafeDoor.y) < 260) return 'KAWASAN KULINER: RADEN CAFE';
     if (doors.libraryDoor && Math.hypot(x - doors.libraryDoor.x, y - doors.libraryDoor.y) < 260) return 'KAWASAN LITERASI: PERPUSTAKAAN KOTA';
     if (doors.policeDoor && Math.hypot(x - doors.policeDoor.x, y - doors.policeDoor.y) < 260) return 'LAYANAN PUBLIK: KANTOR POLISI';

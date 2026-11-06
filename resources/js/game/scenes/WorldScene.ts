@@ -317,7 +317,7 @@ export class WorldScene extends Phaser.Scene {
           'Halo Petualang! Selamat datang di Lahan Pertanian & Perkebunan RadenWorld! 🌱',
           'Aturan Menanam Resmi di RadenWorld ada 5 Langkah Wajib:\n1. ⛏️ Cangkul lahan tanah terlebih dahulu\n2. 💧 Siram air sekali dengan Tong Penyiram\n3. 🌱 Tanam bibit pilihan di tanah yang sudah basah\n4. ⏳ Tunggu 24 jam hingga mekar siap panen\n5. 🌾 Panen hasilnya dengan tombol [F]!',
           'Catatan Tong Air: Tong penyiram memiliki kapasitas 10 takaran air. Jika habis (0/10), pergilah ke bibir pantai selatan atau lautan timur lalu tekan [F] untuk mengisinya kembali sampai penuh! 🌊',
-          'Semua bibit unggul nusantara dan cangkul bisa kamu beli di Kantor Makelar & Pasar Rakyat [14, 53]. Hasil panenmu juga bisa dijual di sana dengan harga koin emas tinggi!',
+          'Semua bibit unggul nusantara dan cangkul bisa kamu beli di Kantor Makelar & Pasar Rakyat [14, 48]. Hasil panenmu juga bisa dijual di sana dengan harga koin emas tinggi!',
         ],
       },
     ];

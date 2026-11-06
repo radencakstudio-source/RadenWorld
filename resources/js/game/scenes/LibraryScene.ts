@@ -19,7 +19,7 @@
  * 5. Meja Belajar Utama (Reading Desks) di Tengah (gy: 5 & gy: 8):
  *    - Dilengkapi Banker's Lamp kuningan berkap hijau zamrud.
  *    - Tumpukan buku terbuka, pena bulu & laptop mahasiswa.
- * 6. Pintu Keluar: Terhubung kembali ke WorldScene di depan Perpustakaan (x: 1740, y: 3180).
+ * 6. Pintu Keluar: Terhubung kembali ke WorldScene di depan Perpustakaan (x: 1740, y: 2680).
  * ============================================================================
  */
 
@@ -63,7 +63,7 @@ export class LibraryScene extends Phaser.Scene {
   private activeShelf: IBookshelfZone | null = null;
 
   private returnX: number = 1740;
-  private returnY: number = 3180;
+  private returnY: number = 2680;
 
   private activePrompt: string | null = null;
   private isTransitioning: boolean = false;
@@ -1018,7 +1018,7 @@ export class LibraryScene extends Phaser.Scene {
     SoundManager.getInstance().playClick();
     this.player?.showSpeechBubble('Keluar ke kota...', 1000);
 
-    const exitLibPos = { x: this.returnX, y: this.returnY + 60 };
+    const exitLibPos = { x: this.returnX, y: this.returnY };
     try {
       localStorage.setItem('raden_pos_world', JSON.stringify(exitLibPos));
     } catch (e) {}

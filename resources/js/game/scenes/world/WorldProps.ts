@@ -716,7 +716,7 @@ export class WorldProps {
         if ((scene as any).transitionToCafe) {
           (scene as any).transitionToCafe();
         } else {
-          scene.scene.start('CafeScene');
+          scene.scene.start('CafeScene', { returnX: 420, returnY: 2680 });
         }
       },
       2
@@ -735,7 +735,7 @@ export class WorldProps {
         if ((scene as any).transitionToLibrary) {
           (scene as any).transitionToLibrary();
         } else {
-          scene.scene.start('LibraryScene');
+          scene.scene.start('LibraryScene', { returnX: 1740, returnY: 2680 });
         }
       },
       2

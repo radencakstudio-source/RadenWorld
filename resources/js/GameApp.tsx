@@ -816,16 +816,16 @@ export const GameApp: React.FC = () => {
             const schoolType = lowerP.replace('/world/', '');
             EventBus.emit('switch-scene', { scene: 'SchoolScene', schoolType });
           } else if (lowerP === '/world/cafe') {
-            EventBus.emit('switch-scene', { scene: 'CafeScene' });
+            EventBus.emit('switch-scene', { scene: 'CafeScene', returnX: 420, returnY: 2680 });
           } else if (lowerP === '/world/perpustakaan' || lowerP === '/world/library') {
-            EventBus.emit('switch-scene', { scene: 'LibraryScene' });
+            EventBus.emit('switch-scene', { scene: 'LibraryScene', returnX: 1740, returnY: 2680 });
           } else {
             EventBus.emit('switch-scene', { scene: 'WorldScene' });
           }
         } else if (p.startsWith('/cafe')) {
-          EventBus.emit('switch-scene', { scene: 'CafeScene' });
+          EventBus.emit('switch-scene', { scene: 'CafeScene', returnX: 420, returnY: 2680 });
         } else if (p.startsWith('/perpustakaan') || p.startsWith('/library')) {
-          EventBus.emit('switch-scene', { scene: 'LibraryScene' });
+          EventBus.emit('switch-scene', { scene: 'LibraryScene', returnX: 1740, returnY: 2680 });
         } else if (p.startsWith('/home')) {
           const seg = p.replace('/home/', '').trim();
           EventBus.emit('switch-scene', { scene: 'HouseScene', privateRoomId: seg });

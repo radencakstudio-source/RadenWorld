@@ -256,12 +256,12 @@ export class BootScene extends Phaser.Scene {
           const schoolType = lowerPath.replace('/world/', '').replace('/school/', '') as 'sd' | 'smp' | 'sma';
           this.scene.start('SchoolScene', { schoolType, name: savedName, avatar: savedAvatar });
         } else if (lowerPath === '/world/cafe' || lowerPath === '/cafe') {
-          this.scene.start('CafeScene', { name: savedName, avatar: savedAvatar });
+          this.scene.start('CafeScene', { name: savedName, avatar: savedAvatar, returnX: 420, returnY: 2680 });
         } else if (
           lowerPath === '/world/perpustakaan' || lowerPath === '/world/library' ||
           lowerPath === '/perpustakaan' || lowerPath === '/library'
         ) {
-          this.scene.start('LibraryScene', { name: savedName, avatar: savedAvatar });
+          this.scene.start('LibraryScene', { name: savedName, avatar: savedAvatar, returnX: 1740, returnY: 2680 });
         } else {
           this.scene.start('WorldScene', { name: savedName, avatar: savedAvatar });
         }

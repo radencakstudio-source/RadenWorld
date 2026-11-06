@@ -21,7 +21,7 @@
  *    - Mesin Vending Minuman Panas & Dingin di sisi barat/timur.
  *    - Tanaman hias Monstera & Ficus indoor pot keramik.
  *    - Jukebox musik jazz cafe di dinding kanan.
- * 5. Pintu Keluar: Terhubung kembali ke WorldScene di depan Raden Cafe (x: 420, y: 3180).
+ * 5. Pintu Keluar: Terhubung kembali ke WorldScene di depan Raden Cafe (x: 420, y: 2680).
  * ============================================================================
  */
 
@@ -55,7 +55,7 @@ export class CafeScene extends Phaser.Scene {
   private barCounterZone!: { x: number; y: number };
   private jukeboxZone: { x: number; y: number } = { x: 0, y: 0 };
   private returnX: number = 420;
-  private returnY: number = 3180;
+  private returnY: number = 2680;
 
   private activePrompt: string | null = null;
   private isTransitioning: boolean = false;
@@ -1058,7 +1058,7 @@ export class CafeScene extends Phaser.Scene {
     SoundManager.getInstance().playClick();
     this.player?.showSpeechBubble('Keluar ke kota...', 1000);
 
-    const exitCafePos = { x: this.returnX, y: this.returnY + 60 };
+    const exitCafePos = { x: this.returnX, y: this.returnY };
     try {
       localStorage.setItem('raden_pos_world', JSON.stringify(exitCafePos));
     } catch (e) {}

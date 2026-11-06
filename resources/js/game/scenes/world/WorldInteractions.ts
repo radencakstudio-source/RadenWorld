@@ -161,10 +161,10 @@ export class WorldInteractions {
     } else if (distSma < 130) {
       prompt = 'TEKAN [E] / KLIK UNTUK MASUK KE GEDUNG SMA';
       locationName = 'KOMPLEKS PENDIDIKAN: GEDUNG SMA';
-    } else if (distCafe < 130) {
+    } else if (distCafe < 130 && time > doorCooldownUntil) {
       prompt = 'TEKAN [E] / KLIK UNTUK MAMPIR KE RADEN CAFE ☕🥐';
       locationName = 'KAWASAN KULINER: RADEN CAFE';
-    } else if (distLibrary < 130) {
+    } else if (distLibrary < 130 && time > doorCooldownUntil) {
       prompt = 'TEKAN [E] / KLIK UNTUK MASUK KE PERPUSTAKAAN KOTA 📚';
       locationName = 'KAWASAN LITERASI: PERPUSTAKAAN KOTA';
     } else if (distPolice < 130) {

@@ -437,7 +437,7 @@ export class WorldScene extends Phaser.Scene {
         name: this.player?.getEntityName() || this.pendingPlayerName || 'Petualang',
         avatar: this.player?.getAvatar() || this.pendingAvatar,
         returnX: this.doors.cafeDoor.x,
-        returnY: this.doors.cafeDoor.y + 60,
+        returnY: this.doors.cafeDoor.y + 40,
       });
     });
   }
@@ -457,7 +457,7 @@ export class WorldScene extends Phaser.Scene {
         name: this.player?.getEntityName() || this.pendingPlayerName || 'Petualang',
         avatar: this.player?.getAvatar() || this.pendingAvatar,
         returnX: this.doors.libraryDoor?.x || 1740,
-        returnY: (this.doors.libraryDoor?.y || 3120) + 60,
+        returnY: (this.doors.libraryDoor?.y || 2640) + 40,
       });
     });
   }
@@ -497,13 +497,13 @@ export class WorldScene extends Phaser.Scene {
     }
 
     // 5. Masuk ke Cafe
-    if (Phaser.Math.Distance.Between(px, py, this.doors.cafeDoor.x, this.doors.cafeDoor.y) < 160) {
+    if (Phaser.Math.Distance.Between(px, py, this.doors.cafeDoor.x, this.doors.cafeDoor.y) < 160 && (!this.time || this.time.now > this.doorCooldownUntil)) {
       this.transitionToCafe();
       return;
     }
 
     // 6. Masuk ke Perpustakaan Kota
-    if (this.doors.libraryDoor && Phaser.Math.Distance.Between(px, py, this.doors.libraryDoor.x, this.doors.libraryDoor.y) < 160) {
+    if (this.doors.libraryDoor && Phaser.Math.Distance.Between(px, py, this.doors.libraryDoor.x, this.doors.libraryDoor.y) < 160 && (!this.time || this.time.now > this.doorCooldownUntil)) {
       this.transitionToLibrary();
       return;
     }

@@ -2149,7 +2149,7 @@ export class CharacterController {
     }
 
     // Jika sedang menerbangkan layang-layang dan dalam MODE KENDALI LAYANG-LAYANG ('kite'):
-    // Tahan karakter di tanah (posisi memegang gulungan benang), hadapkan karakter ke arah layangan,
+    // Tahan karakter di tanah (posisi memegang gulungan benang),
     // dan seluruh input WASD / Panah / Joystick dialihkan untuk bermanuver di angkasa!
     if (this.isFlyingKite && this.kiteControlMode === 'kite') {
       body.setVelocity(0, 0);
@@ -2157,15 +2157,7 @@ export class CharacterController {
       this.crystalGraphics.clear();
       this.onArrivalCallback = null;
 
-      // Hadapkan karakter ke arah posisi layang-layang di langit
-      if (this.kiteX < this.player.x - 20) {
-        this.player.setDirection('left');
-      } else if (this.kiteX > this.player.x + 20) {
-        this.player.setDirection('right');
-      } else {
-        this.player.setDirection('up');
-      }
-
+      // Karakter tetap berdiri kokoh memegang gulungan benang tanpa berputar-putar
       return { vx: 0, vy: 0, isMoving: false };
     }
 
@@ -2422,15 +2414,17 @@ export class CharacterController {
     const camCtrl = (this.scene as any).cameraController;
     if (this.isFlyingKite && this.kiteControlMode === 'kite' && this.kiteContainer) {
       if (camCtrl && typeof camCtrl.follow === 'function') {
-        camCtrl.follow(this.kiteContainer, true, 0.08, 0.08);
+        camCtrl.follow(this.kiteContainer, true, 0.18, 0.18);
       } else if (this.scene.cameras?.main) {
-        this.scene.cameras.main.startFollow(this.kiteContainer, true, 0.08, 0.08);
+        this.scene.cameras.main.startFollow(this.kiteContainer, true, 0.18, 0.18);
       }
     } else {
+      // Ketika beralih ke mode jalan karakter atau layang-layang digulung,
+      // kembalikan kamera ke karakter pemain secara instan (1.0, 1.0) bebas lag/terlambat!
       if (camCtrl && typeof camCtrl.follow === 'function') {
-        camCtrl.follow(this.player, true, 0.08, 0.08);
+        camCtrl.follow(this.player, true, 1.0, 1.0);
       } else if (this.scene.cameras?.main) {
-        this.scene.cameras.main.startFollow(this.player, true, 0.08, 0.08);
+        this.scene.cameras.main.startFollow(this.player, true, 1.0, 1.0);
       }
     }
   }

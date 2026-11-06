@@ -93,7 +93,7 @@ export const VirtualControls: React.FC<VirtualControlsProps> = React.memo(({
   const [isOverlayBlocking, setIsOverlayBlocking] = useState<boolean>(false);
 
   const [activeToolInfo, setActiveToolInfo] = useState<{
-    type: 'seed' | 'rod' | 'hoe' | 'watering' | 'other';
+    type: 'seed' | 'rod' | 'hoe' | 'watering' | 'kite' | 'other';
     label: string;
     iconText?: string;
   }>(() => {
@@ -101,6 +101,7 @@ export const VirtualControls: React.FC<VirtualControlsProps> = React.memo(({
     if (InventoryManager.isSeedItem(item)) return { type: 'seed', label: 'TANAM', iconText: item?.icon || '🌱' };
     if (InventoryManager.isHoeItem(item)) return { type: 'hoe', label: 'CANGKUL', iconText: '⛏️' };
     if (InventoryManager.isWateringCanItem(item)) return { type: 'watering', label: 'SIRAM', iconText: '💧' };
+    if (InventoryManager.isKiteItem(item)) return { type: 'kite', label: 'LAYANGAN', iconText: '🪁' };
     return { type: 'rod', label: 'MANCING' };
   });
 
@@ -113,6 +114,8 @@ export const VirtualControls: React.FC<VirtualControlsProps> = React.memo(({
         setActiveToolInfo({ type: 'hoe', label: 'CANGKUL', iconText: '⛏️' });
       } else if (InventoryManager.isWateringCanItem(item)) {
         setActiveToolInfo({ type: 'watering', label: 'SIRAM', iconText: '💧' });
+      } else if (InventoryManager.isKiteItem(item)) {
+        setActiveToolInfo({ type: 'kite', label: 'LAYANGAN', iconText: '🪁' });
       } else {
         setActiveToolInfo({ type: 'rod', label: 'MANCING' });
       }

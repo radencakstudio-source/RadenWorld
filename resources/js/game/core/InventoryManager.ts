@@ -76,6 +76,11 @@ export class InventoryManager {
     return item.id.startsWith('tool_watering');
   }
 
+  public static isKiteItem(item: IInventoryItem | null | undefined): boolean {
+    if (!item) return false;
+    return item.id.startsWith('tool_kite') || item.id === 'tool_layang_layang';
+  }
+
   /**
    * Setup default starter items jika inventaris masih baru / kosong
    */
@@ -139,8 +144,22 @@ export class InventoryManager {
       extraData: { water: 10, maxWater: 10 },
     };
 
-    // Slot 5 [Hotbar 5]: Apel Manis Kebun
+    // Slot 5 [Hotbar 5]: Layang-Layang Tradisional Raden
     list[4] = {
+      id: 'tool_kite_raden',
+      name: 'Layang-Layang Tradisional Raden',
+      category: 'tool',
+      rarity: 'Uncommon',
+      icon: '🪁',
+      quantity: 1,
+      maxStack: 1,
+      description: 'Layang-layang hias bambu tradisional. Hanya bisa diterbangkan di area terbuka Peta Dunia (World) dengan tombol [F]!',
+      price: 150,
+      usable: true,
+    };
+
+    // Slot 6 [Hotbar 6]: Apel Manis Kebun
+    list[5] = {
       id: 'cons_apple',
       name: 'Apel Merah Manis Kebun',
       category: 'consumable',
@@ -154,8 +173,8 @@ export class InventoryManager {
       extraData: { hpRestore: 25 },
     };
 
-    // Slot 6 [Hotbar 6]: Jamu Segar Bugar
-    list[5] = {
+    // Slot 7: Jamu Segar Bugar
+    list[6] = {
       id: 'cons_jamu',
       name: 'Jamu Beras Kencur Segar',
       category: 'consumable',
@@ -169,8 +188,8 @@ export class InventoryManager {
       extraData: { hpRestore: 60 },
     };
 
-    // Slot 7: Umpan Cacing
-    list[6] = {
+    // Slot 8: Umpan Cacing
+    list[7] = {
       id: 'tool_bait_worm',
       name: 'Umpan Cacing Tanah Segar',
       category: 'material',
@@ -234,9 +253,11 @@ export class InventoryManager {
           const hasSeed = this.items.some((it) => InventoryManager.isSeedItem(it));
           const hasHoe = this.items.some((it) => InventoryManager.isHoeItem(it));
           const hasWatering = this.items.some((it) => InventoryManager.isWateringCanItem(it));
+          const hasKite = this.items.some((it) => InventoryManager.isKiteItem(it));
           if (!hasSeed && defaults[1]) this.addItem({ ...defaults[1] });
           if (!hasHoe && defaults[2]) this.addItem({ ...defaults[2] });
           if (!hasWatering && defaults[3]) this.addItem({ ...defaults[3] });
+          if (!hasKite && defaults[4]) this.addItem({ ...defaults[4] });
           return;
         }
       }
@@ -433,6 +454,13 @@ export class InventoryManager {
         return {
           success: true,
           message: `Memegang ${item.name}! Tekan [F] di tepi air/dermaga untuk memancing.`,
+        };
+      }
+      if (InventoryManager.isKiteItem(item)) {
+        EventBus.emit('player-kite-toggle');
+        return {
+          success: true,
+          message: `Memegang ${item.name}! Tekan [F] di Peta Dunia (World) untuk menerbangkannya ke angkasa 🪁`,
         };
       }
       return {

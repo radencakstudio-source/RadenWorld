@@ -387,6 +387,19 @@ export class CharacterController {
   private isFishingGraphicsDrawn: boolean = false;
   private isCrystalGraphicsDrawn: boolean = false;
 
+  // ==========================================================================
+  // PARAMETER SISTEM LAYANG-LAYANG (KITE FLYING SYSTEM)
+  // ==========================================================================
+  private isFlyingKite: boolean = false;
+  private kiteContainer: Phaser.GameObjects.Container | null = null;
+  private kiteBodyGraphics: Phaser.GameObjects.Graphics | null = null;
+  private kiteTailGraphics: Phaser.GameObjects.Graphics | null = null;
+  private kiteStringGraphics: Phaser.GameObjects.Graphics | null = null;
+  private kiteX: number = 0;
+  private kiteY: number = 0;
+  private kiteTilt: number = 0;
+  private kiteTailNodes: { x: number; y: number }[] = [];
+
   // Key controls
   private keySpace!: Phaser.Input.Keyboard.Key;
   private keyF!: Phaser.Input.Keyboard.Key;
@@ -419,6 +432,10 @@ export class CharacterController {
     // Buat lapisan grafis di atas pemain untuk joran dan senar pancing
     this.fishingGraphics = scene.add.graphics();
     this.fishingGraphics.setDepth(player.y + 100);
+
+    // Buat lapisan grafis untuk tali/benang layang-layang di langit
+    this.kiteStringGraphics = scene.add.graphics();
+    this.kiteStringGraphics.setDepth(99990);
 
     this.setupInputs();
     this.bindEvents();
@@ -512,6 +529,17 @@ export class CharacterController {
     // Diprioritaskan utama agar tidak pernah terganggu oleh kebun, panen, atau cangkul
     if (InventoryManager.isRodItem(activeItem)) {
       this.startChargingCast();
+      return;
+    }
+
+    // Prioritas 1b: Pegang Layang-Layang Tradisional -> Terbangkan ke Angkasa Peta Dunia!
+    if (InventoryManager.isKiteItem(activeItem)) {
+      if (this.scene.scene.key !== 'WorldScene') {
+        this.sound.playError();
+        this.player.showSpeechBubble('🏠 Di dalam ruangan tidak ada angin!\nLayang-layang hanya bisa diterbangkan di Peta Dunia (World) 🪁💨');
+        return;
+      }
+      this.toggleKiteFlying();
       return;
     }
 
@@ -703,6 +731,17 @@ export class CharacterController {
     };
     EventBus.on('player-consumed-potion', onPotionConsumed);
 
+    const onKiteToggle = () => {
+      if (this.scene.scene.key !== 'WorldScene') {
+        this.sound.playError();
+        this.player.showSpeechBubble('🏠 Di dalam ruangan tidak ada angin!\nLayang-layang hanya bisa diterbangkan di Peta Dunia (World) 🪁💨');
+        return;
+      }
+      this.toggleKiteFlying();
+    };
+    EventBus.on('player-kite-toggle', onKiteToggle);
+    EventBus.on('player-kite', onKiteToggle);
+
     try {
       const gs = JSON.parse(localStorage.getItem('raden_game_settings') || '{}');
       if (gs.enableMovementEffects === false) {
@@ -738,12 +777,16 @@ export class CharacterController {
       EventBus.off('player-run-end', onPlayerRunEnd);
       EventBus.off('player-run-toggle', onPlayerRunToggle);
       EventBus.off('player-consumed-potion', onPotionConsumed);
+      EventBus.off('player-kite-toggle', onKiteToggle);
+      EventBus.off('player-kite', onKiteToggle);
       EventBus.off('graphics-settings-updated', onGraphicsSettingsUpdated);
+      this.stopKiteFlying();
       this.landingGraphics?.destroy();
       this.landingDustGraphics?.destroy();
       this.runDustGraphics?.destroy();
       this.crystalGraphics?.destroy();
       this.fishingGraphics?.destroy();
+      this.kiteStringGraphics?.destroy();
       if (this.chargeTimer) this.chargeTimer.remove();
       if (this.inAirTimer) this.inAirTimer.remove();
       if (this.landingTimer) this.landingTimer.remove();
@@ -2030,6 +2073,9 @@ export class CharacterController {
     // Update siklus memancing
     this.updateFishing(time, delta);
 
+    // Update siklus layang-layang
+    this.updateKite(time, delta);
+
     // Jika pemain baru saja menangkap ikan ('caught') dan melakukan input jalan (WASD, Panah, Joystick, atau Tap),
     // segera lepaskan status memancing seketika agar pemain langsung bebas berjalan tanpa nyangkut!
     if (this.fishingState === 'caught') {
@@ -2246,5 +2292,275 @@ export class CharacterController {
       this.player?.getCursors?.()?.shift?.isDown
     );
     return this.isRunning || shiftIsDown;
+  }
+
+  // ==========================================================================
+  // IMPLEMENTASI SISTEM LAYANG-LAYANG (KITE FLYING SYSTEM)
+  // ==========================================================================
+  /**
+   * Status apakah layang-layang sedang terbang di udara
+   */
+  public getIsFlyingKite(): boolean {
+    return this.isFlyingKite;
+  }
+
+  /**
+   * Menghidupkan / mematikan mode penerbangan layang-layang
+   */
+  public toggleKiteFlying(): void {
+    if (this.isFlyingKite) {
+      this.stopKiteFlying('🪁 Menggulung benang layang-layang...');
+    } else {
+      this.startKiteFlying();
+    }
+  }
+
+  /**
+   * Menerbangkan layang-layang ke langit WorldScene
+   */
+  public startKiteFlying(): void {
+    if (this.scene.scene.key !== 'WorldScene') {
+      this.sound.playError();
+      this.player.showSpeechBubble('🏠 Di dalam ruangan tidak ada angin!\nLayang-layang hanya bisa diterbangkan di Peta Dunia (World) 🪁💨');
+      return;
+    }
+
+    if (this.isFlyingKite) return;
+
+    this.isFlyingKite = true;
+    this.sound.playItemUse();
+
+    const facingLeft = (this.player as any).flipX || this.player.getDirection?.() === 'left';
+    this.kiteX = this.player.x + (facingLeft ? 40 : -40);
+    this.kiteY = this.player.y - 150;
+    this.kiteTilt = 0;
+
+    // Inisialisasi node ekor layangan
+    this.kiteTailNodes = [];
+    for (let i = 0; i < 7; i++) {
+      this.kiteTailNodes.push({ x: 0, y: 28 + i * 9 });
+    }
+
+    // Buat Container visual layang-layang
+    if (this.kiteContainer) {
+      this.kiteContainer.destroy();
+    }
+    this.kiteContainer = this.scene.add.container(this.kiteX, this.kiteY);
+    this.kiteContainer.setDepth(99995);
+
+    // Body layang-layang (belah ketupat warna-warni bambu)
+    this.kiteBodyGraphics = this.scene.add.graphics();
+    this.kiteContainer.add(this.kiteBodyGraphics);
+    this.drawKiteBody(this.kiteBodyGraphics);
+
+    // Ekor layang-layang (pita rumbai bergelombang)
+    this.kiteTailGraphics = this.scene.add.graphics();
+    this.kiteContainer.add(this.kiteTailGraphics);
+
+    this.player.showSpeechBubble('🪁 Wussshh! Menerbangkan layang-layang ke angkasa RadenWorld!\nBawa berlari di padang rumput & pesisir pantai.');
+  }
+
+  /**
+   * Menggulung benang dan menghentikan penerbangan layang-layang
+   */
+  public stopKiteFlying(message?: string): void {
+    if (!this.isFlyingKite && !this.kiteContainer) return;
+
+    this.isFlyingKite = false;
+    if (this.kiteStringGraphics) {
+      this.kiteStringGraphics.clear();
+    }
+
+    if (this.kiteContainer) {
+      this.kiteContainer.destroy();
+      this.kiteContainer = null;
+      this.kiteBodyGraphics = null;
+      this.kiteTailGraphics = null;
+    }
+
+    if (message) {
+      this.sound.playClick();
+      this.player.showSpeechBubble(message);
+    }
+  }
+
+  /**
+   * Menggambar badan layang-layang belah ketupat tradisional nusantara
+   */
+  private drawKiteBody(g: Phaser.GameObjects.Graphics): void {
+    g.clear();
+
+    // Ukuran layang-layang: Belah ketupat lebar 44px, tinggi 54px
+    const top = { x: 0, y: -26 };
+    const bottom = { x: 0, y: 28 };
+    const left = { x: -22, y: -6 };
+    const right = { x: 22, y: -6 };
+    const center = { x: 0, y: -6 };
+
+    // 4 Sayap warna-warni layangan nusantara
+    // 1. Kiri Atas: Merah Cerah
+    g.fillStyle(0xef4444, 0.95);
+    g.fillTriangle(top.x, top.y, left.x, left.y, center.x, center.y);
+
+    // 2. Kanan Atas: Kuning Emas
+    g.fillStyle(0xf59e0b, 0.95);
+    g.fillTriangle(top.x, top.y, right.x, right.y, center.x, center.y);
+
+    // 3. Kiri Bawah: Biru Langit
+    g.fillStyle(0x06b6d4, 0.95);
+    g.fillTriangle(left.x, left.y, bottom.x, bottom.y, center.x, center.y);
+
+    // 4. Kanan Bawah: Hijau Zamrud
+    g.fillStyle(0x10b981, 0.95);
+    g.fillTriangle(right.x, right.y, bottom.x, bottom.y, center.x, center.y);
+
+    // Garis Pinggir Luar (Outline tebal bergaya Clay-Pixel)
+    g.lineStyle(2, 0x1e293b, 1);
+    g.beginPath();
+    g.moveTo(top.x, top.y);
+    g.lineTo(right.x, right.y);
+    g.lineTo(bottom.x, bottom.y);
+    g.lineTo(left.x, left.y);
+    g.closePath();
+    g.strokePath();
+
+    // Rangka Bambu Silang Tradisional
+    g.lineStyle(2, 0x78350f, 1); // Cokelat bambu tua
+    // Tulang vertikal (tengah)
+    g.beginPath();
+    g.moveTo(top.x, top.y);
+    g.lineTo(bottom.x, bottom.y);
+    g.strokePath();
+
+    // Sayap lengkung horisontal bambu
+    g.beginPath();
+    g.moveTo(left.x, left.y);
+    g.lineTo(right.x, right.y);
+    g.strokePath();
+
+    // Ikatan benang pusat bambu (Intan putih)
+    g.fillStyle(0xffffff, 1);
+    g.fillCircle(center.x, center.y, 2.5);
+  }
+
+  /**
+   * Mengupdate fisika, ayunan angin, ekor, dan benang layang-layang setiap frame
+   */
+  private updateKite(time: number, delta: number): void {
+    if (!this.isFlyingKite || !this.kiteContainer) {
+      if (this.kiteStringGraphics) this.kiteStringGraphics.clear();
+      return;
+    }
+
+    // Jika pemain keluar dari WorldScene, otomatis gulung layang-layang
+    if (this.scene.scene.key !== 'WorldScene') {
+      this.stopKiteFlying('🏠 Layang-layang digulung karena memasuki ruangan.');
+      return;
+    }
+
+    // Cek apakah item aktif masih layang-layang
+    const activeItem = InventoryManager.getInstance().getActiveItem();
+    if (!InventoryManager.isKiteItem(activeItem)) {
+      this.stopKiteFlying('🪁 Layang-layang digulung karena beralih ke perkakas lain.');
+      return;
+    }
+
+    // Gerakan pemain mempengaruhi posisi layangan
+    const isRunning = this.isPlayerRunning();
+    const facingLeft = (this.player as any).flipX || this.player.getDirection?.() === 'left';
+
+    // Angin lembut berhembus (Sine wave)
+    const windSpeed = isRunning ? 0.004 : 0.0022;
+    const windSwayX = Math.sin(time * windSpeed) * (isRunning ? 28 : 36);
+    const windSwayY = Math.cos(time * (windSpeed * 1.25)) * (isRunning ? 12 : 16);
+
+    // Ketinggian layang-layang (lebih tinggi saat lari cepat)
+    const baseAltitude = isRunning ? 185 : 155;
+    // Layang-layang tertiup ke belakang arah gerak
+    const dragOffsetX = facingLeft ? 45 : -45;
+
+    const targetX = this.player.x + dragOffsetX + windSwayX;
+    const targetY = this.player.y - baseAltitude + windSwayY;
+
+    // Smooth inertia lerp
+    const lerpFactor = Math.min(1, (delta / 1000) * (isRunning ? 4.5 : 3.2));
+    const prevKiteX = this.kiteX;
+    this.kiteX += (targetX - this.kiteX) * lerpFactor;
+    this.kiteY += (targetY - this.kiteY) * lerpFactor;
+
+    // Hitung kemiringan layangan (Tilt) sesuai kecepatan dan ayunan angin
+    const speedX = this.kiteX - prevKiteX;
+    const targetTilt = (speedX * 0.035) + (Math.sin(time * 0.003) * 0.12);
+    this.kiteTilt += (targetTilt - this.kiteTilt) * 0.15;
+
+    this.kiteContainer.setPosition(this.kiteX, this.kiteY);
+    this.kiteContainer.setRotation(this.kiteTilt);
+
+    // Update Ekor Layang-layang (Tail Wave Ribbons)
+    if (this.kiteTailGraphics) {
+      this.kiteTailGraphics.clear();
+      let parentX = 0;
+      let parentY = 28;
+
+      const ribbonColors = [0xef4444, 0xf59e0b, 0x10b981, 0x06b6d4, 0xec4899];
+
+      for (let i = 0; i < this.kiteTailNodes.length; i++) {
+        const segTime = time * 0.004 - i * 0.6;
+        const waveX = Math.sin(segTime) * (6 + i * 2.5);
+        const curY = parentY + 9;
+        const curX = waveX;
+
+        // Tali ekor benang
+        this.kiteTailGraphics.lineStyle(1.5, 0xffffff, 0.85);
+        this.kiteTailGraphics.beginPath();
+        this.kiteTailGraphics.moveTo(parentX, parentY);
+        this.kiteTailGraphics.lineTo(curX, curY);
+        this.kiteTailGraphics.strokePath();
+
+        // Pita-pita segitiga kecil di setiap simpul ekor
+        if (i % 2 === 1) {
+          const color = ribbonColors[i % ribbonColors.length];
+          this.kiteTailGraphics.fillStyle(color, 1);
+          this.kiteTailGraphics.fillTriangle(curX - 4, curY, curX + 4, curY, curX, curY + 4);
+        }
+
+        parentX = curX;
+        parentY = curY;
+      }
+    }
+
+    // Gambar Benang Layang-Layang dari tangan pemain ke layangan
+    if (this.kiteStringGraphics) {
+      this.kiteStringGraphics.clear();
+      this.kiteStringGraphics.setDepth(99990);
+
+      // Posisi tangan pemain
+      const handX = this.player.x + (facingLeft ? -10 : 10);
+      const handY = this.player.y - 26;
+
+      // Titik ikatan pada layangan (di dekat pusat bambu)
+      const kiteTieX = this.kiteX;
+      const kiteTieY = this.kiteY - 6;
+
+      // Kelenturan tali ditiup gravitasi dan angin
+      const midX = (handX + kiteTieX) * 0.5 + Math.sin(time * 0.0025) * 10;
+      const midY = (handY + kiteTieY) * 0.5 + 18 + Math.cos(time * 0.002) * 6;
+
+      // Garis benang putih/krem halus melengkung via QuadraticBezier
+      this.kiteStringGraphics.lineStyle(1.5, 0xf1f5f9, 0.85);
+      const curve = new Phaser.Curves.QuadraticBezier(
+        new Phaser.Math.Vector2(handX, handY),
+        new Phaser.Math.Vector2(midX, midY),
+        new Phaser.Math.Vector2(kiteTieX, kiteTieY)
+      );
+      const curvePoints = curve.getPoints(12);
+
+      this.kiteStringGraphics.beginPath();
+      this.kiteStringGraphics.moveTo(curvePoints[0].x, curvePoints[0].y);
+      for (let i = 1; i < curvePoints.length; i++) {
+        this.kiteStringGraphics.lineTo(curvePoints[i].x, curvePoints[i].y);
+      }
+      this.kiteStringGraphics.strokePath();
+    }
   }
 }

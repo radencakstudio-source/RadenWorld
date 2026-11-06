@@ -147,6 +147,15 @@ export const MarketRealtorModal: React.FC<MarketRealtorModalProps> = ({
       description:
         'Kapak baja tajam dengan gagang kayu jati solid untuk memotong kayu bakar dan ranting.',
     },
+    {
+      id: 'tool_kite_raden',
+      name: 'Layang-Layang Tradisional Raden',
+      category: 'tool',
+      icon: '🪁',
+      price: 150,
+      description:
+        'Layang-layang hias bambu tradisional nusantara. Hanya bisa diterbangkan di area terbuka Peta Dunia (World) dengan tombol [F]!',
+    },
   ];
 
   const seedsCatalog: ISeedMarketItem[] = [

@@ -51,9 +51,9 @@ export class LibraryScene extends Phaser.Scene {
   private lastX: number = -1;
   private lastY: number = -1;
 
-  // Dimensi Ruangan Tepat 16x11 Grid @ 120px
+  // Dimensi Ruangan Tepat 16x9 Grid @ 120px (1920px x 1080px)
   public readonly roomWidth: number = 1920;  // 16 petak x 120px
-  public readonly roomHeight: number = 1320; // 11 petak x 120px
+  public readonly roomHeight: number = 1080; // 9 petak x 120px
   public readonly tileSize: number = 120;
 
   // Zona Interaksi
@@ -360,8 +360,8 @@ export class LibraryScene extends Phaser.Scene {
 
     // Batas Obstacle Dinding (Atas 2.2 baris petak / 264px penuh agar avatar tidak tertimpa dinding, Kiri, Kanan)
     this.addGridObstacle(0, 0, 16, 2.2);
-    this.addGridObstacle(0, 0, 1, 11);
-    this.addGridObstacle(15, 0, 1, 11);
+    this.addGridObstacle(0, 0, 1, 9);
+    this.addGridObstacle(15, 0, 1, 9);
 
     // Banner Utama Perpustakaan Kota
     const bannerG = this.add.graphics();
@@ -458,7 +458,7 @@ export class LibraryScene extends Phaser.Scene {
     // ========================================================================
     // 1. SEKSI MATERI SD (Sisi Barat / Kiri: gx: 1.5 s/d 4.5)
     // ========================================================================
-    this.renderCategoryHeader(360, 3.2 * ts, '🔴 SEKSI BUKU SD (KELAS 1-6)', '#ef4444');
+    this.renderCategoryHeader(360, 2.8 * ts, '🔴 SEKSI BUKU SD (KELAS 1-6)', '#ef4444');
 
     const sdDetails = [
       '📖 Matematika Dasar: Perkalian Cepat, Pecahan Senilai & Luas Bangun Datar',
@@ -467,22 +467,23 @@ export class LibraryScene extends Phaser.Scene {
       '📜 Cerita Nusantara: Legenda Candi Prambanan, Danau Toba & Si Kancil Cerdik',
     ];
 
-    // Baris SD 1 (gy: 4, y: 480..600)
-    this.renderLongBookshelf(1.5, 4, 3, 'sd', 0xef4444);
+    // Baris SD 1 (gy: 3.6)
+    this.renderLongBookshelf(1.5, 3.6, 3, 'sd', 0xef4444);
     this.bookshelfZones.push({
       x: 3 * ts,
-      y: 4.8 * ts,
+      y: 4.4 * ts,
       category: 'sd',
       title: 'Rak Buku Materi SD: Berhitung & IPA Dasar',
       details: sdDetails,
       expGain: 20,
     });
 
-    // Baris SD 2 (gy: 7, y: 840..960)
-    this.renderLongBookshelf(1.5, 7, 3, 'sd', 0xef4444);
+    // Baris SD 2 (gy: 6.2)
+    this.renderCategoryHeader(360, 5.4 * ts, '🔴 SEKSI DONGENG & LITERASI SD', '#ef4444');
+    this.renderLongBookshelf(1.5, 6.2, 3, 'sd', 0xef4444);
     this.bookshelfZones.push({
       x: 3 * ts,
-      y: 7.8 * ts,
+      y: 7.0 * ts,
       category: 'sd',
       title: 'Rak Buku Dongeng & Bahasa Indonesia SD',
       details: sdDetails,
@@ -490,9 +491,9 @@ export class LibraryScene extends Phaser.Scene {
     });
 
     // ========================================================================
-    // 2. SEKSI MATERI SMP (Sisi Timur / Kanan Atas: gx: 11.5 s/d 14.5, gy: 4)
+    // 2. SEKSI MATERI SMP (Sisi Timur / Kanan Atas: gx: 11.5 s/d 14.5, gy: 3.6)
     // ========================================================================
-    this.renderCategoryHeader(this.roomWidth - 360, 3.2 * ts, '🔵 SEKSI BUKU SMP (KELAS 7-9)', '#3b82f6');
+    this.renderCategoryHeader(this.roomWidth - 360, 2.8 * ts, '🔵 SEKSI BUKU SMP (KELAS 7-9)', '#3b82f6');
 
     const smpDetails = [
       '📐 Aljabar & Geometri: Persamaan Kuadrat, Dalil Pythagoras & Peluang Statistik',
@@ -501,10 +502,10 @@ export class LibraryScene extends Phaser.Scene {
       '🌏 IPS & Geografi: Pergerakan Lempeng Bumi, Iklim Tropis & Jalur Sutra Maritim',
     ];
 
-    this.renderLongBookshelf(11.5, 4, 3, 'smp', 0x3b82f6);
+    this.renderLongBookshelf(11.5, 3.6, 3, 'smp', 0x3b82f6);
     this.bookshelfZones.push({
       x: 13 * ts,
-      y: 4.8 * ts,
+      y: 4.4 * ts,
       category: 'smp',
       title: 'Rak Buku Sains & Matematika SMP',
       details: smpDetails,
@@ -512,9 +513,9 @@ export class LibraryScene extends Phaser.Scene {
     });
 
     // ========================================================================
-    // 3. SEKSI MATERI SMA (Sisi Timur / Kanan Bawah: gx: 11.5 s/d 14.5, gy: 7)
+    // 3. SEKSI MATERI SMA (Sisi Timur / Kanan Bawah: gx: 11.5 s/d 14.5, gy: 6.2)
     // ========================================================================
-    this.renderCategoryHeader(this.roomWidth - 360, 6.2 * ts, '🟢 SEKSI BUKU SMA (KELAS 10-12)', '#10b981');
+    this.renderCategoryHeader(this.roomWidth - 360, 5.4 * ts, '🟢 SEKSI BUKU SMA (KELAS 10-12)', '#10b981');
 
     const smaDetails = [
       '📊 Kalkulus Lanjut: Limit Fungsi, Turunan Diferensial & Integral Parsial',
@@ -523,10 +524,10 @@ export class LibraryScene extends Phaser.Scene {
       '📈 Ekonomi & Sosiologi: Elastisitas Pasar, Kebijakan Fiskal Moneter & Teori Sosial',
     ];
 
-    this.renderLongBookshelf(11.5, 7, 3, 'sma', 0x10b981);
+    this.renderLongBookshelf(11.5, 6.2, 3, 'sma', 0x10b981);
     this.bookshelfZones.push({
       x: 13 * ts,
-      y: 7.8 * ts,
+      y: 7.0 * ts,
       category: 'sma',
       title: 'Rak Ensiklopedia & Kalkulus Lanjut SMA',
       details: smaDetails,
@@ -608,8 +609,8 @@ export class LibraryScene extends Phaser.Scene {
     const ts = this.tileSize;
 
     const deskRows = [
-      { gy: 5.2 },
-      { gy: 8.2 },
+      { gy: 4.0 },
+      { gy: 6.2 },
     ];
 
     deskRows.forEach(({ gy }) => {

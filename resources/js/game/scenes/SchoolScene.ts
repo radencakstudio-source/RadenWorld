@@ -81,9 +81,9 @@ export class SchoolScene extends Phaser.Scene {
 
   private obstacles!: Phaser.Physics.Arcade.StaticGroup;
 
-  // Dimensi Ruangan Sekolah: Dapat disesuaikan dinamis via Panel Arsitek Tahta Raden
-  public roomWidth: number = 2160;
-  public roomHeight: number = 1440;
+  // Dimensi Ruangan Sekolah: Tepat 1920px x 1080px (16x9 Petak Grid @ 120px)
+  public roomWidth: number = 1920;
+  public roomHeight: number = 1080;
   public readonly tileSize: number = 120;
   private customArchitectPropsGroup: (Phaser.GameObjects.Image | Phaser.GameObjects.GameObject)[] = [];
   private customArchitectTerrainsGroup: Phaser.GameObjects.Graphics[] = [];
@@ -91,11 +91,11 @@ export class SchoolScene extends Phaser.Scene {
   private occludingProps: Array<{ img: Phaser.GameObjects.Image; left: number; right: number; top: number; bottom: number; baseY: number }> = [];
 
   // Zona Interaktif
-  private exitDoorZone = { x: 1080, y: 1370 };
-  private whiteboardZone = { x: 1080, y: 220 };
-  private teacherDeskZone = { x: 1080, y: 380 };
-  private bookshelfZone = { x: 2060, y: 660 };
-  private madingZone = { x: 70, y: 660 };
+  private exitDoorZone = { x: 960, y: 1010 };
+  private whiteboardZone = { x: 960, y: 190 };
+  private teacherDeskZone = { x: 960, y: 340 };
+  private bookshelfZone = { x: 1855, y: 560 };
+  private madingZone = { x: 65, y: 560 };
   private studentDeskPositions: { x: number; y: number }[] = [];
 
   private activePrompt: string | null = null;
@@ -193,8 +193,8 @@ export class SchoolScene extends Phaser.Scene {
           role: 'Guru SD',
           avatarUrl: '/assets/sprites/NPC/1x2%20NPC%20GuruSD.webp',
           avatarType: 'sage',
-          x: 760,
-          y: 380,
+          x: 680,
+          y: 340,
           greeting: 'Selamat pagi anak pintar! Belajarlah dengan rajin dan ceria bersama Bu Dewi.',
           dialogues: [
             'Selamat pagi anak pintar! Selamat datang di Sekolah Dasar (SD) RadenWorld!',
@@ -212,8 +212,8 @@ export class SchoolScene extends Phaser.Scene {
           role: 'Guru SMP',
           avatarUrl: '/assets/sprites/NPC/1x2%20NPC%20GuruSMP.webp',
           avatarType: 'sage',
-          x: 760,
-          y: 380,
+          x: 680,
+          y: 340,
           greeting: 'Selamat datang di SMP RadenWorld! Siap mengeksplorasi sains dan logika bersama Bu Ainur?',
           dialogues: [
             'Salam sejahtera! Selamat datang di Gedung Sekolah Menengah Pertama (SMP) RadenWorld bersama Bu Ainur.',
@@ -231,8 +231,8 @@ export class SchoolScene extends Phaser.Scene {
           role: 'Guru SMA',
           avatarUrl: '/assets/sprites/NPC/1x2%20NPC%20GuruSMA.webp',
           avatarType: 'sage',
-          x: 760,
-          y: 380,
+          x: 680,
+          y: 340,
           greeting: 'Selamat datang para calon pemimpin masa depan di SMA RadenWorld bersama Pak Raden.',
           dialogues: [
             'Selamat datang di Sekolah Menengah Atas (SMA) RadenWorld, gerbang menuju perguruan tinggi dan kepemimpinan global.',
@@ -260,13 +260,13 @@ export class SchoolScene extends Phaser.Scene {
     this.createSchoolNpcs();
 
     // 5. Tentukan Posisi Spawn Pemain
-    let spawnX = 1080;
-    let spawnY = 1240;
+    let spawnX = 960;
+    let spawnY = 940;
 
     // Jika masuk dari pintu Open World, spawn tepat di depan pintu masuk sekolah
     if (this.fromDoor) {
-      spawnX = 1080;
-      spawnY = 1240;
+      spawnX = 960;
+      spawnY = 940;
     } else {
       // Jika refresh halaman browser: pulihkan posisi tersimpan di kelas
       try {
@@ -1118,12 +1118,12 @@ export class SchoolScene extends Phaser.Scene {
     g.strokeRect(90, 90, this.roomWidth - 180, this.roomHeight - 170);
 
     // Rintangan batas fisik dinding
-    this.addGridObstacle(0, 0, 18, 1); // Dinding utara
-    this.addGridObstacle(0, 0, 1, 12);  // Dinding barat
-    this.addGridObstacle(17, 0, 1, 12); // Dinding timur
-    // Dinding selatan (pintu di tengah gx=8..9 terbuka)
-    this.addGridObstacle(0, 11, 8, 1);
-    this.addGridObstacle(10, 11, 8, 1);
+    this.addGridObstacle(0, 0, 16, 1); // Dinding utara
+    this.addGridObstacle(0, 0, 1, 9);  // Dinding barat
+    this.addGridObstacle(15, 0, 1, 9); // Dinding timur
+    // Dinding selatan (pintu di tengah gx=7..8 terbuka)
+    this.addGridObstacle(0, 8, 7, 1);
+    this.addGridObstacle(9, 8, 7, 1);
 
     // 3. Spanduk Judul Sekolah di Dinding Atas
     g.fillStyle(0x1e293b, 0.95);
@@ -1141,37 +1141,37 @@ export class SchoolScene extends Phaser.Scene {
     }).setOrigin(0.5);
 
     // 4. Lambang Garuda Pancasila, Presiden, Wapres & Jam Dinding di Atas Papan Tulis
-    this.add.image(1080, 80, 'school-clock').setDepth(10);
-    this.add.image(1080, 125, 'school-garuda-presiden').setDepth(10);
+    this.add.image(960, 75, 'school-clock').setDepth(10);
+    this.add.image(960, 115, 'school-garuda-presiden').setDepth(10);
 
     // Tiang Bendera Merah Putih di Kiri Depan
-    const flag = this.add.image(520, 200, 'school-flag');
+    const flag = this.add.image(420, 180, 'school-flag');
     flag.setOrigin(0.5, 1.0);
     flag.setDepth(200);
 
     // Peta Kepulauan Indonesia di Kanan Depan
-    const mapIndonesia = this.add.image(1640, 200, 'school-map-indonesia');
+    const mapIndonesia = this.add.image(1500, 180, 'school-map-indonesia');
     mapIndonesia.setOrigin(0.5, 1.0);
     mapIndonesia.setDepth(200);
 
     // 5. Papan Tulis Besar di Dinding Depan (Whiteboard / Blackboard)
     const isDarkBoard = this.schoolType === 'sd';
     g.fillStyle(isDarkBoard ? 0x064e3b : 0xf8fafc, 1);
-    g.fillRoundedRect(740, 155, 680, 130, 10);
+    g.fillRoundedRect(620, 135, 680, 115, 10);
     g.lineStyle(6, 0x78350f, 1);
-    g.strokeRoundedRect(740, 155, 680, 130, 10);
+    g.strokeRoundedRect(620, 135, 680, 115, 10);
 
     // Baki spidol / kapur tulis di bawah papan
     g.fillStyle(0x78350f, 1);
-    g.fillRoundedRect(800, 282, 560, 8, 3);
+    g.fillRoundedRect(680, 248, 560, 8, 3);
     g.fillStyle(0x3b82f6, 1);
-    g.fillRect(820, 280, 22, 5); // Spidol biru
+    g.fillRect(700, 246, 22, 5); // Spidol biru
     g.fillStyle(0xef4444, 1);
-    g.fillRect(850, 280, 22, 5); // Spidol merah
+    g.fillRect(730, 246, 22, 5); // Spidol merah
     g.fillStyle(0x1e293b, 1);
-    g.fillRect(920, 278, 28, 8); // Penghapus papan
+    g.fillRect(800, 244, 28, 8); // Penghapus papan
 
-    this.add.text(1080, 190, 'AGENDA PELAJARAN & MOTIVASI BELAJAR HARI INI', {
+    this.add.text(960, 165, 'AGENDA PELAJARAN & MOTIVASI BELAJAR HARI INI', {
       fontFamily: '"Chakra Petch", sans-serif',
       fontSize: '14px',
       color: isDarkBoard ? '#a7f3d0' : '#1e293b',
@@ -1186,7 +1186,7 @@ export class SchoolScene extends Phaser.Scene {
       ? '"Pendidikan adalah kunci pembuka pintu gerbang kebebasan dan peradaban."'
       : '"Berilmu amaliah, beramal ilmiah, dan berakhlak mulia kebangsaan."';
 
-    this.add.text(1080, 225, quoteText, {
+    this.add.text(960, 200, quoteText, {
       fontFamily: '"Chakra Petch", sans-serif',
       fontSize: '12px',
       color: isDarkBoard ? '#fef08a' : '#0369a1',
@@ -1197,19 +1197,19 @@ export class SchoolScene extends Phaser.Scene {
 
     // 6. Panggung Podium Guru di Depan Papan Tulis
     g.fillStyle(0x991b1b, 0.45);
-    g.fillRoundedRect(860, 310, 440, 130, 14);
+    g.fillRoundedRect(740, 275, 440, 125, 14);
     g.lineStyle(2, 0xd97706, 0.85);
-    g.strokeRoundedRect(860, 310, 440, 130, 14);
+    g.strokeRoundedRect(740, 275, 440, 125, 14);
 
     // Kursi Guru di belakang meja guru
-    const teacherChair = this.add.image(1080, 320, 'school-teacher-chair');
+    const teacherChair = this.add.image(960, 285, 'school-teacher-chair');
     teacherChair.setDisplaySize(75, 85);
-    teacherChair.setDepth(320);
+    teacherChair.setDepth(285);
 
     // Meja Guru di depan kursi guru
-    const teacherDesk = this.add.image(1080, 380, 'school-teacher-desk');
+    const teacherDesk = this.add.image(960, 345, 'school-teacher-desk');
     teacherDesk.setDisplaySize(150, 85);
-    teacherDesk.setDepth(380);
+    teacherDesk.setDepth(345);
     teacherDesk.setInteractive({ useHandCursor: true });
     teacherDesk.on('pointerdown', () => {
       EventBus.emit('open-school-subjects', {
@@ -1222,28 +1222,26 @@ export class SchoolScene extends Phaser.Scene {
     });
 
     // Rintangan meja guru agar tidak tertembus
-    this.addGridObstacle(8, 3, 2, 1);
+    this.addGridObstacle(7, 2, 2, 1);
 
     // 7. BARISAN MEJA & KURSI SISWA (Terpisah Grid Bersih, Bukan Bertumpuk 1 Grid)
     // 4 Kolom Meja Siswa dengan lorong tengah luas (central corridor)
-    // Kolom 1 (gx = 3, x = 420), Kolom 2 (gx = 5, x = 660)
-    // Lorong tengah (gx = 7, 8, 9, 10, x = 780..1380) bebas tanpa halangan
-    // Kolom 3 (gx = 12, x = 1500), Kolom 4 (gx = 14, x = 1740)
+    // Kolom 1 (gx = 2, x = 300), Kolom 2 (gx = 4, x = 540)
+    // Lorong tengah (gx = 6, 7, 8, 9, x = 720..1200) bebas tanpa halangan
+    // Kolom 3 (gx = 11, x = 1380), Kolom 4 (gx = 13, x = 1620)
     const studentDeskCols = [
-      { gx: 3, x: 420 },
-      { gx: 5, x: 660 },
-      { gx: 12, x: 1500 },
-      { gx: 14, x: 1740 }
+      { gx: 2, x: 300 },
+      { gx: 4, x: 540 },
+      { gx: 11, x: 1380 },
+      { gx: 13, x: 1620 }
     ];
 
-    // 3 Baris Meja: Setiap meja di baris gy, dan kursi di baris gy + 1
-    // Baris 1: Meja gy = 4 (y = 540), Kursi gy = 5 (y = 660)
-    // Baris 2: Meja gy = 6 (y = 780), Kursi gy = 7 (y = 900)
-    // Baris 3: Meja gy = 8 (y = 1020), Kursi gy = 9 (y = 1140)
+    // 2 Baris Meja: Setiap meja di baris gy, dan kursi di baris gy + 1
+    // Baris 1: Meja gy = 4 (y = 500), Kursi gy = 5 (y = 600)
+    // Baris 2: Meja gy = 6 (y = 720), Kursi gy = 7 (y = 820)
     const deskRowDefs = [
-      { deskGy: 4, deskY: 540, chairGy: 5, chairY: 660 },
-      { deskGy: 6, deskY: 780, chairGy: 7, chairY: 900 },
-      { deskGy: 8, deskY: 1020, chairGy: 9, chairY: 1140 }
+      { deskGy: 4, deskY: 500, chairGy: 5, chairY: 600 },
+      { deskGy: 6, deskY: 720, chairGy: 7, chairY: 820 }
     ];
 
     this.studentDeskPositions = [];
@@ -1282,13 +1280,13 @@ export class SchoolScene extends Phaser.Scene {
 
     // 8. Fasilitas Dinding Samping Kiri & Kanan (Jendela, Mading, Rak Buku Pojok Baca)
     // Sisi Kiri: 2 Jendela Kelas & Mading Kelas di tengah
-    const winL1 = this.add.image(45, 420, 'school-window');
-    winL1.setDisplaySize(80, 180);
-    winL1.setDepth(420);
+    const winL1 = this.add.image(45, 360, 'school-window');
+    winL1.setDisplaySize(80, 160);
+    winL1.setDepth(360);
 
-    const mading = this.add.image(50, 660, 'school-mading');
+    const mading = this.add.image(50, 560, 'school-mading');
     mading.setDisplaySize(180, 110);
-    mading.setDepth(660);
+    mading.setDepth(560);
     mading.setInteractive({ useHandCursor: true });
     mading.on('pointerdown', () => {
       EventBus.emit('open-school-subjects', {
@@ -1300,44 +1298,44 @@ export class SchoolScene extends Phaser.Scene {
       this.player?.showSpeechBubble('Membuka Papan Peringkat Juara Kelas & Sekolah! 🏆📌');
     });
 
-    const winL2 = this.add.image(45, 900, 'school-window');
-    winL2.setDisplaySize(80, 180);
-    winL2.setDepth(900);
+    const winL2 = this.add.image(45, 780, 'school-window');
+    winL2.setDisplaySize(80, 160);
+    winL2.setDepth(780);
 
     // Sisi Kanan: 2 Jendela Kelas & Rak Buku Pojok Baca di tengah
-    const winR1 = this.add.image(this.roomWidth - 45, 420, 'school-window');
-    winR1.setDisplaySize(80, 180);
-    winR1.setDepth(420);
+    const winR1 = this.add.image(this.roomWidth - 45, 360, 'school-window');
+    winR1.setDisplaySize(80, 160);
+    winR1.setDepth(360);
 
-    const bookshelf = this.add.image(this.roomWidth - 65, 660, 'school-bookshelf');
+    const bookshelf = this.add.image(this.roomWidth - 65, 560, 'school-bookshelf');
     bookshelf.setDisplaySize(120, 200);
-    bookshelf.setDepth(660);
+    bookshelf.setDepth(560);
 
-    const winR2 = this.add.image(this.roomWidth - 45, 900, 'school-window');
-    winR2.setDisplaySize(80, 180);
-    winR2.setDepth(900);
+    const winR2 = this.add.image(this.roomWidth - 45, 780, 'school-window');
+    winR2.setDisplaySize(80, 160);
+    winR2.setDepth(780);
 
     // 9. Dinding Belakang: Sudut Kebersihan & Tempat Sampah Kelas
-    const cleaningRack = this.add.image(940, 1360, 'school-cleaning-rack');
-    cleaningRack.setDisplaySize(70, 130);
-    cleaningRack.setDepth(1360);
+    const cleaningRack = this.add.image(820, 1010, 'school-cleaning-rack');
+    cleaningRack.setDisplaySize(70, 120);
+    cleaningRack.setDepth(1010);
 
     if (this.textures.exists('prop-tong-sampah')) {
-      const trashCan = this.add.image(1220, 1360, 'prop-tong-sampah');
-      trashCan.setDisplaySize(80, 140);
-      trashCan.setDepth(1360);
+      const trashCan = this.add.image(1100, 1010, 'prop-tong-sampah');
+      trashCan.setDisplaySize(80, 130);
+      trashCan.setDepth(1010);
     }
 
     // 10. Pintu Keluar ke Open World di Bagian Tengah Bawah
     g.fillStyle(0x0f172a, 1);
-    g.fillRoundedRect(960, 1300, 240, 70, 8);
+    g.fillRoundedRect(840, 950, 240, 65, 8);
     g.lineStyle(3, 0xf59e0b, 1);
-    g.strokeRoundedRect(960, 1300, 240, 70, 8);
+    g.strokeRoundedRect(840, 950, 240, 65, 8);
 
     g.fillStyle(0x0284c7, 1);
-    g.fillRect(990, 1350, 180, 45);
+    g.fillRect(870, 995, 180, 40);
 
-    this.add.text(1080, 1325, '🚪 PINTU KELUAR KE WORLD', {
+    this.add.text(960, 975, '🚪 PINTU KELUAR KE WORLD', {
       fontFamily: '"Chakra Petch", sans-serif',
       fontSize: '13px',
       color: '#fef08a',

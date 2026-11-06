@@ -44,9 +44,9 @@ export class CafeScene extends Phaser.Scene {
   private lastX: number = -1;
   private lastY: number = -1;
 
-  // Dimensi Ruangan Tepat 16x11 Grid @ 120px
+  // Dimensi Ruangan Tepat 16x9 Grid @ 120px (1920px x 1080px)
   public readonly roomWidth: number = 1920;  // 16 petak x 120px
-  public readonly roomHeight: number = 1320; // 11 petak x 120px
+  public readonly roomHeight: number = 1080; // 9 petak x 120px
   public readonly tileSize: number = 120;
 
   // Zona Interaksi
@@ -357,8 +357,8 @@ export class CafeScene extends Phaser.Scene {
 
     // Dinding Keliling Obstacle (Atas 2.2 baris petak / 264px penuh agar avatar tidak tertimpa dinding, Kiri, Kanan)
     this.addGridObstacle(0, 0, 16, 2.2);
-    this.addGridObstacle(0, 0, 1, 11);
-    this.addGridObstacle(15, 0, 1, 11);
+    this.addGridObstacle(0, 0, 1, 9);
+    this.addGridObstacle(15, 0, 1, 9);
 
     // Papan Chalkboard Menu Kiri (gx: 1.5..3.5, gy: 0.3)
     const boardL = this.add.graphics();
@@ -598,8 +598,8 @@ export class CafeScene extends Phaser.Scene {
 
   /**
    * Render 8 Set Meja & Kursi Cafe yang Pas Sesuai Grid:
-   * Baris 1: gy: 5 (y: 600..720) pada kolom gx: 1.5, 5, 9.5, 13
-   * Baris 2: gy: 8 (y: 960..1080) pada kolom gx: 1.5, 5, 9.5, 13
+   * Baris 1: gy: 4.5 (y: 540) pada kolom gx: 2, 5.5, 9.5, 13
+   * Baris 2: gy: 6.5 (y: 780) pada kolom gx: 2, 5.5, 9.5, 13
    */
   private renderGridDiningTables(): void {
     const ts = this.tileSize;
@@ -609,17 +609,17 @@ export class CafeScene extends Phaser.Scene {
     // Sisi Kanan (Timur): gx: 9.5 & gx: 13
     // Lorong tengah (gx: 7..8) tetap lapang & bebas hambatan untuk jalan ke Doni!
     const tableGridSpots = [
-      // Baris 1 Meja (gy: 5)
-      { gx: 2,   gy: 5, hasCroissant: true },
-      { gx: 5.5, gy: 5, hasCroissant: false },
-      { gx: 9.5, gy: 5, hasCroissant: true },
-      { gx: 13,  gy: 5, hasCroissant: false },
+      // Baris 1 Meja (gy: 4.5)
+      { gx: 2,   gy: 4.5, hasCroissant: true },
+      { gx: 5.5, gy: 4.5, hasCroissant: false },
+      { gx: 9.5, gy: 4.5, hasCroissant: true },
+      { gx: 13,  gy: 4.5, hasCroissant: false },
 
-      // Baris 2 Meja (gy: 8)
-      { gx: 2,   gy: 8, hasCroissant: false },
-      { gx: 5.5, gy: 8, hasCroissant: true },
-      { gx: 9.5, gy: 8, hasCroissant: false },
-      { gx: 13,  gy: 8, hasCroissant: true },
+      // Baris 2 Meja (gy: 6.5)
+      { gx: 2,   gy: 6.5, hasCroissant: false },
+      { gx: 5.5, gy: 6.5, hasCroissant: true },
+      { gx: 9.5, gy: 6.5, hasCroissant: false },
+      { gx: 13,  gy: 6.5, hasCroissant: true },
     ];
 
     tableGridSpots.forEach(({ gx, gy, hasCroissant }) => {
@@ -739,17 +739,17 @@ export class CafeScene extends Phaser.Scene {
     }
     this.addGridObstacle(14, 2, 1, 1.2);
 
-    // 3. Tanaman Indoor Monstera Sudut Kiri Bawah (gx: 1, gy: 9.5)
-    this.renderIndoorPlant(1.5 * ts, 9.8 * ts);
-    this.addGridObstacle(1, 9.5, 1, 1);
+    // 3. Tanaman Indoor Monstera Sudut Kiri Bawah (gx: 1, gy: 7.5)
+    this.renderIndoorPlant(1.5 * ts, 7.8 * ts);
+    this.addGridObstacle(1, 7.5, 1, 1);
 
-    // 4. Tanaman Indoor Ficus Sudut Kanan Bawah (gx: 14, gy: 9.5)
-    this.renderIndoorPlant(14.5 * ts, 9.8 * ts);
-    this.addGridObstacle(14, 9.5, 1, 1);
+    // 4. Tanaman Indoor Ficus Sudut Kanan Bawah (gx: 14, gy: 7.5)
+    this.renderIndoorPlant(14.5 * ts, 7.8 * ts);
+    this.addGridObstacle(14, 7.5, 1, 1);
 
-    // 5. Jukebox Musik Klasik di Dinding Kanan (gx: 14, gy: 5)
+    // 5. Jukebox Musik Klasik di Dinding Kanan (gx: 14, gy: 4)
     const jx = 14.5 * ts;
-    const jy = 5.5 * ts;
+    const jy = 4.5 * ts;
     const jG = this.add.graphics();
     jG.fillStyle(0x581c87, 1);
     jG.fillRoundedRect(jx - 35, jy - 50, 70, 100, 10);
@@ -767,7 +767,7 @@ export class CafeScene extends Phaser.Scene {
       padding: { x: 4, y: 1 },
     }).setOrigin(0.5, 0.5).setDepth(jy + 5);
 
-    this.addGridObstacle(14, 5, 1, 1);
+    this.addGridObstacle(14, 4, 1, 1);
   }
 
   /**

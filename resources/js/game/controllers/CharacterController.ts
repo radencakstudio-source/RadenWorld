@@ -391,6 +391,7 @@ export class CharacterController {
   // PARAMETER SISTEM LAYANG-LAYANG (KITE FLYING SYSTEM)
   // ==========================================================================
   private isFlyingKite: boolean = false;
+  private kiteControlMode: 'kite' | 'character' = 'kite';
   private kiteContainer: Phaser.GameObjects.Container | null = null;
   private kiteBodyGraphics: Phaser.GameObjects.Graphics | null = null;
   private kiteTailGraphics: Phaser.GameObjects.Graphics | null = null;
@@ -406,6 +407,7 @@ export class CharacterController {
   private keySpace!: Phaser.Input.Keyboard.Key;
   private keyF!: Phaser.Input.Keyboard.Key;
   private keyE!: Phaser.Input.Keyboard.Key;
+  private keyR!: Phaser.Input.Keyboard.Key;
   private keyShift!: Phaser.Input.Keyboard.Key;
 
   constructor(player: Player, scene: Phaser.Scene) {
@@ -451,6 +453,7 @@ export class CharacterController {
       this.keySpace = this.scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE, false);
       this.keyF = this.scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.F, false);
       this.keyE = this.scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.E, false);
+      this.keyR = this.scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.R, false);
       this.keyShift = this.scene.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SHIFT, false);
 
       // Listener tombol SHIFT (Lari Cepat / Sprint)
@@ -486,6 +489,14 @@ export class CharacterController {
       this.keyF.on('up', () => {
         if (this.isTyping()) return;
         this.handleFlexibleToolKeyUp();
+      });
+
+      // Listener tombol R (Beralih Mode Kendali: Layang-layang <-> Karakter)
+      this.keyR.on('down', () => {
+        if (this.isTyping()) return;
+        if (this.isFlyingKite) {
+          this.toggleKiteControlMode();
+        }
       });
     }
   }
@@ -765,6 +776,14 @@ export class CharacterController {
     EventBus.on('player-kite-toggle', onKiteToggle);
     EventBus.on('player-kite', onKiteToggle);
 
+    const onKiteModeToggle = () => {
+      if (this.isFlyingKite) {
+        this.toggleKiteControlMode();
+      }
+    };
+    EventBus.on('player-kite-mode-toggle', onKiteModeToggle);
+    EventBus.on('kite-mode-toggle', onKiteModeToggle);
+
     try {
       const gs = JSON.parse(localStorage.getItem('raden_game_settings') || '{}');
       if (gs.enableMovementEffects === false) {
@@ -802,6 +821,8 @@ export class CharacterController {
       EventBus.off('player-consumed-potion', onPotionConsumed);
       EventBus.off('player-kite-toggle', onKiteToggle);
       EventBus.off('player-kite', onKiteToggle);
+      EventBus.off('player-kite-mode-toggle', onKiteModeToggle);
+      EventBus.off('kite-mode-toggle', onKiteModeToggle);
       EventBus.off('graphics-settings-updated', onGraphicsSettingsUpdated);
       this.stopKiteFlying();
       this.landingGraphics?.destroy();
@@ -2126,6 +2147,27 @@ export class CharacterController {
       return { vx: 0, vy: 0, isMoving: false };
     }
 
+    // Jika sedang menerbangkan layang-layang dan dalam MODE KENDALI LAYANG-LAYANG ('kite'):
+    // Tahan karakter di tanah (posisi memegang gulungan benang), hadapkan karakter ke arah layangan,
+    // dan seluruh input WASD / Panah / Joystick dialihkan untuk bermanuver di angkasa!
+    if (this.isFlyingKite && this.kiteControlMode === 'kite') {
+      body.setVelocity(0, 0);
+      this.targetDestination = null;
+      this.crystalGraphics.clear();
+      this.onArrivalCallback = null;
+
+      // Hadapkan karakter ke arah posisi layang-layang di langit
+      if (this.kiteX < this.player.x - 20) {
+        this.player.setDirection('left');
+      } else if (this.kiteX > this.player.x + 20) {
+        this.player.setDirection('right');
+      } else {
+        this.player.setDirection('up');
+      }
+
+      return { vx: 0, vy: 0, isMoving: false };
+    }
+
     let vx = 0;
     let vy = 0;
 
@@ -2328,6 +2370,47 @@ export class CharacterController {
   }
 
   /**
+   * Mode kendali saat layang-layang terbang ('kite' = kemudi layangan, 'character' = jalan karakter)
+   */
+  public getKiteControlMode(): 'kite' | 'character' {
+    return this.kiteControlMode;
+  }
+
+  /**
+   * Mengatur mode kendali layang-layang secara manual
+   */
+  public setKiteControlMode(mode: 'kite' | 'character'): void {
+    if (!this.isFlyingKite) return;
+    this.kiteControlMode = mode;
+    this.sound.playClick();
+    EventBus.emit('kite-mode-changed', {
+      isFlying: true,
+      mode: this.kiteControlMode,
+    });
+  }
+
+  /**
+   * Beralih antara Mode Kemudi Layangan dan Mode Jalan Karakter
+   */
+  public toggleKiteControlMode(): void {
+    if (!this.isFlyingKite) return;
+
+    this.kiteControlMode = this.kiteControlMode === 'kite' ? 'character' : 'kite';
+    this.sound.playClick();
+
+    if (this.kiteControlMode === 'kite') {
+      this.player.showSpeechBubble('🪁 Mode Kendali Layang-Layang!\nGunakan WASD / Analog untuk mengarahkan layangan di langit.\nTekan [R] untuk jalan karakter, [F] untuk gulung benang.');
+    } else {
+      this.player.showSpeechBubble('🚶 Mode Kendali Karakter!\nKarakter bebas berlari, layangan akan mengikutimu di angkasa.\nTekan [R] untuk kemudikan layangan lagi.');
+    }
+
+    EventBus.emit('kite-mode-changed', {
+      isFlying: true,
+      mode: this.kiteControlMode,
+    });
+  }
+
+  /**
    * Menghidupkan / mematikan mode penerbangan layang-layang
    */
   public toggleKiteFlying(): void {
@@ -2357,11 +2440,12 @@ export class CharacterController {
     if (this.isFlyingKite) return;
 
     this.isFlyingKite = true;
+    this.kiteControlMode = 'kite'; // Default langsung ke mode kendali layangan
     this.sound.playItemUse();
 
     const facingLeft = (this.player as any).flipX || this.player.getDirection?.() === 'left';
     this.kiteX = this.player.x + (facingLeft ? 45 : -45);
-    this.kiteY = this.player.y - 160;
+    this.kiteY = this.player.y - 170;
     this.kiteTilt = 0;
 
     // Inisialisasi node ekor layangan
@@ -2392,7 +2476,12 @@ export class CharacterController {
     this.kiteTailGraphics = this.scene.add.graphics();
     this.kiteContainer.add(this.kiteTailGraphics);
 
-    this.player.showSpeechBubble('🪁 Wussshh! Menerbangkan layang-layang ke angkasa RadenWorld!\nBawa berlari di padang rumput & pesisir pantai.');
+    this.player.showSpeechBubble('🪁 Mode Kendali Layang-Layang Aktif!\nGerakkan layangan di angkasa dengan WASD / Analog.\nTekan [R] untuk beralih kendali karakter, [F] untuk gulung.');
+
+    EventBus.emit('kite-mode-changed', {
+      isFlying: true,
+      mode: this.kiteControlMode,
+    });
   }
 
   /**
@@ -2402,6 +2491,8 @@ export class CharacterController {
     if (!this.isFlyingKite && !this.kiteContainer) return;
 
     this.isFlyingKite = false;
+    this.kiteControlMode = 'character';
+
     if (this.kiteStringGraphics) {
       this.kiteStringGraphics.clear();
     }
@@ -2412,6 +2503,11 @@ export class CharacterController {
       this.kiteBodyGraphics = null;
       this.kiteTailGraphics = null;
     }
+
+    EventBus.emit('kite-mode-changed', {
+      isFlying: false,
+      mode: 'character',
+    });
 
     if (message) {
       this.sound.playClick();
@@ -2500,33 +2596,112 @@ export class CharacterController {
       return;
     }
 
-    // Gerakan pemain mempengaruhi posisi layangan
+    const dt = delta / 1000;
     const isRunning = this.isPlayerRunning();
     const facingLeft = (this.player as any).flipX || this.player.getDirection?.() === 'left';
 
-    // Angin lembut berhembus (Sine wave)
-    const windSpeed = isRunning ? 0.004 : 0.0022;
-    const windSwayX = Math.sin(time * windSpeed) * (isRunning ? 30 : 40);
-    const windSwayY = Math.cos(time * (windSpeed * 1.25)) * (isRunning ? 14 : 18);
+    // Pangkal benang di tangan pemain
+    const handX = this.player.x + (facingLeft ? -10 : 10);
+    const handY = this.player.y - 26;
 
-    // Ketinggian layang-layang (lebih tinggi saat lari cepat)
-    const baseAltitude = isRunning ? 200 : 165;
-    // Layang-layang tertiup ke belakang arah gerak
-    const dragOffsetX = facingLeft ? 50 : -50;
+    if (this.kiteControlMode === 'kite') {
+      // ======================================================================
+      // 1. MODE KENDALI LAYANG-LAYANG (KITE STEERING MODE)
+      // Input WASD / Panah / Analog Joystick mengemudikan layang-layang langsung!
+      // ======================================================================
+      const cursors = this.player.getCursors?.();
+      const keysWASD = this.player.getKeysWASD?.();
+      const km = KeybindingManager.getInstance();
 
-    const targetX = this.player.x + dragOffsetX + windSwayX;
-    const targetY = this.player.y - baseAltitude + windSwayY;
+      const left = Boolean(cursors?.left?.isDown || keysWASD?.A?.isDown || km.isActionActive('moveLeft'));
+      const right = Boolean(cursors?.right?.isDown || keysWASD?.D?.isDown || km.isActionActive('moveRight'));
+      const up = Boolean(cursors?.up?.isDown || keysWASD?.W?.isDown || km.isActionActive('moveUp'));
+      const down = Boolean(cursors?.down?.isDown || keysWASD?.S?.isDown || km.isActionActive('moveDown'));
 
-    // Smooth inertia lerp
-    const lerpFactor = Math.min(1, (delta / 1000) * (isRunning ? 4.5 : 3.2));
-    const prevKiteX = this.kiteX;
-    this.kiteX += (targetX - this.kiteX) * lerpFactor;
-    this.kiteY += (targetY - this.kiteY) * lerpFactor;
+      let inputX = 0;
+      let inputY = 0;
 
-    // Hitung kemiringan layangan (Tilt) sesuai kecepatan dan ayunan angin
-    const speedX = this.kiteX - prevKiteX;
-    const targetTilt = (speedX * 0.035) + (Math.sin(time * 0.003) * 0.12);
-    this.kiteTilt += (targetTilt - this.kiteTilt) * 0.15;
+      if (this.joystickVector && (Math.abs(this.joystickVector.x) > 0.05 || Math.abs(this.joystickVector.y) > 0.05)) {
+        inputX = this.joystickVector.x;
+        inputY = this.joystickVector.y;
+      } else {
+        if (left) inputX -= 1;
+        if (right) inputX += 1;
+        if (up) inputY -= 1;
+        if (down) inputY += 1;
+
+        if (inputX !== 0 && inputY !== 0) {
+          inputX *= 0.7071;
+          inputY *= 0.7071;
+        }
+      }
+
+      const kiteFlightSpeed = 460; // px/detik gerakan layangan gesit
+      const prevKiteX = this.kiteX;
+
+      if (inputX !== 0 || inputY !== 0) {
+        this.kiteX += inputX * kiteFlightSpeed * dt;
+        this.kiteY += inputY * kiteFlightSpeed * dt;
+      } else {
+        // Hembusan angin lembut saat layang-layang melayang statis
+        const windDriftX = Math.sin(time * 0.0025) * 24 * dt;
+        const windDriftY = Math.cos(time * 0.003) * 16 * dt;
+        this.kiteX += windDriftX;
+        this.kiteY += windDriftY;
+      }
+
+      // Batasan jangkauan tali benang (Rope String Constraints)
+      const dx = this.kiteX - handX;
+      const dy = this.kiteY - handY;
+      const dist = Math.hypot(dx, dy);
+      const maxStringRadius = 550; // Panjang maksimal tali benang layangan
+
+      if (dist > maxStringRadius) {
+        const angle = Math.atan2(dy, dx);
+        this.kiteX = handX + Math.cos(angle) * maxStringRadius;
+        this.kiteY = handY + Math.sin(angle) * maxStringRadius;
+      }
+
+      // Batasan ketinggian minimum (layang-layang tidak boleh menabrak lantai tanah)
+      const minAltitudeY = this.player.y - 75;
+      if (this.kiteY > minAltitudeY) {
+        this.kiteY = minAltitudeY;
+      }
+
+      // Hitung kemiringan sayap (Tilt) manuver
+      const moveDx = this.kiteX - prevKiteX;
+      let targetTilt = 0;
+      if (inputX !== 0) {
+        targetTilt = inputX * 0.48; // Miring tajam saat bermanuver
+      } else {
+        targetTilt = (moveDx * 0.03) + Math.sin(time * 0.003) * 0.12;
+      }
+      this.kiteTilt += (targetTilt - this.kiteTilt) * 0.22;
+
+    } else {
+      // ======================================================================
+      // 2. MODE KENDALI KARAKTER (CHARACTER WALKING MODE)
+      // Karakter bebas berlari/berjalan, layang-layang mengikuti dari angkasa!
+      // ======================================================================
+      const windSpeed = isRunning ? 0.004 : 0.0022;
+      const windSwayX = Math.sin(time * windSpeed) * (isRunning ? 30 : 40);
+      const windSwayY = Math.cos(time * (windSpeed * 1.25)) * (isRunning ? 14 : 18);
+
+      const baseAltitude = isRunning ? 200 : 165;
+      const dragOffsetX = facingLeft ? 50 : -50;
+
+      const targetX = this.player.x + dragOffsetX + windSwayX;
+      const targetY = this.player.y - baseAltitude + windSwayY;
+
+      const lerpFactor = Math.min(1, dt * (isRunning ? 4.5 : 3.2));
+      const prevKiteX = this.kiteX;
+      this.kiteX += (targetX - this.kiteX) * lerpFactor;
+      this.kiteY += (targetY - this.kiteY) * lerpFactor;
+
+      const speedX = this.kiteX - prevKiteX;
+      const targetTilt = (speedX * 0.035) + (Math.sin(time * 0.003) * 0.12);
+      this.kiteTilt += (targetTilt - this.kiteTilt) * 0.15;
+    }
 
     this.kiteContainer.setPosition(this.kiteX, this.kiteY);
     this.kiteContainer.setRotation(this.kiteTilt);
@@ -2568,10 +2743,6 @@ export class CharacterController {
     if (this.kiteStringGraphics) {
       this.kiteStringGraphics.clear();
       this.kiteStringGraphics.setDepth(99990);
-
-      // Posisi tangan pemain
-      const handX = this.player.x + (facingLeft ? -10 : 10);
-      const handY = this.player.y - 26;
 
       // Titik ikatan pada layangan (di dekat pusat bambu)
       const kiteTieX = this.kiteX;

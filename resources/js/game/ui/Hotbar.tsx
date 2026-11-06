@@ -17,7 +17,7 @@ import { SoundManager } from '../core/SoundManager';
 import { EventBus } from '../core/EventBus';
 import { PotionManager, IActivePotionBuff } from '../core/PotionManager';
 import { KeybindingManager } from '../core/KeybindingManager';
-import { Backpack, X } from 'lucide-react';
+import { Backpack, X, RefreshCw } from 'lucide-react';
 import { ThemeSettings } from '../core/ThemeManager';
 
 interface HotbarProps {
@@ -38,6 +38,32 @@ export const Hotbar: React.FC<HotbarProps> = React.memo(({ onOpenBackpack, isBac
   const [isDialogueOpen, setIsDialogueOpen] = useState<boolean>(false);
   const [draggedSlot, setDraggedSlot] = useState<number | null>(null);
   const [dragOverSlot, setDragOverSlot] = useState<number | null>(null);
+
+  // Status Layang-Layang Terbang & Mode Kendali
+  const [kiteState, setKiteState] = useState<{ isFlying: boolean; mode: 'kite' | 'character' }>({
+    isFlying: false,
+    mode: 'kite',
+  });
+
+  useEffect(() => {
+    const handleKiteChange = (data: { isFlying: boolean; mode: 'kite' | 'character' }) => {
+      setKiteState(data);
+    };
+    EventBus.on('kite-mode-changed', handleKiteChange);
+    return () => {
+      EventBus.off('kite-mode-changed', handleKiteChange);
+    };
+  }, []);
+
+  const handleToggleKiteMode = () => {
+    sound.playClick();
+    EventBus.emit('player-kite-mode-toggle');
+  };
+
+  const handleStopKite = () => {
+    sound.playClick();
+    EventBus.emit('player-kite-toggle');
+  };
 
   // Status Buff Ramuan Aktif (Apotek Farma)
   const [activeBuffs, setActiveBuffs] = useState<IActivePotionBuff[]>(() =>
@@ -259,6 +285,40 @@ export const Hotbar: React.FC<HotbarProps> = React.memo(({ onOpenBackpack, isBac
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Widget Interaktif Kendali Layang-layang (Kite Control HUD) */}
+      {kiteState.isFlying && (
+        <div className="clay-panel flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1 sm:py-1.5 shadow-lg pointer-events-auto select-none border-2 border-[#5C3A21] bg-[#FFF8EA] animate-in fade-in zoom-in-95 duration-150">
+          {/* Status Mode */}
+          <div className="flex items-center gap-1 text-[9.5px] sm:text-[11px] font-black text-black">
+            <span>{kiteState.mode === 'kite' ? '🪁 KENDALI LAYANGAN (WASD/Analog)' : '🚶 KENDALI KARAKTER'}</span>
+          </div>
+
+          <div className="w-[1.5px] h-4 bg-[#5C3A21]/40 mx-0.5" />
+
+          {/* Tombol Ganti Mode */}
+          <button
+            type="button"
+            onClick={handleToggleKiteMode}
+            className="clay-btn-secondary px-2 sm:px-2.5 py-0.5 sm:py-1 text-[8.5px] sm:text-[10px] font-bold text-black flex items-center gap-1 active:translate-y-[1px]"
+            title="Beralih Kendali antara Layangan dan Karakter [R]"
+          >
+            <RefreshCw className="w-3 h-3 stroke-[2.5]" />
+            <span>{kiteState.mode === 'kite' ? 'Jalan Karakter [R]' : 'Kemudi Layangan [R]'}</span>
+          </button>
+
+          {/* Tombol Gulung Layang-layang (Mode Balik Non-Layangan) */}
+          <button
+            type="button"
+            onClick={handleStopKite}
+            className="clay-btn-primary px-2 sm:px-2.5 py-0.5 sm:py-1 text-[8.5px] sm:text-[10px] font-bold text-black flex items-center gap-1 active:translate-y-[1px]"
+            title="Gulung Benang Layangan & Kembali ke Mode Biasa [F]"
+          >
+            <X className="w-3 h-3 stroke-[2.5]" />
+            <span>Gulung [F]</span>
+          </button>
         </div>
       )}
 

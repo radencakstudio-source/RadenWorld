@@ -292,7 +292,12 @@ export const GameApp: React.FC = () => {
         return;
       }
 
-      // Alat Kerja / Mancing / Panen / Siram (F)
+      // Ganti Mode Kendali Layang-layang (R)
+      if (e.key === 'r' || e.key === 'R') {
+        EventBus.emit('player-kite-mode-toggle');
+      }
+
+      // Alat Kerja / Mancing / Panen / Siram / Layang-Layang (F)
       if (km.matches('fish', e)) {
         EventBus.emit('player-fish');
         return;

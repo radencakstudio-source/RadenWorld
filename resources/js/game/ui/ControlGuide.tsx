@@ -232,6 +232,33 @@ export const ControlGuide: React.FC<ControlGuideProps> = ({
             </div>
           </div>
 
+          {/* 4.5. Layang-layang Nusantara */}
+          <div className="clay-card flex items-start gap-3 p-3">
+            <div className="p-2 rounded-lg bg-[#FFAE6D] border-2 border-[#5C3A21] text-black shrink-0 text-base flex items-center justify-center">
+              🪁
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="font-bold text-black mb-0.5">
+                Layang-Layang Tradisional (Peta Dunia)
+              </div>
+              <p className="text-black leading-relaxed text-[11px]">
+                {isMobile ? (
+                  <>
+                    Pilih Layangan di Hotbar lalu sentuh tombol <strong>[LAYANGAN]</strong>. Gerakkan layang-layang di angkasa dengan <strong>Analog Joystick</strong>! Sentuh tombol <strong>[Jalan Karakter]</strong> untuk beralih kendali, atau <strong>[Gulung [F]]</strong> untuk selesai.
+                  </>
+                ) : (
+                  <>
+                    Pilih Layangan di Hotbar lalu tekan{' '}
+                    <kbd className={kbdClass}>F</kbd>. Gerakkan layangan di langit dengan{' '}
+                    <kbd className={kbdClass}>W</kbd><kbd className={kbdClass}>A</kbd><kbd className={kbdClass}>S</kbd><kbd className={kbdClass}>D</kbd>. Tekan{' '}
+                    <kbd className={kbdClass}>R</kbd> untuk beralih antara kendali layangan & jalan karakter, dan tekan{' '}
+                    <kbd className={kbdClass}>F</kbd> untuk menggulung benang kembali ke mode biasa.
+                  </>
+                )}
+              </p>
+            </div>
+          </div>
+
           {/* 5. Lompat 2.5D */}
           <div className="clay-card flex items-start gap-3 p-3">
             <div className="p-2 rounded-lg bg-[#FFAE6D] border-2 border-[#5C3A21] text-black shrink-0">

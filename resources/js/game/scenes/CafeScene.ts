@@ -128,7 +128,7 @@ export class CafeScene extends Phaser.Scene {
     this.renderSideAmenities();
 
     // 8. Render Pintu Keluar di Bawah Tengah (gx: 7.5, gy: 10)
-    this.exitDoorZone = { x: this.roomWidth / 2, y: this.roomHeight - 60, width: 240, height: 120 };
+    this.exitDoorZone = { x: this.roomWidth / 2, y: this.roomHeight - 35, width: 200, height: 60 };
     this.renderExitDoor();
 
     // 9. Spawn Pemain di Lorong Tengah Dekat Pintu
@@ -337,45 +337,47 @@ export class CafeScene extends Phaser.Scene {
   }
 
   /**
-   * Render Dinding Atas Cafe, Papan Chalkboard Menu & Neon Banner
+   * Render Dinding Atas Cafe, Papan Chalkboard Menu & Neon Banner Membingkai Sisi Luar Kotak
    */
   private renderCafeWalls(): void {
-    const ts = this.tileSize;
-    const wallH = ts * 1.5; // 180px
-
+    const wallThick = 48;
     const wallG = this.add.graphics();
-    // Tembok bata ekspos cokelat tua
-    wallG.fillStyle(0x1a0e09, 1);
-    wallG.fillRect(0, 0, this.roomWidth, wallH);
 
-    // List kayu mahogany & kuningan
-    wallG.fillStyle(0x6b3a20, 1);
-    wallG.fillRect(0, wallH - 14, this.roomWidth, 14);
-    wallG.fillStyle(0xd97706, 1);
-    wallG.fillRect(0, wallH - 4, this.roomWidth, 4);
+    // Dinding Luar Membingkai Sisi Luar Kotak Ruangan (Area Luar)
+    wallG.fillStyle(0x1a0e09, 1);
+    // Dinding Atas (Luar)
+    wallG.fillRect(-wallThick, -wallThick, this.roomWidth + wallThick * 2, wallThick);
+    // Dinding Kiri (Luar)
+    wallG.fillRect(-wallThick, -wallThick, wallThick, this.roomHeight + wallThick * 2);
+    // Dinding Kanan (Luar)
+    wallG.fillRect(this.roomWidth, -wallThick, wallThick, this.roomHeight + wallThick * 2);
+    // Dinding Bawah (Luar) dengan celah pintu keluar
+    const doorW = 220;
+    const doorStartX = this.roomWidth / 2 - doorW / 2;
+    wallG.fillRect(-wallThick, this.roomHeight, doorStartX + wallThick, wallThick);
+    wallG.fillRect(doorStartX + doorW, this.roomHeight, this.roomWidth - (doorStartX + doorW) + wallThick, wallThick);
+
+    // Lis kayu mahogany & kuningan pembatas lantai kotak
+    wallG.lineStyle(3, 0xd97706, 0.9);
+    wallG.strokeRect(0, 0, this.roomWidth, this.roomHeight);
     wallG.setDepth(-80);
 
-    // Dinding Keliling Obstacle (Atas 2.2 baris petak / 264px penuh agar avatar tidak tertimpa dinding, Kiri, Kanan)
-    this.addGridObstacle(0, 0, 16, 2.2);
-    this.addGridObstacle(0, 0, 1, 9);
-    this.addGridObstacle(15, 0, 1, 9);
-
-    // Papan Chalkboard Menu Kiri (gx: 1.5..3.5, gy: 0.3)
+    // Papan Chalkboard Menu Kiri (gx: 1.5..3.5, y: 15..95)
     const boardL = this.add.graphics();
     boardL.fillStyle(0x3f2214, 1);
-    boardL.fillRoundedRect(180, 25, 240, 100, 6);
+    boardL.fillRoundedRect(180, 15, 240, 85, 6);
     boardL.fillStyle(0x111827, 1);
-    boardL.fillRoundedRect(186, 31, 228, 88, 4);
+    boardL.fillRoundedRect(186, 21, 228, 73, 4);
     boardL.setDepth(-70);
 
-    this.add.text(300, 45, '☕ COFFEE SPECIALS', {
+    this.add.text(300, 32, '☕ COFFEE SPECIALS', {
       fontFamily: 'Chakra Petch, sans-serif',
       fontSize: '11px',
       color: '#fde047',
       fontStyle: 'bold',
     }).setOrigin(0.5, 0.5).setDepth(-65);
 
-    this.add.text(300, 75, '• Kopi Tubruk Gayo 20K\n• Cappuccino Cream 28K\n• Caramel Macchiato 32K', {
+    this.add.text(300, 60, '• Kopi Tubruk Gayo 20K\n• Cappuccino Cream 28K\n• Caramel Macchiato 32K', {
       fontFamily: 'Chakra Petch, sans-serif',
       fontSize: '9px',
       color: '#e2e8f0',
@@ -383,22 +385,22 @@ export class CafeScene extends Phaser.Scene {
       align: 'center',
     }).setOrigin(0.5, 0.5).setDepth(-65);
 
-    // Papan Chalkboard Menu Kanan (gx: 12.5..14.5, gy: 0.3)
+    // Papan Chalkboard Menu Kanan (gx: 12.5..14.5, y: 15..95)
     const boardR = this.add.graphics();
     boardR.fillStyle(0x3f2214, 1);
-    boardR.fillRoundedRect(this.roomWidth - 420, 25, 240, 100, 6);
+    boardR.fillRoundedRect(this.roomWidth - 420, 15, 240, 85, 6);
     boardR.fillStyle(0x111827, 1);
-    boardR.fillRoundedRect(this.roomWidth - 414, 31, 228, 88, 4);
+    boardR.fillRoundedRect(this.roomWidth - 414, 21, 228, 73, 4);
     boardR.setDepth(-70);
 
-    this.add.text(this.roomWidth - 300, 45, '🥐 BAKERY & SNACKS', {
+    this.add.text(this.roomWidth - 300, 32, '🥐 BAKERY & SNACKS', {
       fontFamily: 'Chakra Petch, sans-serif',
       fontSize: '11px',
       color: '#f59e0b',
       fontStyle: 'bold',
     }).setOrigin(0.5, 0.5).setDepth(-65);
 
-    this.add.text(this.roomWidth - 300, 75, '• Butter Croissant 18K\n• Choco Donut Glaze 15K\n• Cheese Danish Melt 22K', {
+    this.add.text(this.roomWidth - 300, 60, '• Butter Croissant 18K\n• Choco Donut Glaze 15K\n• Cheese Danish Melt 22K', {
       fontFamily: 'Chakra Petch, sans-serif',
       fontSize: '9px',
       color: '#e2e8f0',
@@ -406,22 +408,22 @@ export class CafeScene extends Phaser.Scene {
       align: 'center',
     }).setOrigin(0.5, 0.5).setDepth(-65);
 
-    // Neon Emblem Utama Cafe di Tengah (gx: 6..10, y: 30..115)
+    // Neon Emblem Utama Cafe di Tengah (gx: 6..10, y: 10..95)
     const neonBg = this.add.graphics();
     neonBg.fillStyle(0x0f0906, 0.95);
-    neonBg.fillRoundedRect(this.roomWidth / 2 - 250, 20, 500, 95, 12);
+    neonBg.fillRoundedRect(this.roomWidth / 2 - 250, 12, 500, 82, 12);
     neonBg.lineStyle(3, 0xf59e0b, 1);
-    neonBg.strokeRoundedRect(this.roomWidth / 2 - 246, 24, 492, 87, 10);
+    neonBg.strokeRoundedRect(this.roomWidth / 2 - 246, 16, 492, 74, 10);
     neonBg.setDepth(-60);
 
-    const titleText = this.add.text(this.roomWidth / 2, 55, '☕ RADEN CAFE & LOUNGE 🥐', {
+    const titleText = this.add.text(this.roomWidth / 2, 42, '☕ RADEN CAFE & LOUNGE 🥐', {
       fontFamily: 'Chakra Petch, sans-serif',
-      fontSize: '22px',
+      fontSize: '20px',
       color: '#fef08a',
       fontStyle: 'bold',
     }).setOrigin(0.5, 0.5).setDepth(-55);
 
-    const subText = this.add.text(this.roomWidth / 2, 85, 'PREMIUM ARTISAN COFFEE • FRESH BAKERY • WI-FI HIGH SPEED', {
+    const subText = this.add.text(this.roomWidth / 2, 68, 'PREMIUM ARTISAN COFFEE • FRESH BAKERY • WI-FI HIGH SPEED', {
       fontFamily: 'Chakra Petch, sans-serif',
       fontSize: '10px',
       color: '#f59e0b',
@@ -802,17 +804,17 @@ export class CafeScene extends Phaser.Scene {
     // Karpet merah penyambutan menuju pintu
     const rug = this.add.graphics();
     rug.fillStyle(0x991b1b, 0.85);
-    rug.fillRect(doorX - 100, doorY - 140, 200, 140);
+    rug.fillRect(doorX - 100, doorY - 70, 200, 70);
     rug.lineStyle(3, 0xf59e0b, 0.9);
-    rug.strokeRect(doorX - 100, doorY - 140, 200, 140);
+    rug.strokeRect(doorX - 100, doorY - 70, 200, 70);
     rug.setDepth(-50);
 
     // Pintu Kaca Berbingkai Kayu
     const doorG = this.add.graphics();
     doorG.fillStyle(0x1e293b, 0.95);
-    doorG.fillRoundedRect(doorX - 90, doorY - 24, 180, 48, 8);
+    doorG.fillRoundedRect(doorX - 90, doorY - 15, 180, 40, 8);
     doorG.lineStyle(3, 0xf59e0b, 1);
-    doorG.strokeRoundedRect(doorX - 90, doorY - 24, 180, 48, 8);
+    doorG.strokeRoundedRect(doorX - 90, doorY - 15, 180, 40, 8);
     doorG.setDepth(doorY - 5);
 
     this.add.text(doorX, doorY, '🚪 PINTU KELUAR KE KOTA', {
@@ -821,18 +823,6 @@ export class CafeScene extends Phaser.Scene {
       color: '#fef3c7',
       fontStyle: 'bold',
     }).setOrigin(0.5, 0.5).setDepth(doorY);
-
-    // Dinding Bawah Kiri & Kanan (Menyisakan lubang pintu gx: 7..8)
-    const btmLeftW = doorX - 110;
-    const btmLeft = this.add.zone(btmLeftW / 2, this.roomHeight - 15, btmLeftW, 30);
-    this.physics.add.existing(btmLeft, true);
-    this.obstacles.add(btmLeft);
-
-    const btmRightX = doorX + 110;
-    const btmRightW = this.roomWidth - btmRightX;
-    const btmRight = this.add.zone(btmRightX + btmRightW / 2, this.roomHeight - 15, btmRightW, 30);
-    this.physics.add.existing(btmRight, true);
-    this.obstacles.add(btmRight);
   }
 
   /**

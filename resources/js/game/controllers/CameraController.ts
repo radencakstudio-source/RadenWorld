@@ -60,6 +60,7 @@ export class CameraController {
   private eventBusHandlers: Map<string, (...args: any[]) => void> = new Map();
   private keyboardHandlers: Map<string, () => void> = new Map();
   private resizeHandler: ((gameSize: Phaser.Structs.Size) => void) | null = null;
+  private rawBounds: { x: number; y: number; width: number; height: number } | null = null;
 
   /**
    * Menghitung zoom kamera yang proporsional sesuai rasio layar (PC vs Mobile Vertikal vs Horizontal)
@@ -139,6 +140,7 @@ export class CameraController {
       const adaptive = CameraController.calculateAdaptiveZoom(gameSize.width, gameSize.height, this.baseUserZoom);
       this.defaultZoom = adaptive;
       this.smoothZoomTo(adaptive);
+      this.updateCameraBounds();
     };
     this.scene.scale?.on(Phaser.Scale.Events.RESIZE, this.resizeHandler);
 
@@ -220,16 +222,50 @@ export class CameraController {
 
   /**
    * Mengatur batas area gerak kamera di dunia game (Bounds)
+   * Dilengkapi algoritma Auto-Centering jika viewport layar lebih besar/lebar daripada ruangan.
    */
   public setBounds(x: number, y: number, width: number, height: number): this {
+    this.rawBounds = { x, y, width, height };
+    this.updateCameraBounds();
+    return this;
+  }
+
+  /**
+   * Sinkronisasi batas kamera otomatis: Jika layar lebih lebar/tinggi dari map,
+   * geser bounds secara simetris sehingga peta/ruangan selalu PAS DI TENGAH LAYAR (tidak di pojok).
+   */
+  public updateCameraBounds(): void {
     const cam = this.getCamera();
-    if (!cam || !(cam as any)._bounds) return this;
+    if (!cam || !this.rawBounds) return;
+
+    const zoom = Math.max(0.01, cam.zoom || this.currentTargetZoom || 1.0);
+    const visibleW = cam.width / zoom;
+    const visibleH = cam.height / zoom;
+
+    let bx = this.rawBounds.x;
+    let by = this.rawBounds.y;
+    let bw = this.rawBounds.width;
+    let bh = this.rawBounds.height;
+
+    // Jika viewport lebih lebar dari map, pusatkan ruangan secara horizontal
+    if (visibleW > bw) {
+      const extraW = visibleW - bw;
+      bx = this.rawBounds.x - extraW / 2;
+      bw = visibleW;
+    }
+
+    // Jika viewport lebih tinggi dari map, pusatkan ruangan secara vertikal
+    if (visibleH > bh) {
+      const extraH = visibleH - bh;
+      by = this.rawBounds.y - extraH / 2;
+      bh = visibleH;
+    }
+
     try {
-      cam.setBounds(x, y, width, height);
+      cam.setBounds(bx, by, bw, bh);
     } catch (e) {
       console.warn('[CameraController] setBounds failed:', e);
     }
-    return this;
   }
 
   /**
@@ -366,6 +402,7 @@ export class CameraController {
     if (immediate && cam) {
       try {
         cam.setZoom(this.currentTargetZoom);
+        this.updateCameraBounds();
       } catch (e) { }
     }
     return this;
@@ -534,6 +571,7 @@ export class CameraController {
       const step = Math.min(1, Math.max(0.01, delta * this.zoomLerpSpeed * 0.15));
       try {
         cam.setZoom(Phaser.Math.Linear(cam.zoom, this.currentTargetZoom, step));
+        this.updateCameraBounds();
       } catch (e) { }
     }
   }

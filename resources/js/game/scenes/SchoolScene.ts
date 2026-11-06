@@ -91,11 +91,11 @@ export class SchoolScene extends Phaser.Scene {
   private occludingProps: Array<{ img: Phaser.GameObjects.Image; left: number; right: number; top: number; bottom: number; baseY: number }> = [];
 
   // Zona Interaktif
-  private exitDoorZone = { x: 960, y: 1010 };
-  private whiteboardZone = { x: 960, y: 190 };
-  private teacherDeskZone = { x: 960, y: 340 };
-  private bookshelfZone = { x: 1855, y: 560 };
-  private madingZone = { x: 65, y: 560 };
+  private exitDoorZone = { x: 960, y: 1050 };
+  private whiteboardZone = { x: 960, y: 140 };
+  private teacherDeskZone = { x: 960, y: 275 };
+  private bookshelfZone = { x: 1875, y: 520 };
+  private madingZone = { x: 45, y: 520 };
   private studentDeskPositions: { x: number; y: number }[] = [];
 
   private activePrompt: string | null = null;
@@ -193,8 +193,8 @@ export class SchoolScene extends Phaser.Scene {
           role: 'Guru SD',
           avatarUrl: '/assets/sprites/NPC/1x2%20NPC%20GuruSD.webp',
           avatarType: 'sage',
-          x: 680,
-          y: 340,
+          x: 740,
+          y: 265,
           greeting: 'Selamat pagi anak pintar! Belajarlah dengan rajin dan ceria bersama Bu Dewi.',
           dialogues: [
             'Selamat pagi anak pintar! Selamat datang di Sekolah Dasar (SD) RadenWorld!',
@@ -212,8 +212,8 @@ export class SchoolScene extends Phaser.Scene {
           role: 'Guru SMP',
           avatarUrl: '/assets/sprites/NPC/1x2%20NPC%20GuruSMP.webp',
           avatarType: 'sage',
-          x: 680,
-          y: 340,
+          x: 740,
+          y: 265,
           greeting: 'Selamat datang di SMP RadenWorld! Siap mengeksplorasi sains dan logika bersama Bu Ainur?',
           dialogues: [
             'Salam sejahtera! Selamat datang di Gedung Sekolah Menengah Pertama (SMP) RadenWorld bersama Bu Ainur.',
@@ -231,8 +231,8 @@ export class SchoolScene extends Phaser.Scene {
           role: 'Guru SMA',
           avatarUrl: '/assets/sprites/NPC/1x2%20NPC%20GuruSMA.webp',
           avatarType: 'sage',
-          x: 680,
-          y: 340,
+          x: 740,
+          y: 265,
           greeting: 'Selamat datang para calon pemimpin masa depan di SMA RadenWorld bersama Pak Raden.',
           dialogues: [
             'Selamat datang di Sekolah Menengah Atas (SMA) RadenWorld, gerbang menuju perguruan tinggi dan kepemimpinan global.',
@@ -377,7 +377,11 @@ export class SchoolScene extends Phaser.Scene {
           this.roomWidth = data.config.gridWidth * this.tileSize;
           this.roomHeight = data.config.gridHeight * this.tileSize;
           this.physics.world.setBounds(0, 0, this.roomWidth, this.roomHeight);
-          this.cameras.main.setBounds(0, 0, this.roomWidth, this.roomHeight);
+          if (this.cameraController) {
+            this.cameraController.setBounds(0, 0, this.roomWidth, this.roomHeight);
+          } else {
+            this.cameras.main.setBounds(0, 0, this.roomWidth, this.roomHeight);
+          }
         }
         this.customArchitectPropsGroup.forEach((obj) => {
           if (obj && (obj as any).destroy) (obj as any).destroy();
@@ -1097,6 +1101,13 @@ export class SchoolScene extends Phaser.Scene {
     const textureKey = this.getCheckerTextureKey();
 
     // 1. Lantai Ubin Catur Sekolah (120x120px) dengan Hex Akurat
+    // 0. Backdrop Area Luar Gedung Sekolah
+    const outerBg = this.add.graphics();
+    outerBg.fillStyle(0x070b16, 1);
+    outerBg.fillRect(-3000, -3000, this.roomWidth + 6000, this.roomHeight + 6000);
+    outerBg.setDepth(-999);
+
+    // 1. Lantai Catur Sekolah 120x120px Presisi di Kotak 1920x1080
     const floorTile = this.add.tileSprite(
       this.roomWidth / 2,
       this.roomHeight / 2,
@@ -1106,34 +1117,34 @@ export class SchoolScene extends Phaser.Scene {
     );
     floorTile.setDepth(-100);
 
-    // 2. Dinding Luar Kokoh & Elegan
+    // 2. Dinding Luar Membingkai Sisi Luar Kotak Ruangan (Area Luar)
+    const wallThick = 50;
     g.fillStyle(0x0f172a, 1);
-    g.fillRect(0, 0, this.roomWidth, 90); // Dinding Utara
-    g.fillRect(0, 0, 90, this.roomHeight); // Dinding Barat
-    g.fillRect(this.roomWidth - 90, 0, 90, this.roomHeight); // Dinding Timur
-    g.fillRect(0, this.roomHeight - 80, this.roomWidth, 80); // Dinding Selatan
+    // Dinding Atas (Luar)
+    g.fillRect(-wallThick, -wallThick, this.roomWidth + wallThick * 2, wallThick);
+    // Dinding Kiri (Luar)
+    g.fillRect(-wallThick, -wallThick, wallThick, this.roomHeight + wallThick * 2);
+    // Dinding Kanan (Luar)
+    g.fillRect(this.roomWidth, -wallThick, wallThick, this.roomHeight + wallThick * 2);
+    // Dinding Bawah (Luar) dengan celah pintu keluar di tengah
+    const doorW = 200;
+    const doorStartX = this.roomWidth / 2 - doorW / 2;
+    g.fillRect(-wallThick, this.roomHeight, doorStartX + wallThick, wallThick);
+    g.fillRect(doorStartX + doorW, this.roomHeight, this.roomWidth - (doorStartX + doorW) + wallThick, wallThick);
 
-    // Lis Dinding Emas & Lis Kayu Skirting
-    g.lineStyle(4, 0xf59e0b, 0.9);
-    g.strokeRect(90, 90, this.roomWidth - 180, this.roomHeight - 170);
-
-    // Rintangan batas fisik dinding
-    this.addGridObstacle(0, 0, 16, 1); // Dinding utara
-    this.addGridObstacle(0, 0, 1, 9);  // Dinding barat
-    this.addGridObstacle(15, 0, 1, 9); // Dinding timur
-    // Dinding selatan (pintu di tengah gx=7..8 terbuka)
-    this.addGridObstacle(0, 8, 7, 1);
-    this.addGridObstacle(9, 8, 7, 1);
+    // Lis Dinding Emas Pembatas Lantai Kotak Kelas
+    g.lineStyle(3, 0xf59e0b, 0.9);
+    g.strokeRect(0, 0, this.roomWidth, this.roomHeight);
 
     // 3. Spanduk Judul Sekolah di Dinding Atas
     g.fillStyle(0x1e293b, 0.95);
-    g.fillRoundedRect(this.roomWidth / 2 - 400, 18, 800, 48, 12);
+    g.fillRoundedRect(this.roomWidth / 2 - 400, 10, 800, 42, 12);
     g.lineStyle(2, 0x38bdf8, 0.9);
-    g.strokeRoundedRect(this.roomWidth / 2 - 400, 18, 800, 48, 12);
+    g.strokeRoundedRect(this.roomWidth / 2 - 400, 10, 800, 42, 12);
 
-    this.headerBannerText = this.add.text(this.roomWidth / 2, 42, this.getSchoolHeaderTitle(), {
+    this.headerBannerText = this.add.text(this.roomWidth / 2, 31, this.getSchoolHeaderTitle(), {
       fontFamily: '"Chakra Petch", sans-serif',
-      fontSize: '17px',
+      fontSize: '16px',
       color: '#fef08a',
       fontStyle: 'bold',
       stroke: '#0a0f1d',
@@ -1141,39 +1152,39 @@ export class SchoolScene extends Phaser.Scene {
     }).setOrigin(0.5);
 
     // 4. Lambang Garuda Pancasila, Presiden, Wapres & Jam Dinding di Atas Papan Tulis
-    this.add.image(960, 75, 'school-clock').setDepth(10);
-    this.add.image(960, 115, 'school-garuda-presiden').setDepth(10);
+    this.add.image(960, 65, 'school-clock').setDepth(10);
+    this.add.image(960, 95, 'school-garuda-presiden').setDepth(10);
 
     // Tiang Bendera Merah Putih di Kiri Depan
-    const flag = this.add.image(420, 180, 'school-flag');
+    const flag = this.add.image(300, 140, 'school-flag');
     flag.setOrigin(0.5, 1.0);
     flag.setDepth(200);
 
     // Peta Kepulauan Indonesia di Kanan Depan
-    const mapIndonesia = this.add.image(1500, 180, 'school-map-indonesia');
+    const mapIndonesia = this.add.image(1620, 140, 'school-map-indonesia');
     mapIndonesia.setOrigin(0.5, 1.0);
     mapIndonesia.setDepth(200);
 
     // 5. Papan Tulis Besar di Dinding Depan (Whiteboard / Blackboard)
     const isDarkBoard = this.schoolType === 'sd';
     g.fillStyle(isDarkBoard ? 0x064e3b : 0xf8fafc, 1);
-    g.fillRoundedRect(620, 135, 680, 115, 10);
+    g.fillRoundedRect(620, 80, 680, 105, 10);
     g.lineStyle(6, 0x78350f, 1);
-    g.strokeRoundedRect(620, 135, 680, 115, 10);
+    g.strokeRoundedRect(620, 80, 680, 105, 10);
 
     // Baki spidol / kapur tulis di bawah papan
     g.fillStyle(0x78350f, 1);
-    g.fillRoundedRect(680, 248, 560, 8, 3);
+    g.fillRoundedRect(680, 182, 560, 8, 3);
     g.fillStyle(0x3b82f6, 1);
-    g.fillRect(700, 246, 22, 5); // Spidol biru
+    g.fillRect(700, 180, 22, 5); // Spidol biru
     g.fillStyle(0xef4444, 1);
-    g.fillRect(730, 246, 22, 5); // Spidol merah
+    g.fillRect(730, 180, 22, 5); // Spidol merah
     g.fillStyle(0x1e293b, 1);
-    g.fillRect(800, 244, 28, 8); // Penghapus papan
+    g.fillRect(800, 178, 28, 8); // Penghapus papan
 
-    this.add.text(960, 165, 'AGENDA PELAJARAN & MOTIVASI BELAJAR HARI INI', {
+    this.add.text(960, 110, 'AGENDA PELAJARAN & MOTIVASI BELAJAR HARI INI', {
       fontFamily: '"Chakra Petch", sans-serif',
-      fontSize: '14px',
+      fontSize: '13px',
       color: isDarkBoard ? '#a7f3d0' : '#1e293b',
       fontStyle: 'bold',
       stroke: isDarkBoard ? '#022c22' : '#ffffff',
@@ -1186,7 +1197,7 @@ export class SchoolScene extends Phaser.Scene {
       ? '"Pendidikan adalah kunci pembuka pintu gerbang kebebasan dan peradaban."'
       : '"Berilmu amaliah, beramal ilmiah, dan berakhlak mulia kebangsaan."';
 
-    this.add.text(960, 200, quoteText, {
+    this.add.text(960, 142, quoteText, {
       fontFamily: '"Chakra Petch", sans-serif',
       fontSize: '12px',
       color: isDarkBoard ? '#fef08a' : '#0369a1',
@@ -1197,19 +1208,19 @@ export class SchoolScene extends Phaser.Scene {
 
     // 6. Panggung Podium Guru di Depan Papan Tulis
     g.fillStyle(0x991b1b, 0.45);
-    g.fillRoundedRect(740, 275, 440, 125, 14);
+    g.fillRoundedRect(740, 205, 440, 120, 14);
     g.lineStyle(2, 0xd97706, 0.85);
-    g.strokeRoundedRect(740, 275, 440, 125, 14);
+    g.strokeRoundedRect(740, 205, 440, 120, 14);
 
     // Kursi Guru di belakang meja guru
-    const teacherChair = this.add.image(960, 285, 'school-teacher-chair');
+    const teacherChair = this.add.image(960, 215, 'school-teacher-chair');
     teacherChair.setDisplaySize(75, 85);
-    teacherChair.setDepth(285);
+    teacherChair.setDepth(215);
 
     // Meja Guru di depan kursi guru
-    const teacherDesk = this.add.image(960, 345, 'school-teacher-desk');
+    const teacherDesk = this.add.image(960, 275, 'school-teacher-desk');
     teacherDesk.setDisplaySize(150, 85);
-    teacherDesk.setDepth(345);
+    teacherDesk.setDepth(275);
     teacherDesk.setInteractive({ useHandCursor: true });
     teacherDesk.on('pointerdown', () => {
       EventBus.emit('open-school-subjects', {
@@ -1226,9 +1237,6 @@ export class SchoolScene extends Phaser.Scene {
 
     // 7. BARISAN MEJA & KURSI SISWA (Terpisah Grid Bersih, Bukan Bertumpuk 1 Grid)
     // 4 Kolom Meja Siswa dengan lorong tengah luas (central corridor)
-    // Kolom 1 (gx = 2, x = 300), Kolom 2 (gx = 4, x = 540)
-    // Lorong tengah (gx = 6, 7, 8, 9, x = 720..1200) bebas tanpa halangan
-    // Kolom 3 (gx = 11, x = 1380), Kolom 4 (gx = 13, x = 1620)
     const studentDeskCols = [
       { gx: 2, x: 300 },
       { gx: 4, x: 540 },
@@ -1236,12 +1244,11 @@ export class SchoolScene extends Phaser.Scene {
       { gx: 13, x: 1620 }
     ];
 
-    // 2 Baris Meja: Setiap meja di baris gy, dan kursi di baris gy + 1
-    // Baris 1: Meja gy = 4 (y = 500), Kursi gy = 5 (y = 600)
-    // Baris 2: Meja gy = 6 (y = 720), Kursi gy = 7 (y = 820)
+    // 3 Baris Meja: Setiap meja di baris gy, dan kursi di baris gy + 1
     const deskRowDefs = [
-      { deskGy: 4, deskY: 500, chairGy: 5, chairY: 600 },
-      { deskGy: 6, deskY: 720, chairGy: 7, chairY: 820 }
+      { deskGy: 3.5, deskY: 420, chairGy: 4.5, chairY: 510 },
+      { deskGy: 5.5, deskY: 630, chairGy: 6.5, chairY: 720 },
+      { deskGy: 7.5, deskY: 840, chairGy: 8.5, chairY: 930 }
     ];
 
     this.studentDeskPositions = [];
@@ -1327,15 +1334,16 @@ export class SchoolScene extends Phaser.Scene {
     }
 
     // 10. Pintu Keluar ke Open World di Bagian Tengah Bawah
+    this.exitDoorZone = { x: 960, y: this.roomHeight - 30 };
     g.fillStyle(0x0f172a, 1);
-    g.fillRoundedRect(840, 950, 240, 65, 8);
+    g.fillRoundedRect(860, this.roomHeight - 65, 200, 50, 8);
     g.lineStyle(3, 0xf59e0b, 1);
-    g.strokeRoundedRect(840, 950, 240, 65, 8);
+    g.strokeRoundedRect(860, this.roomHeight - 65, 200, 50, 8);
 
     g.fillStyle(0x0284c7, 1);
-    g.fillRect(870, 995, 180, 40);
+    g.fillRect(880, this.roomHeight - 20, 160, 25);
 
-    this.add.text(960, 975, '🚪 PINTU KELUAR KE WORLD', {
+    this.add.text(960, this.roomHeight - 45, '🚪 PINTU KELUAR KE WORLD', {
       fontFamily: '"Chakra Petch", sans-serif',
       fontSize: '13px',
       color: '#fef08a',

@@ -145,8 +145,8 @@ export class LibraryScene extends Phaser.Scene {
     // 9. Render Aksesoris Sudut: Globe Antik & Model Kerangka
     this.renderCornerCuriosities();
 
-    // 10. Render Pintu Keluar di Bagian Bawah Tengah (gx: 7.5, gy: 10)
-    this.exitDoorZone = { x: this.roomWidth / 2, y: this.roomHeight - 60, width: 240, height: 120 };
+    // 10. Render Pintu Keluar di Bagian Bawah Tengah (gx: 7.5, gy: 8.5)
+    this.exitDoorZone = { x: this.roomWidth / 2, y: this.roomHeight - 35, width: 200, height: 60 };
     this.renderExitDoor();
 
     // 11. Spawn Pemain di Karpet Utama Dekat Pintu
@@ -341,44 +341,47 @@ export class LibraryScene extends Phaser.Scene {
   }
 
   /**
-   * Render Dinding Perpustakaan Megah & Spanduk Utama
+   * Render Dinding Perpustakaan Megah & Spanduk Utama Membingkai Sisi Luar Kotak
    */
   private renderLibraryWalls(): void {
-    const ts = this.tileSize;
-    const wallH = ts * 1.5; // 180px
-
+    const wallThick = 48;
     const wallG = this.add.graphics();
-    wallG.fillStyle(0x090d16, 1);
-    wallG.fillRect(0, 0, this.roomWidth, wallH);
 
-    // List emas & safir dinding atas
-    wallG.fillStyle(0x1e3a8a, 1);
-    wallG.fillRect(0, wallH - 14, this.roomWidth, 14);
-    wallG.fillStyle(0xf59e0b, 1);
-    wallG.fillRect(0, wallH - 4, this.roomWidth, 4);
+    // Dinding Luar Membingkai Sisi Luar Kotak Ruangan (Area Luar)
+    wallG.fillStyle(0x0a101d, 1);
+    // Dinding Atas (Luar)
+    wallG.fillRect(-wallThick, -wallThick, this.roomWidth + wallThick * 2, wallThick);
+    // Dinding Kiri (Luar)
+    wallG.fillRect(-wallThick, -wallThick, wallThick, this.roomHeight + wallThick * 2);
+    // Dinding Kanan (Luar)
+    wallG.fillRect(this.roomWidth, -wallThick, wallThick, this.roomHeight + wallThick * 2);
+    // Dinding Bawah (Luar) dengan celah pintu keluar
+    const doorW = 220;
+    const doorStartX = this.roomWidth / 2 - doorW / 2;
+    wallG.fillRect(-wallThick, this.roomHeight, doorStartX + wallThick, wallThick);
+    wallG.fillRect(doorStartX + doorW, this.roomHeight, this.roomWidth - (doorStartX + doorW) + wallThick, wallThick);
+
+    // Lis safir pembatas lantai kotak
+    wallG.lineStyle(3, 0x38bdf8, 0.9);
+    wallG.strokeRect(0, 0, this.roomWidth, this.roomHeight);
     wallG.setDepth(-80);
 
-    // Batas Obstacle Dinding (Atas 2.2 baris petak / 264px penuh agar avatar tidak tertimpa dinding, Kiri, Kanan)
-    this.addGridObstacle(0, 0, 16, 2.2);
-    this.addGridObstacle(0, 0, 1, 9);
-    this.addGridObstacle(15, 0, 1, 9);
-
-    // Banner Utama Perpustakaan Kota
+    // Banner Utama Perpustakaan Kota (Di sisi atas lantai gy: 0)
     const bannerG = this.add.graphics();
     bannerG.fillStyle(0x0284c7, 0.95);
-    bannerG.fillRoundedRect(this.roomWidth / 2 - 340, 20, 680, 95, 12);
+    bannerG.fillRoundedRect(this.roomWidth / 2 - 340, 16, 680, 76, 12);
     bannerG.lineStyle(3, 0x38bdf8, 1);
-    bannerG.strokeRoundedRect(this.roomWidth / 2 - 336, 24, 672, 87, 10);
+    bannerG.strokeRoundedRect(this.roomWidth / 2 - 336, 19, 672, 70, 10);
     bannerG.setDepth(-60);
 
-    this.add.text(this.roomWidth / 2, 54, '🏛️ PERPUSTAKAAN KOTA RADENWORLD 📚', {
+    this.add.text(this.roomWidth / 2, 42, '🏛️ PERPUSTAKAAN KOTA RADENWORLD 📚', {
       fontFamily: 'Chakra Petch, sans-serif',
-      fontSize: '22px',
+      fontSize: '20px',
       color: '#ffffff',
       fontStyle: 'bold',
     }).setOrigin(0.5, 0.5).setDepth(-55);
 
-    this.add.text(this.roomWidth / 2, 84, 'PUSAT LITERASI PENDIDIKAN • MATERI TERAKREDITASI SD, SMP & SMA', {
+    this.add.text(this.roomWidth / 2, 68, 'PUSAT LITERASI PENDIDIKAN • MATERI TERAKREDITASI SD, SMP & SMA', {
       fontFamily: 'Chakra Petch, sans-serif',
       fontSize: '10px',
       color: '#bae6fd',
@@ -754,7 +757,7 @@ export class LibraryScene extends Phaser.Scene {
   }
 
   /**
-   * Render Pintu Keluar di Bawah Tengah (gx: 7..8, gy: 10)
+   * Render Pintu Keluar di Bawah Tengah
    */
   private renderExitDoor(): void {
     const doorX = this.exitDoorZone.x;
@@ -763,16 +766,16 @@ export class LibraryScene extends Phaser.Scene {
     // Karpet penyambutan pintu keluar
     const rug = this.add.graphics();
     rug.fillStyle(0x064e3b, 0.9);
-    rug.fillRect(doorX - 100, doorY - 140, 200, 140);
+    rug.fillRect(doorX - 100, doorY - 70, 200, 70);
     rug.lineStyle(3, 0xf59e0b, 0.9);
-    rug.strokeRect(doorX - 100, doorY - 140, 200, 140);
+    rug.strokeRect(doorX - 100, doorY - 70, 200, 70);
     rug.setDepth(-50);
 
     const doorG = this.add.graphics();
     doorG.fillStyle(0x0f172a, 0.95);
-    doorG.fillRoundedRect(doorX - 90, doorY - 24, 180, 48, 8);
+    doorG.fillRoundedRect(doorX - 90, doorY - 15, 180, 40, 8);
     doorG.lineStyle(3, 0x38bdf8, 1);
-    doorG.strokeRoundedRect(doorX - 90, doorY - 24, 180, 48, 8);
+    doorG.strokeRoundedRect(doorX - 90, doorY - 15, 180, 40, 8);
     doorG.setDepth(doorY - 5);
 
     this.add.text(doorX, doorY, '🚪 PINTU KELUAR KE KOTA', {
@@ -781,18 +784,6 @@ export class LibraryScene extends Phaser.Scene {
       color: '#e0f2fe',
       fontStyle: 'bold',
     }).setOrigin(0.5, 0.5).setDepth(doorY);
-
-    // Dinding Bawah Kiri & Kanan (Menyisakan celah pintu gx: 7..8)
-    const btmLeftW = doorX - 110;
-    const btmLeft = this.add.zone(btmLeftW / 2, this.roomHeight - 15, btmLeftW, 30);
-    this.physics.add.existing(btmLeft, true);
-    this.obstacles.add(btmLeft);
-
-    const btmRightX = doorX + 110;
-    const btmRightW = this.roomWidth - btmRightX;
-    const btmRight = this.add.zone(btmRightX + btmRightW / 2, this.roomHeight - 15, btmRightW, 30);
-    this.physics.add.existing(btmRight, true);
-    this.obstacles.add(btmRight);
   }
 
   /**

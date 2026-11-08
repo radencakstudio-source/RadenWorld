@@ -1227,7 +1227,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                       sound.playClick();
                       if (onReleaseHandHold) onReleaseHandHold();
                     }}
-                    className="flex-1 py-2 px-2.5 rounded-xl bg-gradient-to-b from-[#F472B6] to-[#DB2777] text-white border-2 border-[#831843] shadow-[0_3px_0_#831843] active:translate-y-0.5 text-[11px] sm:text-xs font-black uppercase flex items-center justify-center gap-1.5"
+                    className="clay-btn-cocoa flex-1 py-2 px-2.5 text-white text-[11px] sm:text-xs font-bold uppercase flex items-center justify-center gap-1.5"
                     title="Lepaskan pegangan tangan"
                   >
                     <span className="truncate">LEPAS TANGAN</span>
@@ -1239,11 +1239,9 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                       sound.playSuccess();
                       if (onRequestHandHold) onRequestHandHold(name, playerId);
                     }}
-                    className={`flex-1 py-2 px-2.5 rounded-xl border-2 text-[11px] sm:text-xs font-black uppercase flex items-center justify-center gap-1.5 transition-all active:translate-y-0.5 ${
-                      isHandHoldRequested
-                        ? 'bg-[#FCE7F3] text-[#9D174D] border-[#9D174D] shadow-[0_2px_0_#9D174D]'
-                        : 'bg-gradient-to-b from-[#F9A8D4] to-[#EC4899] text-[#500724] border-[#831843] shadow-[0_3px_0_#831843] hover:brightness-105'
-                    }`}
+                    className={`${
+                      isHandHoldRequested ? 'clay-btn-neutral text-black' : 'clay-btn-primary text-black'
+                    } flex-1 py-2 px-2.5 text-[11px] sm:text-xs font-bold uppercase flex items-center justify-center gap-1.5`}
                     title="Ajak pegangan tangan (jika diterima, pemain otomatis mengikuti yang mengajak)"
                   >
                     <span className="truncate">
@@ -1262,11 +1260,9 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                       onOpenTrade(name, playerId);
                     }
                   }}
-                  className={`flex-1 py-2 px-2.5 rounded-xl border-2 text-[11px] sm:text-xs font-black uppercase flex items-center justify-center gap-1.5 transition-all active:translate-y-0.5 ${
-                    isTradeRequested
-                      ? 'bg-[#E0F2FE] text-[#075985] border-[#0284C7] shadow-[0_2px_0_#0284C7]'
-                      : 'bg-gradient-to-b from-[#6EE7B7] to-[#10B981] text-[#064E3B] border-[#065F46] shadow-[0_3px_0_#065F46] hover:brightness-105'
-                  }`}
+                  className={`${
+                    isTradeRequested ? 'clay-btn-neutral text-black' : 'clay-btn-secondary text-black'
+                  } flex-1 py-2 px-2.5 text-[11px] sm:text-xs font-bold uppercase flex items-center justify-center gap-1.5`}
                   title="Ajak trade barang (menunggu persetujuan pemain target terlebih dahulu)"
                 >
                   <span className="truncate">

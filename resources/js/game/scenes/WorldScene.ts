@@ -33,6 +33,7 @@ import { WorldInteractions, DEFAULT_WORLD_DOORS } from './world/WorldInteraction
 import type { IWorldDoors } from './world/WorldInteractions';
 import { WorldFarming } from './world/WorldFarming';
 import { InventoryManager } from '../core/InventoryManager';
+import { GraphicsQualityManager } from '../core/GraphicsQualityManager';
 
 
 
@@ -103,6 +104,8 @@ export class WorldScene extends Phaser.Scene {
   private enableMovementEffects: boolean = true;
   private enableAntiAliasing: boolean = true;
   private lastVisibilityCheckTime: number = 0;
+  private handHoldState: { partnerName: string; partnerId?: string; role: 'leader' | 'follower' } | null = null;
+  private lastHandHoldSyncTime: number = 0;
 
   constructor() {
     super({ key: 'WorldScene' });
@@ -159,6 +162,8 @@ export class WorldScene extends Phaser.Scene {
       if (typeof data?.enableAntiAliasing === 'boolean') {
         this.enableAntiAliasing = data.enableAntiAliasing;
       }
+      // Terapkan filter mipmap & stabilisasi sub-piksel sesuai kualitas grafik
+      GraphicsQualityManager.applyToScene(this, data);
       // Optimasi grafis hemat daya jika mode 'low' dipilih
       if (data?.graphicsQuality === 'low') {
         if (this.clouds) this.clouds.forEach(c => c.sprite?.setVisible(false));
@@ -166,9 +171,22 @@ export class WorldScene extends Phaser.Scene {
         this.clouds.forEach(c => c.sprite?.setVisible(true));
       }
     };
+    const onHandHoldStateChanged = (state: { partnerName: string; partnerId?: string; role: 'leader' | 'follower' } | null) => {
+      this.handHoldState = state;
+      if (state && this.player && this.player.active) {
+        this.player.showSpeechBubble(
+          state.role === 'follower'
+            ? `Mengikuti ${state.partnerName} (Pegangan Tangan)`
+            : `Pegangan tangan dengan ${state.partnerName}`,
+          2200
+        );
+      }
+    };
     EventBus.on('graphics-settings-updated', onGraphicsSettingsUpdated);
+    EventBus.on('handhold-state-changed', onHandHoldStateChanged);
     this.events.once('shutdown', () => {
       EventBus.off('graphics-settings-updated', onGraphicsSettingsUpdated);
+      EventBus.off('handhold-state-changed', onHandHoldStateChanged);
     });
 
     // 1. Batas fisika dunia diperlebar mencakup buffer (3600px) agar koridor jalan bisa dilewati ke luar
@@ -251,6 +269,9 @@ export class WorldScene extends Phaser.Scene {
 
     // 13b. Siapkan atmosfer malam biru realistis & lightmap sorot lampu jalan
     this.setupNightAtmosphere();
+
+    // 13c. Terapkan Mipmap Hardware & Anti-Shimmer untuk mencegah garis kedip saat zoom out
+    GraphicsQualityManager.applyToScene(this);
 
     // 14. Daftarkan cleanup saat shutdown / destroy
     this.setupSceneCleanup();
@@ -789,8 +810,9 @@ export class WorldScene extends Phaser.Scene {
       if (effectiveName) {
         this.player.setEntityName(effectiveName);
       }
-      this.cameras.main.setRoundPixels(true);
-      this.cameras.main.startFollow(this.player, true, 1.0, 1.0);
+      const roundPx = !this.enableAntiAliasing;
+      this.cameras.main.setRoundPixels(roundPx);
+      this.cameras.main.startFollow(this.player, roundPx, 1.0, 1.0);
       this.cameras.main.centerOn(this.player.x, this.player.y);
       return;
     }
@@ -865,7 +887,7 @@ export class WorldScene extends Phaser.Scene {
       this.worldHeight + cameraMargin * 2
     );
     this.cameraController.centerOn(spawnX, spawnY);
-    this.cameraController.follow(this.player, true, 1.0, 1.0);
+    this.cameraController.follow(this.player, !this.enableAntiAliasing, 1.0, 1.0);
     this.smoothZoomTo(this.targetZoom);
 
     this.networkManager.connect();
@@ -1448,6 +1470,45 @@ export class WorldScene extends Phaser.Scene {
     this.player.update(time, delta);
     this.player.setDepth(Math.floor(this.player.y + 60));
 
+    // 2a. Logika Otomatis Mengikuti Saat Pegangan Tangan (Hand-Holding Auto-Follow)
+    if (this.handHoldState && this.handHoldState.partnerName) {
+      let partnerEntity: any = null;
+      const targetNameLower = this.handHoldState.partnerName.trim().toLowerCase();
+      for (const [rId, rem] of this.remotePlayers.entries()) {
+        if (
+          (this.handHoldState.partnerId && rId === this.handHoldState.partnerId) ||
+          (rem.getEntityName?.() || '').trim().toLowerCase() === targetNameLower
+        ) {
+          partnerEntity = rem;
+          break;
+        }
+      }
+
+      if (partnerEntity && partnerEntity.active) {
+        if (this.handHoldState.role === 'follower') {
+          // Player yang menerima pegangan tangan otomatis mengikuti player yang mengajak (leader)
+          const targetX = partnerEntity.x + 42;
+          const targetY = partnerEntity.y + 4;
+          const dist = Phaser.Math.Distance.Between(this.player.x, this.player.y, targetX, targetY);
+          if (dist > 28) {
+            const step = Math.min(dist, (delta / 1000) * 235);
+            const angle = Phaser.Math.Angle.Between(this.player.x, this.player.y, targetX, targetY);
+            this.player.x += Math.cos(angle) * step;
+            this.player.y += Math.sin(angle) * step;
+            if (time - this.lastHandHoldSyncTime > 90) {
+              this.lastHandHoldSyncTime = time;
+              this.networkManager.sendMovement(
+                Math.round(this.player.x),
+                Math.round(this.player.y),
+                partnerEntity.getDirection?.() || 'down',
+                true
+              );
+            }
+          }
+        }
+      }
+    }
+
     // 2b. Interaksi rumput bergoyang saat diinjak / didekati & pemain bergerak
     WorldProps.updateWildGrassSway(time, this.player, this.remotePlayers);
 
@@ -1489,8 +1550,17 @@ export class WorldScene extends Phaser.Scene {
           const gyNow = Math.floor(py / this.tileSize);
           if (WorldFarming.isFarmGrid(gxNow, gyNow)) {
             const held = InventoryManager.getInstance().getActiveItem();
-            if (InventoryManager.isSeedItem(held)) {
+            if (InventoryManager.isHoeItem(held)) {
+              resolvedPrompt = '[F] Cangkul Lahan Kebun ⛏️';
+            } else if (InventoryManager.isWateringCanItem(held)) {
+              resolvedPrompt = '[F] Siram Lahan Kebun 💧';
+            } else if (InventoryManager.isSeedItem(held)) {
               resolvedPrompt = `[F] Tanam ${held?.name || 'Bibit'} 🌱`;
+            } else {
+              const step = WorldFarming.getContextualFarmStepNearPlayer(this.player);
+              if (step === 'hoe') resolvedPrompt = '[F] Cangkul Lahan Kebun ⛏️';
+              else if (step === 'water') resolvedPrompt = '[F] Siram Lahan Kebun 💧';
+              else if (step === 'seed') resolvedPrompt = '[F] Tanam Bibit Kebun 🌱';
             }
           }
         }
@@ -1673,10 +1743,18 @@ export class WorldScene extends Phaser.Scene {
       }
     }
 
-    // Gerakan aktif (berjalan/berlari/kamera bergerak): Perbarui 60fps setiap frame agar cahaya mulus tanpa getar
-    // Diam total: Hemat komputasi dengan jeda 100ms
-    const isMoving = playerMoved || camMoved || anyRemoteMoved;
-    if (!isMoving && time - this.lastNightLightmapTime < 100) {
+    const pad = 220;
+    const viewX = wv.x - pad;
+    const viewY = wv.y - pad;
+    const viewW = Math.max(400, wv.width + pad * 2);
+    const viewH = Math.max(300, wv.height + pad * 2);
+
+    // Update posisi dan ukuran overlay sprite mengikuti kamera di 60 FPS
+    this.nightOverlaySprite.setPosition(viewX + viewW * 0.5, viewY + viewH * 0.5);
+    this.nightOverlaySprite.setDisplaySize(viewW, viewH);
+
+    // Throttle pembaruan tekstur WebGL canvas lightmap ke ~20 FPS (50ms) agar CPU/GPU tidak terblokir
+    if (time - this.lastNightLightmapTime < 50) {
       return;
     }
 
@@ -1686,15 +1764,6 @@ export class WorldScene extends Phaser.Scene {
     this.lastNightPlayerX = this.player?.x ?? 0;
     this.lastNightPlayerY = this.player?.y ?? 0;
     this.lastNightZoom = cam.zoom;
-
-    const pad = 220;
-    const viewX = wv.x - pad;
-    const viewY = wv.y - pad;
-    const viewW = Math.max(400, wv.width + pad * 2);
-    const viewH = Math.max(300, wv.height + pad * 2);
-
-    this.nightOverlaySprite.setPosition(viewX + viewW * 0.5, viewY + viewH * 0.5);
-    this.nightOverlaySprite.setDisplaySize(viewW, viewH);
 
     const cw = 320;
     const ch = 180;
@@ -1706,10 +1775,13 @@ export class WorldScene extends Phaser.Scene {
     ctx.fillStyle = fillRgba;
     ctx.fillRect(0, 0, cw, ch);
 
-    // Lubangi selimut malam biru di sekitar tiap lampu jalan & pemain
+    // Lubangi selimut malam biru di sekitar tiap lampu jalan & pemain via pre-rendered hardware bitmap stamp
     ctx.globalCompositeOperation = 'destination-out';
     const sx = cw / viewW;
     const sy = ch / viewH;
+
+    // Stamp radial halus pre-rendered (0 GC allocations, 0 canvas gradient compile overhead)
+    const stamp = WorldScene.getLightStamp();
 
     const lamps = WorldProps.lampLights;
     for (let i = 0; i < lamps.length; i++) {
@@ -1729,36 +1801,16 @@ export class WorldScene extends Phaser.Scene {
       const gy = (l.groundY - viewY) * sy;
       const grx = Math.max(6, 255 * sx);
       const gry = Math.max(4, 175 * sy);
-
-      ctx.save();
-      ctx.translate(gx, gy);
-      ctx.scale(1, gry / grx);
-      const gGrad = ctx.createRadialGradient(0, 0, grx * 0.08, 0, 0, grx);
-      gGrad.addColorStop(0.0, 'rgba(0, 0, 0, 0.96)');
-      gGrad.addColorStop(0.45, 'rgba(0, 0, 0, 0.65)');
-      gGrad.addColorStop(0.78, 'rgba(0, 0, 0, 0.22)');
-      gGrad.addColorStop(1.0, 'rgba(0, 0, 0, 0.0)');
-      ctx.fillStyle = gGrad;
-      ctx.beginPath();
-      ctx.arc(0, 0, grx, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.restore();
+      ctx.drawImage(stamp, gx - grx, gy - gry, grx * 2, gry * 2);
 
       // 2. Lubang cahaya di sekitar kaca lentera atas lampu jalan
       const lx = (l.lanternX - viewX) * sx;
       const ly = (l.lanternY - viewY) * sy;
       const lr = Math.max(5, 145 * sx);
-      const lGrad = ctx.createRadialGradient(lx, ly, lr * 0.1, lx, ly, lr);
-      lGrad.addColorStop(0.0, 'rgba(0, 0, 0, 0.98)');
-      lGrad.addColorStop(0.55, 'rgba(0, 0, 0, 0.55)');
-      lGrad.addColorStop(1.0, 'rgba(0, 0, 0, 0.0)');
-      ctx.fillStyle = lGrad;
-      ctx.beginPath();
-      ctx.arc(lx, ly, lr, 0, Math.PI * 2);
-      ctx.fill();
+      ctx.drawImage(stamp, lx - lr, ly - lr, lr * 2, lr * 2);
     }
 
-    // 2b. Lubangi selimut malam biru di sekeliling jalan & pekarangan sekitar gedung (cahaya sekeliling, tanpa bola di tengah gedung)
+    // 2b. Lubangi selimut malam biru di sekeliling jalan & pekarangan sekitar gedung
     const bLights = WorldProps.buildingLights;
     for (let i = 0; i < bLights.length; i++) {
       const b = bLights[i];
@@ -1777,20 +1829,7 @@ export class WorldScene extends Phaser.Scene {
         const by = (pool.y - viewY) * sy;
         const brx = Math.max(8, pool.r * sx * 0.85);
         const bry = Math.max(5, pool.r * 0.55 * sy);
-
-        ctx.save();
-        ctx.translate(bx, by);
-        ctx.scale(1, bry / brx);
-        const bGrad = ctx.createRadialGradient(0, 0, brx * 0.1, 0, 0, brx);
-        bGrad.addColorStop(0.0, 'rgba(0, 0, 0, 0.80)');
-        bGrad.addColorStop(0.50, 'rgba(0, 0, 0, 0.42)');
-        bGrad.addColorStop(0.85, 'rgba(0, 0, 0, 0.10)');
-        bGrad.addColorStop(1.0, 'rgba(0, 0, 0, 0.0)');
-        ctx.fillStyle = bGrad;
-        ctx.beginPath();
-        ctx.arc(0, 0, brx, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.restore();
+        ctx.drawImage(stamp, bx - brx, by - bry, brx * 2, bry * 2);
       }
     }
 
@@ -1798,16 +1837,8 @@ export class WorldScene extends Phaser.Scene {
     if (this.player && this.player.active) {
       const px = (this.player.x - viewX) * sx;
       const py = (this.player.y - viewY) * sy;
-      const pr = Math.max(10, 250 * sx); // Radius lebih luas dan terang
-      const pGrad = ctx.createRadialGradient(px, py, pr * 0.12, px, py, pr);
-      pGrad.addColorStop(0.0, 'rgba(0, 0, 0, 0.98)'); // Terang benderang di sekitar pemain
-      pGrad.addColorStop(0.40, 'rgba(0, 0, 0, 0.76)');
-      pGrad.addColorStop(0.75, 'rgba(0, 0, 0, 0.32)');
-      pGrad.addColorStop(1.0, 'rgba(0, 0, 0, 0.0)');
-      ctx.fillStyle = pGrad;
-      ctx.beginPath();
-      ctx.arc(px, py, pr, 0, Math.PI * 2);
-      ctx.fill();
+      const pr = Math.max(10, 250 * sx);
+      ctx.drawImage(stamp, px - pr, py - pr, pr * 2, pr * 2);
     }
 
     // 3b. Cahaya terang di sekitar seluruh pemain lain (Multiplayer Remote Players)
@@ -1826,15 +1857,7 @@ export class WorldScene extends Phaser.Scene {
         const rpx = (rp.x - viewX) * sx;
         const rpy = (rp.y - viewY) * sy;
         const rpr = Math.max(10, 240 * sx);
-        const rpGrad = ctx.createRadialGradient(rpx, rpy, rpr * 0.12, rpx, rpy, rpr);
-        rpGrad.addColorStop(0.0, 'rgba(0, 0, 0, 0.98)');
-        rpGrad.addColorStop(0.40, 'rgba(0, 0, 0, 0.76)');
-        rpGrad.addColorStop(0.75, 'rgba(0, 0, 0, 0.32)');
-        rpGrad.addColorStop(1.0, 'rgba(0, 0, 0, 0.0)');
-        ctx.fillStyle = rpGrad;
-        ctx.beginPath();
-        ctx.arc(rpx, rpy, rpr, 0, Math.PI * 2);
-        ctx.fill();
+        ctx.drawImage(stamp, rpx - rpr, rpy - rpr, rpr * 2, rpr * 2);
       });
     }
 
@@ -1853,20 +1876,33 @@ export class WorldScene extends Phaser.Scene {
         const nx = (npc.x - viewX) * sx;
         const ny = (npc.y - viewY) * sy;
         const nr = Math.max(10, 230 * sx);
-        const nGrad = ctx.createRadialGradient(nx, ny, nr * 0.12, nx, ny, nr);
-        nGrad.addColorStop(0.0, 'rgba(0, 0, 0, 0.96)');
-        nGrad.addColorStop(0.40, 'rgba(0, 0, 0, 0.72)');
-        nGrad.addColorStop(0.75, 'rgba(0, 0, 0, 0.30)');
-        nGrad.addColorStop(1.0, 'rgba(0, 0, 0, 0.0)');
-        ctx.fillStyle = nGrad;
-        ctx.beginPath();
-        ctx.arc(nx, ny, nr, 0, Math.PI * 2);
-        ctx.fill();
+        ctx.drawImage(stamp, nx - nr, ny - nr, nr * 2, nr * 2);
       }
     }
 
     ctx.globalCompositeOperation = 'source-over';
     this.nightCanvasTex.refresh();
+  }
+
+  private static lightStampCanvas: HTMLCanvasElement | null = null;
+  private static getLightStamp(): HTMLCanvasElement {
+    if (!WorldScene.lightStampCanvas) {
+      const stamp = document.createElement('canvas');
+      stamp.width = 128;
+      stamp.height = 128;
+      const sCtx = stamp.getContext('2d')!;
+      const grad = sCtx.createRadialGradient(64, 64, 4, 64, 64, 64);
+      grad.addColorStop(0.0, 'rgba(0, 0, 0, 1.0)');
+      grad.addColorStop(0.38, 'rgba(0, 0, 0, 0.78)');
+      grad.addColorStop(0.72, 'rgba(0, 0, 0, 0.28)');
+      grad.addColorStop(1.0, 'rgba(0, 0, 0, 0.0)');
+      sCtx.fillStyle = grad;
+      sCtx.beginPath();
+      sCtx.arc(64, 64, 64, 0, Math.PI * 2);
+      sCtx.fill();
+      WorldScene.lightStampCanvas = stamp;
+    }
+    return WorldScene.lightStampCanvas;
   }
 
   private setupSceneCleanup(): void {

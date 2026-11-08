@@ -47,8 +47,13 @@ import {
   SMP_CURRICULUM_DATA,
   SMA_CURRICULUM_DATA,
 } from '../data/SchoolCurriculumData';
+import {
+  CURRICULUM_SUBJECTS,
+  getCurriculumTopics,
+} from '../data/library/CurriculumMasterRegistry';
+import { BookMaterialView } from './BookMaterialView';
 
-export type SchoolModalTab = 'quiz' | 'class_leaderboard' | 'school_leaderboard';
+export type SchoolModalTab = 'materi' | 'quiz' | 'class_leaderboard' | 'school_leaderboard';
 
 interface SchoolSubjectsModalProps {
   isOpen: boolean;
@@ -69,7 +74,7 @@ export const SchoolSubjectsModal: React.FC<SchoolSubjectsModalProps> = ({
   schoolType = 'sd',
   grade = 1,
   playerName = 'Siswa Raden',
-  initialTab = 'quiz',
+  initialTab = 'materi',
   onClose,
   onStudySubject,
 }) => {
@@ -79,6 +84,8 @@ export const SchoolSubjectsModal: React.FC<SchoolSubjectsModalProps> = ({
   const [currentGrade, setCurrentGrade] = useState<number>(() => (grade >= 1 ? grade : 1));
   const [selectedSchoolBoard, setSelectedSchoolBoard] = useState<'sd' | 'smp' | 'sma'>(schoolType);
   const [selectedSubject, setSelectedSubject] = useState<string>('Semua Mapel');
+  const [selectedBookSubjectIdx, setSelectedBookSubjectIdx] = useState<number>(0);
+  const [selectedBookChapterIdx, setSelectedBookChapterIdx] = useState<number>(0);
 
   // --- State Leaderboard ---
   const [lbData, setLbData] = useState<ILeaderboardPayload | null>(null);
@@ -109,8 +116,9 @@ export const SchoolSubjectsModal: React.FC<SchoolSubjectsModalProps> = ({
       setCurrentGrade(Math.min(maxG, grade));
     }
     setSelectedSchoolBoard(schoolType);
-    setActiveTab(initialTab || 'quiz');
+    setActiveTab(initialTab || 'materi');
     setSelectedSubject('Semua Mapel');
+    setSelectedBookSubjectIdx(0);
     setIsQuizActive(false);
     setIsQuizFinished(false);
     setIsGameOver(false);
@@ -741,13 +749,27 @@ export const SchoolSubjectsModal: React.FC<SchoolSubjectsModalProps> = ({
               type="button"
               onClick={() => {
                 sound.playClick();
+                setActiveTab('materi');
+              }}
+              className={`clay-sidebar-item ${
+                activeTab === 'materi' ? 'clay-btn-primary text-black' : 'clay-btn-neutral text-black'
+              }`}
+            >
+              <BookOpen className="w-4 h-4 shrink-0" />
+              <span className="truncate">Buku Materi</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                sound.playClick();
                 setActiveTab('quiz');
               }}
               className={`clay-sidebar-item ${
                 activeTab === 'quiz' ? 'clay-btn-primary text-black' : 'clay-btn-neutral text-black'
               }`}
             >
-              <BookOpen className="w-4 h-4 shrink-0" />
+              <Sparkles className="w-4 h-4 shrink-0" />
               <span className="truncate">Ujian Mapel</span>
             </button>
 
@@ -795,6 +817,7 @@ export const SchoolSubjectsModal: React.FC<SchoolSubjectsModalProps> = ({
                   onClick={() => {
                     sound.playClick();
                     setCurrentGrade(g);
+                    setSelectedBookSubjectIdx(0);
                     setIsQuizFinished(false);
                     setIsGameOver(false);
                   }}
@@ -832,14 +855,16 @@ export const SchoolSubjectsModal: React.FC<SchoolSubjectsModalProps> = ({
           <div className="clay-main-topbar">
             <div className="flex items-center gap-2 min-w-0 flex-wrap">
               <h2 className="font-bold text-sm sm:text-base text-black uppercase tracking-wide truncate">
-                {activeTab === 'quiz'
+                {activeTab === 'materi'
+                  ? `Buku Materi Pelajaran • ${getOfficialClassLabel(schoolType, currentGrade)}`
+                  : activeTab === 'quiz'
                   ? `Ujian Kuis • ${getOfficialClassLabel(schoolType, currentGrade)}`
                   : activeTab === 'class_leaderboard'
                   ? `Leaderboard ${getOfficialClassLabel(schoolType, currentGrade)}`
                   : `Leaderboard Sekolah (${selectedSchoolBoard.toUpperCase()})`}
               </h2>
               <span className="px-2 py-0.5 clay-badge-secondary text-[10px] font-bold text-black">
-                Anti-Soal Kembar
+                {activeTab === 'materi' ? '📖 Gambar & Penjelasan Buku' : 'Anti-Soal Kembar'}
               </span>
             </div>
 
@@ -857,6 +882,136 @@ export const SchoolSubjectsModal: React.FC<SchoolSubjectsModalProps> = ({
           </div>
 
           <div className="clay-main-body custom-scrollbar">
+            {/* TAB 0: BUKU MATERI PELAJARAN BERGAMBAR (SD, SMP, SMA) — KONSISTEN PER BAB & GAMBAR BISA DIPERBESAR */}
+            {activeTab === 'materi' && (() => {
+              const numericGrade =
+                schoolType === 'sd'
+                  ? Math.min(Math.max(currentGrade, 1), 6)
+                  : schoolType === 'smp'
+                  ? Math.min(Math.max(currentGrade, 1), 3) + 6
+                  : Math.min(Math.max(currentGrade, 1), 3) + 9;
+              const gradeKey = `${schoolType}-${numericGrade}`;
+
+              const subjectListForSchool = CURRICULUM_SUBJECTS[schoolType] || CURRICULUM_SUBJECTS.sd;
+              const safeSubIdx = Math.min(
+                selectedBookSubjectIdx,
+                Math.max(0, subjectListForSchool.length - 1)
+              );
+              const activeCurriculumSub =
+                subjectListForSchool[safeSubIdx] || subjectListForSchool[0];
+
+              const chapters = getCurriculumTopics({
+                schoolType,
+                gradeKey,
+                subjectId: activeCurriculumSub.id,
+              });
+              const safeChapIdx = Math.min(
+                selectedBookChapterIdx,
+                Math.max(0, chapters.length - 1)
+              );
+              const activeTopic = chapters[safeChapIdx] || chapters[0];
+
+              if (!activeTopic) return null;
+
+              return (
+                <div className="space-y-3">
+                  {/* Pilihan Buku Mata Pelajaran */}
+                  <div className="flex items-center gap-1.5 overflow-x-auto custom-scrollbar pb-1">
+                    {subjectListForSchool.map((subj, idx) => (
+                      <button
+                        key={subj.id}
+                        type="button"
+                        onClick={() => {
+                          sound.playClick();
+                          setSelectedBookSubjectIdx(idx);
+                          setSelectedBookChapterIdx(0);
+                        }}
+                        className={`px-2.5 py-1.5 text-xs font-bold shrink-0 flex items-center gap-1.5 ${
+                          safeSubIdx === idx
+                            ? 'clay-btn-primary text-black'
+                            : 'clay-btn-neutral text-black'
+                        }`}
+                      >
+                        <span>{subj.icon}</span>
+                        <span>{subj.shortName || subj.name}</span>
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Pilihan Bab Materi agar tidak pernah tercampur antar bab */}
+                  {chapters.length > 1 && (
+                    <div className="flex items-center gap-1.5 overflow-x-auto custom-scrollbar pb-1">
+                      {chapters.map((ch, cIdx) => (
+                        <button
+                          key={ch.id}
+                          type="button"
+                          onClick={() => {
+                            sound.playClick();
+                            setSelectedBookChapterIdx(cIdx);
+                          }}
+                          className={`px-2.5 py-1 text-[11px] font-bold shrink-0 rounded-lg border-2 border-[#5C3A21] transition-all ${
+                            safeChapIdx === cIdx
+                              ? 'bg-[#FFE082] text-black shadow-[0_2px_0_#5C3A21]'
+                              : 'bg-[#FFFDF7] text-black/80 hover:bg-[#FFF8E7]'
+                          }`}
+                        >
+                          Bab {cIdx + 1}: {ch.title}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Komponen Buku Pelajaran Konsisten + Gambar Bisa Diperbesar (Zoom) + Rumus Unik + Latihan Tanpa Bocoran */}
+                  <BookMaterialView
+                    topic={activeTopic}
+                    chapterNumber={safeChapIdx + 1}
+                    totalChapters={chapters.length}
+                    isRead={false}
+                    expReward={schoolType === 'sma' ? 45 : schoolType === 'smp' ? 35 : 25}
+                    hasPrevTopic={safeChapIdx > 0}
+                    hasNextTopic={safeChapIdx < chapters.length - 1}
+                    onPrevTopic={() => {
+                      if (safeChapIdx > 0) {
+                        sound.playClick();
+                        setSelectedBookChapterIdx(safeChapIdx - 1);
+                      }
+                    }}
+                    onNextTopic={() => {
+                      if (safeChapIdx < chapters.length - 1) {
+                        sound.playClick();
+                        setSelectedBookChapterIdx(safeChapIdx + 1);
+                      }
+                    }}
+                    onMarkAsRead={() => {
+                      const reward = schoolType === 'sma' ? 45 : schoolType === 'smp' ? 35 : 25;
+                      if (onStudySubject) {
+                        onStudySubject(
+                          `${activeCurriculumSub.name} - ${activeTopic.title}`,
+                          reward
+                        );
+                      } else {
+                        EventBus.emit('gain-exp', { amount: reward, source: 'school_book_read' });
+                      }
+                    }}
+                    extraFooterAction={
+                      <button
+                        type="button"
+                        onClick={() => {
+                          sound.playClick();
+                          setActiveTab('quiz');
+                          startQuiz(activeCurriculumSub.shortName || activeCurriculumSub.name);
+                        }}
+                        className="px-3 py-1.5 clay-btn-primary text-black text-xs font-bold flex items-center gap-1"
+                      >
+                        <span>Mulai Ujian Mapel</span>
+                        <ArrowRight className="w-3.5 h-3.5" />
+                      </button>
+                    }
+                  />
+                </div>
+              );
+            })()}
+
             {/* TAB 1: UJIAN MAPEL ATAU HASIL KUIS */}
             {activeTab === 'quiz' && !isQuizFinished && !isGameOver && (
               <div className="space-y-3.5">

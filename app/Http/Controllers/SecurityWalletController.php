@@ -43,11 +43,11 @@ class SecurityWalletController extends Controller
 
             if (!$user) {
                 return response()->json([
-                    'status' => 'error',
-                    'message' => 'Sesi akun tidak ditemukan. Silakan login terlebih dahulu.',
-                    'gold' => 1000,
+                    'status' => 'guest_mode',
+                    'message' => 'Mode tamu lokal aktif. Silakan masuk akun untuk sinkronisasi cloud.',
+                    'gold' => 2500,
                     'diamonds' => 50,
-                ], 401);
+                ], 200);
             }
 
             $isSuper = $user->isSuperAdmin();
@@ -101,9 +101,9 @@ class SecurityWalletController extends Controller
 
         if (!$user) {
             return response()->json([
-                'status' => 'error',
-                'message' => 'Sesi akun tidak valid atau tidak memiliki otorisasi token.',
-            ], 401);
+                'status' => 'guest_mode',
+                'message' => 'Mode tamu lokal aktif.',
+            ], 200);
         }
 
         $isSuper = $user->isSuperAdmin();

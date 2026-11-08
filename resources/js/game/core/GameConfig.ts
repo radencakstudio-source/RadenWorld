@@ -17,7 +17,8 @@ import { CafeScene } from '../scenes/CafeScene';
 import { LibraryScene } from '../scenes/LibraryScene';
 
 export function createGameConfig(parentContainerId: string = 'game-container'): Phaser.Types.Core.GameConfig {
-  const dpr = typeof window !== 'undefined' ? Math.min(2, Math.max(1, window.devicePixelRatio || 1)) : 1;
+  // Batasi DPR ke maksimal 1.25 agar rendering WebGL super ringan, 60 FPS stabil & tidak membebani GPU/CPU 4K
+  const dpr = typeof window !== 'undefined' ? Math.min(1.25, Math.max(1, window.devicePixelRatio || 1)) : 1;
   let enableAA = true;
   try {
     const s = JSON.parse(localStorage.getItem('raden_game_settings') || '{}');

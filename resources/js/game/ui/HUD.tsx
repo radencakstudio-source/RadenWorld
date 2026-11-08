@@ -239,6 +239,135 @@ export const HUD: React.FC<HUDProps> = React.memo(({
     };
   }, [serverCode]);
 
+  // ==========================================================================
+  // NOTIFIKASI DAPAT IKAN & HASIL PANEN DI KIRI ATAS (TEPAT DI BAWAH PROFIL)
+  // ==========================================================================
+  const [topLeftLootCard, setTopLeftLootCard] = React.useState<{
+    id: string;
+    kind: 'fish' | 'harvest';
+    icon: string;
+    title: string;
+    subTypeLabel: string;
+    weightKg: number;
+    depthMeters?: number;
+    sameCount: number;
+    qty?: number;
+    effect: string;
+    rarity?: string;
+    rewardBadge: string;
+  } | null>(null);
+
+  const [handHoldStatus, setHandHoldStatus] = React.useState<{
+    partnerName: string;
+    partnerId?: string;
+    role: 'leader' | 'follower';
+  } | null>(null);
+
+  React.useEffect(() => {
+    let lootTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const handleFishCaughtCard = (data: any) => {
+      const fish = data?.fish;
+      if (!fish) return;
+      const waterShort =
+        data?.waterShort ||
+        (fish.waterType === 'Air Laut'
+          ? 'Laut'
+          : fish.waterType === 'Air Payau'
+          ? 'Payau'
+          : 'Tawar');
+      const depth =
+        typeof data?.depthMeters === 'number'
+          ? data.depthMeters
+          : typeof fish.depthMeters === 'number'
+          ? fish.depthMeters
+          : 12.5;
+      const weight = typeof fish.weightKg === 'number' ? fish.weightKg : 15.0;
+      const sameCount = Number(data?.sameCatchCount || fish.catchStreak || 1);
+      const effectText =
+        data?.effect ||
+        fish.effect ||
+        'Fokus Belajar +15% EXP & Stamina Segar';
+      const cleanFishName = String(fish.name || 'Ikan Mujair').replace(/^\[(JUMBO|LOKAL)\]\s*/i, '');
+
+      setTopLeftLootCard({
+        id: `fish_${Date.now()}`,
+        kind: 'fish',
+        icon: fish.rarity === 'Legendary' ? '🌟🐟' : fish.rarity === 'Rare' ? '🐠' : '🐟',
+        title: `${cleanFishName} (${waterShort})`,
+        subTypeLabel: `Air ${waterShort}`,
+        weightKg: weight,
+        depthMeters: depth,
+        sameCount,
+        effect: effectText,
+        rarity: fish.rarity || 'Common',
+        rewardBadge: `+${fish.goldReward || 30} G • +${data?.expEarned || 25} EXP`,
+      });
+
+      if (lootTimer) clearTimeout(lootTimer);
+      lootTimer = setTimeout(() => {
+        setTopLeftLootCard(null);
+      }, 9500);
+    };
+
+    const handleCropHarvestedCard = (data: any) => {
+      if (!data?.cropName) return;
+      const sameCount = Number(data.sameHarvestCount || 1);
+      const weight =
+        typeof data.weightKg === 'number'
+          ? data.weightKg
+          : parseFloat((12 + Math.random() * 38).toFixed(1));
+      const effectText =
+        data.effect || 'Pulihkan +35 HP & Fokus Belajar +15% EXP';
+
+      setTopLeftLootCard({
+        id: `crop_${Date.now()}`,
+        kind: 'harvest',
+        icon: data.icon || '🍎',
+        title: `${data.cropName}`,
+        subTypeLabel: `Diambil Sama: ${sameCount}x`,
+        weightKg: weight,
+        sameCount,
+        qty: Number(data.qty || 2),
+        effect: effectText,
+        rarity: data.rarity || 'Common',
+        rewardBadge: `+${data.qty || 2} Panen • +${data.exp || 25} EXP`,
+      });
+
+      if (lootTimer) clearTimeout(lootTimer);
+      lootTimer = setTimeout(() => {
+        setTopLeftLootCard(null);
+      }, 9500);
+    };
+
+    const handleHandHoldChanged = (data: {
+      partnerName: string | null;
+      partnerId?: string;
+      role?: 'leader' | 'follower';
+    }) => {
+      if (data && data.partnerName) {
+        setHandHoldStatus({
+          partnerName: data.partnerName,
+          partnerId: data.partnerId,
+          role: data.role || 'leader',
+        });
+      } else {
+        setHandHoldStatus(null);
+      }
+    };
+
+    EventBus.on('fishing-caught', handleFishCaughtCard);
+    EventBus.on('farming-crop-harvested', handleCropHarvestedCard);
+    EventBus.on('handhold-state-changed', handleHandHoldChanged);
+
+    return () => {
+      if (lootTimer) clearTimeout(lootTimer);
+      EventBus.off('fishing-caught', handleFishCaughtCard);
+      EventBus.off('farming-crop-harvested', handleCropHarvestedCard);
+      EventBus.off('handhold-state-changed', handleHandHoldChanged);
+    };
+  }, []);
+
   const [customMarker, setCustomMarker] = React.useState<IMapMarker | null>(() => {
     try {
       const saved = localStorage.getItem('raden_custom_waypoint');
@@ -513,120 +642,229 @@ export const HUD: React.FC<HUDProps> = React.memo(({
       {/* 1. TOP BAR: KIRI (PROFIL & CHAT) | KANAN (KOIN, SERVER, PETA)        */}
       {/* ==================================================================== */}
       <div className="flex items-start justify-between gap-1.5 sm:gap-2.5 w-full">
-        {/* KIRI ATAS */}
-        <div className="pointer-events-auto flex items-center gap-1 sm:gap-1.5 shrink-0">
-          {/* Tombol Profil Karakter */}
-          {theme.visibility?.showPlayerStats !== false && (
-            <button
-              type="button"
-              tabIndex={-1}
-              onClick={onOpenProfile}
-              onPointerDown={(e) => (e.currentTarget as HTMLElement).blur()}
-              className="clay-btn-neutral h-8 sm:h-10 flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 text-left shrink-0 text-black"
-              title={isSuperAdmin ? '👑 Profil Super Admin (RADEN)' : 'Klik untuk membuka Profil Karakter'}
-            >
-              <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-md bg-[#FFAE6D] border border-[#5C3A21] flex items-center justify-center shrink-0 text-black">
-                <User className="w-3 sm:w-3.5 h-3 sm:h-3.5 stroke-[2.5]" />
-              </div>
-              <div className="flex flex-col leading-none">
-                <div className="flex items-center gap-1">
-                  <span className="font-bold text-[11px] sm:text-xs text-black truncate max-w-[95px] sm:max-w-[145px]" title={stats.name}>
-                    {stats.name}
-                  </span>
-                  {isSuperAdmin && (
-                    <span className="clay-badge-secondary text-[8px] font-bold text-black px-1 py-0.5 leading-none">
-                      ADMIN
-                    </span>
-                  )}
+        {/* KIRI ATAS (PROFIL + KARTU DAPAT IKAN / PANEN TEPAT DI BAWAH PROFIL) */}
+        <div className="flex flex-col items-start gap-1.5 shrink-0 max-w-[260px] sm:max-w-[320px]">
+          <div className="pointer-events-auto flex items-center gap-1 sm:gap-1.5 shrink-0">
+            {/* Tombol Profil Karakter */}
+            {theme.visibility?.showPlayerStats !== false && (
+              <button
+                type="button"
+                tabIndex={-1}
+                onClick={onOpenProfile}
+                onPointerDown={(e) => (e.currentTarget as HTMLElement).blur()}
+                className="clay-btn-neutral h-8 sm:h-10 flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 text-left shrink-0 text-black"
+                title={isSuperAdmin ? '👑 Profil Super Admin (RADEN)' : 'Klik untuk membuka Profil Karakter'}
+              >
+                <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-md bg-[#FFAE6D] border border-[#5C3A21] flex items-center justify-center shrink-0 text-black">
+                  <User className="w-3 sm:w-3.5 h-3 sm:h-3.5 stroke-[2.5]" />
                 </div>
-                <span className="text-[8px] sm:text-[9px] font-bold text-black mt-0.5">
-                  LV. {formattedLevel}
-                </span>
-              </div>
-            </button>
-          )}
+                <div className="flex flex-col leading-none">
+                  <div className="flex items-center gap-1">
+                    <span className="font-bold text-[11px] sm:text-xs text-black truncate max-w-[95px] sm:max-w-[145px]" title={stats.name}>
+                      {stats.name}
+                    </span>
+                    {isSuperAdmin && (
+                      <span className="clay-badge-secondary text-[8px] font-bold text-black px-1 py-0.5 leading-none">
+                        ADMIN
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-[8px] sm:text-[9px] font-bold text-black mt-0.5">
+                    LV. {formattedLevel}
+                  </span>
+                </div>
+              </button>
+            )}
 
-          {/* Tombol Chat */}
-          {theme.visibility?.showChat !== false && (
+            {/* Tombol Chat */}
+            {theme.visibility?.showChat !== false && (
+              <button
+                type="button"
+                tabIndex={-1}
+                onClick={onToggleChat}
+                onPointerDown={(e) => (e.currentTarget as HTMLElement).blur()}
+                className={`h-8 w-8 sm:h-10 sm:w-10 flex items-center justify-center shrink-0 text-black ${
+                  isChatOpen ? 'clay-btn-primary' : 'clay-btn-neutral'
+                }`}
+                title={isChatOpen ? 'Tutup Obrolan' : 'Buka Obrolan (/)'}
+              >
+                <MessageSquare className="w-3.5 sm:w-4 h-3.5 sm:h-4 stroke-[2.5]" />
+              </button>
+            )}
+
+            {/* Tombol Mikrofon Proximity Voice Chat */}
             <button
               type="button"
               tabIndex={-1}
-              onClick={onToggleChat}
+              onClick={handleToggleMic}
               onPointerDown={(e) => (e.currentTarget as HTMLElement).blur()}
-              className={`h-8 w-8 sm:h-10 sm:w-10 flex items-center justify-center shrink-0 text-black ${
-                isChatOpen ? 'clay-btn-primary' : 'clay-btn-neutral'
+              className={`h-8 w-8 sm:h-10 sm:w-10 flex items-center justify-center relative shrink-0 text-black ${
+                isMicActive ? 'clay-btn-secondary' : 'clay-btn-neutral'
               }`}
-              title={isChatOpen ? 'Tutup Obrolan' : 'Buka Obrolan (/)'}
-            >
-              <MessageSquare className="w-3.5 sm:w-4 h-3.5 sm:h-4 stroke-[2.5]" />
-            </button>
-          )}
-
-          {/* Tombol Mikrofon Proximity Voice Chat */}
-          <button
-            type="button"
-            tabIndex={-1}
-            onClick={handleToggleMic}
-            onPointerDown={(e) => (e.currentTarget as HTMLElement).blur()}
-            className={`h-8 w-8 sm:h-10 sm:w-10 flex items-center justify-center relative shrink-0 text-black ${
-              isMicActive ? 'clay-btn-secondary' : 'clay-btn-neutral'
-            }`}
-            title={
-              isMicActive
-                ? 'Mikrofon Aktif (Klik untuk Mematikan) - Jangkauan ±5 Petak'
-                : 'Nyalakan Mikrofon (Proximity Voice Chat)'
-            }
-          >
-            {isMicActive ? (
-              <Mic className="w-3.5 sm:w-4 h-3.5 sm:h-4 stroke-[2.5]" />
-            ) : (
-              <MicOff className="w-3.5 sm:w-4 h-3.5 sm:h-4 stroke-[2.5]" />
-            )}
-          </button>
-
-          {/* Tombol Fullscreen */}
-          <button
-            type="button"
-            tabIndex={-1}
-            onClick={(e) => {
-              (e.currentTarget as HTMLElement).blur();
-              handleToggleFullscreen();
-            }}
-            onPointerDown={(e) => (e.currentTarget as HTMLElement).blur()}
-            onKeyDown={(e) => {
-              if (e.key === ' ' || e.key === 'Spacebar' || e.key === 'Enter') {
-                e.preventDefault();
-                e.stopPropagation();
-                (e.currentTarget as HTMLElement).blur();
+              title={
+                isMicActive
+                  ? 'Mikrofon Aktif (Klik untuk Mematikan) - Jangkauan ±5 Petak'
+                  : 'Nyalakan Mikrofon (Proximity Voice Chat)'
               }
-            }}
-            className={`h-8 w-8 sm:h-10 sm:w-10 flex items-center justify-center shrink-0 text-black ${
-              isFullscreen ? 'clay-btn-primary' : 'clay-btn-neutral'
-            }`}
-            title={isFullscreen ? 'Keluar Layar Penuh' : 'Layar Penuh (Fullscreen)'}
-          >
-            {isFullscreen ? (
-              <Minimize2 className="w-3.5 sm:w-4 h-3.5 sm:h-4 stroke-[2.5]" />
-            ) : (
-              <Maximize2 className="w-3.5 sm:w-4 h-3.5 sm:h-4 stroke-[2.5]" />
-            )}
-          </button>
+            >
+              {isMicActive ? (
+                <Mic className="w-3.5 sm:w-4 h-3.5 sm:h-4 stroke-[2.5]" />
+              ) : (
+                <MicOff className="w-3.5 sm:w-4 h-3.5 sm:h-4 stroke-[2.5]" />
+              )}
+            </button>
 
-          {/* Tombol Panduan Kontrol (Opsional Cepat) */}
-          {onToggleGuide && theme.visibility?.showControlsGuide !== false && (
+            {/* Tombol Fullscreen */}
             <button
               type="button"
               tabIndex={-1}
-              onClick={() => {
-                sound.playClick();
-                onToggleGuide();
+              onClick={(e) => {
+                (e.currentTarget as HTMLElement).blur();
+                handleToggleFullscreen();
               }}
               onPointerDown={(e) => (e.currentTarget as HTMLElement).blur()}
-              className="clay-btn-neutral hidden md:flex h-10 w-10 items-center justify-center shrink-0 text-black"
-              title="Petunjuk Kontrol"
+              onKeyDown={(e) => {
+                if (e.key === ' ' || e.key === 'Spacebar' || e.key === 'Enter') {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  (e.currentTarget as HTMLElement).blur();
+                }
+              }}
+              className={`h-8 w-8 sm:h-10 sm:w-10 flex items-center justify-center shrink-0 text-black ${
+                isFullscreen ? 'clay-btn-primary' : 'clay-btn-neutral'
+              }`}
+              title={isFullscreen ? 'Keluar Layar Penuh' : 'Layar Penuh (Fullscreen)'}
             >
-              <HelpCircle className="w-4 h-4 stroke-[2.5]" />
+              {isFullscreen ? (
+                <Minimize2 className="w-3.5 sm:w-4 h-3.5 sm:h-4 stroke-[2.5]" />
+              ) : (
+                <Maximize2 className="w-3.5 sm:w-4 h-3.5 sm:h-4 stroke-[2.5]" />
+              )}
             </button>
+
+            {/* Tombol Panduan Kontrol (Opsional Cepat) */}
+            {onToggleGuide && theme.visibility?.showControlsGuide !== false && (
+              <button
+                type="button"
+                tabIndex={-1}
+                onClick={() => {
+                  sound.playClick();
+                  onToggleGuide();
+                }}
+                onPointerDown={(e) => (e.currentTarget as HTMLElement).blur()}
+                className="clay-btn-neutral hidden md:flex h-10 w-10 items-center justify-center shrink-0 text-black"
+                title="Petunjuk Kontrol"
+              >
+                <HelpCircle className="w-4 h-4 stroke-[2.5]" />
+              </button>
+            )}
+          </div>
+
+          {/* STATUS PEGANGAN TANGAN AKTIF (TEPAT DI BAWAH PROFIL) */}
+          {handHoldStatus && (
+            <div className="pointer-events-auto clay-card-secondary px-2.5 py-1.5 border-2 border-[#5C3A21] flex items-center justify-between gap-2 w-full shadow-sm">
+              <div className="flex items-center gap-1.5 min-w-0">
+                <div className="min-w-0 leading-tight">
+                  <div className="text-[10px] font-bold text-black uppercase truncate">
+                    Pegangan Tangan: {handHoldStatus.partnerName}
+                  </div>
+                  <div className="text-[9px] text-black/80 font-bold">
+                    {handHoldStatus.role === 'follower'
+                      ? 'Otomatis Mengikuti Langkahnya'
+                      : 'Sedang Menggandeng Bersama'}
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  sound.playClick();
+                  EventBus.emit('release-handhold');
+                }}
+                className="clay-btn-cocoa text-white text-[9px] font-bold px-2 py-0.5 shrink-0"
+                title="Lepaskan Pegangan Tangan"
+              >
+                Lepas
+              </button>
+            </div>
+          )}
+
+          {/* UI NOTIFIKASI HASIL TANGKAPAN IKAN & HASIL PANEN (KIRI ATAS TEPAT DI BAWAH PROFIL) */}
+          {topLeftLootCard && (
+            <div className="pointer-events-auto clay-card p-2.5 border-2 border-[#5C3A21] w-full text-black space-y-1.5 shadow-md">
+              <div className="flex items-center justify-between gap-1.5 border-b border-[#5C3A21]/30 pb-1">
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <span className="w-6 h-6 rounded-md bg-[#FFAE6D] border border-[#5C3A21] flex items-center justify-center text-sm shrink-0">
+                    {topLeftLootCard.icon}
+                  </span>
+                  <div className="min-w-0 leading-tight">
+                    <div className="text-[9px] font-bold uppercase tracking-wider text-[#5C3A21]">
+                      {topLeftLootCard.kind === 'fish'
+                        ? '🎣 TANGKAPAN IKAN BARU'
+                        : '🌾 HASIL PANEN KEBUN'}
+                    </div>
+                    <div className="text-[11px] sm:text-xs font-bold text-black truncate">
+                      {topLeftLootCard.title}
+                    </div>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    sound.playClick();
+                    setTopLeftLootCard(null);
+                  }}
+                  className="w-5 h-5 clay-btn-neutral flex items-center justify-center text-black shrink-0"
+                  title="Tutup Info"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
+
+              {/* Detail Berat, Kedalaman (untuk Ikan) / Berapa Kali Diambil Sama (untuk Panen) */}
+              <div className="grid grid-cols-2 gap-1 text-[10px] font-bold">
+                <div className="clay-badge-neutral px-2 py-1 flex items-center justify-between gap-1">
+                  <span className="text-black/75">⚖️ Berat:</span>
+                  <span className="text-black">{topLeftLootCard.weightKg} kg</span>
+                </div>
+
+                {topLeftLootCard.kind === 'fish' ? (
+                  <div className="clay-badge-secondary px-2 py-1 flex items-center justify-between gap-1">
+                    <span className="text-black/75">🌊 Dalam:</span>
+                    <span className="text-black">{topLeftLootCard.depthMeters}m</span>
+                  </div>
+                ) : (
+                  <div className="clay-badge-secondary px-2 py-1 flex items-center justify-between gap-1">
+                    <span className="text-black/75">🔁 Diambil:</span>
+                    <span className="text-black">{topLeftLootCard.sameCount}x Sama</span>
+                  </div>
+                )}
+              </div>
+
+              {topLeftLootCard.kind === 'fish' && topLeftLootCard.sameCount > 1 && (
+                <div className="text-[9.5px] font-bold text-black bg-[#FFF8EA] px-2 py-0.5 rounded border border-[#5C3A21]/40 flex items-center justify-between">
+                  <span>🔁 Ikan Sama Tertangkap:</span>
+                  <span className="font-bold">{topLeftLootCard.sameCount}x</span>
+                </div>
+              )}
+
+              {/* Efek Ikan / Efek Hasil Panen */}
+              <div className="clay-card-primary px-2 py-1.5 border border-[#5C3A21] text-[10px] leading-snug">
+                <div className="font-bold text-black uppercase text-[9px]">
+                  ✨ {topLeftLootCard.kind === 'fish' ? 'Efek Ikan:' : 'Efek Hasil Panen:'}
+                </div>
+                <div className="font-bold text-black mt-0.5">
+                  {topLeftLootCard.effect}
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between text-[9px] font-bold text-black pt-0.5">
+                <span className="clay-badge-neutral px-1.5 py-0.5">
+                  {topLeftLootCard.rewardBadge}
+                </span>
+                <span className="text-black/75">Masuk Tas [B]</span>
+              </div>
+            </div>
           )}
         </div>
 

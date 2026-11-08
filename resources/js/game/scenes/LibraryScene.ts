@@ -30,6 +30,7 @@ import { NetworkManager } from '../core/NetworkManager';
 import { EventBus } from '../core/EventBus';
 import { SoundManager } from '../core/SoundManager';
 import { CameraController } from '../controllers/CameraController';
+import { GraphicsQualityManager } from '../core/GraphicsQualityManager';
 import { IAvatarCustomization, IPlayerData } from '../types';
 
 interface IBookshelfZone {
@@ -243,7 +244,14 @@ export class LibraryScene extends Phaser.Scene {
     };
     EventBus.on('update-player-name', onUpdateLocalPlayerName);
 
+    const onGraphicsSettingsUpdated = (data: any) => {
+      GraphicsQualityManager.applyToScene(this, data);
+    };
+    EventBus.on('graphics-settings-updated', onGraphicsSettingsUpdated);
+    GraphicsQualityManager.applyToScene(this);
+
     const cleanupLibrary = () => {
+      EventBus.off('graphics-settings-updated', onGraphicsSettingsUpdated);
       EventBus.off('send-chat', onSendChat);
       EventBus.off('trigger-expression', onTriggerExpression);
       EventBus.off('trigger-interaction', onTriggerInteraction);

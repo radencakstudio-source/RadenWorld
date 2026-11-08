@@ -219,21 +219,21 @@ export const JukeboxModal: React.FC<JukeboxModalProps> = ({
         {/* ================================================================== */}
         {/* 2. BODY KONTEN (MEJA PUTAR VINYL + PLAYLIST)                       */}
         {/* ================================================================== */}
-        <div className="flex-1 overflow-y-auto grid grid-cols-1 md:grid-cols-12 min-h-0">
+        <div className="flex-1 overflow-y-auto grid grid-cols-1 md:grid-cols-12 landscape:grid-cols-12 min-h-0 custom-scrollbar">
           {/* ---------------------------------------------------------------- */}
           {/* KOLOM KIRI (MD: 5 COLS): MEJA PUTAR VINYL & DECK CONTROLS         */}
           {/* ---------------------------------------------------------------- */}
           <div
-            className="md:col-span-5 p-3.5 sm:p-5 flex flex-col justify-between items-center text-center border-b-2 md:border-b-0 md:border-r-2"
+            className="md:col-span-5 landscape:col-span-5 p-2.5 sm:p-5 flex flex-col justify-between items-center text-center border-b-2 md:border-b-0 landscape:border-b-0 md:border-r-2 landscape:border-r-2"
             style={{
               borderColor: `${currentColors.panelBorder}35`,
               backgroundColor: `${currentColors.cardBg || currentColors.panelBg}60`,
             }}
           >
             {/* Piringan Hitam Vinyl Berputar */}
-            <div className="relative my-2 sm:my-3">
+            <div className="relative my-1.5 sm:my-3">
               <div
-                className={`w-36 h-36 sm:w-44 sm:h-44 rounded-full border-4 shadow-xl flex items-center justify-center relative transition-transform ${
+                className={`w-28 h-28 sm:w-40 sm:h-40 landscape:w-28 landscape:h-28 rounded-full border-4 shadow-xl flex items-center justify-center relative transition-transform ${
                   isPlaying ? 'animate-spin' : ''
                 }`}
                 style={{
@@ -484,7 +484,7 @@ export const JukeboxModal: React.FC<JukeboxModalProps> = ({
           {/* ---------------------------------------------------------------- */}
           {/* KOLOM KANAN (MD: 7 COLS): DAFTAR LAGU (PLAYLIST)                  */}
           {/* ---------------------------------------------------------------- */}
-          <div className="md:col-span-7 p-3 sm:p-4 flex flex-col min-h-0">
+          <div className="md:col-span-7 landscape:col-span-7 p-2.5 sm:p-4 flex flex-col min-h-0">
             {/* Header Playlist & Search Box */}
             <div className="flex items-center justify-between gap-2 mb-2.5">
               <div className="flex items-center gap-1.5 min-w-0">

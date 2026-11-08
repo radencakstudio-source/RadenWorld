@@ -24,6 +24,8 @@ export interface IFriendRequest {
   fromRole?: string;
   timestamp: number;
   isFollowNotification?: boolean;
+  isHandHoldRequest?: boolean;
+  isTradeRequest?: boolean;
 }
 
 interface FriendRequestNotificationProps {
@@ -79,9 +81,15 @@ export const FriendRequestNotification: React.FC<FriendRequestNotificationProps>
       {/* HEADER */}
       <div className="clay-header px-3 py-2 flex items-center justify-between gap-2">
         <div className="flex items-center gap-1.5 text-black min-w-0">
-          <UserPlus className="w-4 h-4 shrink-0 stroke-[2.5]" />
+          {!request.isHandHoldRequest && !request.isTradeRequest && (
+            <UserPlus className="w-4 h-4 shrink-0 stroke-[2.5]" />
+          )}
           <span className="text-[11px] font-bold uppercase truncate">
-            NOTIFIKASI MENGIKUTI
+            {request.isTradeRequest
+              ? 'AJAKAN TRADE BARANG'
+              : request.isHandHoldRequest
+              ? 'AJAKAN PEGANGAN TANGAN'
+              : 'NOTIFIKASI MENGIKUTI'}
           </span>
         </div>
         <div
@@ -107,7 +115,19 @@ export const FriendRequestNotification: React.FC<FriendRequestNotificationProps>
           )}
           <div className="flex flex-col min-w-0">
             <p className="text-[11px] text-black leading-snug">
-              <strong className="font-bold underline">{request.fromName}</strong> mulai mengikuti kamu! Terima untuk langsung berteman:
+              {request.isTradeRequest ? (
+                <>
+                  <strong className="font-bold underline">{request.fromName}</strong> mengajak kamu melakukan Trade barang (semua item kecuali biji). Terima untuk membuka sesi Trade:
+                </>
+              ) : request.isHandHoldRequest ? (
+                <>
+                  <strong className="font-bold underline">{request.fromName}</strong> mengajak kamu pegangan tangan! Jika diterima, kamu otomatis mengikuti {request.fromName}:
+                </>
+              ) : (
+                <>
+                  <strong className="font-bold underline">{request.fromName}</strong> mulai mengikuti kamu! Terima untuk langsung berteman:
+                </>
+              )}
             </p>
             <span className="text-[10px] text-black font-bold mt-0.5">
               Lv. {request.fromLevel || 1} • {request.fromRole === 'super_admin' ? '👑 Admin' : 'Warga Raden'}
@@ -129,8 +149,9 @@ export const FriendRequestNotification: React.FC<FriendRequestNotificationProps>
           </div>
         </div>
 
-        {/* 3 TOMBOL AKSI: [TERIMA], [TOLAK], DAN [ABAIKAN] */}
-        <div className="grid grid-cols-3 gap-1.5">
+        {/* TOMBOL AKSI: JIKA GANDENG / TRADE HANYA 2 OPSI [TERIMA] & [TOLAK] (SESUAI ATURAN PERMAINAN) */}
+        {/* JIKA REQUEST MENGIKUTI: 3 OPSI [TERIMA], [TOLAK], [ABAIKAN] */}
+        <div className={`grid ${request.isHandHoldRequest || request.isTradeRequest ? 'grid-cols-2' : 'grid-cols-3'} gap-1.5`}>
           <button
             type="button"
             onClick={() => {
@@ -138,9 +159,11 @@ export const FriendRequestNotification: React.FC<FriendRequestNotificationProps>
               onAccept(request);
             }}
             className="clay-btn-primary py-2 px-2 text-black font-bold text-[10px] sm:text-[11px] uppercase flex items-center justify-center gap-1"
-            title="Terima & Ikuti Balik (Resmi Berteman)"
+            title="Terima Permintaan"
           >
-            <Check className="w-3.5 h-3.5 stroke-[3] shrink-0" />
+            {!request.isHandHoldRequest && !request.isTradeRequest && (
+              <Check className="w-3.5 h-3.5 stroke-[3] shrink-0" />
+            )}
             <span>TERIMA</span>
           </button>
 
@@ -151,28 +174,32 @@ export const FriendRequestNotification: React.FC<FriendRequestNotificationProps>
               onReject(request, false);
             }}
             className="clay-btn-cocoa py-2 px-2 text-white font-bold text-[10px] sm:text-[11px] uppercase flex items-center justify-center gap-1"
-            title="Tolak Permintaan Mengikuti"
+            title="Tolak Permintaan"
           >
-            <X className="w-3.5 h-3.5 stroke-[2.5] shrink-0" />
+            {!request.isHandHoldRequest && !request.isTradeRequest && (
+              <X className="w-3.5 h-3.5 stroke-[2.5] shrink-0" />
+            )}
             <span>TOLAK</span>
           </button>
 
-          <button
-            type="button"
-            onClick={() => {
-              sound.playClick();
-              if (onIgnore) {
-                onIgnore(request);
-              } else {
-                onReject(request, true);
-              }
-            }}
-            className="clay-btn-neutral py-2 px-2 text-black font-bold text-[10px] sm:text-[11px] uppercase flex items-center justify-center gap-1"
-            title="Abaikan Notifikasi Ini"
-          >
-            <EyeOff className="w-3.5 h-3.5 stroke-[2.5] shrink-0" />
-            <span>ABAIKAN</span>
-          </button>
+          {!request.isHandHoldRequest && !request.isTradeRequest && (
+            <button
+              type="button"
+              onClick={() => {
+                sound.playClick();
+                if (onIgnore) {
+                  onIgnore(request);
+                } else {
+                  onReject(request, true);
+                }
+              }}
+              className="clay-btn-neutral py-2 px-2 text-black font-bold text-[10px] sm:text-[11px] uppercase flex items-center justify-center gap-1"
+              title="Abaikan Notifikasi Ini"
+            >
+              <EyeOff className="w-3.5 h-3.5 stroke-[2.5] shrink-0" />
+              <span>ABAIKAN</span>
+            </button>
+          )}
         </div>
       </div>
     </div>

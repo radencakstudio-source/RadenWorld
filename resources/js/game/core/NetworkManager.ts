@@ -70,6 +70,12 @@ export class NetworkManager {
     playerKite: ((data: { id: string; isFlying: boolean; kiteX: number; kiteY: number; kiteTilt: number }) => void)[];
     playerFollowedBy: ((data: any) => void)[];
     playerUnfollowedBy: ((data: any) => void)[];
+    playerHandHoldRequest: ((data: any) => void)[];
+    playerHandHoldResponse: ((data: any) => void)[];
+    playerHandHoldReleased: ((data: any) => void)[];
+    playerTradeRequest: ((data: any) => void)[];
+    playerTradeResponse: ((data: any) => void)[];
+    playerTradeReceived: ((data: any) => void)[];
   } = {
     worldInit: [],
     playerJoined: [],
@@ -87,6 +93,12 @@ export class NetworkManager {
     playerKite: [],
     playerFollowedBy: [],
     playerUnfollowedBy: [],
+    playerHandHoldRequest: [],
+    playerHandHoldResponse: [],
+    playerHandHoldReleased: [],
+    playerTradeRequest: [],
+    playerTradeResponse: [],
+    playerTradeReceived: [],
   };
 
   /** Konstruktor privat untuk mencegah pembuatan instansi ganda (Singleton) */
@@ -431,6 +443,27 @@ export class NetworkManager {
     return Array.from(this.roomPlayers.values());
   }
 
+  /** Mengecek apakah pemain target tertentu sedang aktif di room atau server channel */
+  public isPlayerOnline(targetName?: string, targetId?: string): boolean {
+    const myId = this.getSocketId();
+    const cleanName = (targetName || '').trim().toLowerCase();
+    const cleanId = (targetId || '').trim();
+
+    for (const [sId, p] of this.roomPlayers.entries()) {
+      if (sId !== myId) {
+        if (cleanId && (sId === cleanId || p.id === cleanId)) return true;
+        if (cleanName && p.name && p.name.trim().toLowerCase() === cleanName) return true;
+      }
+    }
+    for (const [sId, p] of this.channelPlayers.entries()) {
+      if (sId !== myId) {
+        if (cleanId && (sId === cleanId || p.id === cleanId)) return true;
+        if (cleanName && p.name && p.name.trim().toLowerCase() === cleanName) return true;
+      }
+    }
+    return false;
+  }
+
   /** Mengambil total pemain aktif di server channel saat ini */
   public getServerPlayerCount(): number {
     const clean = this.cleanServerCode(this.currentServerCode);
@@ -480,8 +513,50 @@ export class NetworkManager {
     this.socket.off('player:kite');
     this.socket.off('player:followed_by');
     this.socket.off('player:unfollowed_by');
+    this.socket.off('handhold:request_received');
+    this.socket.off('handhold:response_result');
+    this.socket.off('handhold:released');
+    this.socket.off('trade:request_received');
+    this.socket.off('trade:response_result');
+    this.socket.off('trade:received');
     this.socket.off('server:stats');
     this.socket.off('server:players_list');
+
+    this.socket.on('handhold:request_received', (data: any) => {
+      console.log('[NetworkManager] Diterima handhold:request_received:', data);
+      EventBus.emit('incoming-handhold-request', data);
+      this.listeners.playerHandHoldRequest.forEach((cb) => cb(data));
+    });
+
+    this.socket.on('handhold:response_result', (data: any) => {
+      console.log('[NetworkManager] Diterima handhold:response_result:', data);
+      EventBus.emit('handhold-response-result', data);
+      this.listeners.playerHandHoldResponse.forEach((cb) => cb(data));
+    });
+
+    this.socket.on('handhold:released', (data: any) => {
+      console.log('[NetworkManager] Diterima handhold:released:', data);
+      EventBus.emit('handhold-released', data);
+      this.listeners.playerHandHoldReleased.forEach((cb) => cb(data));
+    });
+
+    this.socket.on('trade:request_received', (data: any) => {
+      console.log('[NetworkManager] Diterima trade:request_received:', data);
+      EventBus.emit('incoming-trade-request', data);
+      this.listeners.playerTradeRequest.forEach((cb) => cb(data));
+    });
+
+    this.socket.on('trade:response_result', (data: any) => {
+      console.log('[NetworkManager] Diterima trade:response_result:', data);
+      EventBus.emit('trade-response-result', data);
+      this.listeners.playerTradeResponse.forEach((cb) => cb(data));
+    });
+
+    this.socket.on('trade:received', (data: any) => {
+      console.log('[NetworkManager] Diterima trade:received:', data);
+      EventBus.emit('trade-received', data);
+      this.listeners.playerTradeReceived.forEach((cb) => cb(data));
+    });
 
     this.socket.on('server:stats', (stats: Record<string, number>) => {
       if (stats && typeof stats === 'object') {
@@ -1114,23 +1189,37 @@ export class NetworkManager {
     this.bindSocketListeners();
   }
 
+  /** Mengambil data pengirim yang efektif dari memori atau localStorage */
+  private getEffectiveSenderInfo() {
+    let name = this.lastJoinData?.name;
+    let avatar = this.lastJoinData?.avatar;
+    let role = this.lastJoinData?.role || 'player';
+    let level = 1;
+    try {
+      const u = JSON.parse(localStorage.getItem('raden_player_user') || '{}');
+      if (!name) name = u.name || localStorage.getItem('raden_player_name') || 'Petualang';
+      if (!avatar && u.avatar) avatar = u.avatar;
+      if (typeof u.level === 'number' && u.level >= 1) level = u.level;
+      if (u.role) role = u.role;
+    } catch (e) {
+      if (!name) name = 'Petualang';
+    }
+    return { name, avatar, role, level };
+  }
+
   /**
    * Mengirim event mengikuti (follow) pemain lain ke server secara real-time
    */
   public sendFollow(targetId?: string, targetName?: string, senderLevel?: number): void {
     if (!this.socket || !this.isConnected) return;
-    let resolvedLevel = senderLevel || 1;
-    try {
-      const u = JSON.parse(localStorage.getItem('raden_player_user') || '{}');
-      if (typeof u.level === 'number' && u.level >= 1) resolvedLevel = u.level;
-    } catch (e) {}
+    const info = this.getEffectiveSenderInfo();
     this.socket.emit('player:follow', {
       targetId,
       targetName,
-      senderName: this.lastJoinData?.name,
-      senderAvatar: this.lastJoinData?.avatar,
-      senderRole: this.lastJoinData?.role,
-      senderLevel: resolvedLevel,
+      senderName: info.name,
+      senderAvatar: info.avatar,
+      senderRole: info.role,
+      senderLevel: senderLevel || info.level,
     });
   }
 
@@ -1139,10 +1228,11 @@ export class NetworkManager {
    */
   public sendUnfollow(targetId?: string, targetName?: string): void {
     if (!this.socket || !this.isConnected) return;
+    const info = this.getEffectiveSenderInfo();
     this.socket.emit('player:unfollow', {
       targetId,
       targetName,
-      senderName: this.lastJoinData?.name,
+      senderName: info.name,
     });
   }
 
@@ -1162,12 +1252,164 @@ export class NetworkManager {
     this.bindSocketListeners();
   }
 
+  /**
+   * Mengirim permintaan pegangan tangan ke pemain lain
+   */
+  public sendHandHoldRequest(targetId: string, targetName: string): void {
+    if (!this.socket || !this.isConnected) return;
+    const info = this.getEffectiveSenderInfo();
+    this.socket.emit('handhold:request', {
+      targetId,
+      targetName,
+      senderName: info.name,
+      senderAvatar: info.avatar,
+      senderRole: info.role,
+      senderLevel: info.level,
+    });
+  }
+
+  /**
+   * Mengirim jawaban permintaan pegangan tangan (terima / tolak / abaikan / hangus)
+   */
+  public sendHandHoldResponse(
+    requesterId: string,
+    accepted: boolean,
+    requesterName?: string,
+    status?: 'accepted' | 'rejected' | 'ignored' | 'expired'
+  ): void {
+    if (!this.socket || !this.isConnected) return;
+    const info = this.getEffectiveSenderInfo();
+    this.socket.emit('handhold:response', {
+      requesterId,
+      requesterName,
+      accepted,
+      status: status || (accepted ? 'accepted' : 'rejected'),
+      responderName: info.name,
+    });
+  }
+
+  /**
+   * Mengirim sinyal melepas pegangan tangan ke pasangan
+   */
+  public sendHandHoldRelease(partnerId?: string, partnerName?: string): void {
+    if (!this.socket || !this.isConnected) return;
+    const info = this.getEffectiveSenderInfo();
+    this.socket.emit('handhold:release', {
+      partnerId,
+      partnerName,
+      senderName: info.name,
+    });
+  }
+
+  /**
+   * Mengirim permintaan ajakan Trade barang ke pemain lain
+   */
+  public sendTradeRequest(targetId: string, targetName: string): void {
+    if (!this.socket || !this.isConnected) return;
+    const info = this.getEffectiveSenderInfo();
+    this.socket.emit('trade:request', {
+      targetId,
+      targetName,
+      senderName: info.name,
+      senderAvatar: info.avatar,
+      senderRole: info.role,
+      senderLevel: info.level,
+    });
+  }
+
+  /**
+   * Mengirim jawaban permintaan ajakan Trade (terima / tolak / abaikan / hangus)
+   */
+  public sendTradeResponse(
+    requesterId: string,
+    accepted: boolean,
+    requesterName?: string,
+    status?: 'accepted' | 'rejected' | 'ignored' | 'expired'
+  ): void {
+    if (!this.socket || !this.isConnected) return;
+    const info = this.getEffectiveSenderInfo();
+    this.socket.emit('trade:response', {
+      requesterId,
+      requesterName,
+      accepted,
+      status: status || (accepted ? 'accepted' : 'rejected'),
+      responderName: info.name,
+    });
+  }
+
+  /**
+   * Mengirim paket Trade barang (semua item kecuali biji) ke pemain lain
+   */
+  public sendTradeOffer(payload: {
+    targetId?: string;
+    targetName: string;
+    senderName?: string;
+    items: any[];
+    note?: string;
+  }): void {
+    if (!this.socket || !this.isConnected) return;
+    this.socket.emit('trade:offer', {
+      targetId: payload.targetId,
+      targetName: payload.targetName,
+      senderName: payload.senderName || this.lastJoinData?.name,
+      items: payload.items,
+    });
+  }
+
+  /**
+   * Mendaftarkan callback saat menerima ajakan pegangan tangan dari pemain lain
+   */
+  public onHandHoldRequest(callback: (data: any) => void): void {
+    this.listeners.playerHandHoldRequest = [callback];
+    this.bindSocketListeners();
+  }
+
+  /**
+   * Mendaftarkan callback saat menerima respon atas ajakan pegangan tangan
+   */
+  public onHandHoldResponse(callback: (data: any) => void): void {
+    this.listeners.playerHandHoldResponse = [callback];
+    this.bindSocketListeners();
+  }
+
+  /**
+   * Mendaftarkan callback saat pasangan pegangan tangan melepas gandengan
+   */
+  public onHandHoldReleased(callback: (data: any) => void): void {
+    this.listeners.playerHandHoldReleased = [callback];
+    this.bindSocketListeners();
+  }
+
+  /**
+   * Mendaftarkan callback saat menerima ajakan Trade barang dari pemain lain
+   */
+  public onTradeRequest(callback: (data: any) => void): void {
+    this.listeners.playerTradeRequest = [callback];
+    this.bindSocketListeners();
+  }
+
+  /**
+   * Mendaftarkan callback saat menerima respon atas ajakan Trade
+   */
+  public onTradeResponse(callback: (data: any) => void): void {
+    this.listeners.playerTradeResponse = [callback];
+    this.bindSocketListeners();
+  }
+
+  /**
+   * Mendaftarkan callback saat menerima kiriman paket barang Trade dari pemain lain
+   */
+  public onTradeReceived(callback: (data: any) => void): void {
+    this.listeners.playerTradeReceived = [callback];
+    this.bindSocketListeners();
+  }
+
   /** Mendaftarkan callback sinkronisasi monster (kompatibilitas mundur) */
   public onMonstersSync(_callback?: (monsters: any[]) => void): void {
     // Monster dihilangkan dan diganti dengan NPC interaktif di open world
   }
 
-  /** Reset listener khusus scene saat berpindah scene (mempertahankan listener voice global & friends) */
+  /** Reset listener khusus scene saat berpindah scene (mempertahankan listener voice global & friends & trade & handhold) */
   public clearListeners(): void {
     const preservedVoiceStream = this.listeners.voiceStream || [];
     const preservedVoiceSpeaking = this.listeners.voiceSpeaking || [];
@@ -1180,6 +1422,12 @@ export class NetworkManager {
     const preservedPlayerExpression = this.listeners.playerExpression || [];
     const preservedPlayerFollowedBy = this.listeners.playerFollowedBy || [];
     const preservedPlayerUnfollowedBy = this.listeners.playerUnfollowedBy || [];
+    const preservedPlayerHandHoldRequest = this.listeners.playerHandHoldRequest || [];
+    const preservedPlayerHandHoldResponse = this.listeners.playerHandHoldResponse || [];
+    const preservedPlayerHandHoldReleased = this.listeners.playerHandHoldReleased || [];
+    const preservedPlayerTradeRequest = this.listeners.playerTradeRequest || [];
+    const preservedPlayerTradeResponse = this.listeners.playerTradeResponse || [];
+    const preservedPlayerTradeReceived = this.listeners.playerTradeReceived || [];
 
     this.listeners = {
       worldInit: [],
@@ -1198,6 +1446,12 @@ export class NetworkManager {
       playerKite: preservedPlayerKite,
       playerFollowedBy: preservedPlayerFollowedBy,
       playerUnfollowedBy: preservedPlayerUnfollowedBy,
+      playerHandHoldRequest: preservedPlayerHandHoldRequest,
+      playerHandHoldResponse: preservedPlayerHandHoldResponse,
+      playerHandHoldReleased: preservedPlayerHandHoldReleased,
+      playerTradeRequest: preservedPlayerTradeRequest,
+      playerTradeResponse: preservedPlayerTradeResponse,
+      playerTradeReceived: preservedPlayerTradeReceived,
     };
 
     if (this.socket) {

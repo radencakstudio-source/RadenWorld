@@ -10,20 +10,8 @@
     <meta name="format-detection" content="telephone=no">
     <meta name="HandheldFriendly" content="true">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-    <meta http-equiv="Pragma" content="no-cache">
-    <meta http-equiv="Expires" content="0">
 
     <title>RadenWorld - 2D Open World Education & Life Simulation</title>
-
-    <!-- Google Fonts: Pixelify Sans (Primary Cozy RPG Pixel Font) & Press Start 2P -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400..700&display=swap">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400..700&display=swap">
-    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" media="print" onload="this.media='all'">
-    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap"></noscript>
 
     <!-- Google Identity Services -->
     <script src="https://accounts.google.com/gsi/client" async defer></script>
@@ -81,19 +69,6 @@
             }
             e.preventDefault();
         }, { passive: false });
-
-        // Auto-Purge Old Cache & Self-Healing Service Worker Update
-        const APP_BUILD_VER = 'radenworld-static-v16';
-        try {
-            if (localStorage.getItem('raden_sw_ver') !== APP_BUILD_VER) {
-                localStorage.setItem('raden_sw_ver', APP_BUILD_VER);
-                if ('caches' in window) {
-                    caches.keys().then(function(names) {
-                        names.forEach(function(name) { if (name !== APP_BUILD_VER) caches.delete(name); });
-                    });
-                }
-            }
-        } catch (e) {}
 
         // Registrasi Service Worker untuk Cache-First Aset Game (Mengurangi request Wasmer hingga 95%+)
         if ('serviceWorker' in navigator && (window.location.protocol === 'https:' || window.location.hostname === 'localhost')) {

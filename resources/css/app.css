@@ -194,8 +194,7 @@ input, textarea, [contenteditable="true"] {
     height: 100% !important;
     outline: none;
     touch-action: none;
-    image-rendering: -webkit-optimize-contrast;
-    image-rendering: crisp-edges;
+    image-rendering: auto;
     transform: translateZ(0);
     will-change: transform;
 }

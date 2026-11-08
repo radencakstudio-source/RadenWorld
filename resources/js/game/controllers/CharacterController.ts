@@ -68,7 +68,33 @@ export interface IFishData {
   goldReward: number;
   description: string;
   waterType?: 'Air Tawar' | 'Air Laut' | 'Air Payau';
+  depthMeters?: number;
+  effect?: string;
+  catchStreak?: number;
 }
+
+export const FISH_EFFECT_BY_ID: Record<string, string> = {
+  lele: 'Stamina Tangguh +15% & Pulih +20 HP',
+  mujair: 'Fokus Belajar +15% EXP & Segar Bugar',
+  nila: 'Energi Protein +25 HP & Fokus +10%',
+  mas: 'Keberuntungan Koin +12% & Semangat +20 HP',
+  kembung: 'Nutrisi Omega-3: Fokus Kuis +18% EXP',
+  tongkol: 'Kecepatan Lari +12% & Stamina +25 HP',
+  bandeng: 'Ketahanan Fisik +20% & Energi +30 HP',
+  gurame: 'Berkah Kuliner: +35 HP & Bonus EXP +20%',
+  gabus: 'Albumin Penyembuh: Regenerasi +45 HP',
+  bawal_bintang: 'Kelincahan Karang: Kecepatan Jalan +15%',
+  cakalang: 'Tenaga Samudera: Stamina Lari +25%',
+  baronang: 'Refleks Pancing +18% & Fokus +20 HP',
+  patin: 'Tenaga Sungai Dalam: +55 HP & +25% EXP',
+  baung: 'Ketangkasan Liar: Kecepatan +18% & +40 HP',
+  belida: 'Aura Pusaka Purba: Bonus Koin +25% & +50 HP',
+  kakap_merah: 'Vitalitas Bahari: +60 HP & Fokus +25% EXP',
+  tenggiri: 'Kecepatan Kilat: Lari +22% & Stamina Penuh',
+  kerapu_cantang: 'Keberuntungan Karang: Peluang Langka +20%',
+  arwana_super_red: 'Aura Naga Kapuas: +100 HP, +35% EXP & Hoki Emas',
+  tuna_sirip_kuning: 'Kekuatan Raksasa Banda: +120 HP & Stamina Maksimal',
+};
 
 export const FISH_LOOT_TABLE: IFishData[] = [
   // ========================================================================
@@ -512,22 +538,23 @@ export class CharacterController {
    * - Memegang Makanan / Ramuan -> Konsumsi langsung
    */
   public handleFlexibleToolKeyDown(): void {
+    // 0. Jika minigame memancing sedang terbuka di layar, serahkan 100% input ke FishingMinigame UI
+    if (this.fishingState === 'minigame') {
+      return;
+    }
+
+    // Prioritas Instan Tanpa Delay: Saat ikan menyambar, tarik kail seketika (0ms debounce)!
+    if (this.fishingState === 'bite') {
+      this.strikeFish();
+      return;
+    }
+
     const now = Date.now();
     if (now - this.lastFlexibleToolTime < 180) {
       // Abaikan double-invocation dari Phaser keyboard + DOM Window EventBus dalam rentang waktu singkat
       return;
     }
     this.lastFlexibleToolTime = now;
-
-    // 0. Jika minigame memancing sedang terbuka di layar, serahkan 100% input ke FishingMinigame UI
-    if (this.fishingState === 'minigame') {
-      return;
-    }
-
-    if (this.fishingState === 'bite') {
-      this.strikeFish();
-      return;
-    }
     if (this.fishingState === 'waiting' || this.fishingState === 'casting') {
       this.stopFishing('Membatalkan memancing...');
       return;
@@ -544,23 +571,64 @@ export class CharacterController {
     if (this.fishingState !== 'none') return;
 
     const inv = InventoryManager.getInstance();
-    const activeItem = inv.getActiveItem();
+    let activeItem = inv.getActiveItem();
+
+    const px = this.player.x;
+    const py = this.player.y;
+    const gx = Math.floor(px / 120);
+    const gy = Math.floor(py / 120);
+    const inWorld = this.scene.scene.key === 'WorldScene';
+    const inFarm = inWorld && (WorldFarming.isFarmGrid(gx, gy) || Boolean(WorldFarming.resolveTargetPlot(px, py, this.player.getDirection(), true)));
 
     // Prioritas Utama: Panen tanaman matang di depan/bawah kaki pemain langsung via shortcut [F] atau tombol Mobile!
-    if (this.scene.scene.key === 'WorldScene' && WorldFarming.hasRipeCropNearPlayer(this.player)) {
+    if (inWorld && WorldFarming.hasRipeCropNearPlayer(this.player)) {
       WorldFarming.tryHarvestNearPlayer(this.player);
       return;
     }
 
-    // Prioritas 1: Pegang Joran Pancing -> Memancing (Hold-to-Cast)!
-    if (InventoryManager.isRodItem(activeItem)) {
-      this.startChargingCast();
-      return;
+    // Jika pemain berada di Lahan Kebun Tani namun slot aktif masih tertinggal di Joran Pancing / slot non-kebun,
+    // otomatis arahkan ke alat kebun sesuai tahap petak (Cangkul -> Siram -> Tanam Bibit) agar tidak fokus ke Mancing!
+    if (
+      inFarm &&
+      !InventoryManager.isHoeItem(activeItem) &&
+      !InventoryManager.isWateringCanItem(activeItem) &&
+      !InventoryManager.isSeedItem(activeItem)
+    ) {
+      const farmStep = WorldFarming.getContextualFarmStepNearPlayer(this.player);
+      const allItems = inv.getItems();
+      if (farmStep === 'hoe') {
+        const hoeIdx = allItems.findIndex((it) => InventoryManager.isHoeItem(it));
+        if (hoeIdx !== -1) {
+          if (hoeIdx < InventoryManager.HOTBAR_SLOTS) inv.setActiveSlotIndex(hoeIdx);
+          else inv.moveItem(hoeIdx, inv.getActiveSlotIndex());
+          WorldFarming.handleHoeAction(this.player);
+          return;
+        }
+      } else if (farmStep === 'water') {
+        const waterIdx = allItems.findIndex((it) => InventoryManager.isWateringCanItem(it));
+        if (waterIdx !== -1) {
+          if (waterIdx < InventoryManager.HOTBAR_SLOTS) inv.setActiveSlotIndex(waterIdx);
+          else inv.moveItem(waterIdx, inv.getActiveSlotIndex());
+          WorldFarming.handleWateringAction(this.player);
+          return;
+        }
+      } else if (farmStep === 'seed') {
+        const seedIdx = allItems.findIndex((it) => InventoryManager.isSeedItem(it));
+        if (seedIdx !== -1) {
+          if (seedIdx < InventoryManager.HOTBAR_SLOTS) inv.setActiveSlotIndex(seedIdx);
+          else inv.moveItem(seedIdx, inv.getActiveSlotIndex());
+          activeItem = inv.getActiveItem();
+          if (activeItem) {
+            WorldFarming.handleSeedAction(this.player, activeItem);
+            return;
+          }
+        }
+      }
     }
 
-    // Prioritas 1b: Pegang Layang-Layang Tradisional -> Terbangkan ke Angkasa Peta Dunia!
-    if (InventoryManager.isKiteItem(activeItem)) {
-      if (this.scene.scene.key !== 'WorldScene') {
+    // Prioritas 1: Pegang Layang-Layang Tradisional (atau sedang menerbangkan layangan dan tidak menghadap air) -> Terbangkan / Gulung!
+    if (InventoryManager.isKiteItem(activeItem) || (this.isFlyingKite && !this.findWaterAhead(80, 440))) {
+      if (!inWorld) {
         this.sound.playError();
         this.player.showSpeechBubble('🏠 Di dalam ruangan tidak ada angin!\nLayang-layang hanya bisa diterbangkan di Peta Dunia (World) 🪁💨');
         return;
@@ -569,9 +637,9 @@ export class CharacterController {
       return;
     }
 
-    // Prioritas 3: Pegang Biji / Bibit -> Tanam di Kebun Tani!
+    // Prioritas 2: Pegang Biji / Bibit -> Tanam di Kebun Tani!
     if (InventoryManager.isSeedItem(activeItem) && activeItem) {
-      if (this.scene.scene.key !== 'WorldScene') {
+      if (!inWorld) {
         this.sound.playError();
         this.player.showSpeechBubble('🌱 Keluar gedung dulu dan pergi ke Kebun Tani [58, 5] untuk menanam!');
         return;
@@ -580,9 +648,9 @@ export class CharacterController {
       return;
     }
 
-    // Prioritas 4: Pegang Cangkul -> Gemburkan / Panen!
+    // Prioritas 3: Pegang Cangkul -> Gemburkan / Panen!
     if (InventoryManager.isHoeItem(activeItem)) {
-      if (this.scene.scene.key !== 'WorldScene') {
+      if (!inWorld) {
         this.sound.playError();
         this.player.showSpeechBubble('⛏️ Cangkul hanya bisa dipakai di Kebun Tani [58, 5]!');
         return;
@@ -591,18 +659,13 @@ export class CharacterController {
       return;
     }
 
-    // Prioritas 5: Pegang Tong Penyiram -> Siram Tanaman atau Isi Air di Pantai/Laut!
+    // Prioritas 4: Pegang Tong Penyiram -> Siram Tanaman atau Isi Air di Pantai/Laut!
     if (InventoryManager.isWateringCanItem(activeItem)) {
-      if (this.scene.scene.key !== 'WorldScene') {
+      if (!inWorld) {
         this.sound.playError();
         this.player.showSpeechBubble('💧 Keluar gedung dulu untuk menyiram kebun atau isi air di pantai!');
         return;
       }
-
-      const px = this.player.x;
-      const py = this.player.y;
-      const gx = Math.floor(px / 120);
-      const gy = Math.floor(py / 120);
 
       // Cek apakah pemain berada di bibir air pantai/lautan untuk isi tong air
       const isFacingWater = this.findWaterAhead(90, 440);
@@ -628,6 +691,12 @@ export class CharacterController {
       }
 
       WorldFarming.handleWateringAction(this.player);
+      return;
+    }
+
+    // Prioritas 5: Pegang Joran Pancing -> Memancing (Hold-to-Cast)!
+    if (InventoryManager.isRodItem(activeItem)) {
+      this.startChargingCast();
       return;
     }
 
@@ -1618,7 +1687,7 @@ export class CharacterController {
     this.fishingStateStartTime = this.scene.time.now;
 
     this.sound.playFishSplash();
-    this.player.showSpeechBubble('⚡ STRIKE! Tahan joran agar kotak hijau pas di ikan!');
+    this.player.clearSpeechBubble();
 
     NetworkManager.getInstance().sendFishing('minigame', this.bobberPos, this.targetBobberPos);
 
@@ -1651,11 +1720,11 @@ export class CharacterController {
       } else {
         candidateFish = { ...pickRandom(commonPool) };
       }
-      // Ikan lemparan jauh jauh lebih berat dan besar (1.3x s/d 2.2x)
-      const weightMult = 1.3 + Math.random() * 0.9;
-      candidateFish.weightKg = parseFloat((candidateFish.weightKg * weightMult).toFixed(2));
-      candidateFish.goldReward = Math.round(candidateFish.goldReward * (1.2 + Math.random() * 0.6));
-      candidateFish.name = `[JUMBO] ${candidateFish.name}`;
+      // Ikan lemparan jauh jauh lebih berat dan besar (bisa mencapai 15 kg s/d 50 kg+)
+      const baseW = Math.max(8, candidateFish.weightKg * 6.5);
+      candidateFish.weightKg = parseFloat((baseW + Math.random() * 35).toFixed(1));
+      candidateFish.goldReward = Math.round(candidateFish.goldReward * (1.25 + Math.random() * 0.65));
+      candidateFish.depthMeters = parseFloat((18 + p * 28 + Math.random() * 6).toFixed(1));
     } else if (p < 0.40) {
       // 2. LEMPARAN DEKAT (Power < 40%): Dominan Common (Lele, Mujair, Nila, Mas, Kembung, Tongkol, Bandeng)
       if (roll < 75) {
@@ -1665,21 +1734,26 @@ export class CharacterController {
       } else {
         candidateFish = { ...pickRandom(rarePool) };
       }
-      // Ikan lemparan dekat berukuran lokal
-      const weightMult = 0.65 + Math.random() * 0.35;
-      candidateFish.weightKg = parseFloat((candidateFish.weightKg * weightMult).toFixed(2));
-      candidateFish.goldReward = Math.max(20, Math.round(candidateFish.goldReward * 0.85));
-      candidateFish.name = `[LOKAL] ${candidateFish.name}`;
+      // Berat bervariasi mulai dari 1.5 kg s/d 18 kg
+      const baseW = Math.max(1.5, candidateFish.weightKg * 3.5);
+      candidateFish.weightKg = parseFloat((baseW + Math.random() * 14).toFixed(1));
+      candidateFish.goldReward = Math.max(20, Math.round(candidateFish.goldReward * 0.9));
+      candidateFish.depthMeters = parseFloat((1.5 + p * 10 + Math.random() * 3.5).toFixed(1));
     } else {
-      // 3. LEMPARAN SEDANG (40% - 75%): Seimbang
+      // 3. LEMPARAN SEDANG (40% - 75%): Seimbang (Berat bervariasi 5 kg s/d 38 kg)
       if (roll < 8) candidateFish = { ...pickRandom(legendaryPool) };
       else if (roll < 32) candidateFish = { ...pickRandom(rarePool) };
       else if (roll < 70) candidateFish = { ...pickRandom(uncommonPool) };
       else candidateFish = { ...pickRandom(commonPool) };
 
-      const weightMult = 0.9 + Math.random() * 0.35;
-      candidateFish.weightKg = parseFloat((candidateFish.weightKg * weightMult).toFixed(2));
+      const baseW = Math.max(4.5, candidateFish.weightKg * 5.0);
+      candidateFish.weightKg = parseFloat((baseW + Math.random() * 26).toFixed(1));
+      candidateFish.depthMeters = parseFloat((7.0 + p * 16 + Math.random() * 5).toFixed(1));
     }
+
+    candidateFish.effect =
+      FISH_EFFECT_BY_ID[candidateFish.id] ||
+      'Segar Bugar: Pulihkan +30 HP & Fokus Belajar +15%';
 
     this.lastCaughtFish = candidateFish;
 
@@ -1719,9 +1793,36 @@ export class CharacterController {
     const rewardText = `+${fish.goldReward} Gold • +${expReward} EXP`;
     const bagStatus = storedInBag ? '\n🎒 Tersimpan rapi di Tas [B]!' : '\n⚠️ Tas penuh! Jual ikan di Tas [B].';
 
-    this.player.showSpeechBubble(
-      `🎉 DAPAT ${fish.name.toUpperCase()}!\nBerat: ${fish.weightKg} kg ${rarityBadge}\nHadiah: ${rewardText}${bagStatus}`
-    );
+    const waterShort =
+      fish.waterType === 'Air Laut'
+        ? 'Laut'
+        : fish.waterType === 'Air Payau'
+        ? 'Payau'
+        : 'Tawar';
+    const depthMeters =
+      typeof fish.depthMeters === 'number'
+        ? fish.depthMeters
+        : parseFloat((4.5 + this.lastCastPower * 25).toFixed(1));
+    const fishEffect =
+      fish.effect ||
+      FISH_EFFECT_BY_ID[fish.id] ||
+      'Segar Bugar: Pulihkan +30 HP & Fokus Belajar +15%';
+
+    // Hitung berapa kali ikan jenis ini ditangkap
+    let sameCatchCount = 1;
+    try {
+      const rawCounts = localStorage.getItem('raden_fish_catch_counts');
+      const counts = rawCounts ? JSON.parse(rawCounts) : {};
+      sameCatchCount = (Number(counts[fish.id]) || 0) + 1;
+      counts[fish.id] = sameCatchCount;
+      localStorage.setItem('raden_fish_catch_counts', JSON.stringify(counts));
+    } catch (e) {}
+    fish.catchStreak = sameCatchCount;
+    fish.depthMeters = depthMeters;
+    fish.effect = fishEffect;
+
+    // Hapus balon teks di atas karakter karena sudah digantikan oleh Notifikasi Ikan di kiri atas bawah Profil
+    this.player.clearSpeechBubble();
 
     EventBus.emit('gain-exp', {
       amount: expReward,
@@ -1730,6 +1831,10 @@ export class CharacterController {
 
     EventBus.emit('fishing-caught', {
       fish,
+      waterShort,
+      depthMeters,
+      effect: fishEffect,
+      sameCatchCount,
       goldEarned: fish.goldReward,
       expEarned: expReward,
       rewardText,
@@ -1848,8 +1953,8 @@ export class CharacterController {
         this.fishingStateStartTime = time;
         NetworkManager.getInstance().sendFishing('bite', this.bobberPos, this.targetBobberPos);
         this.sound.playFishBite();
+        this.player.clearSpeechBubble();
         this.player.triggerExpression('shock');
-        this.player.showSpeechBubble('Ikan menyambar! Tarik [F/SPASI]', 2000);
         EventBus.emit('fishing-bite');
       }
     }

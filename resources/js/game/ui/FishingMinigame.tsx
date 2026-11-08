@@ -2,9 +2,10 @@
  * ============================================================================
  * FILE: resources/js/game/ui/FishingMinigame.tsx
  * ============================================================================
- * Minigame Memancing Interaktif RadenWorld (Cozycore Clay-Pixel):
- * 1. Fisika kotak tangkap responsif (Tap / Klik / Spasi / F).
- * 2. Meter kemajuan tangkapan (Catch Progress): Menang 100%, Kalah 0%.
+ * Minigame Memancing Interaktif RadenWorld (60/120 FPS GPU-Accelerated):
+ * 1. Manipulasi DOM Ref langsung via transform: translate3d & scaleY (0 React
+ *    re-render per frame, 0 browser layout reflow, 0ms CSS transition delay).
+ * 2. Fisika kotak tangkap super responsif & ringan (Tap / Klik / Spasi / F).
  * 3. Responsif penuh di PC Desktop, Mobile Portrait, & Mobile Landscape.
  * ============================================================================
  */
@@ -45,6 +46,7 @@ const FishingMinigameInner: React.FC<FishingMinigameInnerProps> = ({
   );
 
   useEffect(() => {
+    (window as any).__raden_fishing_minigame_active = true;
     const handleResize = () => {
       setScreenHeight(window.innerHeight);
       setScreenWidth(window.innerWidth);
@@ -52,6 +54,7 @@ const FishingMinigameInner: React.FC<FishingMinigameInnerProps> = ({
     window.addEventListener('resize', handleResize);
     window.addEventListener('orientationchange', handleResize);
     return () => {
+      (window as any).__raden_fishing_minigame_active = false;
       window.removeEventListener('resize', handleResize);
       window.removeEventListener('orientationchange', handleResize);
     };
@@ -63,45 +66,50 @@ const FishingMinigameInner: React.FC<FishingMinigameInnerProps> = ({
   const TRACK_HEIGHT = isLandscape ? 140 : isShortScreen ? 180 : 215;
   const BAR_HEIGHT = Math.round(
     TRACK_HEIGHT *
-      (fishData.rarity === 'Legendary' ? 0.36 : fishData.rarity === 'Rare' ? 0.42 : 0.48)
+      (fishData.rarity === 'Legendary' ? 0.38 : fishData.rarity === 'Rare' ? 0.44 : 0.50)
   );
   const FISH_SIZE = 24;
 
-  const barYRef = useRef<number>(20);
+  // Refs fisika 60/120fps bebas React re-render
+  const barYRef = useRef<number>(24);
   const barVelocityRef = useRef<number>(0);
   const isKeyboardPressingRef = useRef<boolean>(false);
   const isPointerPressingRef = useRef<boolean>(false);
   const isPressingRef = useRef<boolean>(false);
-  const [isReeling, setIsReeling] = useState<boolean>(false);
 
-  const fishYRef = useRef<number>(40);
-  const fishTargetYRef = useRef<number>(80);
+  const fishYRef = useRef<number>(48);
+  const fishTargetYRef = useRef<number>(85);
   const fishNextMoveTimeRef = useRef<number>(0);
 
-  const progressRef = useRef<number>(40);
-  const [displayProgress, setDisplayProgress] = useState<number>(40);
-  const [displayBarY, setDisplayBarY] = useState<number>(20);
-  const [displayFishY, setDisplayFishY] = useState<number>(40);
-  const [isFishInside, setIsFishInside] = useState<boolean>(false);
+  const progressRef = useRef<number>(42);
+  const lastDisplayedPctRef = useRef<number>(42);
 
-  const wasInsideRef = useRef<boolean>(false);
+  // Direct DOM Element Refs untuk animasi GPU 0ms (0 React Re-renders!)
+  const catchBarElRef = useRef<HTMLDivElement | null>(null);
+  const fishIconElRef = useRef<HTMLDivElement | null>(null);
+  const progressFillElRef = useRef<HTMLDivElement | null>(null);
+  const progressTextElRef = useRef<HTMLSpanElement | null>(null);
+  const reelBtnTextRef = useRef<HTMLSpanElement | null>(null);
+
+  const wasInsideRef = useRef<boolean>(true);
   const animFrameRef = useRef<number | null>(null);
   const lastTimeRef = useRef<number>(performance.now());
 
-  const syncPressing = useCallback(
-    (kb: boolean, ptr: boolean) => {
-      isKeyboardPressingRef.current = kb;
-      isPointerPressingRef.current = ptr;
-      const combined = kb || ptr;
-      if (combined && !isPressingRef.current) {
-        sound.playClick();
-        barVelocityRef.current = Math.max(barVelocityRef.current + 65, 95);
-      }
+  const syncPressing = useCallback((kb: boolean, ptr: boolean) => {
+    isKeyboardPressingRef.current = kb;
+    isPointerPressingRef.current = ptr;
+    const combined = kb || ptr;
+    if (combined && !isPressingRef.current) {
+      // Dorongan angkat instan tanpa jeda saat tombol ditekan/disentuh
+      barVelocityRef.current = Math.max(145, barVelocityRef.current * 0.35 + 145);
+    }
+    if (isPressingRef.current !== combined) {
       isPressingRef.current = combined;
-      setIsReeling(combined);
-    },
-    [sound]
-  );
+      if (reelBtnTextRef.current) {
+        reelBtnTextRef.current.textContent = combined ? 'MENARIK JORAN...' : 'TAHAN ANGKAT JORAN';
+      }
+    }
+  }, []);
 
   const handlePressStart = useCallback(
     (e?: React.SyntheticEvent) => {
@@ -129,6 +137,8 @@ const FishingMinigameInner: React.FC<FishingMinigameInnerProps> = ({
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.code === 'Space' || e.code === 'KeyF' || e.key?.toLowerCase() === 'f') {
         e.preventDefault();
+        e.stopPropagation();
+        if (e.repeat) return;
         syncPressing(true, isPointerPressingRef.current);
       } else if (e.code === 'Escape') {
         onClose();
@@ -138,30 +148,32 @@ const FishingMinigameInner: React.FC<FishingMinigameInnerProps> = ({
     const handleKeyUp = (e: KeyboardEvent) => {
       if (e.code === 'Space' || e.code === 'KeyF' || e.key?.toLowerCase() === 'f') {
         e.preventDefault();
+        e.stopPropagation();
         syncPressing(false, isPointerPressingRef.current);
       }
     };
 
     const handleGlobalPointerRelease = () => {
-      // Hanya reset pointer press, penahanan keyboard [F] tetap aman tidak terputus!
-      syncPressing(isKeyboardPressingRef.current, false);
+      if (isPointerPressingRef.current) {
+        syncPressing(isKeyboardPressingRef.current, false);
+      }
     };
 
     const handleWindowBlur = () => {
       syncPressing(false, false);
     };
 
-    window.addEventListener('keydown', handleKeyDown);
-    window.addEventListener('keyup', handleKeyUp);
-    window.addEventListener('pointerup', handleGlobalPointerRelease);
-    window.addEventListener('pointercancel', handleGlobalPointerRelease);
-    window.addEventListener('touchend', handleGlobalPointerRelease);
-    window.addEventListener('touchcancel', handleGlobalPointerRelease);
+    window.addEventListener('keydown', handleKeyDown, { capture: true });
+    window.addEventListener('keyup', handleKeyUp, { capture: true });
+    window.addEventListener('pointerup', handleGlobalPointerRelease, { passive: true });
+    window.addEventListener('pointercancel', handleGlobalPointerRelease, { passive: true });
+    window.addEventListener('touchend', handleGlobalPointerRelease, { passive: true });
+    window.addEventListener('touchcancel', handleGlobalPointerRelease, { passive: true });
     window.addEventListener('blur', handleWindowBlur);
 
     return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-      window.removeEventListener('keyup', handleKeyUp);
+      window.removeEventListener('keydown', handleKeyDown, { capture: true });
+      window.removeEventListener('keyup', handleKeyUp, { capture: true });
       window.removeEventListener('pointerup', handleGlobalPointerRelease);
       window.removeEventListener('pointercancel', handleGlobalPointerRelease);
       window.removeEventListener('touchend', handleGlobalPointerRelease);
@@ -176,68 +188,77 @@ const FishingMinigameInner: React.FC<FishingMinigameInnerProps> = ({
 
     const rarity = fishData.rarity;
     const fishSpeed =
-      rarity === 'Legendary' ? 1.05 : rarity === 'Rare' ? 0.8 : rarity === 'Uncommon' ? 0.6 : 0.45;
+      rarity === 'Legendary' ? 0.95 : rarity === 'Rare' ? 0.75 : rarity === 'Uncommon' ? 0.58 : 0.44;
     const fishChangeInterval =
-      rarity === 'Legendary' ? 1800 : rarity === 'Rare' ? 2400 : 3000;
-    const progressGainRate = 24;
-    const progressDrainRate = rarity === 'Legendary' ? 9 : 7;
+      rarity === 'Legendary' ? 1850 : rarity === 'Rare' ? 2400 : 3000;
+    const progressGainRate = 27;
+    const progressDrainRate = rarity === 'Legendary' ? 8.5 : 6.5;
+
+    const maxBarY = Math.max(1, TRACK_HEIGHT - BAR_HEIGHT);
+    const maxFishY = Math.max(1, TRACK_HEIGHT - FISH_SIZE);
 
     const gameLoop = (currentTime: number) => {
       if (isGameOver) return;
 
-      const deltaMs = Math.min(50, currentTime - lastTimeRef.current);
+      const deltaMs = Math.min(34, Math.max(1, currentTime - lastTimeRef.current));
       lastTimeRef.current = currentTime;
       const dt = deltaMs / 1000;
 
-      const gravity = -250;
-      const lift = 520;
+      // Fisika bar responsif tanpa rasa berat/delay
+      const gravity = -310;
+      const lift = 680;
 
       if (isPressingRef.current) {
-        barVelocityRef.current += lift * dt;
+        if (barVelocityRef.current < 0) {
+          // Redam kecepatan jatuh dengan cepat saat tombol mulai ditahan agar langsung naik
+          barVelocityRef.current += lift * 1.65 * dt;
+        } else {
+          barVelocityRef.current += lift * dt;
+        }
       } else {
-        barVelocityRef.current += gravity * dt;
+        if (barVelocityRef.current > 0) {
+          barVelocityRef.current += gravity * 1.35 * dt;
+        } else {
+          barVelocityRef.current += gravity * dt;
+        }
       }
 
-      barVelocityRef.current *= Math.pow(0.93, dt * 60);
-      barVelocityRef.current = Math.max(-230, Math.min(250, barVelocityRef.current));
+      barVelocityRef.current *= Math.pow(0.91, dt * 60);
+      barVelocityRef.current = Math.max(-240, Math.min(280, barVelocityRef.current));
 
       barYRef.current += barVelocityRef.current * dt;
 
       if (barYRef.current <= 0) {
         barYRef.current = 0;
-        if (barVelocityRef.current < -40) {
-          barVelocityRef.current = -barVelocityRef.current * 0.18;
-        } else {
-          barVelocityRef.current = 0;
-        }
-      }
-
-      const maxBarY = TRACK_HEIGHT - BAR_HEIGHT;
-      if (barYRef.current >= maxBarY) {
+        barVelocityRef.current = 0;
+      } else if (barYRef.current >= maxBarY) {
         barYRef.current = maxBarY;
         barVelocityRef.current = 0;
       }
 
       if (currentTime > fishNextMoveTimeRef.current) {
-        fishNextMoveTimeRef.current = currentTime + fishChangeInterval + Math.random() * 800;
-        const maxFishY = TRACK_HEIGHT - FISH_SIZE;
+        fishNextMoveTimeRef.current = currentTime + fishChangeInterval + Math.random() * 750;
         fishTargetYRef.current = Math.random() * maxFishY;
       }
 
       const dy = fishTargetYRef.current - fishYRef.current;
       fishYRef.current += dy * Math.min(1.0, fishSpeed * dt * 2.2);
 
-      const fishCenter = fishYRef.current + FISH_SIZE / 2;
+      const fishCenter = fishYRef.current + FISH_SIZE * 0.5;
       const barBottom = barYRef.current;
       const barTop = barYRef.current + BAR_HEIGHT;
-      const inside = fishCenter >= barBottom - 4 && fishCenter <= barTop + 4;
+      const inside = fishCenter >= barBottom - 5 && fishCenter <= barTop + 5;
 
-      setIsFishInside(inside);
-
-      if (inside && !wasInsideRef.current) {
-        sound.playClick();
+      if (inside !== wasInsideRef.current) {
+        wasInsideRef.current = inside;
+        if (catchBarElRef.current) {
+          catchBarElRef.current.style.opacity = inside ? '1.0' : '0.65';
+          catchBarElRef.current.style.borderColor = inside ? '#386641' : '#5C3A21';
+          catchBarElRef.current.style.boxShadow = inside
+            ? '0 0 12px rgba(168, 230, 207, 0.8), inset 0 2px 0 #D4F5E9'
+            : 'inset 0 2px 0 #D4F5E9';
+        }
       }
-      wasInsideRef.current = inside;
 
       if (inside) {
         progressRef.current = Math.min(100, progressRef.current + progressGainRate * dt);
@@ -245,9 +266,27 @@ const FishingMinigameInner: React.FC<FishingMinigameInnerProps> = ({
         progressRef.current = Math.max(0, progressRef.current - progressDrainRate * dt);
       }
 
-      setDisplayProgress(Math.round(progressRef.current));
-      setDisplayBarY(barYRef.current);
-      setDisplayFishY(fishYRef.current);
+      // Update posisi langsung ke GPU via CSS transform (0 React re-render, 0 layout reflow!)
+      if (catchBarElRef.current) {
+        catchBarElRef.current.style.transform = `translate3d(0, ${-barYRef.current}px, 0)`;
+      }
+      if (fishIconElRef.current) {
+        fishIconElRef.current.style.transform = `translate3d(-50%, ${-fishYRef.current}px, 0)`;
+      }
+      if (progressFillElRef.current) {
+        const ratio = Math.max(0, Math.min(1, progressRef.current / 100));
+        progressFillElRef.current.style.transform = `scaleY(${ratio})`;
+        progressFillElRef.current.style.backgroundColor =
+          progressRef.current > 60 ? '#A8E6CF' : '#FFAE6D';
+      }
+
+      const roundedPct = Math.round(progressRef.current);
+      if (roundedPct !== lastDisplayedPctRef.current) {
+        lastDisplayedPctRef.current = roundedPct;
+        if (progressTextElRef.current) {
+          progressTextElRef.current.textContent = `${roundedPct}%`;
+        }
+      }
 
       if (progressRef.current >= 100) {
         isGameOver = true;
@@ -336,27 +375,31 @@ const FishingMinigameInner: React.FC<FishingMinigameInnerProps> = ({
               <div className="h-[1.5px] bg-[#5C3A21]/20" />
             </div>
 
-            {/* Kotak Hijau Pastel Penangkap (Catch Bar) */}
+            {/* Kotak Hijau Pastel Penangkap (Catch Bar - GPU Transform) */}
             <div
-              className={`absolute inset-x-1 rounded-md border-2 border-[#5C3A21] flex items-center justify-center pointer-events-none ${
-                isFishInside ? 'bg-[#A8E6CF]' : 'bg-[#A8E6CF]/60'
-              }`}
+              ref={catchBarElRef}
+              className="absolute inset-x-1 bottom-0 rounded-md border-2 border-[#5C3A21] bg-[#A8E6CF] flex items-center justify-center pointer-events-none"
               style={{
                 height: `${BAR_HEIGHT}px`,
-                bottom: `${displayBarY}px`,
+                transform: `translate3d(0, ${-barYRef.current}px, 0)`,
+                willChange: 'transform',
+                transition: 'none',
                 boxShadow: 'inset 0 2px 0 #D4F5E9',
               }}
             >
               <div className="w-full h-1 bg-[#5C3A21]/30 rounded-full mx-1.5" />
             </div>
 
-            {/* Ikon Ikan Bergerak */}
+            {/* Ikon Ikan Bergerak (GPU Transform) */}
             <div
-              className="absolute left-1/2 -translate-x-1/2 flex items-center justify-center pointer-events-none"
+              ref={fishIconElRef}
+              className="absolute left-1/2 bottom-0 flex items-center justify-center pointer-events-none"
               style={{
-                bottom: `${displayFishY}px`,
                 width: `${FISH_SIZE}px`,
                 height: `${FISH_SIZE}px`,
+                transform: `translate3d(-50%, ${-fishYRef.current}px, 0)`,
+                willChange: 'transform',
+                transition: 'none',
               }}
             >
               <div className="w-6 h-6 rounded-full bg-[#FFAE6D] border-2 border-[#5C3A21] text-black flex items-center justify-center">
@@ -365,18 +408,25 @@ const FishingMinigameInner: React.FC<FishingMinigameInnerProps> = ({
             </div>
           </div>
 
-          {/* Meteran Kemajuan Tangkapan (Gauge) */}
+          {/* Meteran Kemajuan Tangkapan (Gauge - GPU scaleY) */}
           <div className="flex flex-col items-center">
-            <span className="text-[10px] font-bold text-black mb-1">{displayProgress}%</span>
+            <span ref={progressTextElRef} className="text-[10px] font-bold text-black mb-1">
+              42%
+            </span>
             <div
               className="relative w-4 sm:w-5 rounded-full bg-[#FFF8EA] border-2 border-[#5C3A21] overflow-hidden flex flex-col justify-end p-0.5"
               style={{ height: `${TRACK_HEIGHT}px` }}
             >
               <div
-                className={`w-full rounded-full transition-all duration-75 ${
-                  displayProgress > 60 ? 'bg-[#A8E6CF]' : 'bg-[#FFAE6D]'
-                }`}
-                style={{ height: `${displayProgress}%` }}
+                ref={progressFillElRef}
+                className="w-full h-full rounded-full"
+                style={{
+                  backgroundColor: '#FFAE6D',
+                  transformOrigin: 'bottom',
+                  transform: 'scaleY(0.42)',
+                  willChange: 'transform',
+                  transition: 'none',
+                }}
               />
             </div>
           </div>
@@ -424,12 +474,10 @@ const FishingMinigameInner: React.FC<FishingMinigameInnerProps> = ({
               e.preventDefault();
               e.stopPropagation();
             }}
-            className={`w-full mt-2.5 py-2.5 sm:py-3 px-3 font-bold text-xs sm:text-sm uppercase select-none touch-none flex flex-col items-center justify-center gap-0.5 text-black ${
-              isReeling || isFishInside ? 'clay-btn-secondary' : 'clay-btn-primary'
-            }`}
-            style={{ touchAction: 'none' }}
+            className="w-full mt-2.5 py-2.5 sm:py-3 px-3 font-bold text-xs sm:text-sm uppercase select-none touch-none flex flex-col items-center justify-center gap-0.5 text-black cursor-pointer clay-btn-primary"
+            style={{ touchAction: 'none', transition: 'none' }}
           >
-            <span>{isReeling ? 'MENARIK JORAN...' : 'TAHAN ANGKAT JORAN'}</span>
+            <span ref={reelBtnTextRef}>TAHAN ANGKAT JORAN</span>
             <span className="text-[9px] font-bold">
               [ Spasi / F / Sentuh ]
             </span>

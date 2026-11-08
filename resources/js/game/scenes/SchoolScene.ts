@@ -40,6 +40,7 @@ import { NetworkManager } from '../core/NetworkManager';
 import { EventBus } from '../core/EventBus';
 import { SoundManager } from '../core/SoundManager';
 import { CameraController } from '../controllers/CameraController';
+import { GraphicsQualityManager } from '../core/GraphicsQualityManager';
 import { IAvatarCustomization, IPlayerData } from '../types';
 
 export type SchoolType = 'sd' | 'smp' | 'sma';
@@ -524,9 +525,16 @@ export class SchoolScene extends Phaser.Scene {
     const schoolLabel = this.getSchoolDisplayName();
     EventBus.emit('location-updated', schoolLabel);
 
+    const onGraphicsSettingsUpdated = (data: any) => {
+      GraphicsQualityManager.applyToScene(this, data);
+    };
+    EventBus.on('graphics-settings-updated', onGraphicsSettingsUpdated);
+    GraphicsQualityManager.applyToScene(this);
+
     // Cleanup saat shutdown / destroy
     const cleanupScene = () => {
       this.cameras?.main?.stopFollow();
+      EventBus.off('graphics-settings-updated', onGraphicsSettingsUpdated);
       this.remotePlayers.forEach((rp) => {
         if (rp && rp.active) rp.destroy();
       });

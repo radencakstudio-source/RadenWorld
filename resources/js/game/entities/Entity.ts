@@ -209,13 +209,9 @@ export abstract class Entity extends Phaser.GameObjects.Container {
   }
 
   /**
-   * Menampilkan Balon Kata (Speech Bubble) di atas kepala karakter saat mengirim chat
-   * @param message Pesan teks yang diucapkan
-   * @param durationMs Durasi balon tampil sebelum hilang otomatis (default: 4500ms)
+   * Menghapus balon kata (Speech Bubble) yang sedang tampil di atas kepala karakter
    */
-  public showSpeechBubble(message: string, durationMs: number = 4500): void {
-    if (!this.scene || !this.scene.add || !this.scene.time || !this.active) return;
-
+  public clearSpeechBubble(): void {
     if (this.speechBubble) {
       this.speechBubble.destroy();
       this.speechBubble = null;
@@ -224,6 +220,17 @@ export abstract class Entity extends Phaser.GameObjects.Container {
       this.speechTimer.remove();
       this.speechTimer = null;
     }
+  }
+
+  /**
+   * Menampilkan Balon Kata (Speech Bubble) di atas kepala karakter saat mengirim chat
+   * @param message Pesan teks yang diucapkan
+   * @param durationMs Durasi balon tampil sebelum hilang otomatis (default: 4500ms)
+   */
+  public showSpeechBubble(message: string, durationMs: number = 4500): void {
+    if (!this.scene || !this.scene.add || !this.scene.time || !this.active) return;
+
+    this.clearSpeechBubble();
 
     // Posisikan balon tepat di atas kepala dan nameplate (-190px)
     const bubbleY = -190;

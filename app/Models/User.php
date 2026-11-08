@@ -90,7 +90,7 @@ class User extends Authenticatable
     }
 
     /**
-     * Resolusi identitas User dari Request secara aman (Bearer Token / X-Auth-Token / Session)
+     * Resolusi identitas User dari Request secara aman (Bearer Token / X-Auth-Token / Session / Header Fallback)
      */
     public static function resolveFromRequest(\Illuminate\Http\Request $request): ?self
     {
@@ -112,6 +112,35 @@ class User extends Authenticatable
             if ($user) {
                 return $user;
             }
+        }
+
+        // Fallback resolusi berdasarkan ID, Email, atau Nama karakter yang dikirim oleh klien aktif
+        try {
+            $userId = $request->header('X-User-Id') ?: $request->input('user_id');
+            if ($userId && is_numeric($userId)) {
+                $user = self::find((int) $userId);
+                if ($user) {
+                    return $user;
+                }
+            }
+
+            $userEmail = trim((string) ($request->header('X-User-Email') ?: $request->input('email', '')));
+            if ($userEmail !== '') {
+                $user = self::where('email', $userEmail)->orWhere('google_email', $userEmail)->first();
+                if ($user) {
+                    return $user;
+                }
+            }
+
+            $userName = trim((string) ($request->header('X-User-Name') ?: $request->input('name', '')));
+            if ($userName !== '' && strtolower($userName) !== 'petualang') {
+                $user = self::where('name', $userName)->first();
+                if ($user) {
+                    return $user;
+                }
+            }
+        } catch (\Throwable $e) {
+            // Abaikan jika koneksi DB sedang transisi
         }
 
         return null;

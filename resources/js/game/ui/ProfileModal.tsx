@@ -100,6 +100,13 @@ export interface ProfileModalProps {
   googleLinked?: boolean;
   googleEmail?: string;
   onRefreshWallet?: () => void;
+  onRequestHandHold?: (targetName: string, targetId?: string | number) => void;
+  onReleaseHandHold?: () => void;
+  isHoldingHands?: boolean;
+  isHandHoldRequested?: boolean;
+  onRequestTrade?: (targetName: string, targetId?: string | number) => void;
+  isTradeRequested?: boolean;
+  onOpenTrade?: (targetName: string, targetId?: string | number) => void;
 }
 
 export const ProfileModal: React.FC<ProfileModalProps> = ({
@@ -148,6 +155,13 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
   googleLinked,
   googleEmail,
   onRefreshWallet,
+  onRequestHandHold,
+  onReleaseHandHold,
+  isHoldingHands = false,
+  isHandHoldRequested = false,
+  onRequestTrade,
+  isTradeRequested = false,
+  onOpenTrade,
 }) => {
   const sound = SoundManager.getInstance();
 
@@ -909,6 +923,36 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                         <button
                           type="button"
                           onClick={() => {
+                            sound.playSuccess();
+                            if (onRequestHandHold) {
+                              onRequestHandHold(pName, pName);
+                            }
+                          }}
+                          className="clay-btn-primary py-1 px-2 text-[9px] font-bold uppercase text-black"
+                          title={`Ajak ${pName} Pegangan Tangan (Auto-follow)`}
+                        >
+                          GANDENG
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            sound.playClick();
+                            if (onRequestTrade) {
+                              onRequestTrade(pName, pName);
+                            } else if (onOpenTrade) {
+                              onOpenTrade(pName, pName);
+                            }
+                          }}
+                          className="clay-btn-secondary py-1 px-2 text-[9px] font-bold uppercase text-black"
+                          title={`Ajak ${pName} Trade Barang`}
+                        >
+                          TRADE
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
                             sound.playClick();
                             const isTargetAdmin = pName.trim().toUpperCase() === 'RADEN';
                             const targetData = {
@@ -1173,77 +1217,137 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
             </div>
 
             {/* ACTION FOOTER */}
-            <div className="p-3 border-t-2 border-[#5C3A21] bg-[#FFF8EA] flex items-center gap-2 shrink-0">
-              {isFriend ? (
-                <div className="flex-1 flex items-center gap-1.5 min-w-0">
-                  <div className="clay-badge-secondary flex-1 py-2 px-2.5 text-xs font-bold uppercase text-black flex items-center justify-center gap-1.5 truncate">
-                    <Users className="w-4 h-4 stroke-[2.5] shrink-0" />
-                    <span className="truncate">TEMAN</span>
+            <div className="p-2.5 sm:p-3 border-t-2 border-[#5C3A21] bg-[#FFF8EA] flex flex-col gap-2 shrink-0">
+              {/* Baris Interaksi Utama: Pegangan Tangan (Auto-Follow) & Trade (Semua Kecuali Biji) */}
+              <div className="flex items-center gap-2">
+                {isHoldingHands ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      sound.playClick();
+                      if (onReleaseHandHold) onReleaseHandHold();
+                    }}
+                    className="flex-1 py-2 px-2.5 rounded-xl bg-gradient-to-b from-[#F472B6] to-[#DB2777] text-white border-2 border-[#831843] shadow-[0_3px_0_#831843] active:translate-y-0.5 text-[11px] sm:text-xs font-black uppercase flex items-center justify-center gap-1.5"
+                    title="Lepaskan pegangan tangan"
+                  >
+                    <span className="truncate">LEPAS TANGAN</span>
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      sound.playSuccess();
+                      if (onRequestHandHold) onRequestHandHold(name, playerId);
+                    }}
+                    className={`flex-1 py-2 px-2.5 rounded-xl border-2 text-[11px] sm:text-xs font-black uppercase flex items-center justify-center gap-1.5 transition-all active:translate-y-0.5 ${
+                      isHandHoldRequested
+                        ? 'bg-[#FCE7F3] text-[#9D174D] border-[#9D174D] shadow-[0_2px_0_#9D174D]'
+                        : 'bg-gradient-to-b from-[#F9A8D4] to-[#EC4899] text-[#500724] border-[#831843] shadow-[0_3px_0_#831843] hover:brightness-105'
+                    }`}
+                    title="Ajak pegangan tangan (jika diterima, pemain otomatis mengikuti yang mengajak)"
+                  >
+                    <span className="truncate">
+                      {isHandHoldRequested ? 'MENUNGGU RESPON...' : 'PEGANGAN TANGAN'}
+                    </span>
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    sound.playClick();
+                    if (onRequestTrade) {
+                      onRequestTrade(name, playerId);
+                    } else if (onOpenTrade) {
+                      onOpenTrade(name, playerId);
+                    }
+                  }}
+                  className={`flex-1 py-2 px-2.5 rounded-xl border-2 text-[11px] sm:text-xs font-black uppercase flex items-center justify-center gap-1.5 transition-all active:translate-y-0.5 ${
+                    isTradeRequested
+                      ? 'bg-[#E0F2FE] text-[#075985] border-[#0284C7] shadow-[0_2px_0_#0284C7]'
+                      : 'bg-gradient-to-b from-[#6EE7B7] to-[#10B981] text-[#064E3B] border-[#065F46] shadow-[0_3px_0_#065F46] hover:brightness-105'
+                  }`}
+                  title="Ajak trade barang (menunggu persetujuan pemain target terlebih dahulu)"
+                >
+                  <span className="truncate">
+                    {isTradeRequested ? 'MENUNGGU RESPON...' : 'TRADE BARANG'}
+                  </span>
+                </button>
+              </div>
+
+              {/* Baris Sosial: Ikuti, Chat, Tutup */}
+              <div className="flex items-center gap-2">
+                {isFriend ? (
+                  <div className="flex-1 flex items-center gap-1.5 min-w-0">
+                    <div className="clay-badge-secondary flex-1 py-2 px-2.5 text-xs font-bold uppercase text-black flex items-center justify-center gap-1.5 truncate">
+                      <Users className="w-4 h-4 stroke-[2.5] shrink-0" />
+                      <span className="truncate">TEMAN</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        sound.playClick();
+                        if (onFollowToggle) onFollowToggle(name, playerId);
+                      }}
+                      className="clay-btn-neutral py-2 px-2.5 text-xs font-bold uppercase text-black flex items-center justify-center gap-1 shrink-0"
+                      title="Berhenti berteman"
+                    >
+                      <UserX className="w-3.5 h-3.5 stroke-[2.5]" />
+                      <span className="hidden sm:inline">HAPUS</span>
+                    </button>
                   </div>
+                ) : isFollowing ? (
                   <button
                     type="button"
                     onClick={() => {
                       sound.playClick();
                       if (onFollowToggle) onFollowToggle(name, playerId);
                     }}
-                    className="clay-btn-neutral py-2 px-2.5 text-xs font-bold uppercase text-black flex items-center justify-center gap-1 shrink-0"
-                    title="Berhenti berteman"
+                    className="clay-btn-secondary flex-1 py-2 px-3 text-xs font-bold uppercase text-black flex items-center justify-center gap-1.5"
                   >
-                    <UserX className="w-3.5 h-3.5 stroke-[2.5]" />
-                    <span className="hidden sm:inline">HAPUS</span>
+                    <UserCheck className="w-3.5 h-3.5 stroke-[2.5]" />
+                    <span>MENGIKUTI (BATAL)</span>
                   </button>
-                </div>
-              ) : isFollowing ? (
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      sound.playSuccess();
+                      if (onFollowToggle) onFollowToggle(name, playerId);
+                    }}
+                    className="clay-btn-primary flex-1 py-2 px-3 text-xs font-bold uppercase text-black flex items-center justify-center gap-1.5"
+                  >
+                    <UserPlus className="w-3.5 h-3.5 stroke-[2.5]" />
+                    <span>{isFollower ? '+ IKUTI BALIK' : '+ IKUTI'}</span>
+                  </button>
+                )}
+
+                {onWhisper && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      sound.playClick();
+                      onWhisper(name);
+                    }}
+                    className="clay-btn-secondary py-2 px-3 text-black text-xs font-bold uppercase flex items-center justify-center gap-1 shrink-0"
+                  >
+                    <MessageSquare className="w-3.5 h-3.5 stroke-[2.5]" />
+                    <span className="hidden sm:inline">CHAT</span>
+                  </button>
+                )}
+
                 <button
                   type="button"
                   onClick={() => {
                     sound.playClick();
-                    if (onFollowToggle) onFollowToggle(name, playerId);
+                    onClose();
                   }}
-                  className="clay-btn-secondary flex-1 py-2 px-3 text-xs font-bold uppercase text-black flex items-center justify-center gap-1.5"
+                  className="clay-btn-neutral py-2 px-3 text-black text-xs font-bold uppercase shrink-0"
+                  title="Tutup Profil"
                 >
-                  <UserCheck className="w-3.5 h-3.5 stroke-[2.5]" />
-                  <span>MENGIKUTI (BATAL)</span>
+                  <X className="w-4 h-4 stroke-[2.5]" />
                 </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => {
-                    sound.playSuccess();
-                    if (onFollowToggle) onFollowToggle(name, playerId);
-                  }}
-                  className="clay-btn-primary flex-1 py-2 px-3 text-xs font-bold uppercase text-black flex items-center justify-center gap-1.5"
-                >
-                  <UserPlus className="w-3.5 h-3.5 stroke-[2.5]" />
-                  <span>{isFollower ? '+ IKUTI BALIK' : '+ IKUTI'}</span>
-                </button>
-              )}
-
-              {onWhisper && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    sound.playClick();
-                    onWhisper(name);
-                  }}
-                  className="clay-btn-secondary py-2 px-3 text-black text-xs font-bold uppercase flex items-center justify-center gap-1 shrink-0"
-                >
-                  <MessageSquare className="w-3.5 h-3.5 stroke-[2.5]" />
-                  <span className="hidden sm:inline">CHAT</span>
-                </button>
-              )}
-
-              <button
-                type="button"
-                onClick={() => {
-                  sound.playClick();
-                  onClose();
-                }}
-                className="clay-btn-neutral py-2 px-3 text-black text-xs font-bold uppercase shrink-0"
-                title="Tutup Profil"
-              >
-                <X className="w-4 h-4 stroke-[2.5]" />
-              </button>
+              </div>
             </div>
           </div>
         ) : (
@@ -1506,6 +1610,36 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                             </div>
 
                             <div className="flex items-center gap-1.5 shrink-0">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  sound.playSuccess();
+                                  if (onRequestHandHold) {
+                                    onRequestHandHold(pName, pName);
+                                  }
+                                }}
+                                className="clay-btn-primary py-1 px-2 text-[9px] font-bold uppercase text-black"
+                                title={`Ajak ${pName} Pegangan Tangan (Auto-follow)`}
+                              >
+                                GANDENG
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  sound.playClick();
+                                  if (onRequestTrade) {
+                                    onRequestTrade(pName, pName);
+                                  } else if (onOpenTrade) {
+                                    onOpenTrade(pName, pName);
+                                  }
+                                }}
+                                className="clay-btn-secondary py-1 px-2 text-[9px] font-bold uppercase text-black"
+                                title={`Ajak ${pName} Trade Barang`}
+                              >
+                                TRADE
+                              </button>
+
                               <button
                                 type="button"
                                 onClick={handleOpenPlayer}

@@ -18,6 +18,7 @@ import { Player } from '../entities/Player';
 import { EventBus } from '../core/EventBus';
 import { NetworkManager } from '../core/NetworkManager';
 import { CameraController } from '../controllers/CameraController';
+import { GraphicsQualityManager } from '../core/GraphicsQualityManager';
 import { IAvatarCustomization } from '../types';
 
 export class HouseScene extends Phaser.Scene {
@@ -249,9 +250,16 @@ export class HouseScene extends Phaser.Scene {
     };
     EventBus.on('update-player-name', onUpdateLocalPlayerName);
 
+    const onGraphicsSettingsUpdated = (data: any) => {
+      GraphicsQualityManager.applyToScene(this, data);
+    };
+    EventBus.on('graphics-settings-updated', onGraphicsSettingsUpdated);
+    GraphicsQualityManager.applyToScene(this);
+
     // Bersihkan listener saat shutdown dan destroy
     const cleanupScene = () => {
       this.cameras?.main?.stopFollow();
+      EventBus.off('graphics-settings-updated', onGraphicsSettingsUpdated);
       EventBus.off('avatar-updated', onAvatarUpdated);
       EventBus.off('join-game', onJoinGame);
       EventBus.off('send-chat', onSendChat);

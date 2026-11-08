@@ -138,16 +138,23 @@ export const Hotbar: React.FC<HotbarProps> = React.memo(({ onOpenBackpack, isBac
     };
   }, [inv]);
 
+  const lastPointerSelectRef = React.useRef<number>(0);
+
   const handleSelectSlot = (idx: number) => {
-    if (activeSlot === idx) {
+    const currentActive = inv.getActiveSlotIndex();
+    if (currentActive === idx) {
       const item = hotbarItems[idx];
-      if (item && item.usable && item.category === 'consumable') {
+      if (item && item.usable && (item.category === 'consumable' || item.category === 'crop')) {
         inv.useItem(idx);
+        return;
+      }
+      if (item && InventoryManager.isKiteItem(item)) {
+        EventBus.emit('player-kite-toggle');
         return;
       }
     }
     inv.setActiveSlotIndex(idx);
-    sound.playClick();
+    setActiveSlot(idx);
   };
 
   const handleDragStart = (e: React.DragEvent, slotIdx: number) => {
@@ -200,7 +207,7 @@ export const Hotbar: React.FC<HotbarProps> = React.memo(({ onOpenBackpack, isBac
   return (
     <aside
       aria-label="Mini Inventaris & Status Ramuan"
-      className="fixed left-1/2 -translate-x-1/2 z-40 select-none pointer-events-auto flex flex-col items-center gap-1 sm:gap-1.5"
+      className="fixed left-1/2 -translate-x-1/2 z-[55] select-none pointer-events-auto flex flex-col items-center gap-1 sm:gap-1.5"
       style={
         isTopHotbar
           ? { top: 'max(4.25rem, env(safe-area-inset-top, 4.25rem))' }
@@ -342,12 +349,32 @@ export const Hotbar: React.FC<HotbarProps> = React.memo(({ onOpenBackpack, isBac
               <button
                 key={idx}
                 type="button"
+                tabIndex={-1}
                 draggable={Boolean(item)}
                 onDragStart={(e) => handleDragStart(e, idx)}
                 onDragOver={(e) => handleDragOver(e, idx)}
                 onDrop={(e) => handleDrop(e, idx)}
                 onDragEnd={handleDragEnd}
-                onClick={() => handleSelectSlot(idx)}
+                onPointerDown={(e) => {
+                  e.stopPropagation();
+                  if (typeof window !== 'undefined') {
+                    (window as any).__raden_virtual_control_active = true;
+                    setTimeout(() => {
+                      (window as any).__raden_virtual_control_active = false;
+                    }, 220);
+                  }
+                  if (e.button === 0 || e.pointerType === 'touch') {
+                    lastPointerSelectRef.current = Date.now();
+                    handleSelectSlot(idx);
+                  }
+                  (e.currentTarget as HTMLElement).blur();
+                }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (Date.now() - lastPointerSelectRef.current < 320) return;
+                  handleSelectSlot(idx);
+                  (e.currentTarget as HTMLElement).blur();
+                }}
                 className={`relative w-8 h-8 sm:w-10 sm:h-10 md:w-11 md:h-11 landscape:max-md:w-8 landscape:max-md:h-8 flex items-center justify-center ${
                   isDragOver
                     ? 'clay-btn-secondary'

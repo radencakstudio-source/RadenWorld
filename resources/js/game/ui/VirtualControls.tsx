@@ -95,41 +95,38 @@ export const VirtualControls: React.FC<VirtualControlsProps> = React.memo(({
   const [isKiteFlying, setIsKiteFlying] = useState<boolean>(false);
   const [isNearRipeCrop, setIsNearRipeCrop] = useState<boolean>(false);
 
-    const [activeToolInfo, setActiveToolInfo] = useState<{
+    const resolveActiveToolInfo = useCallback((kiteFlying: boolean): {
         type: 'seed' | 'rod' | 'hoe' | 'watering' | 'kite' | 'harvest' | 'other';
         label: string;
         iconText?: string;
-    }>(() => {
+    } => {
         const item = InventoryManager.getInstance().getActiveItem();
         if (InventoryManager.isSeedItem(item)) return { type: 'seed', label: 'TANAM', iconText: item?.icon || '🌱' };
         if (InventoryManager.isHoeItem(item)) return { type: 'hoe', label: 'CANGKUL', iconText: '⛏️' };
         if (InventoryManager.isWateringCanItem(item)) return { type: 'watering', label: 'SIRAM', iconText: '💧' };
-        if (InventoryManager.isKiteItem(item)) return { type: 'kite', label: 'LAYANGAN', iconText: '🪁' };
+        if (InventoryManager.isKiteItem(item)) return { type: 'kite', label: kiteFlying ? 'GULUNG' : 'LAYANGAN', iconText: '🪁' };
+        if (InventoryManager.isRodItem(item)) return { type: 'rod', label: 'MANCING' };
+        if (item && (item.category === 'consumable' || item.category === 'crop') && item.usable) {
+            return { type: 'other', label: 'PAKAI', iconText: item.icon || '🍎' };
+        }
+        if (kiteFlying) return { type: 'kite', label: 'GULUNG', iconText: '🪁' };
         return { type: 'rod', label: 'MANCING' };
-    });
+    }, []);
+
+    const [activeToolInfo, setActiveToolInfo] = useState<{
+        type: 'seed' | 'rod' | 'hoe' | 'watering' | 'kite' | 'harvest' | 'other';
+        label: string;
+        iconText?: string;
+    }>(() => resolveActiveToolInfo(false));
 
   useEffect(() => {
     const handleInv = () => {
-      const item = InventoryManager.getInstance().getActiveItem();
-      if (InventoryManager.isSeedItem(item)) {
-        setActiveToolInfo({ type: 'seed', label: 'TANAM', iconText: item?.icon || '🌱' });
-      } else if (InventoryManager.isHoeItem(item)) {
-        setActiveToolInfo({ type: 'hoe', label: 'CANGKUL', iconText: '⛏️' });
-      } else if (InventoryManager.isWateringCanItem(item)) {
-        setActiveToolInfo({ type: 'watering', label: 'SIRAM', iconText: '💧' });
-      } else if (InventoryManager.isKiteItem(item)) {
-        setActiveToolInfo({ type: 'kite', label: isKiteFlying ? 'GULUNG' : 'LAYANGAN', iconText: '🪁' });
-      } else {
-        setActiveToolInfo({ type: 'rod', label: 'MANCING' });
-      }
+      setActiveToolInfo(resolveActiveToolInfo(isKiteFlying));
     };
 
     const handleKiteChange = (data: { isFlying: boolean; mode: 'kite' | 'character' }) => {
       setIsKiteFlying(data.isFlying);
-      const item = InventoryManager.getInstance().getActiveItem();
-      if (InventoryManager.isKiteItem(item)) {
-        setActiveToolInfo({ type: 'kite', label: data.isFlying ? 'GULUNG' : 'LAYANGAN', iconText: '🪁' });
-      }
+      setActiveToolInfo(resolveActiveToolInfo(data.isFlying));
     };
 
     const handleNearRipeCrop = (isNear: boolean) => {
@@ -144,7 +141,7 @@ export const VirtualControls: React.FC<VirtualControlsProps> = React.memo(({
       EventBus.off('kite-mode-changed', handleKiteChange);
       EventBus.off('near-ripe-crop-changed', handleNearRipeCrop);
     };
-  }, [isKiteFlying]);
+  }, [isKiteFlying, resolveActiveToolInfo]);
 
     const [layout, setLayout] = useState<IVirtualControlsLayout>(() => {
         try {
@@ -693,9 +690,15 @@ export const VirtualControls: React.FC<VirtualControlsProps> = React.memo(({
 
         triggerHaptic(20);
         sound.playClick();
-        isFishChargingRef.current = true;
-        EventBus.emit('fishing-charge-start');
-    }, [isFishBiting, sound, triggerHaptic, isEditMode, layout]);
+        const currentItem = InventoryManager.getInstance().getActiveItem();
+        if (InventoryManager.isRodItem(currentItem) && !isNearRipeCrop) {
+            isFishChargingRef.current = true;
+            EventBus.emit('fishing-charge-start');
+        } else {
+            isFishChargingRef.current = false;
+            EventBus.emit('player-fish');
+        }
+    }, [isFishBiting, isNearRipeCrop, sound, triggerHaptic, isEditMode, layout]);
 
     const handleFishPointerUp = useCallback((e: React.PointerEvent<HTMLButtonElement>) => {
         if (isEditMode) return;

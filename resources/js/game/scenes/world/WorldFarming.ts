@@ -284,7 +284,62 @@ export const FARM_CROPS_META: Record<string, ICropCatalogEntry> = {
     growDurationMs: CROP_GROW_DURATION_24H_MS,
     hpRestore: 55,
   },
+  seed_apel_malang: {
+    cropId: 'crop_apel_malang',
+    cropName: 'Buah Apel Manis Malang',
+    icon: '🍎',
+    rarity: 'Uncommon',
+    sellPrice: 48,
+    harvestQty: 3,
+    growDurationMs: CROP_GROW_DURATION_24H_MS,
+    hpRestore: 35,
+  },
 };
+
+export const CROP_EFFECT_VARIANTS: Record<string, string[]> = {
+  crop_apel_malang: [
+    'Kesegaran Apel: Pulih +35 HP & Fokus Belajar +15% EXP',
+    'Vitamin C Tinggi: Stamina Lari +18% & Kebal Lelah',
+    'Sari Apel Manis: Pulih +50 HP & Kecepatan Jalan +12%',
+  ],
+  crop_padi_pandanwangi: [
+    'Energi Karbohidrat: Stamina Kebun +20% & +25 HP',
+    'Aroma Pandanwangi: Fokus Belajar +15% EXP & +30 HP',
+    'Berkah Lumbung Padi: Bonus Koin Panen +12% & +35 HP',
+  ],
+  crop_jagung_manis: [
+    'Tenaga Jagung Manis: Kecepatan Gerak +14% & +25 HP',
+    'Serat Alami: Stamina Tahan Lama +20% & +35 HP',
+  ],
+  crop_semangka_inul: [
+    'Hidrasi Maksimal: Pulih +45 HP & Kecepatan Lari +16%',
+    'Segar Tropis: Dinginkan Stamina +25% & Fokus +15% EXP',
+  ],
+  crop_melon_golden: [
+    'Nektar Melon Golden: +45 HP & Keberuntungan +15%',
+    'Energi Manis: Fokus Akademik +20% EXP & +50 HP',
+  ],
+  crop_pisang_raja: [
+    'Kalium Instan: Lompatan Lebih Ringan +15% & +50 HP',
+    'Tenaga Raja: Stamina Penuh & Kecepatan Lari +18%',
+  ],
+  crop_kopi_gayo: [
+    'Kafein Arabika Gayo: Kecepatan Lari +25% & Anti-Ngantuk',
+    'Fokus Tinggi Gayo: Bonus EXP Belajar +30% & +40 HP',
+  ],
+  crop_kelapa_pandan: [
+    'Elektrolit Murni: Pulih +60 HP & Stamina +30%',
+    'Segar Kelapa Muda: Kecepatan +20% & Hoki Pancing +15%',
+  ],
+};
+
+const GENERIC_HARVEST_EFFECTS = [
+  'Kesegaran Panen: Pulihkan +30 HP & Stamina Kebun +15%',
+  'Nutrisi Alami Nusantara: Fokus Belajar +18% EXP & +25 HP',
+  'Vitamin Organik: Kecepatan Jalan +12% & Energi Segar +35 HP',
+  'Berkah Bumi Subur: Bonus Stamina +22% & Hoki Koin +10%',
+  'Sari Hasil Bumi: Regenerasi Energi +45 HP & Semangat Belajar',
+];
 
 export function resolveCropMeta(
   seedId: string,
@@ -611,6 +666,32 @@ export class WorldFarming {
   }
 
   /**
+   * Mendeteksi langkah pertanian yang dibutuhkan pada petak di bawah/depan pemain di Kebun Tani
+   */
+  public static getContextualFarmStepNearPlayer(
+    player: Player
+  ): 'harvest' | 'water' | 'seed' | 'hoe' | null {
+    if (this.hasRipeCropNearPlayer(player)) return 'harvest';
+
+    const occupiedPlot = this.resolveTargetPlot(player.x, player.y, player.getDirection(), true);
+    if (occupiedPlot) {
+      const node = this.nodes.get(this.keyOf(occupiedPlot.gx, occupiedPlot.gy));
+      if (node) {
+        if (node.state.tilled && !node.state.watered && !node.state.seedId) return 'water';
+        if (node.state.tilled && node.state.watered && !node.state.seedId) return 'seed';
+      }
+    }
+
+    const emptyPlot = this.resolveTargetPlot(player.x, player.y, player.getDirection(), false);
+    if (emptyPlot) {
+      const node = this.nodes.get(this.keyOf(emptyPlot.gx, emptyPlot.gy));
+      if (!node || !node.state.tilled) return 'hoe';
+    }
+
+    return null;
+  }
+
+  /**
    * TAHAP 5: PANEN HASIL BUMI SAAT SUDAH TUMBUH 24 JAM
    */
   public static tryHarvestNearPlayer(player: Player): boolean {
@@ -632,6 +713,44 @@ export class WorldFarming {
 
     const meta = node.meta || resolveCropMeta(node.state.seedId);
     const inv = InventoryManager.getInstance();
+
+    // Hitung berapa kali buah/tanaman yang sama telah diambil (streak & akumulasi)
+    let sameHarvestCount = 1;
+    try {
+      const rawCounts = localStorage.getItem('raden_crop_harvest_counts');
+      const counts = rawCounts ? JSON.parse(rawCounts) : {};
+      sameHarvestCount = (Number(counts[meta.cropId]) || 0) + 1;
+      counts[meta.cropId] = sameHarvestCount;
+      localStorage.setItem('raden_crop_harvest_counts', JSON.stringify(counts));
+    } catch {
+      sameHarvestCount = 1;
+    }
+
+    // Berat hasil panen berbeda-beda secara dinamis (misal 6.5 kg s/d 55.0 kg)
+    const rarityBaseWeight =
+      meta.rarity === 'Legendary'
+        ? 28
+        : meta.rarity === 'Rare'
+        ? 18
+        : meta.rarity === 'Uncommon'
+        ? 12
+        : 7;
+    const harvestWeightKg = parseFloat(
+      (rarityBaseWeight + Math.random() * 38 + Math.min(12, sameHarvestCount * 1.2)).toFixed(1)
+    );
+
+    // Efek hasil panen berbeda-beda setiap panen
+    const specificPool = CROP_EFFECT_VARIANTS[meta.cropId] || GENERIC_HARVEST_EFFECTS;
+    const chosenEffect =
+      specificPool[(sameHarvestCount - 1 + Math.floor(Math.random() * specificPool.length)) % specificPool.length];
+    const weightTierLabel =
+      harvestWeightKg >= 40
+        ? ' [Panen Super Berat +20% Bonus]'
+        : harvestWeightKg >= 25
+        ? ' [Panen Unggulan]'
+        : '';
+    const harvestEffect = `${chosenEffect}${weightTierLabel}`;
+
     const cropItem: IInventoryItem = {
       id: meta.cropId,
       name: meta.cropName,
@@ -640,11 +759,14 @@ export class WorldFarming {
       icon: meta.icon,
       quantity: meta.harvestQty,
       maxStack: 99,
-      description: `Hasil panen kebun segar (${meta.cropName}). Jual di Pasar Rakyat atau konsumsi (+25 HP)!`,
+      description: `Hasil panen kebun segar (${meta.cropName}, Berat: ${harvestWeightKg} kg, Diambil: ${sameHarvestCount}x). Efek: ${harvestEffect}.`,
       price: meta.sellPrice,
       usable: true,
       extraData: {
         hpRestore: meta.hpRestore,
+        weightKg: harvestWeightKg,
+        effect: harvestEffect,
+        sameHarvestCount,
       },
     };
 
@@ -666,16 +788,21 @@ export class WorldFarming {
 
     SoundManager.getInstance().playCoin();
     player.triggerExpression('smile');
-    player.showSpeechBubble(
-      `${meta.icon} PANEN BERHASIL [Langkah 5/5]!\n+${meta.harvestQty} ${meta.cropName} (+25 EXP) masuk Tas [B]!`
-    );
+    // Hapus balon teks panen di atas karakter karena sudah digantikan oleh Notifikasi Panen di kiri atas bawah Profil
+    player.clearSpeechBubble();
     EventBus.emit('gain-exp', {
       amount: 25,
       source: 'farming_harvest',
     });
     EventBus.emit('farming-crop-harvested', {
+      cropId: meta.cropId,
       cropName: meta.cropName,
+      icon: meta.icon,
+      rarity: meta.rarity,
       qty: meta.harvestQty,
+      weightKg: harvestWeightKg,
+      sameHarvestCount,
+      effect: harvestEffect,
       exp: 25,
     });
     EventBus.emit('near-ripe-crop-changed', this.hasRipeCropNearPlayer(player));

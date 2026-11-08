@@ -53,6 +53,7 @@ const BankModal = lazy(() => import('./game/ui/BankModal').then(m => ({ default:
 const PharmacyModal = lazy(() => import('./game/ui/PharmacyModal').then(m => ({ default: m.PharmacyModal })));
 const MarketRealtorModal = lazy(() => import('./game/ui/MarketRealtorModal').then(m => ({ default: m.MarketRealtorModal })));
 const JukeboxModal = lazy(() => import('./game/ui/JukeboxModal').then(m => ({ default: m.JukeboxModal })));
+const PlayerTradeModal = lazy(() => import('./game/ui/PlayerTradeModal').then(m => ({ default: m.PlayerTradeModal })));
 
 export const GameApp: React.FC = () => {
   // Cek apakah pemain memiliki akun yang sah tersimpan
@@ -247,8 +248,13 @@ export const GameApp: React.FC = () => {
         return;
       }
 
-      // 2. Abaikan jika sedang rebind tombol di SettingsModal
-      if ((window as any).__raden_is_rebinding_key) {
+      // 2. Abaikan jika sedang rebind tombol di SettingsModal atau sedang di dalam Minigame Memancing
+      if ((window as any).__raden_is_rebinding_key || (window as any).__raden_fishing_minigame_active) {
+        return;
+      }
+
+      // Abaikan auto-repeat tombol keyboard yang ditahan agar tidak membebani EventBus
+      if (e.repeat) {
         return;
       }
 
@@ -513,6 +519,17 @@ export const GameApp: React.FC = () => {
   });
   const [sentFriendRequests, setSentFriendRequests] = useState<string[]>([]);
   const [incomingFriendRequest, setIncomingFriendRequest] = useState<IFriendRequest | null>(null);
+  const [handHoldPartner, setHandHoldPartner] = useState<{
+    partnerName: string;
+    partnerId?: string;
+    role: 'leader' | 'follower';
+  } | null>(null);
+  const [sentHandHoldRequests, setSentHandHoldRequests] = useState<string[]>([]);
+  const [sentTradeRequests, setSentTradeRequests] = useState<string[]>([]);
+  const [tradeTargetPlayer, setTradeTargetPlayer] = useState<{
+    name: string;
+    id?: string | number;
+  } | null>(null);
 
   // Wardrobe Modal State
   const [isWardrobeOpen, setIsWardrobeOpen] = useState(false);
@@ -948,8 +965,10 @@ export const GameApp: React.FC = () => {
               ? 'Rumah Pribadi'
               : 'Dunia Terbuka';
 
+      const socketId = target?.socketId || target?.id;
       const enriched = {
         ...target,
+        socketId: socketId,
         location: target.location || defaultLoc,
       };
 
@@ -969,6 +988,7 @@ export const GameApp: React.FC = () => {
                 return {
                   ...prev,
                   ...dbProfile,
+                  socketId: socketId || prev.socketId,
                   role: isTargetSuper ? 'super_admin' : (dbProfile.role || prev.role || 'player'),
                   isSuperAdmin: isTargetSuper,
                   level: isTargetSuper ? 99999999999 : (dbProfile.level || prev.level || 1),
@@ -1326,6 +1346,193 @@ export const GameApp: React.FC = () => {
     EventBus.on('player-followed-by', handleFollowedBy);
     EventBus.on('player-unfollowed-by', handleUnfollowedBy);
 
+    // 11. Event Pegangan Tangan (Hand-Holding) & Auto-Follow + Trade Antar Pemain
+    const handleIncomingHandHold = (req: any) => {
+      if (!req?.fromName) return;
+      sound.playSuccess();
+      setIncomingFriendRequest({
+        id: req.id || `hhreq_${Date.now()}`,
+        fromId: req.fromId || req.fromName,
+        fromName: req.fromName,
+        fromAvatar: req.fromAvatar,
+        fromLevel: req.fromLevel || 1,
+        fromRole: req.fromRole || 'player',
+        timestamp: Date.now(),
+        isHandHoldRequest: true,
+      });
+      EventBus.emit('new-chat-message', {
+        id: `hh_req_${Date.now()}`,
+        sender: 'SISTEM',
+        text: `${req.fromName} mengajak kamu pegangan tangan! Terima dalam 30 detik agar otomatis mengikuti ${req.fromName}.`,
+        timestamp: Date.now(),
+        isSystem: true,
+      });
+    };
+
+    const handleHandHoldResponse = (data: { fromId: string; fromName: string; accepted: boolean; status?: string }) => {
+      if (!data?.fromName) return;
+      setSentHandHoldRequests((prev) => prev.filter((n) => n.toLowerCase() !== data.fromName.toLowerCase()));
+      if (data.accepted || data.status === 'accepted') {
+        sound.playSuccess();
+        const nextState = {
+          partnerName: data.fromName,
+          partnerId: data.fromId,
+          role: 'leader' as const,
+        };
+        setHandHoldPartner(nextState);
+        EventBus.emit('handhold-state-changed', nextState);
+        EventBus.emit('new-chat-message', {
+          id: `hh_acc_${Date.now()}`,
+          sender: 'SISTEM',
+          text: `${data.fromName} menerima ajakan pegangan tanganmu! Sekarang ${data.fromName} otomatis mengikuti langkahmu.`,
+          timestamp: Date.now(),
+          isSystem: true,
+        });
+      } else {
+        sound.playClick();
+        EventBus.emit('new-chat-message', {
+          id: `hh_rej_${Date.now()}`,
+          sender: 'SISTEM',
+          text: data.status === 'expired'
+            ? `⏱️ Ajakan pegangan tangan ke ${data.fromName} telah hangus (30 detik).`
+            : `${data.fromName} belum bisa pegangan tangan saat ini.`,
+          timestamp: Date.now(),
+          isSystem: true,
+        });
+      }
+    };
+
+    const handleHandHoldReleased = (data?: { fromName?: string }) => {
+      sound.playClick();
+      setHandHoldPartner(null);
+      EventBus.emit('handhold-state-changed', null);
+      if (data?.fromName) {
+        EventBus.emit('new-chat-message', {
+          id: `hh_rel_${Date.now()}`,
+          sender: 'SISTEM',
+          text: `${data.fromName} telah melepas pegangan tangan.`,
+          timestamp: Date.now(),
+          isSystem: true,
+        });
+      }
+    };
+
+    const handleLocalReleaseHandHold = () => {
+      sound.playClick();
+      setHandHoldPartner((prev) => {
+        if (prev) {
+          NetworkManager.getInstance().sendHandHoldRelease(prev.partnerId, prev.partnerName);
+          EventBus.emit('new-chat-message', {
+            id: `hh_rel_self_${Date.now()}`,
+            sender: 'SISTEM',
+            text: `👋 Kamu melepas pegangan tangan dengan ${prev.partnerName}.`,
+            timestamp: Date.now(),
+            isSystem: true,
+          });
+        }
+        return null;
+      });
+      EventBus.emit('handhold-state-changed', null);
+    };
+
+    const handleIncomingTrade = (req: any) => {
+      if (!req?.fromName) return;
+      sound.playSuccess();
+      setIncomingFriendRequest({
+        id: req.id || `tradereq_${Date.now()}`,
+        fromId: req.fromId || req.fromName,
+        fromName: req.fromName,
+        fromAvatar: req.fromAvatar,
+        fromLevel: req.fromLevel || 1,
+        fromRole: req.fromRole || 'player',
+        timestamp: Date.now(),
+        isTradeRequest: true,
+      });
+      EventBus.emit('new-chat-message', {
+        id: `trade_req_in_${Date.now()}`,
+        sender: 'SISTEM',
+        text: `🔄 ${req.fromName} mengajak kamu melakukan Trade barang! Terima dalam 30 detik untuk membuka sesi barter.`,
+        timestamp: Date.now(),
+        isSystem: true,
+      });
+    };
+
+    const handleTradeResponse = (data: { fromId: string; fromName: string; accepted: boolean; status?: string }) => {
+      if (!data?.fromName) return;
+      setSentTradeRequests((prev) => prev.filter((n) => n.toLowerCase() !== data.fromName.toLowerCase()));
+      if (data.accepted || data.status === 'accepted') {
+        sound.playSuccess();
+        setTradeTargetPlayer({ name: data.fromName, id: data.fromId });
+        EventBus.emit('new-chat-message', {
+          id: `trade_acc_${Date.now()}`,
+          sender: 'SISTEM',
+          text: `🔄 ${data.fromName} menyetujui ajakan Trade! Sesi barter barang dibuka.`,
+          timestamp: Date.now(),
+          isSystem: true,
+        });
+      } else {
+        sound.playClick();
+        EventBus.emit('new-chat-message', {
+          id: `trade_rej_${Date.now()}`,
+          sender: 'SISTEM',
+          text: data.status === 'expired'
+            ? `⏱️ Ajakan Trade ke ${data.fromName} telah hangus (30 detik).`
+            : `🙈 ${data.fromName} menolak ajakan Trade saat ini.`,
+          timestamp: Date.now(),
+          isSystem: true,
+        });
+      }
+    };
+
+    const handleTradeReceived = (data: { fromId?: string; fromName: string; items: any[] }) => {
+      if (!data?.items || !Array.isArray(data.items) || data.items.length === 0) return;
+      const inv = InventoryManager.getInstance();
+      const receivedNames: string[] = [];
+      for (const item of data.items) {
+        // Pastikan bukan biji (seed)
+        if (!item || item.category === 'seed' || String(item.id || '').startsWith('seed_')) continue;
+        const qty = Math.max(1, Number(item.qty || 1));
+        inv.addItem({
+          id: item.id,
+          name: item.name,
+          icon: item.icon || '📦',
+          category: item.category || 'material',
+          rarity: item.rarity || 'Common',
+          quantity: qty,
+          maxStack: item.maxStack || 50,
+          description: item.description || `Hasil Trade dari ${data.fromName}`,
+          price: Number(item.price || item.sellPrice || 25),
+          extraData: item.extraData,
+        });
+        receivedNames.push(`${item.name} x${qty}`);
+      }
+      if (receivedNames.length > 0) {
+        sound.playSuccess();
+        EventBus.emit('new-chat-message', {
+          id: `trade_in_${Date.now()}`,
+          sender: 'TRADE',
+          text: `🔄 Kamu menerima paket Trade dari ${data.fromName}: ${receivedNames.join(', ')}! (Telah masuk ke Tas)`,
+          timestamp: Date.now(),
+          isSystem: true,
+        });
+      }
+    };
+
+    NetworkManager.getInstance().onHandHoldRequest(handleIncomingHandHold);
+    NetworkManager.getInstance().onHandHoldResponse(handleHandHoldResponse);
+    NetworkManager.getInstance().onHandHoldReleased(handleHandHoldReleased);
+    NetworkManager.getInstance().onTradeRequest(handleIncomingTrade);
+    NetworkManager.getInstance().onTradeResponse(handleTradeResponse);
+    NetworkManager.getInstance().onTradeReceived(handleTradeReceived);
+
+    EventBus.on('incoming-handhold-request', handleIncomingHandHold);
+    EventBus.on('handhold-response-result', handleHandHoldResponse);
+    EventBus.on('handhold-released', handleHandHoldReleased);
+    EventBus.on('release-handhold', handleLocalReleaseHandHold);
+    EventBus.on('incoming-trade-request', handleIncomingTrade);
+    EventBus.on('trade-response-result', handleTradeResponse);
+    EventBus.on('trade-received', handleTradeReceived);
+
     // If opened directly with /home/{id}, /world, atau /admin/{token}
     let directTimer: ReturnType<typeof setTimeout> | null = null;
     if (isDirectInGame) {
@@ -1431,6 +1638,13 @@ export const GameApp: React.FC = () => {
       EventBus.off('gain-exp', handleGainExp);
       EventBus.off('switch-scene', handleSwitchSceneEvent);
       EventBus.off('minigame-active', handleMiniGameActive);
+      EventBus.off('incoming-handhold-request', handleIncomingHandHold);
+      EventBus.off('handhold-response-result', handleHandHoldResponse);
+      EventBus.off('handhold-released', handleHandHoldReleased);
+      EventBus.off('release-handhold', handleLocalReleaseHandHold);
+      EventBus.off('incoming-trade-request', handleIncomingTrade);
+      EventBus.off('trade-response-result', handleTradeResponse);
+      EventBus.off('trade-received', handleTradeReceived);
     };
   }, []);
 
@@ -1485,10 +1699,119 @@ export const GameApp: React.FC = () => {
     });
   };
 
+  const handleRequestHandHold = (targetName: string, targetId?: string | number) => {
+    const cleanTarget = (targetName || '').trim();
+    if (!cleanTarget) return;
+    sound.playSuccess();
+    setSentHandHoldRequests((prev) => Array.from(new Set([...prev, cleanTarget])));
+    setIsProfileOpen(false); // Tutup modal profil agar kembali ke layar dunia dan notifikasi pop-up terlihat jelas
+
+    NetworkManager.getInstance().sendHandHoldRequest(String(targetId || cleanTarget), cleanTarget);
+
+    EventBus.emit('new-chat-message', {
+      id: `hh_sent_${Date.now()}`,
+      sender: 'SISTEM',
+      text: `Mengajak ${cleanTarget} pegangan tangan... Menunggu respon persetujuan (30 detik).`,
+      timestamp: Date.now(),
+      isSystem: true,
+    });
+
+    // Cek apakah target adalah pemain lain yang sedang aktif di WebSocket room/channel
+    const isTargetRemote = NetworkManager.getInstance().isPlayerOnline(cleanTarget, String(targetId || ''));
+
+    // Jika mode solo, bot/NPC, atau target belum terhubung di browser lain:
+    // Langsung tampilkan pop-up permintaan (request) di layar agar pemain bisa melihat dan mengujinya!
+    if (!isTargetRemote) {
+      setTimeout(() => {
+        setIncomingFriendRequest({
+          id: `hhreq_${Date.now()}`,
+          fromId: String(targetId || cleanTarget),
+          fromName: cleanTarget,
+          fromAvatar: inspectedPlayer?.avatar,
+          fromLevel: inspectedPlayer?.level || 1,
+          fromRole: inspectedPlayer?.role || 'player',
+          timestamp: Date.now(),
+          isHandHoldRequest: true,
+        });
+      }, 500);
+    }
+  };
+
+  const handleRequestTrade = (targetName: string, targetId?: string | number) => {
+    const cleanTarget = (targetName || '').trim();
+    if (!cleanTarget) return;
+    sound.playSuccess();
+    setSentTradeRequests((prev) => Array.from(new Set([...prev, cleanTarget])));
+    setIsProfileOpen(false); // Tutup modal profil agar kembali ke layar dunia dan notifikasi pop-up terlihat jelas
+
+    NetworkManager.getInstance().sendTradeRequest(String(targetId || cleanTarget), cleanTarget);
+
+    EventBus.emit('new-chat-message', {
+      id: `trade_req_sent_${Date.now()}`,
+      sender: 'SISTEM',
+      text: `🔄 Mengajak ${cleanTarget} Trade barang... Menunggu respon persetujuan (30 detik).`,
+      timestamp: Date.now(),
+      isSystem: true,
+    });
+
+    const isTargetRemote = NetworkManager.getInstance().isPlayerOnline(cleanTarget, String(targetId || ''));
+
+    // Jika mode solo, bot/NPC, atau target belum terhubung di browser lain:
+    // Langsung tampilkan pop-up permintaan (request) Trade di layar agar pemain bisa melihat dan mengujinya!
+    if (!isTargetRemote) {
+      setTimeout(() => {
+        setIncomingFriendRequest({
+          id: `tradereq_${Date.now()}`,
+          fromId: String(targetId || cleanTarget),
+          fromName: cleanTarget,
+          fromAvatar: inspectedPlayer?.avatar,
+          fromLevel: inspectedPlayer?.level || 1,
+          fromRole: inspectedPlayer?.role || 'player',
+          timestamp: Date.now(),
+          isTradeRequest: true,
+        });
+      }, 500);
+    }
+  };
+
   const handleAcceptFriendRequest = (req: IFriendRequest) => {
     sound.playSuccess();
     const myName = (playerStats?.name || '').trim();
     const targetClean = (req.fromName || '').trim();
+
+    if (req.isTradeRequest) {
+      NetworkManager.getInstance().sendTradeResponse(req.fromId, true, targetClean, 'accepted');
+      setIncomingFriendRequest(null);
+      setTradeTargetPlayer({ name: targetClean, id: req.fromId });
+      EventBus.emit('new-chat-message', {
+        id: `trade_acc_self_${Date.now()}`,
+        sender: 'SISTEM',
+        text: `🔄 Kamu menerima ajakan Trade dari ${targetClean}! Sesi Trade barang dibuka.`,
+        timestamp: Date.now(),
+        isSystem: true,
+      });
+      return;
+    }
+
+    if (req.isHandHoldRequest) {
+      NetworkManager.getInstance().sendHandHoldResponse(req.fromId, true, targetClean, 'accepted');
+      const nextState = {
+        partnerName: targetClean,
+        partnerId: req.fromId,
+        role: 'follower' as const,
+      };
+      setHandHoldPartner(nextState);
+      EventBus.emit('handhold-state-changed', nextState);
+      setIncomingFriendRequest(null);
+      EventBus.emit('new-chat-message', {
+        id: `hh_acc_self_${Date.now()}`,
+        sender: 'SISTEM',
+        text: `Kamu menerima ajakan pegangan tangan dari ${targetClean}! Karaktermu sekarang otomatis mengikuti ${targetClean}.`,
+        timestamp: Date.now(),
+        isSystem: true,
+      });
+      return;
+    }
 
     // Otomatis ikuti balik di database & jaringan agar resmi menjadi Teman (Mutual Follow)
     if (myName && targetClean) {
@@ -1532,6 +1855,46 @@ export const GameApp: React.FC = () => {
     sound.playClick();
     const myName = (playerStats?.name || '').trim();
     const targetClean = (req.fromName || '').trim();
+
+    if (req.isTradeRequest) {
+      NetworkManager.getInstance().sendTradeResponse(
+        req.fromId,
+        false,
+        targetClean,
+        isTimeout ? 'expired' : 'rejected'
+      );
+      setIncomingFriendRequest(null);
+      EventBus.emit('new-chat-message', {
+        id: `trade_rej_self_${Date.now()}`,
+        sender: 'SISTEM',
+        text: isTimeout
+          ? `⏱️ Ajakan Trade dari ${targetClean} telah hangus (30 detik).`
+          : `❌ Kamu menolak ajakan Trade dari ${targetClean}.`,
+        timestamp: Date.now(),
+        isSystem: true,
+      });
+      return;
+    }
+
+    if (req.isHandHoldRequest) {
+      NetworkManager.getInstance().sendHandHoldResponse(
+        req.fromId,
+        false,
+        targetClean,
+        isTimeout ? 'expired' : 'rejected'
+      );
+      setIncomingFriendRequest(null);
+      EventBus.emit('new-chat-message', {
+        id: `hh_rej_self_${Date.now()}`,
+        sender: 'SISTEM',
+        text: isTimeout
+          ? `⏱️ Ajakan pegangan tangan dari ${targetClean} telah hangus (30 detik).`
+          : `❌ Kamu menolak ajakan pegangan tangan dari ${targetClean}.`,
+        timestamp: Date.now(),
+        isSystem: true,
+      });
+      return;
+    }
 
     if (isTimeout) {
       // Jika cooldown 30 detik habis (Hangus): notifikasi tertutup, pengirim tetap di daftar pengikut
@@ -1585,6 +1948,16 @@ export const GameApp: React.FC = () => {
   const handleIgnoreFriendRequest = (req: IFriendRequest) => {
     sound.playClick();
     const targetClean = (req.fromName || '').trim();
+    if (req.isTradeRequest) {
+      NetworkManager.getInstance().sendTradeResponse(req.fromId, false, targetClean, 'ignored');
+      setIncomingFriendRequest(null);
+      return;
+    }
+    if (req.isHandHoldRequest) {
+      NetworkManager.getInstance().sendHandHoldResponse(req.fromId, false, targetClean, 'ignored');
+      setIncomingFriendRequest(null);
+      return;
+    }
     NetworkManager.getInstance().sendFriendResponse(req.fromId, false, targetClean, 'ignored');
     setFollowersList((prev) => {
       const next = Array.from(new Set([...prev, targetClean]));
@@ -2073,7 +2446,7 @@ export const GameApp: React.FC = () => {
       )}
 
       {/* 2. TAMPILAN DALAM PERMAINAN (IN-GAME HUD, CHAT & HOUSE/WORLD SCENE) */}
-      {gameState === 'playing' && (
+      {!isLoadingScreen && gameState === 'playing' && (
         <>
           {/* Sembunyikan seluruh UI World / HUD / ChatBox saat sedang dalam mini game olahraga */}
           {!isMiniGameMode && (
@@ -2216,7 +2589,7 @@ export const GameApp: React.FC = () => {
                     : followersList.length
                 }
                 isInspecting={!!inspectedPlayer}
-                playerId={inspectedPlayer?.id}
+                playerId={inspectedPlayer?.socketId || inspectedPlayer?.id}
                 location={inspectedPlayer?.location}
                 joinedAt={inspectedPlayer?.joined_at || inspectedPlayer?.joinedAt}
                 currentUserName={playerStats?.name || 'Petualang'}
@@ -2265,6 +2638,42 @@ export const GameApp: React.FC = () => {
                   setIsProfileOpen(false);
                   setIsChatOpen(true);
                   EventBus.emit('open-private-chat', targetName);
+                }}
+                onRequestHandHold={(targetName, targetId) => {
+                  handleRequestHandHold(targetName, targetId);
+                }}
+                onReleaseHandHold={() => {
+                  EventBus.emit('release-handhold');
+                }}
+                isHoldingHands={
+                  Boolean(
+                    inspectedPlayer &&
+                      handHoldPartner &&
+                      handHoldPartner.partnerName.trim().toLowerCase() === inspectedPlayer.name.trim().toLowerCase()
+                  )
+                }
+                isHandHoldRequested={
+                  Boolean(
+                    inspectedPlayer &&
+                      sentHandHoldRequests.some(
+                        (n) => n.trim().toLowerCase() === inspectedPlayer.name.trim().toLowerCase()
+                      )
+                  )
+                }
+                onRequestTrade={(targetName, targetId) => {
+                  handleRequestTrade(targetName, targetId);
+                }}
+                isTradeRequested={
+                  Boolean(
+                    inspectedPlayer &&
+                      sentTradeRequests.some(
+                        (n) => n.trim().toLowerCase() === inspectedPlayer.name.trim().toLowerCase()
+                      )
+                  )
+                }
+                onOpenTrade={(targetName, targetId) => {
+                  setIsProfileOpen(false);
+                  setTradeTargetPlayer({ name: targetName, id: targetId });
                 }}
                 onOpenGuide={inspectedPlayer ? undefined : () => {
                   setIsProfileOpen(false);
@@ -2469,23 +2878,22 @@ export const GameApp: React.FC = () => {
             />
           )}
 
-          {/* Banner Peringatan Ikan Menyambar: Clay-Pixel Cozycore, Tanpa Hover & Glow */}
+          {/* Banner Peringatan Ikan Menyambar: Instan 0ms Tanpa Delay */}
           {isFishBiting && (
             <button
               type="button"
               onPointerDown={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                SoundManager.getInstance().playClick();
                 setIsFishBiting(false);
                 EventBus.emit('player-strike');
-                EventBus.emit('fishing-charge-start');
               }}
               onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); }}
-              className="fixed left-1/2 -translate-x-1/2 z-50 clay-btn-primary px-3 py-2 sm:px-4 sm:py-2.5 flex items-center justify-between gap-3 select-none touch-none max-w-[calc(100dvw-1.5rem)] sm:max-w-md w-auto text-black"
+              className="fixed left-1/2 -translate-x-1/2 z-50 clay-btn-primary px-3 py-2 sm:px-4 sm:py-2.5 flex items-center justify-between gap-3 select-none touch-none max-w-[calc(100dvw-1.5rem)] sm:max-w-md w-auto text-black cursor-pointer"
               style={{
                 top: 'max(0.75rem, env(safe-area-inset-top, 0.75rem))',
-                touchAction: 'none'
+                touchAction: 'none',
+                transition: 'none',
               }}
               title="Ketuk untuk Menarik Kail Ikan!"
             >
@@ -2505,8 +2913,26 @@ export const GameApp: React.FC = () => {
             </button>
           )}
 
-          {/* Tombol Kontrol Virtual Layar Sentuh jika Mode Mobile dipilih ATAU perangkat sentuh mobile */}
-          {!isFishingMinigameOpen && (settings.controlMode === 'mobile' || (typeof window !== 'undefined' && window.innerWidth < 768 && ('ontouchstart' in window || navigator.maxTouchPoints > 0))) && (
+          {/* Tombol Kontrol Virtual Layar Sentuh jika Mode Mobile dipilih ATAU perangkat sentuh mobile (Disembunyikan saat Loading Screen atau Modal Terbuka) */}
+          {!isLoadingScreen &&
+            !isFishingMinigameOpen &&
+            !isLibraryModalOpen &&
+            !isSchoolSubjectsOpen &&
+            !isGradeSelectOpen &&
+            !isJukeboxOpen &&
+            !isBankModalOpen &&
+            !isPharmacyModalOpen &&
+            !isRealtorModalOpen &&
+            !isPoliceModalOpen &&
+            !inGameSettingsOpen &&
+            !isProfileOpen &&
+            !isBackpackOpen &&
+            !isWardrobeOpen &&
+            !isCreatorStudioOpen &&
+            !isServerModalOpen &&
+            !isGuideOpen &&
+            !tradeTargetPlayer &&
+            (settings.controlMode === 'mobile' || (typeof window !== 'undefined' && window.innerWidth < 768 && ('ontouchstart' in window || navigator.maxTouchPoints > 0))) && (
             <VirtualControls
               onActionPress={handleVirtualAction}
               onDirectionPress={handleVirtualDirectionPress}
@@ -2640,6 +3066,16 @@ export const GameApp: React.FC = () => {
                 EventBus.emit('dialogue-active', false);
               }}
               themeSettings={settings.theme}
+            />
+          )}
+
+          {/* Modal Trade Barang Antar Pemain (Semua Item Kecuali Biji) */}
+          {tradeTargetPlayer && (
+            <PlayerTradeModal
+              isOpen={!!tradeTargetPlayer}
+              onClose={() => setTradeTargetPlayer(null)}
+              targetPlayerName={tradeTargetPlayer.name}
+              targetPlayerId={tradeTargetPlayer.id}
             />
           )}
           </Suspense>

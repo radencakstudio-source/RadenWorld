@@ -164,7 +164,7 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex flex-col justify-between select-none overflow-hidden text-black"
+      className="fixed inset-0 z-[999] flex flex-col justify-between select-none overflow-hidden text-black"
       style={{
         paddingTop: 'max(0.75rem, env(safe-area-inset-top, 0.75rem))',
         paddingRight: 'max(0.875rem, env(safe-area-inset-right, 0.875rem))',

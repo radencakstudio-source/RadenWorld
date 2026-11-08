@@ -10,13 +10,18 @@
  * ============================================================================
  */
 
-const CACHE_NAME = 'radenworld-static-v49';
+const CACHE_NAME = 'radenworld-static-v55';
 
 // Pola URL yang dikecualikan dari cache (harus selalu live realtime)
 const NETWORK_ONLY_PATTERNS = [
   /\/api\//,
   /\/socket\.io\//,
   /\/sanctum\//,
+  /\/world\/usecase/,
+  /\/world\/use-case/,
+  /\/world\/activity/,
+  /\/world\/wirefrane/,
+  /\/world\/wireframe/,
   /hot$/,
   /@vite/,
   /@fs/,

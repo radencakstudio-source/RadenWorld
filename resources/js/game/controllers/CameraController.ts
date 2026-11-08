@@ -23,6 +23,7 @@
 import Phaser from 'phaser';
 import { EventBus } from '../core/EventBus';
 import { KeybindingManager } from '../core/KeybindingManager';
+import { GraphicsQualityManager } from '../core/GraphicsQualityManager';
 
 export interface ICameraControllerOptions {
   camera?: Phaser.Cameras.Scene2D.Camera;
@@ -112,7 +113,9 @@ export class CameraController {
     const cam = this.getCamera();
     if (cam) {
       cam.setZoom(this.defaultZoom);
-      cam.setRoundPixels(options.roundPixels !== false);
+      const savedGfx = GraphicsQualityManager.getSavedSettings();
+      const shouldRound = options.roundPixels !== undefined ? options.roundPixels : !savedGfx.enableAntiAliasing;
+      cam.setRoundPixels(shouldRound);
     }
 
     if (options.bounds) {
@@ -188,7 +191,7 @@ export class CameraController {
    */
   public follow(
     target: Phaser.GameObjects.GameObject,
-    roundPixels: boolean = true,
+    roundPixels?: boolean,
     lerpX: number = 1.0,
     lerpY: number = 1.0
   ): this {
@@ -196,9 +199,11 @@ export class CameraController {
     if (!cam || !target) return this;
     this.followTarget = target;
     this.isFollowing = true;
+    const savedGfx = GraphicsQualityManager.getSavedSettings();
+    const shouldRound = roundPixels !== undefined ? roundPixels : !savedGfx.enableAntiAliasing;
     try {
-      cam.setRoundPixels(roundPixels);
-      cam.startFollow(target, roundPixels, lerpX, lerpY);
+      cam.setRoundPixels(shouldRound);
+      cam.startFollow(target, shouldRound, lerpX, lerpY);
     } catch (e) {
       console.warn('[CameraController] follow target failed:', e);
     }
@@ -542,7 +547,8 @@ export class CameraController {
         if (progress >= 1) {
           if (wasFollowing && this.followTarget) {
             try {
-              cam.startFollow(this.followTarget, true, 1.0, 1.0);
+              const savedGfx = GraphicsQualityManager.getSavedSettings();
+              cam.startFollow(this.followTarget, !savedGfx.enableAntiAliasing, 1.0, 1.0);
             } catch (e) { }
           }
           if (callback) callback();

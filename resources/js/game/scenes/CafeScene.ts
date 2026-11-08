@@ -33,6 +33,7 @@ import { EventBus } from '../core/EventBus';
 import { SoundManager } from '../core/SoundManager';
 import { JukeboxManager } from '../core/JukeboxManager';
 import { CameraController } from '../controllers/CameraController';
+import { GraphicsQualityManager } from '../core/GraphicsQualityManager';
 import { IAvatarCustomization, IPlayerData } from '../types';
 
 export class CafeScene extends Phaser.Scene {
@@ -237,7 +238,14 @@ export class CafeScene extends Phaser.Scene {
     };
     EventBus.on('update-player-name', onUpdateLocalPlayerName);
 
+    const onGraphicsSettingsUpdated = (data: any) => {
+      GraphicsQualityManager.applyToScene(this, data);
+    };
+    EventBus.on('graphics-settings-updated', onGraphicsSettingsUpdated);
+    GraphicsQualityManager.applyToScene(this);
+
     const cleanupCafe = () => {
+      EventBus.off('graphics-settings-updated', onGraphicsSettingsUpdated);
       JukeboxManager.getInstance().stopInCafe();
       if (this.noteParticleTimer) {
         this.noteParticleTimer.destroy();

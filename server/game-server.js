@@ -812,6 +812,65 @@ io.on('connection', (socket) => {
     });
   });
 
+  // Helper utilitas untuk mencari Socket ID tujuan secara instan & real-time
+  function findTargetSocketId(targetId, targetName) {
+    if (targetId && io.sockets.sockets.has(String(targetId))) {
+      return String(targetId);
+    }
+    if (targetName) {
+      const cleanName = String(targetName).trim().toLowerCase();
+      for (const [sId, p] of players.entries()) {
+        if (p.name && p.name.trim().toLowerCase() === cleanName && io.sockets.sockets.has(sId)) {
+          return sId;
+        }
+      }
+    }
+    if (targetId) {
+      const cleanId = String(targetId).trim().toLowerCase();
+      for (const [sId, p] of players.entries()) {
+        if (
+          (p.id && String(p.id).toLowerCase() === cleanId) ||
+          (p.userId && String(p.userId) === cleanId) ||
+          (p.name && p.name.trim().toLowerCase() === cleanId)
+        ) {
+          if (io.sockets.sockets.has(sId)) {
+            return sId;
+          }
+        }
+      }
+    }
+    return null;
+  }
+
+  function findRequesterSocketId(requesterId, requesterName) {
+    if (requesterId && io.sockets.sockets.has(String(requesterId))) {
+      return String(requesterId);
+    }
+    if (requesterName) {
+      const cleanName = String(requesterName).trim().toLowerCase();
+      for (const [sId, p] of players.entries()) {
+        if (p.name && p.name.trim().toLowerCase() === cleanName && io.sockets.sockets.has(sId)) {
+          return sId;
+        }
+      }
+    }
+    if (requesterId) {
+      const cleanId = String(requesterId).trim().toLowerCase();
+      for (const [sId, p] of players.entries()) {
+        if (
+          (p.id && String(p.id).toLowerCase() === cleanId) ||
+          (p.userId && String(p.userId) === cleanId) ||
+          (p.name && p.name.trim().toLowerCase() === cleanId)
+        ) {
+          if (io.sockets.sockets.has(sId)) {
+            return sId;
+          }
+        }
+      }
+    }
+    return null;
+  }
+
   // 7. Event Permintaan Pertemanan (Friend Request)
   socket.on('friend:request', (data) => {
     const sender = players.get(socket.id);
@@ -822,22 +881,7 @@ io.on('connection', (socket) => {
 
     console.log(`[Friend] Permintaan pertemanan dari "${senderName}" (${socket.id}) ke targetId="${data?.targetId}", targetName="${data?.targetName}"`);
 
-    // 1. Cari socket tujuan: coba via targetId terlebih dahulu
-    let targetSocketId = null;
-    if (data?.targetId && io.sockets.sockets.has(data.targetId)) {
-      targetSocketId = data.targetId;
-    }
-
-    // 2. Jika tidak ditemukan via socketId (misal client reconnect), cari berdasarkan nama pemain
-    if (!targetSocketId && data?.targetName) {
-      const targetLower = data.targetName.trim().toLowerCase();
-      for (const [sId, p] of players.entries()) {
-        if (p.name && p.name.trim().toLowerCase() === targetLower && io.sockets.sockets.has(sId)) {
-          targetSocketId = sId;
-          break;
-        }
-      }
-    }
+    const targetSocketId = findTargetSocketId(data?.targetId, data?.targetName);
 
     if (!targetSocketId) {
       console.warn(`[Friend] Gagal mengirim: target "${data?.targetName}" (id: ${data?.targetId}) tidak aktif / tidak ditemukan.`);
@@ -875,22 +919,7 @@ io.on('connection', (socket) => {
 
     console.log(`[Friend] Respon pertemanan dari "${responderName}": accepted=${data?.accepted} untuk requesterId="${data?.requesterId}", requesterName="${data?.requesterName}"`);
 
-    // Cari socket pemohon: cek via requesterId terlebih dahulu
-    let requesterSocketId = null;
-    if (data?.requesterId && io.sockets.sockets.has(data.requesterId)) {
-      requesterSocketId = data.requesterId;
-    }
-
-    // Jika tidak ditemukan via socket ID, cari via nama pemohon
-    if (!requesterSocketId && data?.requesterName) {
-      const requesterLower = data.requesterName.trim().toLowerCase();
-      for (const [sId, p] of players.entries()) {
-        if (p.name && p.name.trim().toLowerCase() === requesterLower && io.sockets.sockets.has(sId)) {
-          requesterSocketId = sId;
-          break;
-        }
-      }
-    }
+    const requesterSocketId = findRequesterSocketId(data?.requesterId, data?.requesterName);
 
     if (!requesterSocketId) {
       console.warn(`[Friend] Pemohon "${data?.requesterName}" (id: ${data?.requesterId}) tidak ditemukan atau sudah logout.`);
@@ -914,19 +943,8 @@ io.on('connection', (socket) => {
     const senderLevel = data?.senderLevel || sender?.level || 1;
     const senderRole = data?.senderRole || sender?.role || 'player';
 
-    let targetSocketId = null;
-    if (data?.targetId && io.sockets.sockets.has(data.targetId)) {
-      targetSocketId = data.targetId;
-    }
-    if (!targetSocketId && data?.targetName) {
-      const targetLower = data.targetName.trim().toLowerCase();
-      for (const [sId, p] of players.entries()) {
-        if (p.name && p.name.trim().toLowerCase() === targetLower && io.sockets.sockets.has(sId)) {
-          targetSocketId = sId;
-          break;
-        }
-      }
-    }
+    const targetSocketId = findTargetSocketId(data?.targetId, data?.targetName);
+    console.log(`[Follow] player:follow dari "${senderName}" (${socket.id}) ke targetId="${data?.targetId}", targetName="${data?.targetName}" -> socket: ${targetSocketId}`);
 
     if (targetSocketId) {
       io.to(targetSocketId).emit('player:followed_by', {
@@ -945,24 +963,149 @@ io.on('connection', (socket) => {
     const sender = players.get(socket.id);
     const senderName = data?.senderName || sender?.name || 'Petualang';
 
-    let targetSocketId = null;
-    if (data?.targetId && io.sockets.sockets.has(data.targetId)) {
-      targetSocketId = data.targetId;
-    }
-    if (!targetSocketId && data?.targetName) {
-      const targetLower = data.targetName.trim().toLowerCase();
-      for (const [sId, p] of players.entries()) {
-        if (p.name && p.name.trim().toLowerCase() === targetLower && io.sockets.sockets.has(sId)) {
-          targetSocketId = sId;
-          break;
-        }
-      }
-    }
-
+    const targetSocketId = findTargetSocketId(data?.targetId, data?.targetName);
     if (targetSocketId) {
       io.to(targetSocketId).emit('player:unfollowed_by', {
         followerId: socket.id,
         followerName: senderName,
+        timestamp: Date.now(),
+      });
+    }
+  });
+
+  // 11. Event Permintaan Pegangan Tangan (Hand-Holding Request)
+  socket.on('handhold:request', (data) => {
+    const sender = players.get(socket.id);
+    const senderName = data?.senderName || sender?.name || 'Petualang';
+    const senderAvatar = data?.senderAvatar || sender?.avatar;
+    const senderLevel = data?.senderLevel || sender?.level || 1;
+    const senderRole = data?.senderRole || sender?.role || 'player';
+
+    const targetSocketId = findTargetSocketId(data?.targetId, data?.targetName);
+    console.log(`[HandHold] Permintaan pegangan tangan dari "${senderName}" (${socket.id}) ke targetId="${data?.targetId}", targetName="${data?.targetName}" -> socket: ${targetSocketId}`);
+
+    if (targetSocketId) {
+      io.to(targetSocketId).emit('handhold:request_received', {
+        id: `hhreq_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+        fromId: socket.id,
+        fromName: senderName,
+        fromAvatar: senderAvatar,
+        fromLevel: senderLevel,
+        fromRole: senderRole,
+        timestamp: Date.now(),
+      });
+    } else {
+      socket.emit('chat:broadcast', {
+        id: `sys_err_${Date.now()}`,
+        senderId: 'SYSTEM',
+        senderName: 'SISTEM',
+        senderRole: 'system',
+        isSuperAdmin: false,
+        text: `⚠️ Pemain ${data?.targetName || 'tujuan'} sedang tidak aktif atau terputus.`,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      });
+    }
+  });
+
+  // 12. Event Respon Permintaan Pegangan Tangan (Terima -> Otomatis Follow / Tolak / Abaikan)
+  socket.on('handhold:response', (data) => {
+    const responder = players.get(socket.id);
+    const responderName = data?.responderName || responder?.name || 'Teman';
+
+    const requesterSocketId = findRequesterSocketId(data?.requesterId, data?.requesterName);
+    console.log(`[HandHold] Respon pegangan tangan dari "${responderName}": accepted=${data?.accepted} ke requesterSocketId: ${requesterSocketId}`);
+
+    if (requesterSocketId) {
+      io.to(requesterSocketId).emit('handhold:response_result', {
+        fromId: socket.id,
+        fromName: responderName,
+        accepted: !!data?.accepted,
+        status: data?.status || (data?.accepted ? 'accepted' : 'rejected'),
+      });
+    }
+  });
+
+  // 13. Event Lepas Pegangan Tangan (Hand-Holding Release)
+  socket.on('handhold:release', (data) => {
+    const sender = players.get(socket.id);
+    const senderName = data?.senderName || sender?.name || 'Petualang';
+
+    const targetSocketId = findTargetSocketId(data?.partnerId, data?.partnerName);
+    if (targetSocketId) {
+      io.to(targetSocketId).emit('handhold:released', {
+        fromId: socket.id,
+        fromName: senderName,
+        timestamp: Date.now(),
+      });
+    }
+  });
+
+  // 14. Event Permintaan Ajakan Trade Barang (Trade Request)
+  socket.on('trade:request', (data) => {
+    const sender = players.get(socket.id);
+    const senderName = data?.senderName || sender?.name || 'Petualang';
+    const senderAvatar = data?.senderAvatar || sender?.avatar;
+    const senderLevel = data?.senderLevel || sender?.level || 1;
+    const senderRole = data?.senderRole || sender?.role || 'player';
+
+    const targetSocketId = findTargetSocketId(data?.targetId, data?.targetName);
+    console.log(`[Trade] Permintaan Trade dari "${senderName}" (${socket.id}) ke targetId="${data?.targetId}", targetName="${data?.targetName}" -> socket: ${targetSocketId}`);
+
+    if (targetSocketId) {
+      io.to(targetSocketId).emit('trade:request_received', {
+        id: `tradereq_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+        fromId: socket.id,
+        fromName: senderName,
+        fromAvatar: senderAvatar,
+        fromLevel: senderLevel,
+        fromRole: senderRole,
+        timestamp: Date.now(),
+      });
+    } else {
+      socket.emit('chat:broadcast', {
+        id: `sys_err_${Date.now()}`,
+        senderId: 'SYSTEM',
+        senderName: 'SISTEM',
+        senderRole: 'system',
+        isSuperAdmin: false,
+        text: `⚠️ Pemain ${data?.targetName || 'tujuan'} sedang tidak aktif atau terputus.`,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      });
+    }
+  });
+
+  // 15. Event Respon Ajakan Trade Barang (Terima / Tolak / Abaikan / Hangus)
+  socket.on('trade:response', (data) => {
+    const responder = players.get(socket.id);
+    const responderName = data?.responderName || responder?.name || 'Teman';
+
+    const requesterSocketId = findRequesterSocketId(data?.requesterId, data?.requesterName);
+    console.log(`[Trade] Respon Trade dari "${responderName}": accepted=${data?.accepted} ke requesterSocketId: ${requesterSocketId}`);
+
+    if (requesterSocketId) {
+      io.to(requesterSocketId).emit('trade:response_result', {
+        fromId: socket.id,
+        fromName: responderName,
+        accepted: !!data?.accepted,
+        status: data?.status || (data?.accepted ? 'accepted' : 'rejected'),
+      });
+    }
+  });
+
+  // 16. Event Pengiriman Barang Hasil Trade (Semua kecuali Biji)
+  socket.on('trade:offer', (data) => {
+    const sender = players.get(socket.id);
+    const senderName = data?.senderName || sender?.name || 'Petualang';
+    const rawItems = Array.isArray(data?.items) ? data.items : [];
+    // Filter server-side juga agar biji (seed) tidak pernah bisa di-trade
+    const safeItems = rawItems.filter((item) => item && item.category !== 'seed' && !String(item.id || '').startsWith('seed_'));
+
+    const targetSocketId = findTargetSocketId(data?.targetId, data?.targetName);
+    if (targetSocketId && safeItems.length > 0) {
+      io.to(targetSocketId).emit('trade:received', {
+        fromId: socket.id,
+        fromName: senderName,
+        items: safeItems,
         timestamp: Date.now(),
       });
     }

@@ -58,27 +58,58 @@ export class InventoryManager {
 
   public static isSeedItem(item: IInventoryItem | null | undefined): boolean {
     if (!item) return false;
-    return item.category === 'seed' || item.id.startsWith('seed_');
+    const id = String(item.id || '').toLowerCase();
+    const name = String(item.name || '').toLowerCase();
+    return (
+      item.category === 'seed' ||
+      id.startsWith('seed_') ||
+      name.startsWith('bibit ') ||
+      name.startsWith('benih ') ||
+      name.startsWith('biji ')
+    );
   }
 
   public static isRodItem(item: IInventoryItem | null | undefined): boolean {
     if (!item) return false;
-    return item.id.startsWith('tool_rod') || item.id.startsWith('tool_fishing_rod');
+    const id = String(item.id || '').toLowerCase();
+    const name = String(item.name || '').toLowerCase();
+    return (
+      id.startsWith('tool_rod') ||
+      id.startsWith('tool_fishing_rod') ||
+      name.includes('joran') ||
+      name.includes('pancing')
+    );
   }
 
   public static isHoeItem(item: IInventoryItem | null | undefined): boolean {
     if (!item) return false;
-    return item.id.startsWith('tool_hoe');
+    const id = String(item.id || '').toLowerCase();
+    const name = String(item.name || '').toLowerCase();
+    return id.startsWith('tool_hoe') || name.includes('cangkul');
   }
 
   public static isWateringCanItem(item: IInventoryItem | null | undefined): boolean {
     if (!item) return false;
-    return item.id.startsWith('tool_watering');
+    const id = String(item.id || '').toLowerCase();
+    const name = String(item.name || '').toLowerCase();
+    return (
+      id.startsWith('tool_watering') ||
+      name.includes('penyiram') ||
+      name.includes('gembor') ||
+      name.includes('tong air')
+    );
   }
 
   public static isKiteItem(item: IInventoryItem | null | undefined): boolean {
     if (!item) return false;
-    return item.id.startsWith('tool_kite') || item.id === 'tool_layang_layang';
+    const id = String(item.id || '').toLowerCase();
+    const name = String(item.name || '').toLowerCase();
+    return (
+      id.startsWith('tool_kite') ||
+      id === 'tool_layang_layang' ||
+      name.includes('layang-layang') ||
+      name.includes('layangan')
+    );
   }
 
   /**
@@ -209,6 +240,13 @@ export class InventoryManager {
    */
   private loadFromStorage(): void {
     try {
+      const savedSlot = parseInt(localStorage.getItem('raden_active_hotbar_slot') || '0', 10);
+      if (!isNaN(savedSlot) && savedSlot >= 0 && savedSlot < InventoryManager.HOTBAR_SLOTS) {
+        this.activeSlotIndex = savedSlot;
+      }
+    } catch (e) {}
+
+    try {
       const saved = localStorage.getItem('raden_player_inventory');
       if (saved) {
         const parsed = JSON.parse(saved);
@@ -256,6 +294,24 @@ export class InventoryManager {
           if (!hasSeed && defaults[1]) this.addItem({ ...defaults[1] });
           if (!hasHoe && defaults[2]) this.addItem({ ...defaults[2] });
           if (!hasWatering && defaults[3]) this.addItem({ ...defaults[3] });
+
+          // Pastikan Cangkul berada di Hotbar jika tersembunyi di dalam tas (slot >= 6)
+          const currentHoeIdx = this.items.findIndex((it) => InventoryManager.isHoeItem(it));
+          if (currentHoeIdx >= InventoryManager.HOTBAR_SLOTS && !InventoryManager.isHoeItem(this.items[2])) {
+            const oldHotbar2 = this.items[2];
+            this.items[2] = this.items[currentHoeIdx];
+            this.items[currentHoeIdx] = oldHotbar2;
+            this.saveToStorage();
+          }
+
+          // Pastikan Tong Penyiram berada di Hotbar jika tersembunyi di dalam tas (slot >= 6)
+          const currentWaterIdx = this.items.findIndex((it) => InventoryManager.isWateringCanItem(it));
+          if (currentWaterIdx >= InventoryManager.HOTBAR_SLOTS && !InventoryManager.isWateringCanItem(this.items[3])) {
+            const oldHotbar3 = this.items[3];
+            this.items[3] = this.items[currentWaterIdx];
+            this.items[currentWaterIdx] = oldHotbar3;
+            this.saveToStorage();
+          }
 
           // Pastikan Layang-Layang Tradisional Raden langsung berada di Hotbar Slot 5 (index 4)
           const currentKiteIdx = this.items.findIndex((it) => InventoryManager.isKiteItem(it));
@@ -313,6 +369,9 @@ export class InventoryManager {
   public setActiveSlotIndex(index: number): void {
     if (index >= 0 && index < InventoryManager.HOTBAR_SLOTS) {
       this.activeSlotIndex = index;
+      try {
+        localStorage.setItem('raden_active_hotbar_slot', String(index));
+      } catch (e) {}
       SoundManager.getInstance().playClick();
       this.notifyUpdate();
     }
@@ -391,19 +450,31 @@ export class InventoryManager {
    */
   public addCaughtFish(fish: IFishData): boolean {
     const icon = fish.rarity === 'Legendary' ? '🌟🐟' : fish.rarity === 'Rare' ? '🐠' : '🐟';
+    const waterShort =
+      fish.waterType === 'Air Laut'
+        ? 'Laut'
+        : fish.waterType === 'Air Payau'
+        ? 'Payau'
+        : 'Tawar';
+    const depthStr = typeof fish.depthMeters === 'number' ? `${fish.depthMeters}m` : '8.5m';
+    const effectStr = fish.effect || 'Pulihkan +30 HP & Fokus Belajar +15%';
     const fishItem: IInventoryItem = {
       id: `fish_${fish.id}`,
-      name: fish.name,
+      name: `${fish.name} (${waterShort})`,
       category: 'fish',
       rarity: fish.rarity,
       icon,
       quantity: 1,
       maxStack: 20,
-      description: `${fish.description} (Berat rata-rata: ${fish.weightKg} kg). Dapat dijual di Pasar atau Tas untuk mendapatkan Koin Emas!`,
+      description: `${fish.description} (Air ${waterShort} • Berat: ${fish.weightKg} kg • Kedalaman: ${depthStr} • Efek: ${effectStr}).`,
       price: fish.goldReward,
-      usable: false,
+      usable: true,
       extraData: {
         weightKg: fish.weightKg,
+        waterType: waterShort,
+        depthMeters: fish.depthMeters || 8.5,
+        effect: effectStr,
+        hpRestore: fish.rarity === 'Legendary' ? 80 : fish.rarity === 'Rare' ? 50 : 30,
       },
     };
 

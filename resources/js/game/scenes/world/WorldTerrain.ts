@@ -289,41 +289,56 @@ export class WorldTerrain {
 
     // ------------------------------------------------------------------------
     // 4. JALAN RAYA ASPAL (ROAD NETWORK 100% SESUAI BLUEPRINT)
+    // Overlap sub-piksel (+0.8px) mencegah celah garis kedip antar ubin saat zoom out jauh
     // ------------------------------------------------------------------------
+    const bleed = 0.8;
+    const addRoadH = (gx: number, gy: number) => {
+      scene.add.image(gx * ts, gy * ts, 'road-horizontal')
+        .setOrigin(0, 0)
+        .setDisplaySize(ts + bleed, ts * 2 + bleed)
+        .setDepth(-95);
+    };
+    const addRoadV = (gx: number, gy: number) => {
+      scene.add.image(gx * ts, gy * ts, 'road-vertical')
+        .setOrigin(0, 0)
+        .setDisplaySize(ts * 2 + bleed, ts + bleed)
+        .setDepth(-95);
+    };
+
     // a. Jalan Horizontal Barat Laut (gy: 13..14, gx: -20..18)
     for (let gx = -20; gx <= 18; gx++) {
-      scene.add.image(gx * ts, 13 * ts, 'road-horizontal').setOrigin(0, 0).setDepth(-95);
+      addRoadH(gx, 13);
     }
     // b. Jalan Horizontal Timur Laut (gy: 13..14, gx: 61..100)
     for (let gx = 61; gx <= 100; gx++) {
-      scene.add.image(gx * ts, 13 * ts, 'road-horizontal').setOrigin(0, 0).setDepth(-95);
+      addRoadH(gx, 13);
     }
     // c. Jalan Horizontal Utara Central Plaza (gy: 19..20, gx: 21..58)
     for (let gx = 21; gx <= 58; gx++) {
-      scene.add.image(gx * ts, 19 * ts, 'road-horizontal').setOrigin(0, 0).setDepth(-95);
+      addRoadH(gx, 19);
     }
     // d. Jalan Horizontal Selatan Central Plaza (gy: 60..61, gx: 21..58)
     for (let gx = 21; gx <= 58; gx++) {
-      scene.add.image(gx * ts, 60 * ts, 'road-horizontal').setOrigin(0, 0).setDepth(-95);
+      addRoadH(gx, 60);
     }
     // e. Jalan Horizontal Barat Daya (gy: 66..67, gx: -20..18)
     for (let gx = -20; gx <= 18; gx++) {
-      scene.add.image(gx * ts, 66 * ts, 'road-horizontal').setOrigin(0, 0).setDepth(-95);
+      addRoadH(gx, 66);
     }
     // f. Jalan Horizontal Tenggara (gy: 66..67, gx: 61..100)
     for (let gx = 61; gx <= 100; gx++) {
-      scene.add.image(gx * ts, 66 * ts, 'road-horizontal').setOrigin(0, 0).setDepth(-95);
+      addRoadH(gx, 66);
     }
 
     // g. Jalan Vertikal Barat (gx: 19..20, gy: 15..18, 21..59, 62..65)
-    for (let gy = 15; gy <= 18; gy++) scene.add.image(19 * ts, gy * ts, 'road-vertical').setOrigin(0, 0).setDepth(-95);
-    for (let gy = 21; gy <= 59; gy++) scene.add.image(19 * ts, gy * ts, 'road-vertical').setOrigin(0, 0).setDepth(-95);
-    for (let gy = 62; gy <= 65; gy++) scene.add.image(19 * ts, gy * ts, 'road-vertical').setOrigin(0, 0).setDepth(-95);
+    for (let gy = 15; gy <= 18; gy++) addRoadV(19, gy);
+    for (let gy = 21; gy <= 59; gy++) addRoadV(19, gy);
+    for (let gy = 62; gy <= 65; gy++) addRoadV(19, gy);
 
     // h. Jalan Vertikal Timur (gx: 59..60, gy: 15..18, 21..59, 62..65)
-    for (let gy = 15; gy <= 18; gy++) scene.add.image(59 * ts, gy * ts, 'road-vertical').setOrigin(0, 0).setDepth(-95);
-    for (let gy = 21; gy <= 59; gy++) scene.add.image(59 * ts, gy * ts, 'road-vertical').setOrigin(0, 0).setDepth(-95);
-    for (let gy = 62; gy <= 65; gy++) scene.add.image(59 * ts, gy * ts, 'road-vertical').setOrigin(0, 0).setDepth(-95);
+    for (let gy = 15; gy <= 18; gy++) addRoadV(59, gy);
+    for (let gy = 21; gy <= 59; gy++) addRoadV(59, gy);
+    for (let gy = 62; gy <= 65; gy++) addRoadV(59, gy);
 
     // i. 8 Persimpangan Jalan (2x2 JalanTengah, 240x240 px)
     const intersections = [
@@ -333,24 +348,37 @@ export class WorldTerrain {
       { gx: 19, gy: 66 }, { gx: 59, gy: 66 },
     ];
     intersections.forEach(ix => {
-      scene.add.image(ix.gx * ts, ix.gy * ts, 'road-intersection').setOrigin(0, 0).setDepth(-95);
+      scene.add.image(ix.gx * ts, ix.gy * ts, 'road-intersection')
+        .setOrigin(0, 0)
+        .setDisplaySize(ts * 2 + bleed, ts * 2 + bleed)
+        .setDepth(-95);
     });
 
     // ------------------------------------------------------------------------
     // 5. TROTOAR 1, TROTOAR EDGE & TROTOAR 2 (100% SESUAI BLUEPRINT)
     // ------------------------------------------------------------------------
     const addTrotoarH = (gx: number, gy: number) => {
-      scene.add.image(gx * ts, gy * ts, 'trotoar-horizontal').setOrigin(0, 0).setDepth(-94);
+      scene.add.image(gx * ts, gy * ts, 'trotoar-horizontal')
+        .setOrigin(0, 0)
+        .setDisplaySize(ts + bleed, ts + bleed)
+        .setDepth(-94);
     };
     const addTrotoarV = (gx: number, gy: number) => {
-      scene.add.image(gx * ts, gy * ts, 'trotoar-vertical').setOrigin(0, 0).setDepth(-94);
+      scene.add.image(gx * ts, gy * ts, 'trotoar-vertical')
+        .setOrigin(0, 0)
+        .setDisplaySize(ts + bleed, ts + bleed)
+        .setDepth(-94);
     };
     const addTrotoar2 = (gx: number, gy: number) => {
-      scene.add.image(gx * ts, gy * ts, 'trotoar-2').setOrigin(0, 0).setDepth(-94);
+      scene.add.image(gx * ts, gy * ts, 'trotoar-2')
+        .setOrigin(0, 0)
+        .setDisplaySize(ts + bleed, ts + bleed)
+        .setDepth(-94);
     };
     const addTrotoarEdge = (gx: number, gy: number, angleDeg: number) => {
       scene.add.image(gx * ts + ts / 2, gy * ts + ts / 2, 'trotoar-edge')
         .setOrigin(0.5, 0.5)
+        .setDisplaySize(ts + bleed, ts + bleed)
         .setAngle(angleDeg)
         .setDepth(-94);
     };
@@ -411,7 +439,10 @@ export class WorldTerrain {
 
     for (let gy = 22; gy <= 58; gy++) {
       for (let gx = 22; gx <= 57; gx++) {
-        scene.add.image(gx * ts, gy * ts, alunTex).setOrigin(0, 0).setDepth(-96);
+        scene.add.image(gx * ts, gy * ts, alunTex)
+          .setOrigin(0, 0)
+          .setDisplaySize(ts + bleed, ts + bleed)
+          .setDepth(-96);
       }
     }
 
@@ -426,14 +457,20 @@ export class WorldTerrain {
     // 1. Hamparan Trotoar 2 Utara Barat (gx: 23..42, gy: 0..16)
     for (let gy = 0; gy <= 16; gy++) {
       for (let gx = 23; gx <= 42; gx++) {
-        scene.add.image(gx * ts, gy * ts, trotoar2Tex).setOrigin(0, 0).setDepth(-96);
+        scene.add.image(gx * ts, gy * ts, trotoar2Tex)
+          .setOrigin(0, 0)
+          .setDisplaySize(ts + bleed, ts + bleed)
+          .setDepth(-96);
       }
     }
 
     // 2. Hamparan Trotoar 2 Timur Utara (gx: 43..56, gy: 1..16)
     for (let gy = 1; gy <= 16; gy++) {
       for (let gx = 43; gx <= 56; gx++) {
-        scene.add.image(gx * ts, gy * ts, trotoar2Tex).setOrigin(0, 0).setDepth(-96);
+        scene.add.image(gx * ts, gy * ts, trotoar2Tex)
+          .setOrigin(0, 0)
+          .setDisplaySize(ts + bleed, ts + bleed)
+          .setDepth(-96);
       }
     }
 
@@ -446,7 +483,7 @@ export class WorldTerrain {
       for (let gx = 57; gx <= 80; gx++) {
         const digImg = scene.add.image(gx * ts, gy * ts, 'tile-dig')
           .setOrigin(0, 0)
-          .setDisplaySize(ts, ts)
+          .setDisplaySize(ts + bleed, ts + bleed)
           .setDepth(-96);
         digImg.setData('gridX', gx);
         digImg.setData('gridY', gy);

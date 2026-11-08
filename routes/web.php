@@ -20,6 +20,29 @@ Route::get('/world/popup', function () {
     return redirect('/world');
 });
 
+// Route Offline Dokumentasi Sistem (Use Case Diagram, Activity Diagram, & Wireframe) — Bisa Dilihat & Diunduh Tanpa Online
+$renderSystemDocs = function (string $docType) {
+    $html = view('system_docs', ['docType' => $docType])->render();
+    $dl = request()->query('download');
+    if ($dl === '1' || $dl === 'html') {
+        $filename = "RadenWorld_{$docType}_Diagram_Offline.html";
+        return response($html, 200)
+            ->header('Content-Type', 'text/html; charset=UTF-8')
+            ->header('Content-Disposition', "attachment; filename=\"{$filename}\"");
+    }
+    return response($html, 200)
+        ->header('Content-Type', 'text/html; charset=UTF-8')
+        ->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
+};
+
+Route::get('/world/usecase', fn () => $renderSystemDocs('usecase'));
+Route::get('/world/use-case', fn () => $renderSystemDocs('usecase'));
+Route::get('/world/activity', fn () => $renderSystemDocs('activity'));
+Route::get('/world/activity-diagram', fn () => $renderSystemDocs('activity'));
+Route::get('/world/activity diagram', fn () => $renderSystemDocs('activity'));
+Route::get('/world/wirefrane', fn () => $renderSystemDocs('wireframe'));
+Route::get('/world/wireframe', fn () => $renderSystemDocs('wireframe'));
+
 Route::get('/world/{school?}', $renderSpa);
 Route::get('/school/{type?}', $renderSpa);
 Route::get('/cafe', $renderSpa);

@@ -93,8 +93,13 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({
   useEffect(() => {
     if (isOpen) {
       setItems(inv.getAllItems());
-      const firstFilled = inv.getAllItems().findIndex((it) => it !== null);
-      setSelectedSlot(firstFilled !== -1 ? firstFilled : 0);
+      const activeIdx = inv.getActiveSlotIndex();
+      if (inv.getItemAt(activeIdx)) {
+        setSelectedSlot(activeIdx);
+      } else {
+        const firstFilled = inv.getAllItems().findIndex((it) => it !== null);
+        setSelectedSlot(firstFilled !== -1 ? firstFilled : 0);
+      }
     }
   }, [isOpen, inv]);
 
@@ -140,6 +145,9 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({
       if (success) {
         sound.playClick();
         setSelectedSlot(targetSlotIdx);
+        if (targetSlotIdx < InventoryManager.HOTBAR_SLOTS) {
+          inv.setActiveSlotIndex(targetSlotIdx);
+        }
       }
     }
   };
@@ -160,10 +168,15 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({
   };
 
   const handleConsumeItem = () => {
-    if (selectedSlot === null || !selectedItem || !selectedItem.usable) return;
+    if (selectedSlot === null || !selectedItem) return;
+    const isToolOrSeed = selectedItem.category === 'tool' || InventoryManager.isSeedItem(selectedItem);
     const consumed = inv.consumeItem(selectedSlot);
     if (consumed) {
       sound.playItemUse();
+      if (isToolOrSeed) {
+        onClose();
+        return;
+      }
       const current = inv.getItemAt(selectedSlot);
       if (!current) {
         const nextFilled = items.findIndex((it, idx) => it !== null && idx !== selectedSlot);
@@ -172,11 +185,16 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({
     }
   };
 
-  const handleMoveToHotbar = (hotbarSlotIdx: number) => {
-    if (selectedSlot === null || !selectedItem) return;
-    inv.moveItem(selectedSlot, hotbarSlotIdx);
+  const handleMoveToHotbar = (fromBagSlotIdx: number) => {
+    if (fromBagSlotIdx === null || !selectedItem) return;
+    // Cari slot kosong pertama di Hotbar (0..5), atau gunakan slot Hotbar aktif saat ini
+    const hotbarItems = inv.getHotbarItems();
+    const emptyHotbarIdx = hotbarItems.findIndex((it) => it === null);
+    const targetHotbarIdx = emptyHotbarIdx !== -1 ? emptyHotbarIdx : inv.getActiveSlotIndex();
+    inv.moveItem(fromBagSlotIdx, targetHotbarIdx);
+    inv.setActiveSlotIndex(targetHotbarIdx);
     sound.playClick();
-    setSelectedSlot(hotbarSlotIdx);
+    setSelectedSlot(targetHotbarIdx);
   };
 
   const getRarityBadge = (rarity: string) => {
@@ -253,6 +271,9 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({
         onClick={() => {
           sound.playClick();
           setSelectedSlot(idx);
+          if (idx < InventoryManager.HOTBAR_SLOTS) {
+            inv.setActiveSlotIndex(idx);
+          }
         }}
         className={`clay-slot ${slotClass} ${
           item ? 'cursor-grab active:cursor-grabbing' : ''
@@ -495,14 +516,18 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({
                       </button>
                     )}
 
-                    {selectedItem.usable && (
+                    {(selectedItem.usable || selectedItem.category === 'tool' || InventoryManager.isSeedItem(selectedItem)) && (
                       <button
                         type="button"
                         onClick={() => handleUseItem(selectedSlot!)}
                         className="clay-btn-primary w-full py-1.5 text-xs font-bold uppercase text-black flex items-center justify-center gap-1"
                       >
                         <Utensils className="w-3.5 h-3.5 stroke-[2.5]" />
-                        <span>PAKAI / GUNAKAN</span>
+                        <span>
+                          {selectedItem.category === 'tool' || InventoryManager.isSeedItem(selectedItem)
+                            ? 'PEGANG ALAT [F]'
+                            : 'PAKAI / GUNAKAN'}
+                        </span>
                       </button>
                     )}
 

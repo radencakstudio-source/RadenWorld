@@ -14,7 +14,7 @@
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
 
-    <title>RadenWorld - 2D Open World Multiplayer Simulasi</title>
+    <title>RadenWorld - 2D Open World Education & Life Simulation</title>
 
     <!-- Google Fonts: Pixelify Sans (Primary Cozy RPG Pixel Font) & Press Start 2P -->
     <link rel="preconnect" href="https://fonts.googleapis.com">

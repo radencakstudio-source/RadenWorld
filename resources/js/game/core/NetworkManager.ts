@@ -576,13 +576,14 @@ export class NetworkManager {
       this.listeners.playerJoined.forEach((cb) => cb(player));
     });
 
-    this.socket.on('player:updated', (data: { id: string; name?: string; avatar?: IAvatarCustomization; role?: string; isSuperAdmin?: boolean }) => {
+    this.socket.on('player:updated', (data: { id: string; name?: string; avatar?: IAvatarCustomization; role?: string; isSuperAdmin?: boolean; level?: number }) => {
       const existingRoom = this.roomPlayers.get(data.id);
       if (existingRoom) {
         if (data.name) existingRoom.name = data.name;
         if (data.avatar) existingRoom.avatar = data.avatar;
         if (data.role) existingRoom.role = data.role;
         if (typeof data.isSuperAdmin === 'boolean') existingRoom.isSuperAdmin = data.isSuperAdmin;
+        if (typeof data.level === 'number') existingRoom.level = data.level;
       }
       const existingChannel = this.channelPlayers.get(data.id);
       if (existingChannel) {
@@ -590,6 +591,7 @@ export class NetworkManager {
         if (data.avatar) existingChannel.avatar = data.avatar;
         if (data.role) existingChannel.role = data.role;
         if (typeof data.isSuperAdmin === 'boolean') existingChannel.isSuperAdmin = data.isSuperAdmin;
+        if (typeof data.level === 'number') existingChannel.level = data.level;
         this.emitChannelPlayersUpdated();
       }
       EventBus.emit('remote-player-updated', data);
@@ -877,9 +879,9 @@ export class NetworkManager {
   }
 
   /**
-   * Mengirim pembaruan profil pemain lokal (nama / avatar) ke server multiplayer
+   * Mengirim pembaruan profil pemain lokal (nama / avatar / level) ke server multiplayer
    */
-  public sendPlayerUpdate(data: { name?: string; avatar?: IAvatarCustomization }): void {
+  public sendPlayerUpdate(data: { name?: string; avatar?: IAvatarCustomization; level?: number }): void {
     if (this.lastJoinData) {
       if (data.name) this.lastJoinData.name = data.name;
       if (data.avatar) this.lastJoinData.avatar = data.avatar;
@@ -889,6 +891,7 @@ export class NetworkManager {
     if (me) {
       if (data.name) me.name = data.name;
       if (data.avatar) me.avatar = data.avatar;
+      if (typeof data.level === 'number') me.level = data.level;
       this.emitServerPlayersUpdated();
     }
     if (!this.socket || !this.isConnected) return;
@@ -1077,14 +1080,20 @@ export class NetworkManager {
   }
 
   /**
-   * Mengirim jawaban permintaan pertemanan (terima / tolak)
+   * Mengirim jawaban permintaan pertemanan / mengikuti (terima / tolak / abaikan / hangus)
    */
-  public sendFriendResponse(requesterId: string, accepted: boolean, requesterName?: string): void {
+  public sendFriendResponse(
+    requesterId: string,
+    accepted: boolean,
+    requesterName?: string,
+    status?: 'accepted' | 'rejected' | 'ignored' | 'expired'
+  ): void {
     if (!this.socket || !this.isConnected) return;
     this.socket.emit('friend:response', {
       requesterId,
       requesterName,
       accepted,
+      status: status || (accepted ? 'accepted' : 'rejected'),
       responderName: this.lastJoinData?.name,
     });
   }
@@ -1108,13 +1117,20 @@ export class NetworkManager {
   /**
    * Mengirim event mengikuti (follow) pemain lain ke server secara real-time
    */
-  public sendFollow(targetId?: string, targetName?: string): void {
+  public sendFollow(targetId?: string, targetName?: string, senderLevel?: number): void {
     if (!this.socket || !this.isConnected) return;
+    let resolvedLevel = senderLevel || 1;
+    try {
+      const u = JSON.parse(localStorage.getItem('raden_player_user') || '{}');
+      if (typeof u.level === 'number' && u.level >= 1) resolvedLevel = u.level;
+    } catch (e) {}
     this.socket.emit('player:follow', {
       targetId,
       targetName,
       senderName: this.lastJoinData?.name,
       senderAvatar: this.lastJoinData?.avatar,
+      senderRole: this.lastJoinData?.role,
+      senderLevel: resolvedLevel,
     });
   }
 

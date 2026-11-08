@@ -57,6 +57,8 @@ class SecurityWalletController extends Controller
             $walletData = [
                 'gold' => $gold,
                 'diamonds' => $diamonds,
+                'level' => $isSuper ? 99 : max(1, (int) ($user->level ?? 1)),
+                'exp' => $isSuper ? 9999 : max(0, (int) ($user->exp ?? 0)),
                 'auth_token' => $user->generateAuthToken(),
                 'email_verified' => !empty($user->email_verified_at),
                 'email_verified_at' => $user->email_verified_at ? $user->email_verified_at->toIso8601String() : null,

@@ -93,9 +93,10 @@ export const VirtualControls: React.FC<VirtualControlsProps> = React.memo(({
     const [isOverlayBlocking, setIsOverlayBlocking] = useState<boolean>(false);
 
   const [isKiteFlying, setIsKiteFlying] = useState<boolean>(false);
+  const [isNearRipeCrop, setIsNearRipeCrop] = useState<boolean>(false);
 
     const [activeToolInfo, setActiveToolInfo] = useState<{
-        type: 'seed' | 'rod' | 'hoe' | 'watering' | 'kite' | 'other';
+        type: 'seed' | 'rod' | 'hoe' | 'watering' | 'kite' | 'harvest' | 'other';
         label: string;
         iconText?: string;
     }>(() => {
@@ -131,11 +132,17 @@ export const VirtualControls: React.FC<VirtualControlsProps> = React.memo(({
       }
     };
 
+    const handleNearRipeCrop = (isNear: boolean) => {
+      setIsNearRipeCrop(Boolean(isNear));
+    };
+
     EventBus.on('inventory-updated', handleInv);
     EventBus.on('kite-mode-changed', handleKiteChange);
+    EventBus.on('near-ripe-crop-changed', handleNearRipeCrop);
     return () => {
       EventBus.off('inventory-updated', handleInv);
       EventBus.off('kite-mode-changed', handleKiteChange);
+      EventBus.off('near-ripe-crop-changed', handleNearRipeCrop);
     };
   }, [isKiteFlying]);
 
@@ -991,29 +998,33 @@ export const VirtualControls: React.FC<VirtualControlsProps> = React.memo(({
                             e.preventDefault();
                             e.stopPropagation();
                         }}
-                        className={`w-12 h-12 sm:w-13 sm:h-13 rounded-2xl flex flex-col items-center justify-center select-none text-black ${(isFishBiting || activeToolInfo.type === 'seed') && !isEditMode ? 'clay-btn-primary' : 'clay-btn-neutral'
+                        className={`w-12 h-12 sm:w-13 sm:h-13 rounded-2xl flex flex-col items-center justify-center select-none text-black ${(isFishBiting || isNearRipeCrop || activeToolInfo.type === 'seed') && !isEditMode ? 'clay-btn-primary' : 'clay-btn-neutral'
                             }`}
                         style={{ touchAction: 'none', borderRadius: '14px' }}
                         title={
                             isFishBiting
                                 ? 'IKAN MENYAMBAR! KETUK UNTUK TARIK!'
-                                : activeToolInfo.type === 'seed'
-                                    ? 'Tanam Bibit di Lahan Kebun Tani [F]'
-                                    : activeToolInfo.type === 'hoe'
-                                        ? 'Gemburkan Tanah / Panen [F]'
-                                        : activeToolInfo.type === 'watering'
-                                            ? 'Siram Tanaman Kebun [F]'
-                                            : 'Tahan untuk Lempar Kail / Strike (F)'
+                                : isNearRipeCrop
+                                    ? 'Panen Tanaman Siap Panen [F]'
+                                    : activeToolInfo.type === 'seed'
+                                        ? 'Tanam Bibit di Lahan Kebun Tani [F]'
+                                        : activeToolInfo.type === 'hoe'
+                                            ? 'Gemburkan Tanah / Panen [F]'
+                                            : activeToolInfo.type === 'watering'
+                                                ? 'Siram Tanaman Kebun [F]'
+                                                : 'Tahan untuk Lempar Kail / Strike (F)'
                         }
                         aria-label="Tombol Alat Fleksibel"
                     >
-                        {activeToolInfo.iconText ? (
+                        {isNearRipeCrop && !isFishBiting ? (
+                            <span className="text-base leading-none">🌾</span>
+                        ) : activeToolInfo.iconText ? (
                             <span className="text-base leading-none">{activeToolInfo.iconText}</span>
                         ) : (
                             <Fish className="w-4.5 h-4.5 stroke-[2.5] text-black" />
                         )}
                         <span className="text-[7px] font-bold leading-none mt-0.5 text-black">
-                            {isFishBiting && !isEditMode ? 'TARIK!' : activeToolInfo.label}
+                            {isFishBiting && !isEditMode ? 'TARIK!' : isNearRipeCrop ? 'PANEN' : activeToolInfo.label}
                         </span>
                     </button>
                 </div>

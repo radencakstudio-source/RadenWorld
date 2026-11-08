@@ -123,7 +123,7 @@ const httpServer = createServer((req, res) => {
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS',
     });
-    return res.end('Server RPG Aktif 24 Jam!');
+    return res.end('Server Simulasi Edukasi Aktif 24 Jam!');
   }
 
   // Root endpoint: Status aktif game server saat diakses via browser atau health checker
@@ -548,6 +548,10 @@ io.on('connection', (socket) => {
       player.avatar = { ...player.avatar, ...data.avatar };
     }
 
+    if (typeof data.level === 'number' && data.level >= 1) {
+      player.level = player.isSuperAdmin ? 99 : Math.min(99, Math.floor(data.level));
+    }
+
     const currentRoom = player.room || 'world';
     socket.to(currentRoom).emit('player:updated', {
       id: socket.id,
@@ -555,6 +559,7 @@ io.on('connection', (socket) => {
       avatar: player.avatar,
       role: player.role,
       isSuperAdmin: player.isSuperAdmin,
+      level: player.level || 1,
     });
   });
 
@@ -896,7 +901,8 @@ io.on('connection', (socket) => {
     io.to(requesterSocketId).emit('friend:response_result', {
       fromId: socket.id,
       fromName: responderName,
-      accepted: !!data?.accepted
+      accepted: !!data?.accepted,
+      status: data?.status || (data?.accepted ? 'accepted' : 'rejected'),
     });
   });
 
@@ -905,6 +911,8 @@ io.on('connection', (socket) => {
     const sender = players.get(socket.id);
     const senderName = data?.senderName || sender?.name || 'Petualang';
     const senderAvatar = data?.senderAvatar || sender?.avatar;
+    const senderLevel = data?.senderLevel || sender?.level || 1;
+    const senderRole = data?.senderRole || sender?.role || 'player';
 
     let targetSocketId = null;
     if (data?.targetId && io.sockets.sockets.has(data.targetId)) {
@@ -925,6 +933,8 @@ io.on('connection', (socket) => {
         followerId: socket.id,
         followerName: senderName,
         followerAvatar: senderAvatar,
+        followerLevel: senderLevel,
+        followerRole: senderRole,
         timestamp: Date.now(),
       });
     }

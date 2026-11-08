@@ -630,6 +630,17 @@ export const GameApp: React.FC = () => {
             setPlayerDiamonds(w.diamonds);
             localStorage.setItem('raden_player_diamonds', w.diamonds.toString());
           }
+          if (typeof w.level === 'number' && w.level >= 1) {
+            setPlayerStats((prev) => {
+              const resolvedLvl = Math.max(prev.level || 1, w.level);
+              u.level = resolvedLvl;
+              return { ...prev, level: resolvedLvl };
+            });
+          }
+          if (typeof w.exp === 'number' && w.exp >= 0) {
+            setPlayerExp((prev) => Math.max(prev, w.exp));
+            u.exp = Math.max(u.exp || 0, w.exp);
+          }
         }
 
         // Update objek local user
@@ -706,18 +717,76 @@ export const GameApp: React.FC = () => {
     fetchAuthoritativeWallet();
   }, [fetchAuthoritativeWallet]);
 
-  // Handle reward mancing disinkronkan ke MySQL authoritatif
+  // Handle reward mancing, hadiah kuis sekolah, & update avatar disinkronkan ke MySQL authoritatif
   useEffect(() => {
     const handleFishingCaught = (data: { fish: any }) => {
       if (data?.fish) {
-        const goldReward = data.fish.goldReward || 0;
-        const diamondReward = data.fish.diamondReward || 0;
+        const goldReward = Number(data.fish.goldReward || 0);
+        const diamondReward = Number(data.fish.diamondReward || 0);
+        if (goldReward > 0) {
+          setPlayerGold((prev) => {
+            const next = prev + goldReward;
+            try {
+              localStorage.setItem('raden_player_gold', String(next));
+              const u = JSON.parse(localStorage.getItem('raden_player_user') || '{}');
+              u.gold = next;
+              localStorage.setItem('raden_player_user', JSON.stringify(u));
+            } catch (e) {}
+            return next;
+          });
+        }
+        if (diamondReward > 0) {
+          setPlayerDiamonds((prev) => {
+            const next = prev + diamondReward;
+            try {
+              localStorage.setItem('raden_player_diamonds', String(next));
+              const u = JSON.parse(localStorage.getItem('raden_player_user') || '{}');
+              u.diamonds = next;
+              localStorage.setItem('raden_player_user', JSON.stringify(u));
+            } catch (e) {}
+            return next;
+          });
+        }
         syncWalletWithServer(goldReward, diamondReward, `catch_fish_${data.fish.name || 'fish'}`);
       }
     };
+
+    const handleQuizGoldEarned = (goldAmount: number) => {
+      const reward = Number(goldAmount || 0);
+      if (reward <= 0) return;
+      setPlayerGold((prev) => {
+        const next = prev + reward;
+        try {
+          localStorage.setItem('raden_player_gold', String(next));
+          const u = JSON.parse(localStorage.getItem('raden_player_user') || '{}');
+          u.gold = next;
+          localStorage.setItem('raden_player_user', JSON.stringify(u));
+        } catch (e) {}
+        return next;
+      });
+      syncWalletWithServer(reward, 0, 'school_quiz_reward');
+    };
+
+    const handleAvatarUpdated = (newAvatar: IAvatarCustomization) => {
+      if (!newAvatar) return;
+      setWardrobeAvatar(newAvatar);
+      setPlayerStats((prev) => ({ ...prev, avatar: newAvatar }));
+      try {
+        localStorage.setItem('raden_player_avatar', JSON.stringify(newAvatar));
+        const u = JSON.parse(localStorage.getItem('raden_player_user') || '{}');
+        u.avatar = newAvatar;
+        localStorage.setItem('raden_player_user', JSON.stringify(u));
+        NetworkManager.getInstance().sendPlayerUpdate({ avatar: newAvatar });
+      } catch (e) {}
+    };
+
     EventBus.on('fishing-caught', handleFishingCaught);
+    EventBus.on('quiz-gold-earned', handleQuizGoldEarned);
+    EventBus.on('avatar-updated', handleAvatarUpdated);
     return () => {
       EventBus.off('fishing-caught', handleFishingCaught);
+      EventBus.off('quiz-gold-earned', handleQuizGoldEarned);
+      EventBus.off('avatar-updated', handleAvatarUpdated);
     };
   }, [syncWalletWithServer]);
 
@@ -726,6 +795,9 @@ export const GameApp: React.FC = () => {
     const handleStats = (stats: any) => {
       setPlayerStats((prev) => {
         const resolvedName = (stats.name && stats.name !== 'Petualang') ? stats.name : (prev.name || stats.name);
+        const preservedLevel = typeof stats.level === 'number' && stats.level > 1
+          ? Math.max(prev.level || 1, stats.level)
+          : (prev.level || 1);
         if (
           prev.roomName === stats.roomName &&
           prev.gridX === stats.gridX &&
@@ -733,11 +805,12 @@ export const GameApp: React.FC = () => {
           prev.hp === stats.hp &&
           prev.maxHp === stats.maxHp &&
           prev.inHouse === stats.inHouse &&
-          prev.name === resolvedName
+          prev.name === resolvedName &&
+          prev.level === preservedLevel
         ) {
           return prev;
         }
-        return { ...prev, ...stats, name: resolvedName };
+        return { ...prev, ...stats, name: resolvedName, level: preservedLevel };
       });
     };
 
@@ -1033,16 +1106,42 @@ export const GameApp: React.FC = () => {
       if (!data?.amount) return;
       sound.playSuccess();
       setPlayerExp((prev) => {
-        const next = prev + data.amount;
+        let curExp = prev + data.amount;
+        let curLvl = 1;
         try {
           const raw = localStorage.getItem('raden_player_user');
           const u = raw ? JSON.parse(raw) : {};
-          u.exp = next;
+          curLvl = Math.max(1, Number(u.level || 1));
+          let leveledUp = false;
+          while (curExp >= curLvl * 100 && curLvl < 99) {
+            curExp -= curLvl * 100;
+            curLvl += 1;
+            leveledUp = true;
+          }
+          u.level = curLvl;
+          u.exp = curExp;
           localStorage.setItem('raden_player_user', JSON.stringify(u));
+
+          setPlayerStats((prevStats) => {
+            const finalLvl = Math.max(prevStats.level || 1, curLvl);
+            if (leveledUp) {
+              EventBus.emit('new-chat-message', {
+                id: `lvlup_gain_${Date.now()}`,
+                sender: 'SISTEM',
+                text: `🎉 Selamat! Kamu naik ke Level ${finalLvl}!`,
+                timestamp: Date.now(),
+                isSystem: true,
+              });
+              try {
+                NetworkManager.getInstance().sendPlayerUpdate({ level: finalLvl });
+              } catch (e) {}
+            }
+            return { ...prevStats, level: finalLvl };
+          });
 
           // Kirim sinkronisasi ke backend jika akun terdaftar
           const token = u.auth_token || localStorage.getItem('raden_auth_token');
-          if (token && u.id) {
+          if (token && (u.id || u.email || u.name)) {
             fetch('/api/user/sync-progress', {
               method: 'POST',
               headers: {
@@ -1050,21 +1149,31 @@ export const GameApp: React.FC = () => {
                 'Authorization': `Bearer ${token}`,
                 'X-Auth-Token': token,
               },
-              body: JSON.stringify({ delta_exp: data.amount, exp: next }),
+              body: JSON.stringify({
+                user_id: u.id,
+                email: u.email,
+                name: u.name,
+                delta_exp: data.amount,
+                exp: curExp,
+                level: curLvl,
+              }),
             })
               .then((res) => res.json())
               .then((resData) => {
                 if (resData?.status === 'success' && resData.level) {
-                  setPlayerStats((prev) => ({ ...prev, level: resData.level }));
-                  u.level = resData.level;
-                  u.exp = resData.exp;
-                  localStorage.setItem('raden_player_user', JSON.stringify(u));
+                  setPlayerStats((prevStats) => {
+                    const syncedLvl = Math.max(prevStats.level || 1, resData.level);
+                    u.level = syncedLvl;
+                    u.exp = typeof resData.exp === 'number' ? resData.exp : curExp;
+                    localStorage.setItem('raden_player_user', JSON.stringify(u));
+                    return { ...prevStats, level: syncedLvl };
+                  });
                 }
               })
               .catch(() => {});
           }
         } catch (e) {}
-        return next;
+        return curExp;
       });
     };
     EventBus.on('gain-exp', handleGainExp);
@@ -1082,10 +1191,20 @@ export const GameApp: React.FC = () => {
       setIncomingFriendRequest(req);
     };
 
-    const handleFriendResponse = (data: { fromId: string; fromName: string; accepted: boolean }) => {
+    const handleFriendResponse = (data: { fromId: string; fromName: string; accepted: boolean; status?: string }) => {
       console.log('[GameApp] Respon pertemanan diterima:', data);
-      if (data.accepted) {
+      if (data.accepted || data.status === 'accepted') {
         sound.playSuccess();
+        setFollowingList((prev) => {
+          const next = Array.from(new Set([...prev, data.fromName]));
+          try { localStorage.setItem('raden_following_list', JSON.stringify(next)); } catch (e) {}
+          return next;
+        });
+        setFollowersList((prev) => {
+          const next = Array.from(new Set([...prev, data.fromName]));
+          try { localStorage.setItem('raden_followers_list', JSON.stringify(next)); } catch (e) {}
+          return next;
+        });
         setFriendsList((prev) => {
           const next = Array.from(new Set([...prev, data.fromName]));
           try { localStorage.setItem('raden_friends_list', JSON.stringify(next)); } catch (e) {}
@@ -1094,7 +1213,26 @@ export const GameApp: React.FC = () => {
         EventBus.emit('new-chat-message', {
           id: `fr_acc_${Date.now()}`,
           sender: 'SISTEM',
-          text: `🎉 Permintaan pertemanan diterima! Kamu dan ${data.fromName} sekarang berteman!`,
+          text: `🎉 Permintaan diterima! Kamu dan ${data.fromName} sekarang saling mengikuti & resmi berteman!`,
+          timestamp: Date.now(),
+          isSystem: true,
+        });
+      } else if (data.status === 'rejected') {
+        sound.playClick();
+        setFollowingList((prev) => {
+          const next = prev.filter((n) => n.trim().toLowerCase() !== data.fromName.trim().toLowerCase());
+          try { localStorage.setItem('raden_following_list', JSON.stringify(next)); } catch (e) {}
+          return next;
+        });
+        setFriendsList((prev) => {
+          const next = prev.filter((n) => n.trim().toLowerCase() !== data.fromName.trim().toLowerCase());
+          try { localStorage.setItem('raden_friends_list', JSON.stringify(next)); } catch (e) {}
+          return next;
+        });
+        EventBus.emit('new-chat-message', {
+          id: `fr_rej_${Date.now()}`,
+          sender: 'SISTEM',
+          text: `❌ ${data.fromName} menolak permintaan mengikuti/pertemananmu.`,
           timestamp: Date.now(),
           isSystem: true,
         });
@@ -1106,9 +1244,11 @@ export const GameApp: React.FC = () => {
           return next;
         });
         EventBus.emit('new-chat-message', {
-          id: `fr_rej_${Date.now()}`,
+          id: `fr_ign_${Date.now()}`,
           sender: 'SISTEM',
-          text: `🤝 Permintaan tidak diterima / waktu habis. Kamu sekarang mengikuti ${data.fromName}.`,
+          text: data.status === 'expired'
+            ? `⏱️ Notifikasi 30 detik di ${data.fromName} telah hangus. Kamu tetap mengikuti ${data.fromName}.`
+            : `🤝 ${data.fromName} mengabaikan notifikasi. Kamu tetap mengikuti ${data.fromName}.`,
           timestamp: Date.now(),
           isSystem: true,
         });
@@ -1120,7 +1260,7 @@ export const GameApp: React.FC = () => {
     EventBus.on('incoming-friend-request', handleIncomingFriend);
     EventBus.on('friend-response-result', handleFriendResponse);
 
-    const handleFollowedBy = (data: { followerId: string; followerName: string; followerAvatar?: any }) => {
+    const handleFollowedBy = (data: { followerId: string; followerName: string; followerAvatar?: any; followerLevel?: number; followerRole?: string }) => {
       sound.playSuccess();
       setFollowersList((prev) => {
         const next = Array.from(new Set([...prev, data.followerName]));
@@ -1129,7 +1269,10 @@ export const GameApp: React.FC = () => {
       });
 
       setFollowingList((currentFollowing) => {
-        if (currentFollowing.includes(data.followerName)) {
+        const isAlreadyFollowing = currentFollowing.some(
+          (n) => n.trim().toLowerCase() === (data.followerName || '').trim().toLowerCase()
+        );
+        if (isAlreadyFollowing) {
           setFriendsList((prevFriends) => {
             const nextFriends = Array.from(new Set([...prevFriends, data.followerName]));
             try { localStorage.setItem('raden_friends_list', JSON.stringify(nextFriends)); } catch (e) {}
@@ -1143,10 +1286,20 @@ export const GameApp: React.FC = () => {
             isSystem: true,
           });
         } else {
+          // Munculkan pop-up notifikasi mengikuti dengan Cooldown 30 Detik (Terima / Tolak / Abaikan / Hangus)
+          setIncomingFriendRequest({
+            id: `follow_req_${Date.now()}`,
+            fromId: data.followerId || data.followerName,
+            fromName: data.followerName,
+            fromAvatar: data.followerAvatar,
+            fromLevel: data.followerLevel || 1,
+            fromRole: data.followerRole || 'player',
+            timestamp: Date.now(),
+          });
           EventBus.emit('new-chat-message', {
             id: `follow_${Date.now()}`,
             sender: 'SISTEM',
-            text: `👀 ${data.followerName} mulai mengikuti kamu. Ikuti balik untuk menjadi Teman!`,
+            text: `👀 ${data.followerName} mulai mengikuti kamu! Respon dalam 30 detik (Terima / Tolak / Abaikan).`,
             timestamp: Date.now(),
             isSystem: true,
           });
@@ -1174,6 +1327,7 @@ export const GameApp: React.FC = () => {
     EventBus.on('player-unfollowed-by', handleUnfollowedBy);
 
     // If opened directly with /home/{id}, /world, atau /admin/{token}
+    let directTimer: ReturnType<typeof setTimeout> | null = null;
     if (isDirectInGame) {
       let playerName = 'Petualang';
       let playerAvatar = wardrobeAvatar;
@@ -1190,6 +1344,9 @@ export const GameApp: React.FC = () => {
           if (u.name) playerName = u.name;
           if (u.avatar && typeof u.avatar === 'object') playerAvatar = u.avatar;
           if (u.private_room_id) safeId = u.private_room_id;
+          if (typeof u.level === 'number' && u.level >= 1) level = u.level;
+          if (typeof u.exp === 'number' && u.exp >= 0) setPlayerExp(u.exp);
+          if (u.title) title = u.title;
           if (u.role === 'super_admin' || u.is_super_admin || u.email === 'radencakstudio@gmail.com' || u.name?.toUpperCase() === 'RADEN') {
             role = 'super_admin';
             isSuperAdmin = true;
@@ -1206,13 +1363,6 @@ export const GameApp: React.FC = () => {
         setGameState('home');
         return;
       }
-
-      let adminToken = 'raden-master-key';
-      if (initialPath.startsWith('/admin/')) {
-        const seg = initialPath.replace('/admin/', '').trim();
-        if (seg) adminToken = seg;
-      }
-      const isAdminPath = initialPath.startsWith('/admin');
 
       if (initialPath.startsWith('/home/')) {
         const seg = initialPath.replace('/home/', '').trim();
@@ -1237,7 +1387,7 @@ export const GameApp: React.FC = () => {
         privateRoomId: safeId,
       });
 
-      const timer = setTimeout(() => {
+      directTimer = setTimeout(() => {
         EventBus.emit('join-game', {
           name: playerName,
           avatar: playerAvatar,
@@ -1246,23 +1396,10 @@ export const GameApp: React.FC = () => {
           isSuperAdmin,
         });
       }, 600);
-
-      return () => {
-        clearTimeout(timer);
-        window.removeEventListener('popstate', handlePopState);
-        EventBus.off('url-changed', handleUrlChanged);
-        EventBus.off('player-stats-updated', handleStats);
-        EventBus.off('interaction-prompt', handlePrompt);
-        EventBus.off('new-chat-message', handleChat);
-        EventBus.off('inspect-player-profile', handleInspectProfile);
-        EventBus.off('open-player-profile', handleInspectProfile);
-        EventBus.off('player-followed-by', handleFollowedBy);
-        EventBus.off('player-unfollowed-by', handleUnfollowedBy);
-        EventBus.off('open-jukebox', handleOpenJukebox);
-      };
     }
 
     return () => {
+      if (directTimer) clearTimeout(directTimer);
       window.removeEventListener('popstate', handlePopState);
       EventBus.off('url-changed', handleUrlChanged);
       EventBus.off('player-stats-updated', handleStats);
@@ -1334,7 +1471,7 @@ export const GameApp: React.FC = () => {
     });
   };
 
-  // Friend Request Handlers
+  // Friend Request & Follow Notification Handlers (Cooldown 30 Detik: Terima / Tolak / Abaikan / Hangus)
   const handleAddFriend = (targetId: string, targetName: string) => {
     sound.playClick();
     NetworkManager.getInstance().sendFriendRequest(targetId, targetName);
@@ -1342,7 +1479,7 @@ export const GameApp: React.FC = () => {
     EventBus.emit('new-chat-message', {
       id: `fr_sent_${Date.now()}`,
       sender: 'SISTEM',
-      text: `📨 Permintaan pertemanan dikirim ke ${targetName}. Menunggu respon...`,
+      text: `📨 Permintaan pertemanan dikirim ke ${targetName}. Menunggu respon (30 detik)...`,
       timestamp: Date.now(),
       isSystem: true,
     });
@@ -1350,17 +1487,42 @@ export const GameApp: React.FC = () => {
 
   const handleAcceptFriendRequest = (req: IFriendRequest) => {
     sound.playSuccess();
-    NetworkManager.getInstance().sendFriendResponse(req.fromId, true, req.fromName);
+    const myName = (playerStats?.name || '').trim();
+    const targetClean = (req.fromName || '').trim();
+
+    // Otomatis ikuti balik di database & jaringan agar resmi menjadi Teman (Mutual Follow)
+    if (myName && targetClean) {
+      fetch('/api/social/follow', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify({ sender_name: myName, target_name: targetClean }),
+      }).catch(() => {});
+    }
+
+    NetworkManager.getInstance().sendFollow(req.fromId, targetClean);
+    NetworkManager.getInstance().sendFriendResponse(req.fromId, true, targetClean, 'accepted');
+
+    setFollowingList((prev) => {
+      const next = Array.from(new Set([...prev, targetClean]));
+      try { localStorage.setItem('raden_following_list', JSON.stringify(next)); } catch (e) {}
+      return next;
+    });
+    setFollowersList((prev) => {
+      const next = Array.from(new Set([...prev, targetClean]));
+      try { localStorage.setItem('raden_followers_list', JSON.stringify(next)); } catch (e) {}
+      return next;
+    });
     setFriendsList((prev) => {
-      const next = Array.from(new Set([...prev, req.fromName]));
+      const next = Array.from(new Set([...prev, targetClean]));
       try { localStorage.setItem('raden_friends_list', JSON.stringify(next)); } catch (e) {}
       return next;
     });
+
     setIncomingFriendRequest(null);
     EventBus.emit('new-chat-message', {
       id: `fr_acc_self_${Date.now()}`,
       sender: 'SISTEM',
-      text: `🎉 Kamu dan ${req.fromName} sekarang resmi berteman!`,
+      text: `🎉 Kamu menerima permintaan dan mengikuti balik ${targetClean}. Kalian sekarang resmi berteman!`,
       timestamp: Date.now(),
       isSystem: true,
     });
@@ -1368,20 +1530,72 @@ export const GameApp: React.FC = () => {
 
   const handleRejectFriendRequest = (req: IFriendRequest, isTimeout = false) => {
     sound.playClick();
-    NetworkManager.getInstance().sendFriendResponse(req.fromId, false, req.fromName);
-    // Jika ditolak atau waktu 1 menit habis tanpa respon: pemohon otomatis menjadi pengikut (follower)
+    const myName = (playerStats?.name || '').trim();
+    const targetClean = (req.fromName || '').trim();
+
+    if (isTimeout) {
+      // Jika cooldown 30 detik habis (Hangus): notifikasi tertutup, pengirim tetap di daftar pengikut
+      NetworkManager.getInstance().sendFriendResponse(req.fromId, false, targetClean, 'expired');
+      setFollowersList((prev) => {
+        const next = Array.from(new Set([...prev, targetClean]));
+        try { localStorage.setItem('raden_followers_list', JSON.stringify(next)); } catch (e) {}
+        return next;
+      });
+      setIncomingFriendRequest(null);
+      EventBus.emit('new-chat-message', {
+        id: `fr_timeout_${Date.now()}`,
+        sender: 'SISTEM',
+        text: `⏱️ Cooldown 30 detik hangus. ${targetClean} tetap tercatat sebagai pengikut kamu.`,
+        timestamp: Date.now(),
+        isSystem: true,
+      });
+      return;
+    }
+
+    // Jika menekan tombol TOLAK secara eksplisit: tolak pengikut & hapus dari daftar pengikut
+    NetworkManager.getInstance().sendFriendResponse(req.fromId, false, targetClean, 'rejected');
     setFollowersList((prev) => {
-      const next = Array.from(new Set([...prev, req.fromName]));
+      const next = prev.filter((n) => n.trim().toLowerCase() !== targetClean.toLowerCase());
+      try { localStorage.setItem('raden_followers_list', JSON.stringify(next)); } catch (e) {}
+      return next;
+    });
+    setFriendsList((prev) => {
+      const next = prev.filter((n) => n.trim().toLowerCase() !== targetClean.toLowerCase());
+      try { localStorage.setItem('raden_friends_list', JSON.stringify(next)); } catch (e) {}
+      return next;
+    });
+    if (myName && targetClean) {
+      fetch('/api/social/remove-follower', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify({ user_name: myName, follower_name: targetClean }),
+      }).catch(() => {});
+    }
+
+    setIncomingFriendRequest(null);
+    EventBus.emit('new-chat-message', {
+      id: `fr_reject_${Date.now()}`,
+      sender: 'SISTEM',
+      text: `❌ Kamu menolak permintaan mengikuti dari ${targetClean}.`,
+      timestamp: Date.now(),
+      isSystem: true,
+    });
+  };
+
+  const handleIgnoreFriendRequest = (req: IFriendRequest) => {
+    sound.playClick();
+    const targetClean = (req.fromName || '').trim();
+    NetworkManager.getInstance().sendFriendResponse(req.fromId, false, targetClean, 'ignored');
+    setFollowersList((prev) => {
+      const next = Array.from(new Set([...prev, targetClean]));
       try { localStorage.setItem('raden_followers_list', JSON.stringify(next)); } catch (e) {}
       return next;
     });
     setIncomingFriendRequest(null);
     EventBus.emit('new-chat-message', {
-      id: `fr_timeout_${Date.now()}`,
+      id: `fr_ignore_${Date.now()}`,
       sender: 'SISTEM',
-      text: isTimeout
-        ? `⏱️ Waktu respon 1 menit habis. ${req.fromName} sekarang menjadi pengikut kamu.`
-        : `🤝 Permintaan ditolak. ${req.fromName} sekarang menjadi pengikut kamu.`,
+      text: `🙈 Notifikasi dari ${targetClean} diabaikan. ${targetClean} tetap menjadi pengikutmu.`,
       timestamp: Date.now(),
       isSystem: true,
     });
@@ -1518,7 +1732,7 @@ export const GameApp: React.FC = () => {
         EventBus.emit('new-chat-message', {
           id: `follow_${Date.now()}`,
           sender: 'SISTEM',
-          text: `👀 Kamu sekarang mengikuti ${targetClean}. Jika dia mengikutimu balik, kalian otomatis menjadi Teman!`,
+          text: `👀 Kamu mengikuti ${targetClean}. Notifikasi respon (30 detik) telah dikirim ke ${targetClean}!`,
           timestamp: Date.now(),
           isSystem: true,
         });
@@ -1586,6 +1800,15 @@ export const GameApp: React.FC = () => {
         if (u.birth_date) {
           setPlayerBirthDate(u.birth_date);
         }
+        if (typeof u.level === 'number' && u.level >= 1) {
+          level = u.level;
+        }
+        if (typeof u.exp === 'number' && u.exp >= 0) {
+          setPlayerExp(u.exp);
+        }
+        if (u.title) {
+          title = u.title;
+        }
         if (u.role === 'super_admin' || u.is_super_admin || u.email === 'radencakstudio@gmail.com' || u.name?.toUpperCase() === 'RADEN') {
           isSuperAdmin = true;
           role = 'super_admin';
@@ -1608,7 +1831,7 @@ export const GameApp: React.FC = () => {
         ...prev,
         name,
         avatar,
-        level,
+        level: Math.max(prev.level || 1, level),
         role,
         isSuperAdmin,
         title,
@@ -1759,6 +1982,7 @@ export const GameApp: React.FC = () => {
 
         if (newExp >= maxExp) {
           const nextLvl = currentLvl + 1;
+          const remainingExp = Math.max(0, newExp - maxExp);
           setPlayerStats((s) => ({ ...s, level: nextLvl }));
           sound.playSuccess();
           EventBus.emit('new-chat-message', {
@@ -1769,12 +1993,31 @@ export const GameApp: React.FC = () => {
             isSystem: true,
           });
           try {
+            NetworkManager.getInstance().sendPlayerUpdate({ level: nextLvl });
             const u = JSON.parse(localStorage.getItem('raden_player_user') || '{}');
             u.level = nextLvl;
-            u.exp = 0;
+            u.exp = remainingExp;
             localStorage.setItem('raden_player_user', JSON.stringify(u));
+            const token = u.auth_token || localStorage.getItem('raden_auth_token');
+            if (token && (u.id || u.email || u.name)) {
+              fetch('/api/user/sync-progress', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${token}`,
+                  'X-Auth-Token': token,
+                },
+                body: JSON.stringify({
+                  user_id: u.id,
+                  email: u.email,
+                  name: u.name,
+                  exp: remainingExp,
+                  level: nextLvl,
+                }),
+              }).catch(() => {});
+            }
           } catch (e) {}
-          return 0;
+          return remainingExp;
         }
 
         try {
@@ -2174,16 +2417,7 @@ export const GameApp: React.FC = () => {
                 EventBus.emit('dialogue-active', false);
               }}
               onStudySubject={(subjectName, expEarned) => {
-                sound.playSuccess();
-                setPlayerExp((prev) => {
-                  const next = prev + expEarned;
-                  try {
-                    const u = JSON.parse(localStorage.getItem('raden_player_user') || '{}');
-                    u.exp = next;
-                    localStorage.setItem('raden_player_user', JSON.stringify(u));
-                  } catch (e) {}
-                  return next;
-                });
+                EventBus.emit('gain-exp', { amount: expEarned, source: 'school_study' });
                 EventBus.emit('new-chat-message', {
                   id: `study_msg_${Date.now()}`,
                   sender: schoolSubjectsType.toUpperCase(),
@@ -2284,11 +2518,12 @@ export const GameApp: React.FC = () => {
             </>
           )}
 
-          {/* Pop-up Notifikasi Permintaan Pertemanan di Kanan Layar (Timer 1 Menit) */}
+          {/* Pop-up Notifikasi Mengikuti / Pertemanan di Kanan Layar (Cooldown 30 Detik: Terima / Tolak / Abaikan / Hangus) */}
           <FriendRequestNotification
             request={incomingFriendRequest}
             onAccept={handleAcceptFriendRequest}
             onReject={handleRejectFriendRequest}
+            onIgnore={handleIgnoreFriendRequest}
           />
 
           {/* Modal Pengaturan jika dibuka */}

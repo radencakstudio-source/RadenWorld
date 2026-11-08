@@ -546,8 +546,13 @@ export class CharacterController {
     const inv = InventoryManager.getInstance();
     const activeItem = inv.getActiveItem();
 
+    // Prioritas Utama: Panen tanaman matang di depan/bawah kaki pemain langsung via shortcut [F] atau tombol Mobile!
+    if (this.scene.scene.key === 'WorldScene' && WorldFarming.hasRipeCropNearPlayer(this.player)) {
+      WorldFarming.tryHarvestNearPlayer(this.player);
+      return;
+    }
+
     // Prioritas 1: Pegang Joran Pancing -> Memancing (Hold-to-Cast)!
-    // Diprioritaskan utama agar tidak pernah terganggu oleh kebun, panen, atau cangkul
     if (InventoryManager.isRodItem(activeItem)) {
       this.startChargingCast();
       return;
@@ -561,12 +566,6 @@ export class CharacterController {
         return;
       }
       this.toggleKiteFlying();
-      return;
-    }
-
-    // Prioritas 2: Panen tanaman matang di depan/bawah kaki pemain (jika memegang cangkul atau tangan biasa)
-    if (this.scene.scene.key === 'WorldScene' && WorldFarming.hasRipeCropNearPlayer(this.player)) {
-      WorldFarming.tryHarvestNearPlayer(this.player);
       return;
     }
 
@@ -1716,16 +1715,23 @@ export class CharacterController {
     this.sound.playSuccess();
 
     const rarityBadge = fish.rarity === 'Legendary' ? '🌟 [LEGENDARIS]' : fish.rarity === 'Rare' ? '🐠 [LANGKA]' : '🐟';
-    const rewardText = `+${fish.goldReward} Gold`;
+    const expReward = fish.rarity === 'Legendary' ? 100 : fish.rarity === 'Rare' ? 50 : 25;
+    const rewardText = `+${fish.goldReward} Gold • +${expReward} EXP`;
     const bagStatus = storedInBag ? '\n🎒 Tersimpan rapi di Tas [B]!' : '\n⚠️ Tas penuh! Jual ikan di Tas [B].';
 
     this.player.showSpeechBubble(
       `🎉 DAPAT ${fish.name.toUpperCase()}!\nBerat: ${fish.weightKg} kg ${rarityBadge}\nHadiah: ${rewardText}${bagStatus}`
     );
 
+    EventBus.emit('gain-exp', {
+      amount: expReward,
+      source: 'fishing_catch',
+    });
+
     EventBus.emit('fishing-caught', {
       fish,
       goldEarned: fish.goldReward,
+      expEarned: expReward,
       rewardText,
       storedInBag,
     });

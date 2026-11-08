@@ -667,13 +667,18 @@ export class WorldFarming {
     SoundManager.getInstance().playCoin();
     player.triggerExpression('smile');
     player.showSpeechBubble(
-      `${meta.icon} PANEN BERHASIL [Langkah 5/5]!\n+${meta.harvestQty} ${meta.cropName} masuk Tas [B]!`
+      `${meta.icon} PANEN BERHASIL [Langkah 5/5]!\n+${meta.harvestQty} ${meta.cropName} (+25 EXP) masuk Tas [B]!`
     );
+    EventBus.emit('gain-exp', {
+      amount: 25,
+      source: 'farming_harvest',
+    });
     EventBus.emit('farming-crop-harvested', {
       cropName: meta.cropName,
       qty: meta.harvestQty,
-      exp: 15,
+      exp: 25,
     });
+    EventBus.emit('near-ripe-crop-changed', this.hasRipeCropNearPlayer(player));
     return true;
   }
 

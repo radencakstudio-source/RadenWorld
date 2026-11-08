@@ -535,11 +535,13 @@ export class WorldScene extends Phaser.Scene {
       return;
     }
 
+    // 10b. Panen Tanaman Matang jika berada di dekat tanaman siap panen (bisa via [F], [E], atau Tombol Mobile)
+    if (WorldFarming.hasRipeCropNearPlayer(this.player)) {
+      WorldFarming.tryHarvestNearPlayer(this.player);
+      return;
+    }
 
-
-
-
-    // 9. Interaksi dengan NPC terdekat
+    // 11. Interaksi dengan NPC terdekat
     for (const npc of this.npcs) {
       const dist = Phaser.Math.Distance.Between(px, py, npc.x, npc.y);
       if (dist < 120) {
@@ -1476,9 +1478,12 @@ export class WorldScene extends Phaser.Scene {
       );
 
       let resolvedPrompt = proximity.prompt;
+      const isNearRipe = Boolean(this.player && WorldFarming.hasRipeCropNearPlayer(this.player));
+      EventBus.emit('near-ripe-crop-changed', isNearRipe);
+
       if (!resolvedPrompt && this.player) {
-        if (WorldFarming.hasRipeCropNearPlayer(this.player)) {
-          resolvedPrompt = '[F] Panen Tanaman Siap Panen 🌾';
+        if (isNearRipe) {
+          resolvedPrompt = '[F] / SENTUH PANEN UNTUK MEMANEN TANAMAN 🌾';
         } else {
           const gxNow = Math.floor(px / this.tileSize);
           const gyNow = Math.floor(py / this.tileSize);
@@ -1523,7 +1528,6 @@ export class WorldScene extends Phaser.Scene {
         avatar: this.player.getAvatar(),
         roomName: locationName,
         inHouse: false,
-        level: 1,
       });
     }
 

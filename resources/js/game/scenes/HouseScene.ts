@@ -678,7 +678,6 @@ export class HouseScene extends Phaser.Scene {
       avatar: this.currentAvatar,
       roomName: `${roomLabel} (SAFE: ${this.privateRoomId})`,
       inHouse: true,
-      level: 1,
       privateRoomId: this.privateRoomId,
     });
   }

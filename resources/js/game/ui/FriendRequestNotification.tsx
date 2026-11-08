@@ -3,12 +3,14 @@
  * FILE: resources/js/game/ui/FriendRequestNotification.tsx
  * ============================================================================
  * FUNGSI UTAMA:
- * Pop-up notifikasi permintaan pertemanan di sisi kanan layar (Cozycore Clay-Pixel).
+ * Pop-up notifikasi mengikuti / permintaan pertemanan di sisi kanan layar
+ * dengan Cooldown 30 Detik (Hangus Otomatis) dan 3 tombol aksi:
+ * [TERIMA], [TOLAK], dan [ABAIKAN].
  * ============================================================================
  */
 
 import React, { useEffect, useState } from 'react';
-import { UserPlus, Check, X, Clock, User } from 'lucide-react';
+import { UserPlus, Check, X, Clock, User, EyeOff } from 'lucide-react';
 import { SoundManager } from '../core/SoundManager';
 import { IAvatarCustomization } from '../types';
 import { AvatarPreview } from './AvatarPreview';
@@ -21,26 +23,31 @@ export interface IFriendRequest {
   fromLevel?: number;
   fromRole?: string;
   timestamp: number;
+  isFollowNotification?: boolean;
 }
 
 interface FriendRequestNotificationProps {
   request: IFriendRequest | null;
   onAccept: (req: IFriendRequest) => void;
   onReject: (req: IFriendRequest, isTimeout?: boolean) => void;
+  onIgnore?: (req: IFriendRequest) => void;
 }
+
+const COUNTDOWN_SECONDS = 30;
 
 export const FriendRequestNotification: React.FC<FriendRequestNotificationProps> = ({
   request,
   onAccept,
   onReject,
+  onIgnore,
 }) => {
-  const [timeLeft, setTimeLeft] = useState<number>(60);
+  const [timeLeft, setTimeLeft] = useState<number>(COUNTDOWN_SECONDS);
   const sound = SoundManager.getInstance();
 
   useEffect(() => {
     if (!request) return;
 
-    setTimeLeft(60);
+    setTimeLeft(COUNTDOWN_SECONDS);
     sound.playSuccess();
 
     const interval = setInterval(() => {
@@ -59,11 +66,11 @@ export const FriendRequestNotification: React.FC<FriendRequestNotificationProps>
 
   if (!request) return null;
 
-  const progressPercent = Math.max(0, Math.min(100, (timeLeft / 60) * 100));
+  const progressPercent = Math.max(0, Math.min(100, (timeLeft / COUNTDOWN_SECONDS) * 100));
 
   return (
     <div
-      className="fixed z-[9999] pointer-events-auto w-[min(300px,calc(100dvw-1rem))] sm:w-80 clay-panel overflow-hidden text-black"
+      className="fixed z-[9999] pointer-events-auto w-[min(320px,calc(100dvw-1rem))] sm:w-84 clay-panel overflow-hidden text-black"
       style={{
         right: 'max(0.5rem, env(safe-area-inset-right, 0.5rem))',
         top: 'max(4rem, calc(env(safe-area-inset-top, 0px) + 4rem))',
@@ -74,12 +81,17 @@ export const FriendRequestNotification: React.FC<FriendRequestNotificationProps>
         <div className="flex items-center gap-1.5 text-black min-w-0">
           <UserPlus className="w-4 h-4 shrink-0 stroke-[2.5]" />
           <span className="text-[11px] font-bold uppercase truncate">
-            PERMINTAAN PERTEMANAN
+            NOTIFIKASI MENGIKUTI
           </span>
         </div>
-        <div className="clay-badge-secondary px-1.5 py-0.5 flex items-center gap-1 text-[10px] text-black font-bold shrink-0">
+        <div
+          className={`${
+            timeLeft <= 10 ? 'clay-badge-primary' : 'clay-badge-secondary'
+          } px-2 py-0.5 flex items-center gap-1 text-[10px] text-black font-bold shrink-0`}
+          title="Otomatis hangus dalam 30 detik"
+        >
           <Clock className="w-3 h-3 stroke-[2.5]" />
-          <span>{timeLeft}s</span>
+          <span>{timeLeft}d (Hangus)</span>
         </div>
       </div>
 
@@ -95,34 +107,41 @@ export const FriendRequestNotification: React.FC<FriendRequestNotificationProps>
           )}
           <div className="flex flex-col min-w-0">
             <p className="text-[11px] text-black leading-snug">
-              Permintaan dari <strong className="font-bold underline">{request.fromName}</strong> ingin berteman dengan anda.
+              <strong className="font-bold underline">{request.fromName}</strong> mulai mengikuti kamu! Terima untuk langsung berteman:
             </p>
             <span className="text-[10px] text-black font-bold mt-0.5">
-              Lv. {request.fromLevel || 1} • {request.fromRole === 'super_admin' ? '👑 Admin' : 'Petualang'}
+              Lv. {request.fromLevel || 1} • {request.fromRole === 'super_admin' ? '👑 Admin' : 'Warga Raden'}
             </span>
           </div>
         </div>
 
-        {/* COUNTDOWN PROGRESS BAR */}
-        <div className="w-full h-2.5 bg-[#FFF8EA] border-2 border-[#5C3A21] rounded-md overflow-hidden p-[1px]">
-          <div
-            className="h-full bg-[#FFAE6D] transition-all duration-1000 ease-linear rounded-xs"
-            style={{ width: `${progressPercent}%` }}
-          />
+        {/* COUNTDOWN PROGRESS BAR (30 DETIK COOLDOWN) */}
+        <div className="space-y-1">
+          <div className="flex items-center justify-between text-[9px] font-bold text-black">
+            <span>Batas Waktu Respon (Cooldown 30 Detik)</span>
+            <span>{timeLeft} / 30 dtk</span>
+          </div>
+          <div className="w-full h-2.5 bg-[#FFF8EA] border-2 border-[#5C3A21] rounded-md overflow-hidden p-[1px]">
+            <div
+              className="h-full bg-[#FFAE6D] transition-all duration-1000 ease-linear rounded-xs"
+              style={{ width: `${progressPercent}%` }}
+            />
+          </div>
         </div>
 
-        {/* TOMBOL AKSI: [YA] DAN [TOLAK] */}
-        <div className="grid grid-cols-2 gap-2">
+        {/* 3 TOMBOL AKSI: [TERIMA], [TOLAK], DAN [ABAIKAN] */}
+        <div className="grid grid-cols-3 gap-1.5">
           <button
             type="button"
             onClick={() => {
               sound.playSuccess();
               onAccept(request);
             }}
-            className="clay-btn-primary py-2 px-3 text-black font-bold text-xs uppercase flex items-center justify-center gap-1.5"
+            className="clay-btn-primary py-2 px-2 text-black font-bold text-[10px] sm:text-[11px] uppercase flex items-center justify-center gap-1"
+            title="Terima & Ikuti Balik (Resmi Berteman)"
           >
-            <Check className="w-3.5 h-3.5 stroke-[3]" />
-            <span>YA</span>
+            <Check className="w-3.5 h-3.5 stroke-[3] shrink-0" />
+            <span>TERIMA</span>
           </button>
 
           <button
@@ -131,10 +150,28 @@ export const FriendRequestNotification: React.FC<FriendRequestNotificationProps>
               sound.playClick();
               onReject(request, false);
             }}
-            className="clay-btn-secondary py-2 px-3 text-black font-bold text-xs uppercase flex items-center justify-center gap-1.5"
+            className="clay-btn-cocoa py-2 px-2 text-white font-bold text-[10px] sm:text-[11px] uppercase flex items-center justify-center gap-1"
+            title="Tolak Permintaan Mengikuti"
           >
-            <X className="w-3.5 h-3.5 stroke-[2.5]" />
+            <X className="w-3.5 h-3.5 stroke-[2.5] shrink-0" />
             <span>TOLAK</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              sound.playClick();
+              if (onIgnore) {
+                onIgnore(request);
+              } else {
+                onReject(request, true);
+              }
+            }}
+            className="clay-btn-neutral py-2 px-2 text-black font-bold text-[10px] sm:text-[11px] uppercase flex items-center justify-center gap-1"
+            title="Abaikan Notifikasi Ini"
+          >
+            <EyeOff className="w-3.5 h-3.5 stroke-[2.5] shrink-0" />
+            <span>ABAIKAN</span>
           </button>
         </div>
       </div>

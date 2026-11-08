@@ -191,7 +191,7 @@ Route::get('/api/game/school/{type?}', function ($type = 'sd') {
 Route::get('/api/game/home', function () {
     return response()->json([
         'title' => 'RadenWorld',
-        'subtitle' => '2D Open World Multiplayer RPG',
+        'subtitle' => '2D Open World Education & Life Simulation',
         'version' => '1.2.0',
         'engine' => 'Phaser 3 & PixiJS 8 (HTML5 2D Canvas/WebGL)',
         'server_status' => 'ONLINE',
@@ -691,29 +691,32 @@ Route::post('/api/user/sync-progress', function (\Illuminate\Http\Request $reque
 
     $deltaExp = max(0, min(5000, (int) $request->input('delta_exp', 0)));
     $explicitExp = (int) $request->input('exp', 0);
+    $explicitLevel = max(1, min(99, (int) $request->input('level', 1)));
+
+    $lvl = max(1, (int) ($user->level ?? 1), $explicitLevel);
+    $curExp = max(0, (int) ($user->exp ?? 0));
 
     if ($deltaExp > 0) {
-        $user->exp = (int) ($user->exp ?? 0) + $deltaExp;
-    } elseif ($explicitExp > 0) {
-        $user->exp = max((int) ($user->exp ?? 0), $explicitExp);
+        $curExp += $deltaExp;
+    } elseif ($explicitExp >= 0 && $request->has('exp')) {
+        $curExp = max($curExp, $explicitExp);
     }
 
-    // Kalkulasi level otomatis berdasarkan total EXP
-    $currentExp = (int) ($user->exp ?? 0);
-    $calculatedLevel = 1;
-    $threshold = 100;
-    while ($currentExp >= $threshold && $calculatedLevel < 99) {
-        $calculatedLevel++;
-        $threshold += $calculatedLevel * 100;
+    // Kalkulasi kenaikan level bertahap (tiap level membutuhkan lvl * 100 EXP)
+    while ($curExp >= ($lvl * 100) && $lvl < 99) {
+        $curExp -= ($lvl * 100);
+        $lvl++;
     }
 
-    $user->level = max($calculatedLevel, (int) ($user->level ?? 1));
+    $user->level = max($lvl, (int) ($user->level ?? 1));
+    $user->exp = max(0, $curExp);
     $user->save();
 
     return response()->json([
         'status' => 'success',
         'level' => $user->level,
         'exp' => $user->exp,
+        'max_exp' => $user->level * 100,
         'message' => 'Progres level dan EXP berhasil disimpan ke database.',
     ]);
 });
@@ -1881,6 +1884,7 @@ Route::post('/api/game/leaderboard/submit', function (\Illuminate\Http\Request $
             'accuracy' => $isNewBest ? $accuracy : max((int) ($prev['accuracy'] ?? 0), $accuracy),
             'subject' => $isNewBest ? $subject : ($prev['subject'] ?? $subject),
             'updatedAt' => $now,
+            'isReal' => true,
         ];
     } else {
         $store['classes'][$classKey][] = [
@@ -1895,6 +1899,7 @@ Route::post('/api/game/leaderboard/submit', function (\Illuminate\Http\Request $
             'accuracy' => $accuracy,
             'subject' => $subject,
             'updatedAt' => $now,
+            'isReal' => true,
         ];
     }
 

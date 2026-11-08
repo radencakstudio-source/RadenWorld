@@ -308,6 +308,15 @@ export class CharacterController {
   private targetDestination: { x: number; y: number } | null = null;
   private onArrivalCallback: (() => void) | null = null;
 
+  // Target Gandengan Tangan (Hand-Holding Auto-Follow)
+  private handHoldTarget: {
+    x: number;
+    y: number;
+    isRunning?: boolean;
+    leaderDirection?: Direction;
+    isMoving?: boolean;
+  } | null = null;
+
   // Pelacakan input tombol berlawanan (Anti Moonwalking / Jalan Mundur)
   private leftDownTime: number = 0;
   private rightDownTime: number = 0;
@@ -2098,6 +2107,25 @@ export class CharacterController {
   }
 
   /**
+   * Mengatur target otomatis gandengan tangan (Hand-Holding Follow Target)
+   */
+  public setHandHoldTarget(
+    target: {
+      x: number;
+      y: number;
+      isRunning?: boolean;
+      leaderDirection?: Direction;
+      isMoving?: boolean;
+    } | null
+  ): void {
+    this.handHoldTarget = target;
+  }
+
+  public getHandHoldTarget() {
+    return this.handHoldTarget;
+  }
+
+  /**
    * Menyelaraskan arah hadap karakter (direction) 100% konsisten dengan vektor gerakan.
    * Menjamin karakter TIDAK AKAN PERNAH berjalan mundur (anti-moonwalk)
    * baik saat menggunakan keyboard, joystick virtual, maupun klik/tap ke titik tujuan.
@@ -2297,7 +2325,74 @@ export class CharacterController {
     const runMultiplier = isPlayerRunning ? 1.6 : 1.0;
     const currentSpeed = this.speed * potionMultiplier * runMultiplier;
 
-    if (this.joystickVector && (Math.abs(this.joystickVector.x) > 0.05 || Math.abs(this.joystickVector.y) > 0.05)) {
+    if (this.handHoldTarget) {
+      // 0. Gandengan Tangan Auto Follow (Prioritas Tertinggi saat Digandeng)
+      this.targetDestination = null;
+      if (this.isCrystalGraphicsDrawn) {
+        this.crystalGraphics.clear();
+        this.isCrystalGraphicsDrawn = false;
+      }
+      this.onArrivalCallback = null;
+
+      const target = this.handHoldTarget;
+      const dx = target.x - this.player.x;
+      const dy = target.y - this.player.y;
+      const dist = Math.hypot(dx, dy);
+
+      // Kalo lari ikut lari
+      const isTargetRunning = Boolean(target.isRunning);
+      if (isTargetRunning) {
+        this.isRunning = true;
+      } else if (!shiftIsDown) {
+        this.isRunning = false;
+      }
+
+      // Jika jarak sangat jauh (> 240px, misal baru connect / teleport / warp), langsung snap
+      if (dist > 240) {
+        this.player.x = target.x;
+        this.player.y = target.y;
+        body.setVelocity(0, 0);
+        if (target.leaderDirection) {
+          this.player.setDirection(target.leaderDirection);
+        }
+        return { vx: 0, vy: 0, isMoving: false };
+      }
+
+      if (dist <= 3.0 && !target.isMoving) {
+        // Tiba di posisi 1 grid saat diam: langsung stop, diam berdampingan
+        vx = 0;
+        vy = 0;
+        this.player.x = target.x;
+        this.player.y = target.y;
+        if (target.leaderDirection) {
+          this.player.setDirection(target.leaderDirection);
+        }
+        body.setVelocity(0, 0);
+        return { vx: 0, vy: 0, isMoving: false };
+      }
+
+      // Hitung kecepatan lari/jalan responsif tanpa delay (dist * 15 memastikan langsung menempel rapat)
+      const baseFollowSpeed = isTargetRunning ? 640 : 400;
+      const effectiveSpeed = Math.max(baseFollowSpeed, dist * 15);
+      const angle = Math.atan2(dy, dx);
+      vx = Math.cos(angle) * effectiveSpeed;
+      vy = Math.sin(angle) * effectiveSpeed;
+
+      if (target.leaderDirection) {
+        this.player.setDirection(target.leaderDirection);
+      } else {
+        this.syncFacingDirection(dx, dy);
+      }
+
+      // Spawn bola debu saat lari kencang
+      if (isTargetRunning && !this.isJumping && time - this.lastRunDustTime > 120) {
+        this.lastRunDustTime = time;
+        this.triggerRunDustBall(time, vx, vy);
+      }
+
+      body.setVelocity(vx, vy);
+      return { vx, vy, isMoving: true };
+    } else if (this.joystickVector && (Math.abs(this.joystickVector.x) > 0.05 || Math.abs(this.joystickVector.y) > 0.05)) {
       // 1. Input Analog Virtual Joystick Sentuh
       this.targetDestination = null;
       this.crystalGraphics.clear();

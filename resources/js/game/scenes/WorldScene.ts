@@ -173,6 +173,9 @@ export class WorldScene extends Phaser.Scene {
     };
     const onHandHoldStateChanged = (state: { partnerName: string; partnerId?: string; role: 'leader' | 'follower' } | null) => {
       this.handHoldState = state;
+      if (!state && this.player && this.player.active) {
+        this.player.getController()?.setHandHoldTarget(null);
+      }
       if (state && this.player && this.player.active) {
         this.player.showSpeechBubble(
           state.role === 'follower'
@@ -182,11 +185,21 @@ export class WorldScene extends Phaser.Scene {
         );
       }
     };
+    const onLocalPlayerJumpStarted = (data: { jumpCount: number }) => {
+      if (this.handHoldState && this.handHoldState.role === 'leader') {
+        const partner = this.findPartnerEntity();
+        if (partner && partner.active) {
+          partner.triggerJump(data?.jumpCount || 1);
+        }
+      }
+    };
     EventBus.on('graphics-settings-updated', onGraphicsSettingsUpdated);
     EventBus.on('handhold-state-changed', onHandHoldStateChanged);
+    EventBus.on('player-jump-started', onLocalPlayerJumpStarted);
     this.events.once('shutdown', () => {
       EventBus.off('graphics-settings-updated', onGraphicsSettingsUpdated);
       EventBus.off('handhold-state-changed', onHandHoldStateChanged);
+      EventBus.off('player-jump-started', onLocalPlayerJumpStarted);
     });
 
     // 1. Batas fisika dunia diperlebar mencakup buffer (3600px) agar koridor jalan bisa dilewati ke luar
@@ -1298,7 +1311,7 @@ export class WorldScene extends Phaser.Scene {
       if (!this.sys || !this.sys.displayList || !this.scene.isActive()) return;
       const remotePlayer = this.remotePlayers.get(data.id);
       if (remotePlayer && remotePlayer.active) {
-        remotePlayer.setNetworkState(data.x, data.y, data.direction, data.isMoving);
+        remotePlayer.setNetworkState(data.x, data.y, data.direction, data.isMoving, data.isRunning);
       }
     });
 
@@ -1342,6 +1355,15 @@ export class WorldScene extends Phaser.Scene {
       const remote = this.remotePlayers.get(data.id);
       if (remote && remote.active) {
         remote.triggerJump(data.jumpCount);
+      }
+      // Gandengan tangan: jika leader melompat, follower ikut melompat seketika tanpa delay!
+      if (this.handHoldState && this.handHoldState.role === 'follower') {
+        const isLeader =
+          (this.handHoldState.partnerId && data.id === this.handHoldState.partnerId) ||
+          (remote && (remote.getEntityName?.() || '').trim().toLowerCase() === this.handHoldState.partnerName.trim().toLowerCase());
+        if (isLeader) {
+          this.player.jump();
+        }
       }
     });
 
@@ -1467,47 +1489,12 @@ export class WorldScene extends Phaser.Scene {
     );
 
     if (!this.player || !this.player.active) return;
+
+    // 2a. Gandengan Tangan Auto-Follow (Prioritas Tinggi sebelum update player agar 0 delay)
+    this.updateHandHoldSystem(time, delta);
+
     this.player.update(time, delta);
     this.player.setDepth(Math.floor(this.player.y + 60));
-
-    // 2a. Logika Otomatis Mengikuti Saat Pegangan Tangan (Hand-Holding Auto-Follow)
-    if (this.handHoldState && this.handHoldState.partnerName) {
-      let partnerEntity: any = null;
-      const targetNameLower = this.handHoldState.partnerName.trim().toLowerCase();
-      for (const [rId, rem] of this.remotePlayers.entries()) {
-        if (
-          (this.handHoldState.partnerId && rId === this.handHoldState.partnerId) ||
-          (rem.getEntityName?.() || '').trim().toLowerCase() === targetNameLower
-        ) {
-          partnerEntity = rem;
-          break;
-        }
-      }
-
-      if (partnerEntity && partnerEntity.active) {
-        if (this.handHoldState.role === 'follower') {
-          // Player yang menerima pegangan tangan otomatis mengikuti player yang mengajak (leader)
-          const targetX = partnerEntity.x + 42;
-          const targetY = partnerEntity.y + 4;
-          const dist = Phaser.Math.Distance.Between(this.player.x, this.player.y, targetX, targetY);
-          if (dist > 28) {
-            const step = Math.min(dist, (delta / 1000) * 235);
-            const angle = Phaser.Math.Angle.Between(this.player.x, this.player.y, targetX, targetY);
-            this.player.x += Math.cos(angle) * step;
-            this.player.y += Math.sin(angle) * step;
-            if (time - this.lastHandHoldSyncTime > 90) {
-              this.lastHandHoldSyncTime = time;
-              this.networkManager.sendMovement(
-                Math.round(this.player.x),
-                Math.round(this.player.y),
-                partnerEntity.getDirection?.() || 'down',
-                true
-              );
-            }
-          }
-        }
-      }
-    }
 
     // 2b. Interaksi rumput bergoyang saat diinjak / didekati & pemain bergerak
     WorldProps.updateWildGrassSway(time, this.player, this.remotePlayers);
@@ -1954,5 +1941,150 @@ export class WorldScene extends Phaser.Scene {
 
     this.events.on('shutdown', cleanupScene);
     this.events.on('destroy', cleanupScene);
+  }
+
+  /**
+   * Menemukan entitas partner pegangan tangan di peta
+   */
+  private findPartnerEntity(): RemotePlayer | null {
+    if (!this.handHoldState || !this.handHoldState.partnerName) return null;
+    const targetNameLower = this.handHoldState.partnerName.trim().toLowerCase();
+    for (const [rId, rem] of this.remotePlayers.entries()) {
+      if (
+        (this.handHoldState.partnerId && rId === this.handHoldState.partnerId) ||
+        (rem.getEntityName?.() || '').trim().toLowerCase() === targetNameLower
+      ) {
+        return rem;
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Mengatur posisi dan animasi gandengan tangan:
+   * - Jarak 1 grid (36px) berdampingan
+   * - Kalo lari ikut lari
+   * - Kalo lompat ikut lompat
+   * - 0 delay visual pada layar follower maupun leader
+   */
+  private updateHandHoldSystem(time: number, delta: number): void {
+    if (!this.handHoldState || !this.handHoldState.partnerName || !this.player || !this.player.active) {
+      if (this.player && this.player.active) {
+        this.player.getController()?.setHandHoldTarget(null);
+      }
+      return;
+    }
+
+    const partnerEntity = this.findPartnerEntity();
+    if (!partnerEntity || !partnerEntity.active) {
+      this.player.getController()?.setHandHoldTarget(null);
+      return;
+    }
+
+    const GRID = 36; // Jarak 1 grid (~36px)
+
+    if (this.handHoldState.role === 'follower') {
+      // 1. Follower: Karakter kita digandeng dan otomatis mengikuti leader rapat berjarak 1 grid
+      const leaderDir = partnerEntity.getDirection() || 'down';
+      const leaderIsMoving = partnerEntity.getIsMoving();
+      const leaderIsRunning = partnerEntity.getIsRunning();
+
+      let offsetX = 0;
+      let offsetY = 0;
+
+      if (!leaderIsMoving) {
+        // Saat diam: berdiri bersisian di samping (side-by-side)
+        offsetX = leaderDir === 'left' ? GRID : -GRID;
+        offsetY = 0;
+      } else {
+        switch (leaderDir) {
+          case 'right':
+            offsetX = -GRID;
+            offsetY = 2;
+            break;
+          case 'left':
+            offsetX = GRID;
+            offsetY = 2;
+            break;
+          case 'up':
+            offsetX = Math.round(GRID * 0.7);
+            offsetY = GRID;
+            break;
+          case 'down':
+          default:
+            offsetX = -Math.round(GRID * 0.7);
+            offsetY = -GRID;
+            break;
+        }
+      }
+
+      const targetX = partnerEntity.x + offsetX;
+      const targetY = partnerEntity.y + offsetY;
+
+      // Pasok ke CharacterController untuk digerakkan oleh sistem Arcade Physics tanpa delay
+      this.player.getController()?.setHandHoldTarget({
+        x: targetX,
+        y: targetY,
+        isRunning: leaderIsRunning,
+        leaderDirection: leaderDir,
+        isMoving: leaderIsMoving,
+      });
+
+      // Kalo lompat ikut lompat: sinkronkan jika leader dalam visual stage lompat
+      if (partnerEntity.getJumpVisualStage() !== 'none' && this.player.getJumpVisualStage() === 'none') {
+        this.player.jump();
+      }
+    } else if (this.handHoldState.role === 'leader') {
+      // 2. Leader: Karakter kita menggandeng partner. Pandu posisi partner di layar kita secara instan (0 delay visual)
+      this.player.getController()?.setHandHoldTarget(null);
+
+      const myDir = this.player.getDirection() || 'down';
+      const myIsMoving = this.player.getIsMoving();
+      const myIsRunning = this.player.getController() ? this.player.getController().isPlayerRunning() : false;
+
+      let offsetX = 0;
+      let offsetY = 0;
+
+      if (!myIsMoving) {
+        offsetX = myDir === 'left' ? GRID : -GRID;
+        offsetY = 0;
+      } else {
+        switch (myDir) {
+          case 'right':
+            offsetX = -GRID;
+            offsetY = 2;
+            break;
+          case 'left':
+            offsetX = GRID;
+            offsetY = 2;
+            break;
+          case 'up':
+            offsetX = Math.round(GRID * 0.7);
+            offsetY = GRID;
+            break;
+          case 'down':
+          default:
+            offsetX = -Math.round(GRID * 0.7);
+            offsetY = -GRID;
+            break;
+        }
+      }
+
+      const followerTargetX = this.player.x + offsetX;
+      const followerTargetY = this.player.y + offsetY;
+
+      partnerEntity.setNetworkState(
+        followerTargetX,
+        followerTargetY,
+        myDir,
+        myIsMoving,
+        myIsRunning
+      );
+
+      // Kalo lompat ikut lompat: jika leader melompat, remote follower ikut melompat di layar leader
+      if (this.player.getJumpVisualStage() !== 'none' && partnerEntity.getJumpVisualStage() === 'none') {
+        partnerEntity.triggerJump(1);
+      }
+    }
   }
 }

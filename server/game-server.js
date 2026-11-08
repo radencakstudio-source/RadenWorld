@@ -514,6 +514,7 @@ io.on('connection', (socket) => {
     player.lastMoveTime = now;
     if (data.direction) player.direction = data.direction;
     player.isMoving = !!data.isMoving;
+    player.isRunning = !!data.isRunning;
 
     const currentRoom = player.room || 'world';
     socket.to(currentRoom).emit('player:moved', {
@@ -522,6 +523,7 @@ io.on('connection', (socket) => {
       y: player.y,
       direction: player.direction,
       isMoving: player.isMoving,
+      isRunning: player.isRunning,
       role: player.role,
       isSuperAdmin: player.isSuperAdmin
     });

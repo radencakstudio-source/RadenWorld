@@ -56,7 +56,7 @@ export class NetworkManager {
   private listeners: {
     worldInit: ((data: IWorldInitData) => void)[];
     playerJoined: ((player: IPlayerData) => void)[];
-    playerMoved: ((data: { id: string; x: number; y: number; direction: Direction; isMoving: boolean }) => void)[];
+    playerMoved: ((data: { id: string; x: number; y: number; direction: Direction; isMoving: boolean; isRunning?: boolean }) => void)[];
     playerLeft: ((data: { id: string; name: string }) => void)[];
     chatBroadcast: ((data: IChatMessage) => void)[];
     playerExpression: ((data: { id: string; type: 'normal' | 'smile' | 'shock' | 'angry' }) => void)[];
@@ -943,14 +943,14 @@ export class NetworkManager {
   /**
    * Memancarkan data koordinat pergerakan pemain lokal ke server
    */
-  public sendMovement(x: number, y: number, direction: Direction, isMoving: boolean): void {
+  public sendMovement(x: number, y: number, direction: Direction, isMoving: boolean, isRunning: boolean = false): void {
     if (this.lastJoinData) {
       this.lastJoinData.x = x;
       this.lastJoinData.y = y;
       this.lastJoinData.direction = direction;
     }
     if (!this.socket || !this.isConnected) return;
-    this.socket.emit('player:move', { x, y, direction, isMoving });
+    this.socket.emit('player:move', { x, y, direction, isMoving, isRunning });
   }
 
   /**
@@ -1011,7 +1011,7 @@ export class NetworkManager {
   }
 
   /** Mendaftarkan callback saat pemain lain bergerak */
-  public onPlayerMoved(callback: (data: { id: string; x: number; y: number; direction: Direction; isMoving: boolean }) => void): void {
+  public onPlayerMoved(callback: (data: { id: string; x: number; y: number; direction: Direction; isMoving: boolean; isRunning?: boolean }) => void): void {
     this.listeners.playerMoved = [callback];
     this.bindSocketListeners();
   }

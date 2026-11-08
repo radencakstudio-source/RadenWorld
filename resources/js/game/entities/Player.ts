@@ -649,23 +649,24 @@ export class Player extends Entity {
     const canSync = this.scene.scene.key === 'WorldScene' || this.scene.scene.key === 'SchoolScene';
     if (!canSync) return;
 
-    // Sinkronisasi data posisi ke server setiap 85ms saat bergerak (stabil & ramah kuota polling)
+    // Sinkronisasi data posisi ke server setiap 60ms saat bergerak (responsif & mulus tanpa delay)
+    const isRunning = this.controller ? this.controller.isPlayerRunning() : false;
     const moved = Math.abs(this.x - this.lastX) > 1 || Math.abs(this.y - this.lastY) > 1;
-    if (nowMoving && moved && time - this.lastSentTime > 85) {
+    if (nowMoving && moved && time - this.lastSentTime > 60) {
       this.lastSentTime = time;
       this.lastX = this.x;
       this.lastY = this.y;
-      this.networkManager.sendMovement(this.x, this.y, this.currentDirection, true);
+      this.networkManager.sendMovement(this.x, this.y, this.currentDirection, true, isRunning);
     } else if (movementStateChanged && !nowMoving) {
       this.lastX = this.x;
       this.lastY = this.y;
-      this.networkManager.sendMovement(this.x, this.y, this.currentDirection, false);
+      this.networkManager.sendMovement(this.x, this.y, this.currentDirection, false, false);
     } else if (!nowMoving && time - this.lastSentTime > 2500) {
       // Heartbeat posisi diam berkala untuk menjaga sinkronisasi 100% akurat di semua player lain
       this.lastSentTime = time;
       this.lastX = this.x;
       this.lastY = this.y;
-      this.networkManager.sendMovement(this.x, this.y, this.currentDirection, false);
+      this.networkManager.sendMovement(this.x, this.y, this.currentDirection, false, false);
     }
   }
 

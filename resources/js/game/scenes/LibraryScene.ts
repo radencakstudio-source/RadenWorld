@@ -1069,7 +1069,7 @@ export class LibraryScene extends Phaser.Scene {
     this.networkManager.onPlayerMoved((data) => {
       const remote = this.remotePlayers.get(data.id);
       if (remote && remote.active) {
-        remote.setNetworkState(data.x, data.y, data.direction, data.isMoving);
+        remote.setNetworkState(data.x, data.y, data.direction, data.isMoving, data.isRunning);
       }
     });
 

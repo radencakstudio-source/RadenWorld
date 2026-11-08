@@ -112,6 +112,7 @@ export class RemotePlayer extends Entity {
 
   private isJumping: boolean = false;
   private isCharging: boolean = false;
+  private isRunningRemote: boolean = false;
   private currentJumpZ: number = 0;
   private jumpVelocityZ: number = 0;
   private jumpVisualStage: JumpVisualStage = 'none';
@@ -463,7 +464,7 @@ export class RemotePlayer extends Entity {
   /**
    * Menerima pembaruan status posisi dan pergerakan dari WebSocket server
    */
-  public setNetworkState(x: number, y: number, direction: Direction, isMoving: boolean): void {
+  public setNetworkState(x: number, y: number, direction: Direction, isMoving: boolean, isRunning: boolean = false): void {
     if (typeof x === 'number' && !isNaN(x)) {
       const dx = x - this.x;
       const dy = (typeof y === 'number' && !isNaN(y) ? y : this.targetY) - this.y;
@@ -477,7 +478,16 @@ export class RemotePlayer extends Entity {
     if (typeof y === 'number' && !isNaN(y)) this.targetY = y;
     if (direction) this.currentDirection = direction;
     this.isMoving = !!isMoving;
+    this.isRunningRemote = !!isRunning;
     this.lastPacketTime = Date.now();
+  }
+
+  public getIsRunning(): boolean {
+    return this.isRunningRemote;
+  }
+
+  public getTargetPosition(): { x: number; y: number } {
+    return { x: this.targetX, y: this.targetY };
   }
 
   public update(time: number, delta: number): void {
@@ -837,6 +847,7 @@ export class RemotePlayer extends Entity {
       this.sprite.anims.play(animKey, true);
       this.adjustSpriteScale();
     }
+    this.sprite.anims.timeScale = this.isRunningRemote ? 1.45 : 1.0;
   }
 
   /**
@@ -847,6 +858,7 @@ export class RemotePlayer extends Entity {
 
     if (this.sprite.anims && this.sprite.anims.isPlaying) {
       this.sprite.anims.stop();
+      this.sprite.anims.timeScale = 1.0;
     }
     this.currentAnimKey = '';
 
